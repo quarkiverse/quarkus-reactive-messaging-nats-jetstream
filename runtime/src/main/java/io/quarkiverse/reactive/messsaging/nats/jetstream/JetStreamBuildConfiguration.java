@@ -27,9 +27,9 @@ public interface JetStreamBuildConfiguration {
     @WithDefault("File")
     String storageType();
 
-
     /**
-     * Declares the retention policy for the stream. @see <a href="https://docs.nats.io/jetstream/concepts/streams#retention-policies">Retention Policy</a>
+     * Declares the retention policy for the stream. @see
+     * <a href="https://docs.nats.io/jetstream/concepts/streams#retention-policies">Retention Policy</a>
      */
     @WithDefault("Interest")
     String retentionPolicy();
