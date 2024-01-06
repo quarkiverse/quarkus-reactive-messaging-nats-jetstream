@@ -2,24 +2,15 @@
 
 [![Version](https://img.shields.io/maven-central/v/io.quarkiverse/quarkus-reactive-messsaging-nats-jetstream?logo=apache-maven&style=flat-square)](https://search.maven.org/artifact/io.quarkiverse/quarkus-reactive-messsaging-nats-jetstream)
 
-## Welcome to Quarkiverse!
+## Introduction
 
-Congratulations and thank you for creating a new Quarkus extension project in Quarkiverse!
+This extension allow usage of [NATS JetStream](https://docs.nats.io/nats-concepts/jetstream) inside a Quarkus App, in JVM and Native mode.
 
-Feel free to replace this content with the proper description of your new project and necessary instructions how to use and contribute to it.
+The extension implements a new connector type **quarkus-jetstream** in [SmallRye Reactive Messaging](https://smallrye.io/smallrye-reactive-messaging) that will use the [NATS client](https://github.com/nats-io/nats.java).
 
-You can find the basic info, Quarkiverse policies and conventions in [the Quarkiverse wiki](https://github.com/quarkiverse/quarkiverse/wiki).
+For more information about installation and configuration please read the documentation
+[here](https://quarkiverse.github.io/quarkiverse-docs/quarkus-reactive-messaging-nats-jetstream/dev/index.html).
 
-In case you are creating a Quarkus extension project for the first time, please follow [Building My First Extension](https://quarkus.io/guides/building-my-first-extension) guide.
+## Contributing
 
-Other useful articles related to Quarkus extension development can be found under the [Writing Extensions](https://quarkus.io/guides/#writing-extensions) guide category on the [Quarkus.io](https://quarkus.io) website.
-
-Thanks again, good luck and have fun!
-
-## Documentation
-
-The documentation for this extension should be maintained as part of this repository and it is stored in the `docs/` directory.
-
-The layout should follow the [Antora's Standard File and Directory Set](https://docs.antora.org/antora/2.3/standard-directories/).
-
-Once the docs are ready to be published, please open a PR including this repository in the [Quarkiverse Docs Antora playbook](https://github.com/quarkiverse/quarkiverse-docs/blob/main/antora-playbook.yml#L7). See an example [here](https://github.com/quarkiverse/quarkiverse-docs/pull/1).
+Feel free to contribute to this project by submitting issues or pull requests.

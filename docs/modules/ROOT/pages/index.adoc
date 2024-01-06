@@ -1,0 +1,75 @@
+= Quarkus Reactive Messsaging Nats Jetstream
+
+include::./includes/attributes.adoc[]
+
+TIP: Describe what the extension does here.
+
+== Installation
+
+If you want to use this extension, you need to add the `io.quarkiverse:quarkus-reactive-messsaging-nats-jetstream` extension first to your build file.
+
+For instance, with Maven, add the following dependency to your POM file:
+
+[source,xml,subs=attributes+]
+----
+<dependency>
+    <groupId>io.quarkiverse</groupId>
+    <artifactId>quarkus-reactive-messsaging-nats-jetstream</artifactId>
+    <version>{project-version}</version>
+</dependency>
+----
+
+Then configure your application by adding the NATS JetStream connector type:
+
+----
+# Inbound
+mp.messaging.incoming.[channel-name].connector=quarkus-jetstream
+
+# Outbound
+mp.messaging.outgoing.[channel-name].connector=quarkus-jetstream
+----
+
+== Receiving messages from NATS JetStream
+
+Let’s imagine you have a NATS JetStream broker running, and accessible using the localhost:4242 address. Configure your application to receive NATS messages on the data channel from the stream named: test and the subject named: data as follows:
+
+----
+quarkus.quarkus.reactive-messaging.nats.servers=nats://localhost:4242
+quarkus.quarkus.reactive-messaging.nats.username=guest
+quarkus.quarkus.reactive-messaging.nats.password=guest
+quarkus.quarkus.reactive-messaging.nats.ssl-enabled=false
+
+# Streams and subjects are auto-created by default based on channel configuration
+quarkus.reactive-messaging.nats.jet-stream.auto-configure=true
+
+mp.messaging.incoming.data.connector=quarkus-jetstream
+mp.messaging.incoming.data.stream=test
+mp.messaging.incoming.data.subject=data
+----
+
+Then, your application receives Message<Data>. You can consumes the payload directly:
+
+----
+package inbound;
+
+import org.eclipse.microprofile.reactive.messaging.Incoming;
+
+import jakarta.enterprise.context.ApplicationScoped;
+
+@ApplicationScoped
+public class DataConsumer {
+
+    @Incoming("data")
+    public void consume(Data data) {
+        // process your data.
+    }
+
+}
+----
+
+If you want more examples, please take a look at the tests of the extension.
+
+[[extension-configuration-reference]]
+== Extension Configuration Reference
+
+include::includes/quarkus-reactive-messsaging-nats-jetstream.adoc[leveloffset=+1, opts=optional]
