@@ -20,7 +20,7 @@ public class JetStreamSetup {
     private static final Logger logger = Logger.getLogger(JetStreamSetup.class);
 
     public void setup(Connection connection,
-                      JetStreamBuildConfiguration jetStreamConfiguration) {
+            JetStreamBuildConfiguration jetStreamConfiguration) {
         try {
             final var jsm = connection.jetStreamManagement();
             getStreams()
@@ -52,8 +52,8 @@ public class JetStreamSetup {
     }
 
     private void createStreamConfiguration(JetStreamManagement jsm,
-                                           Stream stream,
-                                           JetStreamBuildConfiguration jetStreamConfiguration) {
+            Stream stream,
+            JetStreamBuildConfiguration jetStreamConfiguration) {
         try {
             logger.infof("Creating stream: %s with subjects: %s", stream.name(), stream.subjects());
             StreamConfiguration.Builder streamConfigBuilder = StreamConfiguration.builder()
@@ -70,9 +70,9 @@ public class JetStreamSetup {
     }
 
     private void updateStreamConfiguration(JetStreamManagement jsm,
-                                           StreamConfiguration streamConfiguration,
-                                           Stream stream,
-                                           JetStreamBuildConfiguration jetStreamConfiguration) {
+            StreamConfiguration streamConfiguration,
+            Stream stream,
+            JetStreamBuildConfiguration jetStreamConfiguration) {
         try {
             if (!new HashSet<>(streamConfiguration.getSubjects()).containsAll(stream.subjects())) {
                 logger.infof("Updating stream %s with subjects %s", streamConfiguration.getName(), stream.subjects());
