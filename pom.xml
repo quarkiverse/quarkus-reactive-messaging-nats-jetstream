@@ -6,6 +6,7 @@
         <artifactId>quarkiverse-parent</artifactId>
         <version>15</version>
     </parent>
+    <groupId>io.quarkiverse.quarkus-reactive-messsaging-nats-jetstream</groupId>
     <artifactId>quarkus-reactive-messsaging-nats-jetstream-parent</artifactId>
     <version>1.1.0-SNAPSHOT</version>
     <packaging>pom</packaging>
@@ -23,7 +24,7 @@
   </scm>
     <properties>
         <compiler-plugin.version>3.12.1</compiler-plugin.version>
-        <maven.compiler.release>11</maven.compiler.release>
+        <maven.compiler.release>17</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <quarkus.version>3.6.5</quarkus.version>
