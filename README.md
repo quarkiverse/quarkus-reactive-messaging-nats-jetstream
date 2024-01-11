@@ -1,6 +1,6 @@
 # Quarkus Reactive Messsaging Nats Jetstream
 
-[![Version](https://img.shields.io/maven-central/v/io.quarkiverse.quarkus-reactive-messsaging-nats-jetstream/quarkus-reactive-messsaging-nats-jetstream?logo=apache-maven&style=flat-square)](https://search.maven.org/artifact/io.quarkiverse/quarkus-reactive-messsaging-nats-jetstream)
+[![Version](https://img.shields.io/maven-central/v/io.quarkiverse.quarkus-reactive-messsaging-nats-jetstream/quarkus-reactive-messsaging-nats-jetstream?logo=apache-maven&style=flat-square)](https://search.maven.org/artifact/io.quarkiverse.quarkus-reactive-messsaging-nats-jetstream/quarkus-reactive-messsaging-nats-jetstream)
 
 ## Introduction
 
