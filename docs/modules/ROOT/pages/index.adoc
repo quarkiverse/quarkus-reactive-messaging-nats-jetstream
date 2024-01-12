@@ -13,7 +13,7 @@ For instance, with Maven, add the following dependency to your POM file:
 [source,xml,subs=attributes+]
 ----
 <dependency>
-    <groupId>io.quarkiverse.reactive-messsaging-nats-jetstream</groupId>
+    <groupId>io.quarkiverse.reactivemessaging.nats-jetstream</groupId>
     <artifactId>quarkus-reactive-messsaging-nats-jetstream</artifactId>
     <version>{project-version}</version>
 </dependency>
