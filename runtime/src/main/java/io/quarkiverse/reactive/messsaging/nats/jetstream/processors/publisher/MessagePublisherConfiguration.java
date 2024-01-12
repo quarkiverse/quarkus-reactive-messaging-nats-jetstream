@@ -22,6 +22,14 @@ public interface MessagePublisherConfiguration {
 
     Optional<String> getType();
 
+    boolean getPull();
+
+    int getPullBatchSize();
+
+    int getPullRepullAt();
+
+    long getPullPollTimeout();
+
     static MessagePublisherConfiguration of(JetStreamConnectorIncomingConfiguration configuration) {
         return new DefaultMessagePublisherConfiguration(configuration);
     }

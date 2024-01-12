@@ -52,6 +52,10 @@ import io.vertx.mutiny.core.Vertx;
 @ConnectorAttribute(name = "max-deliver", description = "The maximum number of times a specific message delivery will be attempted", direction = INCOMING, type = "Long", defaultValue = "1")
 @ConnectorAttribute(name = "back-off", description = "The timing of re-deliveries as a comma-separated list of durations", direction = INCOMING, type = "String")
 @ConnectorAttribute(name = "payload-type", description = "The payload type", direction = INCOMING, type = "String")
+@ConnectorAttribute(name = "pull", description = "The subscription type", direction = INCOMING, type = "boolean", defaultValue = "true")
+@ConnectorAttribute(name = "pull.batch-size", description = "The size of batch of messages to be pulled in pull mode", direction = INCOMING, type = "int", defaultValue = "100")
+@ConnectorAttribute(name = "pull.repull-at", description = "The point in the current batch to tell the server to start the next batch", direction = INCOMING, type = "int", defaultValue = "50")
+@ConnectorAttribute(name = "pull.poll-timeout", description = "The poll timeout in milliseconds, use 0 to wait indefinitely", direction = INCOMING, type = "int", defaultValue = "500")
 public class JetStreamConnector implements InboundConnector, OutboundConnector, HealthReporter {
     public static final String CONNECTOR_NAME = "quarkus-jetstream";
 
