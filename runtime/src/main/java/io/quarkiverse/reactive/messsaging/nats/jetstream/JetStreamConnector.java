@@ -1,5 +1,6 @@
 package io.quarkiverse.reactive.messsaging.nats.jetstream;
 
+import static io.smallrye.reactive.messaging.annotations.ConnectorAttribute.Direction.INCOMING;
 import static io.smallrye.reactive.messaging.annotations.ConnectorAttribute.Direction.INCOMING_AND_OUTGOING;
 
 import java.util.List;
@@ -45,12 +46,12 @@ import io.vertx.mutiny.core.Vertx;
 @ConnectorAttribute(name = "auto-configure", description = "Auto configure subject on NATS", direction = INCOMING_AND_OUTGOING, type = "Boolean", defaultValue = "true")
 
 // Publish processor attributes
-@ConnectorAttribute(name = "ordered", description = "Flag indicating whether this subscription should be ordered", direction = ConnectorAttribute.Direction.INCOMING, type = "Boolean")
-@ConnectorAttribute(name = "deliver-group", description = "The optional deliver group to join", direction = ConnectorAttribute.Direction.INCOMING, type = "String")
-@ConnectorAttribute(name = "durable", description = "Sets the durable name for the consumer", direction = ConnectorAttribute.Direction.INCOMING, type = "String")
-@ConnectorAttribute(name = "max-deliver", description = "The maximum number of times a specific message delivery will be attempted", direction = ConnectorAttribute.Direction.INCOMING, type = "Long", defaultValue = "1")
-@ConnectorAttribute(name = "back-off", description = "The timing of re-deliveries as a comma-separated list of durations", direction = ConnectorAttribute.Direction.INCOMING, type = "String")
-@ConnectorAttribute(name = "payload-type", description = "The payload type", direction = ConnectorAttribute.Direction.INCOMING, type = "String")
+@ConnectorAttribute(name = "ordered", description = "Flag indicating whether this subscription should be ordered", direction = INCOMING, type = "Boolean")
+@ConnectorAttribute(name = "deliver-group", description = "The optional deliver group to join", direction = INCOMING, type = "String")
+@ConnectorAttribute(name = "durable", description = "Sets the durable name for the consumer", direction = INCOMING, type = "String")
+@ConnectorAttribute(name = "max-deliver", description = "The maximum number of times a specific message delivery will be attempted", direction = INCOMING, type = "Long", defaultValue = "1")
+@ConnectorAttribute(name = "back-off", description = "The timing of re-deliveries as a comma-separated list of durations", direction = INCOMING, type = "String")
+@ConnectorAttribute(name = "payload-type", description = "The payload type", direction = INCOMING, type = "String")
 public class JetStreamConnector implements InboundConnector, OutboundConnector, HealthReporter {
     public static final String CONNECTOR_NAME = "quarkus-jetstream";
 

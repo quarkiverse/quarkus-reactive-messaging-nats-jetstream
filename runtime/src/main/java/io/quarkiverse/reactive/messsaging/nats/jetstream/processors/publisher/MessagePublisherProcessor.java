@@ -76,46 +76,45 @@ public class MessagePublisherProcessor implements MessageProcessor {
                 .onCompletion().invoke(this::close);
     }
 
-    public Multi<? extends org.eclipse.microprofile.reactive.messaging.Message<?>> publish(Connection connection) {
-        return Multi.createFrom().deferred(
-                () -> Multi.createFrom().<org.eclipse.microprofile.reactive.messaging.Message<?>> emitter(emitter -> {
-                    try {
-                        final var jetStream = connection.jetStream();
-                        final var subject = configuration.getSubject();
-                        final var dispatcher = connection.createDispatcher();
-                        final var pushOptions = createPushSubscribeOptions(configuration);
-                        jetStream.subscribe(subject, dispatcher,
-                                message -> emitter.emit(create(configuration, message, connection.context())), false,
-                                pushOptions);
-                        setStatus(true, "Is connected");
-                    } catch (JetStreamApiException e) {
-                        if (CONSUMER_ALREADY_IN_USE == e.getApiErrorCode()) {
-                            setStatus(true, "Consumer already in use");
-                            emitter.fail(e);
-                        } else {
-                            logger.errorf(e, "Failed subscribing to stream with message: %s", e.getMessage());
-                            setStatus(false, e.getMessage());
-                            emitter.fail(e);
-                        }
-                    } catch (Throwable e) {
-                        logger.errorf(e, "Failed subscribing to stream with message: %s", e.getMessage());
-                        setStatus(false, e.getMessage());
-                        emitter.fail(e);
-                    }
-                })).emitOn(runnable -> connection.context().runOnContext(runnable));
+    public Multi<org.eclipse.microprofile.reactive.messaging.Message<?>> publish(Connection connection) {
+        boolean traceEnabled = configuration.traceEnabled();
+        Class<?> payloadType = configuration.getType().map(PayloadMapper::loadClass).orElse(null);
+        return Multi.createFrom().<io.nats.client.Message> emitter(emitter -> {
+            try {
+                final var jetStream = connection.jetStream();
+                final var subject = configuration.getSubject();
+                final var dispatcher = connection.createDispatcher();
+                final var pushOptions = createPushSubscribeOptions(configuration);
+                jetStream.subscribe(subject, dispatcher, emitter::emit, false, pushOptions);
+                setStatus(true, "Is connected");
+            } catch (JetStreamApiException e) {
+                if (CONSUMER_ALREADY_IN_USE == e.getApiErrorCode()) {
+                    setStatus(true, "Consumer already in use");
+                    emitter.fail(e);
+                } else {
+                    logger.errorf(e, "Failed subscribing to stream with message: %s", e.getMessage());
+                    setStatus(false, e.getMessage());
+                    emitter.fail(e);
+                }
+            } catch (Throwable e) {
+                logger.errorf(e, "Failed subscribing to stream with message: %s", e.getMessage());
+                setStatus(false, e.getMessage());
+                emitter.fail(e);
+            }
+        }).emitOn(runnable -> connection.context().runOnContext(runnable))
+                .map(message -> create(message, traceEnabled, payloadType, connection.context()));
     }
 
     private void setStatus(boolean healthy, String message) {
         this.status.set(new Status(healthy, message));
     }
 
-    private org.eclipse.microprofile.reactive.messaging.Message<?> create(MessagePublisherConfiguration configuration,
-            io.nats.client.Message message, Context context) {
-        final var incomingMessage = configuration.getType()
-                .map(type -> new JetStreamIncomingMessage<>(message, payloadMapper.toPayload(message, type), context))
-                .orElseGet(
-                        () -> new JetStreamIncomingMessage<>(message, payloadMapper.toPayload(message).orElse(null), context));
-        if (configuration.traceEnabled()) {
+    private org.eclipse.microprofile.reactive.messaging.Message<?> create(io.nats.client.Message message,
+            boolean tracingEnabled, Class<?> payloadType, Context context) {
+        final var incomingMessage = payloadType != null
+                ? new JetStreamIncomingMessage<>(message, payloadMapper.toPayload(message, payloadType), context)
+                : new JetStreamIncomingMessage<>(message, payloadMapper.toPayload(message).orElse(null), context);
+        if (tracingEnabled) {
             return traceIncoming(instrumenter, incomingMessage, JetStreamTrace.trace(incomingMessage));
         } else {
             return incomingMessage;
