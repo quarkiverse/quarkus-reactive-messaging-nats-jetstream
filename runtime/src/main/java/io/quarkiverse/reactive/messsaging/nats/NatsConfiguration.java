@@ -48,7 +48,7 @@ public interface NatsConfiguration {
     Optional<String> errorListener();
 
     /**
-     * "The size in bytes to make buffers for connections"
+     * The size in bytes to make buffers for connections
      */
     Optional<Integer> bufferSize();
 
