@@ -13,7 +13,6 @@ import org.eclipse.microprofile.reactive.messaging.Metadata;
 
 import io.nats.client.Message;
 import io.smallrye.reactive.messaging.providers.helpers.VertxContext;
-import io.smallrye.reactive.messaging.providers.locals.LocalContextMetadata;
 import io.vertx.mutiny.core.Context;
 
 public class JetStreamIncomingMessage<T> implements JetStreamMessage<T> {
@@ -26,8 +25,7 @@ public class JetStreamIncomingMessage<T> implements JetStreamMessage<T> {
     public JetStreamIncomingMessage(final Message message, final T payload, Context context) {
         this.message = message;
         this.incomingMetadata = JetStreamIncomingMessageMetadata.create(message);
-        this.metadata = captureContextMetadata(incomingMetadata, new LocalContextMetadata(
-                io.smallrye.common.vertx.VertxContext.createNewDuplicatedContext(context.getDelegate())));
+        this.metadata = captureContextMetadata(incomingMetadata);
         this.payload = payload;
         this.context = context;
     }
@@ -91,12 +89,6 @@ public class JetStreamIncomingMessage<T> implements JetStreamMessage<T> {
     @Override
     public synchronized void injectMetadata(Object metadataObject) {
         this.metadata = metadata.with(metadataObject);
-    }
-
-    @Override
-    public org.eclipse.microprofile.reactive.messaging.Message<T> addMetadata(Object metadata) {
-        injectMetadata(metadata);
-        return this;
     }
 
     @Override

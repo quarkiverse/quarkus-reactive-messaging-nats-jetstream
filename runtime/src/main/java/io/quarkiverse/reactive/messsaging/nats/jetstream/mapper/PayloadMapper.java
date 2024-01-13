@@ -50,7 +50,7 @@ public class PayloadMapper {
     public <T> Optional<? super T> toPayload(io.nats.client.Message message) {
         return Optional.ofNullable(message).flatMap(m -> Optional.ofNullable(m.getHeaders()))
                 .flatMap(headers -> Optional.ofNullable(headers.getFirst(MESSAGE_TYPE_HEADER)))
-                .map(this::loadClass)
+                .map(PayloadMapper::loadClass)
                 .map(type -> decode(message.getData(), type));
     }
 
@@ -59,12 +59,11 @@ public class PayloadMapper {
         logger.infof("Getting payload from message info: %s", message);
         return Optional.ofNullable(message).flatMap(m -> Optional.ofNullable(m.getHeaders()))
                 .flatMap(headers -> Optional.ofNullable(headers.getFirst(MESSAGE_TYPE_HEADER)))
-                .map(this::loadClass)
+                .map(PayloadMapper::loadClass)
                 .map(type -> (T) decode(message.getData(), type));
     }
 
-    public <T> T toPayload(io.nats.client.Message message, String type) {
-        Class<T> payLoadType = loadClass(type);
+    public <T> T toPayload(io.nats.client.Message message, Class<T> payLoadType) {
         return decode(message.getData(), payLoadType);
     }
 
@@ -77,7 +76,7 @@ public class PayloadMapper {
     }
 
     @SuppressWarnings("unchecked")
-    private <T> Class<T> loadClass(String type) {
+    public static <T> Class<T> loadClass(String type) {
         try {
             final ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
             return (Class<T>) classLoader.loadClass(type);
