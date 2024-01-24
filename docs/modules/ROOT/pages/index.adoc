@@ -119,6 +119,11 @@ mp.messaging.incoming.[channel-name].durable,Sets the durable name for the consu
 mp.messaging.incoming.[channel-name].max-deliver,The maximum number of times a specific message delivery will be attempted
 mp.messaging.incoming.[channel-name].back-off,The timing of re-deliveries as a comma-separated list of durations
 mp.messaging.incoming.[channel-name].payload-type,The class name of the payload type
+mp.messaging.incoming.[channel-name].pull,The subscription type
+mp.messaging.incoming.[channel-name].pull.batch-size,The size of batch of messages to be pulled in pull mode
+mp.messaging.incoming.[channel-name].pull.repull-at,The point in the current batch to tell the server to start the next batch
+mp.messaging.incoming.[channel-name].pull.poll-timeout,The poll timeout in milliseconds, use 0 to wait indefinitely
+mp.messaging.incoming.[channel-name].retry-backoff,The retry backoff in milliseconds for retry publishing messages
 |======
 
 == NATS JetStream
