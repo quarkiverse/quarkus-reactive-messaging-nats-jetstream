@@ -88,7 +88,7 @@ public class MessagePublisherProcessor implements MessageProcessor {
                     }
                     close();
                 })
-                .onFailure().retry().withBackOff(Duration.ofSeconds(30)).indefinitely()
+                .onFailure().retry().withBackOff(Duration.ofMillis(configuration.getRetryBackoff())).indefinitely()
                 .onCompletion().invoke(this::close);
     }
 

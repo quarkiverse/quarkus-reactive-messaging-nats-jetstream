@@ -30,6 +30,8 @@ public interface MessagePublisherConfiguration {
 
     long getPullPollTimeout();
 
+    Long getRetryBackoff();
+
     static MessagePublisherConfiguration of(JetStreamConnectorIncomingConfiguration configuration) {
         return new DefaultMessagePublisherConfiguration(configuration);
     }
