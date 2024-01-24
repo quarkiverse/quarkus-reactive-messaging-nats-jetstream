@@ -51,4 +51,24 @@ public class DefaultMessagePublisherConfiguration implements MessagePublisherCon
     public Optional<String> getType() {
         return configuration.getPayloadType();
     }
+
+    @Override
+    public boolean getPull() {
+        return configuration.getPull();
+    }
+
+    @Override
+    public int getPullBatchSize() {
+        return configuration.getPullBatchSize();
+    }
+
+    @Override
+    public int getPullRepullAt() {
+        return configuration.getPullRepullAt();
+    }
+
+    @Override
+    public long getPullPollTimeout() {
+        return configuration.getPullPollTimeout();
+    }
 }

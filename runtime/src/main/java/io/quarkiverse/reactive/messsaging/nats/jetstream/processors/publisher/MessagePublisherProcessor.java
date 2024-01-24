@@ -5,6 +5,8 @@ import static io.smallrye.reactive.messaging.tracing.TracingUtils.traceIncoming;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Optional;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
@@ -12,6 +14,9 @@ import org.eclipse.microprofile.reactive.messaging.Message;
 import org.jboss.logging.Logger;
 
 import io.nats.client.JetStreamApiException;
+import io.nats.client.JetStreamReader;
+import io.nats.client.JetStreamSubscription;
+import io.nats.client.PullSubscribeOptions;
 import io.nats.client.PushSubscribeOptions;
 import io.nats.client.api.ConsumerConfiguration;
 import io.opentelemetry.instrumentation.api.instrumenter.Instrumenter;
@@ -24,6 +29,7 @@ import io.quarkiverse.reactive.messsaging.nats.jetstream.processors.Status;
 import io.quarkiverse.reactive.messsaging.nats.jetstream.tracing.JetStreamInstrumenter;
 import io.quarkiverse.reactive.messsaging.nats.jetstream.tracing.JetStreamTrace;
 import io.smallrye.mutiny.Multi;
+import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.core.Context;
 
 public class MessagePublisherProcessor implements MessageProcessor {
@@ -36,6 +42,9 @@ public class MessagePublisherProcessor implements MessageProcessor {
     private final PayloadMapper payloadMapper;
     private final Instrumenter<JetStreamTrace, Void> instrumenter;
     private final AtomicReference<Status> status;
+
+    private volatile JetStreamSubscription subscription;
+    private volatile boolean closed = false;
 
     public MessagePublisherProcessor(final JetStreamClient jetStreamClient,
             final MessagePublisherConfiguration configuration,
@@ -55,6 +64,13 @@ public class MessagePublisherProcessor implements MessageProcessor {
 
     @Override
     public void close() {
+        try {
+            subscription.drain(Duration.ofMillis(1000));
+        } catch (InterruptedException e) {
+            logger.errorf("Interrupted while draining subscription");
+        }
+        subscription.unsubscribe();
+        closed = true;
         jetStreamClient.close();
     }
 
@@ -65,7 +81,7 @@ public class MessagePublisherProcessor implements MessageProcessor {
 
     public Multi<? extends Message<?>> getPublisher() {
         return jetStreamClient.getOrEstablishConnection()
-                .onItem().transformToMulti(this::publish)
+                .onItem().transformToMulti(connection -> configuration.getPull() ? pull(connection) : push(connection))
                 .onFailure().invoke(throwable -> {
                     if (!isConsumerAlreadyInUse(throwable)) {
                         logger.errorf(throwable, "Publish failure: %s", throwable.getMessage());
@@ -76,7 +92,7 @@ public class MessagePublisherProcessor implements MessageProcessor {
                 .onCompletion().invoke(this::close);
     }
 
-    public Multi<org.eclipse.microprofile.reactive.messaging.Message<?>> publish(Connection connection) {
+    public Multi<org.eclipse.microprofile.reactive.messaging.Message<?>> push(Connection connection) {
         boolean traceEnabled = configuration.traceEnabled();
         Class<?> payloadType = configuration.getType().map(PayloadMapper::loadClass).orElse(null);
         return Multi.createFrom().<io.nats.client.Message> emitter(emitter -> {
@@ -85,7 +101,7 @@ public class MessagePublisherProcessor implements MessageProcessor {
                 final var subject = configuration.getSubject();
                 final var dispatcher = connection.createDispatcher();
                 final var pushOptions = createPushSubscribeOptions(configuration);
-                jetStream.subscribe(subject, dispatcher, emitter::emit, false, pushOptions);
+                subscription = jetStream.subscribe(subject, dispatcher, emitter::emit, false, pushOptions);
                 setStatus(true, "Is connected");
             } catch (JetStreamApiException e) {
                 if (CONSUMER_ALREADY_IN_USE == e.getApiErrorCode()) {
@@ -103,6 +119,46 @@ public class MessagePublisherProcessor implements MessageProcessor {
             }
         }).emitOn(runnable -> connection.context().runOnContext(runnable))
                 .map(message -> create(message, traceEnabled, payloadType, connection.context()));
+    }
+
+    public Multi<org.eclipse.microprofile.reactive.messaging.Message<?>> pull(Connection connection) {
+        boolean traceEnabled = configuration.traceEnabled();
+        int batchSize = configuration.getPullBatchSize();
+        int repullAt = configuration.getPullRepullAt();
+        Duration pollTimeout = Duration.ofMillis(configuration.getPullPollTimeout());
+        Class<?> payloadType = configuration.getType().map(PayloadMapper::loadClass).orElse(null);
+        ExecutorService pullExecutor = Executors.newSingleThreadExecutor(JetstreamWorkerThread::new);
+        try {
+            var jetStream = connection.jetStream();
+            var subject = configuration.getSubject();
+            var pullSubscribeOptions = createPullSubscribeOptions(configuration);
+            subscription = jetStream.subscribe(subject, pullSubscribeOptions);
+            JetStreamReader reader = subscription.reader(batchSize, repullAt);
+            setStatus(true, "Is connected");
+            return Multi.createBy().repeating().uni(() -> Uni.createFrom().<io.nats.client.Message> emitter(e -> {
+                if (subscription.isActive()) {
+                    try {
+                        e.complete(reader.nextMessage(pollTimeout));
+                    } catch (Throwable throwable) {
+                        // log and continue
+                        logger.warnf("Error while pulling from the subscription %s: %s",
+                                configuration.getChannel(), throwable.getMessage());
+                        if (logger.isTraceEnabled()) {
+                            logger.tracef(throwable, "Error while pulling from the subscription %s",
+                                    configuration.getChannel());
+                        }
+                    }
+                }
+            }).runSubscriptionOn(pullExecutor))
+                    .until(message -> closed || !subscription.isActive())
+                    .onTermination().invoke(pullExecutor::shutdownNow)
+                    .emitOn(runnable -> connection.context().runOnContext(runnable))
+                    .map(message -> create(message, traceEnabled, payloadType, connection.context()));
+        } catch (Throwable e) {
+            logger.errorf(e, "Failed subscribing to stream with message: %s", e.getMessage());
+            setStatus(false, e.getMessage());
+            throw new RuntimeException(e);
+        }
     }
 
     private void setStatus(boolean healthy, String message) {
@@ -145,6 +201,20 @@ public class MessagePublisherProcessor implements MessageProcessor {
                 .configuration(
                         ConsumerConfiguration.builder()
                                 .maxDeliver(maxDeliever)
+                                .backoff(getBackOff(backoff).orElse(null))
+                                .build())
+                .build();
+    }
+
+    private PullSubscribeOptions createPullSubscribeOptions(final MessagePublisherConfiguration configuration) {
+        final var durable = configuration.getDurable().orElse(null);
+        final var backoff = getBackOff(configuration).orElse(null);
+        final var maxDeliver = configuration.getMaxDeliver();
+        return PullSubscribeOptions.builder()
+                .durable(durable)
+                .configuration(
+                        ConsumerConfiguration.builder()
+                                .maxDeliver(maxDeliver)
                                 .backoff(getBackOff(backoff).orElse(null))
                                 .build())
                 .build();
