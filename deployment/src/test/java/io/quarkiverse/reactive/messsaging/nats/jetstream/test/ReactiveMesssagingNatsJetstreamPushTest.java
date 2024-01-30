@@ -15,7 +15,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.parsing.Parser;
 
-public class ReactiveMesssagingNatsJetstreamTest {
+public class ReactiveMesssagingNatsJetstreamPushTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
@@ -25,7 +25,7 @@ public class ReactiveMesssagingNatsJetstreamTest {
                             Advisory.class, DeadLetterResource.class, DeadLetterConsumingBean.class,
                             DurableResource.class, DurableConsumingBean.class, RedeliveryResource.class,
                             RedeliveryConsumingBean.class))
-            .withConfigurationResource("application.properties");
+            .withConfigurationResource("application-push.properties");
 
     @BeforeEach
     public void setup() {
@@ -87,5 +87,4 @@ public class ReactiveMesssagingNatsJetstreamTest {
             return value.equalsIgnoreCase("42");
         });
     }
-
 }

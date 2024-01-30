@@ -20,13 +20,13 @@ import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
 import io.restassured.parsing.Parser;
 
-public class ReactiveMesssagingNatsJetstreamTracingTest {
+public class ReactiveMesssagingNatsJetstreamPushTracingTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
             () -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(TestSpanExporter.class, Data.class, DataResource.class, DataConsumingBean.class))
-            .withConfigurationResource("application-tracing.properties");
+            .withConfigurationResource("application-pull-tracing.properties");
 
     @Inject
     TestSpanExporter spanExporter;
@@ -56,4 +56,5 @@ public class ReactiveMesssagingNatsJetstreamTracingTest {
                     .isEqualTo(1);
         }
     }
+
 }
