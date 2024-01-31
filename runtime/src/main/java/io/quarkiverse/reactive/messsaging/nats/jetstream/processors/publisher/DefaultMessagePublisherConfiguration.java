@@ -71,4 +71,9 @@ public class DefaultMessagePublisherConfiguration implements MessagePublisherCon
     public long getPullPollTimeout() {
         return configuration.getPullPollTimeout();
     }
+
+    @Override
+    public Long getRetryBackoff() {
+        return configuration.getRetryBackoff();
+    }
 }
