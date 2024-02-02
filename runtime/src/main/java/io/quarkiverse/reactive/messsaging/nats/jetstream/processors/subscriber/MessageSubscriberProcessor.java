@@ -94,7 +94,8 @@ public class MessageSubscriberProcessor implements MessageProcessor {
      */
     @Override
     public Status getStatus() {
-        return jetStreamClient.getConnection().map(c -> new Status(c.isConnected(), "Is connected"))
+        return jetStreamClient.getConnection()
+                .map(c -> new Status(c.isConnected(), c.isConnected() ? "Is connected" : "Not connected"))
                 .orElseGet(() -> new Status(true, "Not connected"));
     }
 

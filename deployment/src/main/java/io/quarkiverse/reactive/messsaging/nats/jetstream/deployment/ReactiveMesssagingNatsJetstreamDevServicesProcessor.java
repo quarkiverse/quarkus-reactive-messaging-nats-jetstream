@@ -145,7 +145,7 @@ public class ReactiveMesssagingNatsJetstreamDevServicesProcessor {
 
         final Supplier<RunningDevService> defaultJetStreamBrokerSupplier = () -> {
             // Starting the broker
-            NatsJetStreamContainer container = new NatsJetStreamContainer(DockerImageName.parse(config.imageName)
+            NatsJetStreamContainer container = NatsJetStreamContainer.of(DockerImageName.parse(config.imageName)
                     .asCompatibleSubstituteFor("nats"))
                     .withNetwork(Network.SHARED);
             if (launchMode.getLaunchMode() == LaunchMode.DEVELOPMENT) { // Only adds the label in dev mode.

@@ -15,11 +15,7 @@ public class NatsJetStreamContainer extends GenericContainer<NatsJetStreamContai
     static final String USERNAME = "guest";
     static final String PASSWORD = "guest";
 
-    public NatsJetStreamContainer() {
-        this(NATS_IMAGE);
-    }
-
-    public NatsJetStreamContainer(DockerImageName imageName) {
+    private NatsJetStreamContainer(DockerImageName imageName) {
         super(imageName);
 
         super.withNetworkAliases("nats");
@@ -27,6 +23,15 @@ public class NatsJetStreamContainer extends GenericContainer<NatsJetStreamContai
         super.withStartupTimeout(Duration.ofSeconds(180L));
         super.withExposedPorts(NATS_PORT, NATS_HTTP_PORT);
         super.withCommand("--jetstream", "--user", USERNAME, "--pass", PASSWORD, "--http_port", NATS_HTTP_PORT.toString());
+    }
+
+    public static NatsJetStreamContainer of(DockerImageName imageName) {
+        return new NatsJetStreamContainer(imageName)
+                .withNetworkAliases("nats")
+                .waitingFor(Wait.forHttp("/healthz").forPort(NATS_HTTP_PORT))
+                .withStartupTimeout(Duration.ofSeconds(180L))
+                .withExposedPorts(NATS_PORT, NATS_HTTP_PORT)
+                .withCommand("--jetstream", "--user", USERNAME, "--pass", PASSWORD, "--http_port", NATS_HTTP_PORT.toString());
     }
 
     public String getServerUrl() {
