@@ -110,5 +110,6 @@ public class JetStreamClient implements AutoCloseable {
         if (connection.get() != null) {
             connection.get().close();
         }
+        connection.set(null);
     }
 }
