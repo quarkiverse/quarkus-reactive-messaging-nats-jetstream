@@ -37,10 +37,10 @@ mp.messaging.outgoing.[channel-name].connector=quarkus-jetstream
 Let’s imagine you have a NATS JetStream broker running, and accessible using the localhost:4242 address. Configure your application to receive NATS messages on the data channel from the stream named: test and the subject named: data as follows:
 
 ----
-quarkus.quarkus.reactive-messaging.nats.servers=nats://localhost:4242
-quarkus.quarkus.reactive-messaging.nats.username=guest
-quarkus.quarkus.reactive-messaging.nats.password=guest
-quarkus.quarkus.reactive-messaging.nats.ssl-enabled=false
+quarkus.reactive-messaging.nats.servers=nats://localhost:4242
+quarkus.reactive-messaging.nats.username=guest
+quarkus.reactive-messaging.nats.password=guest
+quarkus.reactive-messaging.nats.ssl-enabled=false
 
 # Streams and subjects are auto-created by default based on channel configuration
 quarkus.reactive-messaging.nats.jet-stream.auto-configure=true
