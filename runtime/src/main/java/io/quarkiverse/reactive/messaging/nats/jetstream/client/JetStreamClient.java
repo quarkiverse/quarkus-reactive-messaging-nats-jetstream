@@ -108,7 +108,7 @@ public class JetStreamClient implements AutoCloseable {
     @Override
     public void close() {
         if (connection.get() != null) {
-            connection.get().close();
+            connection.getAndSet(null).close();
         }
     }
 }
