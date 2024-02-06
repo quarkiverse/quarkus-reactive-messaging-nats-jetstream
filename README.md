@@ -9,7 +9,7 @@ This extension allow usage of [NATS JetStream](https://docs.nats.io/nats-concept
 The extension implements a new connector type **quarkus-jetstream** in [SmallRye Reactive Messaging](https://smallrye.io/smallrye-reactive-messaging) that will use the [NATS client](https://github.com/nats-io/nats.java).
 
 For more information about installation and configuration please read the documentation
-[here](https://quarkiverse.github.io/quarkiverse-docs/quarkus-reactive-messaging-nats-jetstream/dev/index.html).
+[here](https://docs.quarkiverse.io/quarkus-reactive-messsaging-nats-jetstream/dev/).
 
 ## Contributing
 
