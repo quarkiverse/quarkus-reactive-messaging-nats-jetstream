@@ -8,16 +8,11 @@ import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Collectors;
 
 import org.eclipse.microprofile.reactive.messaging.Message;
 import org.jboss.logging.Logger;
 
-import io.nats.client.JetStreamApiException;
-import io.nats.client.JetStreamReader;
-import io.nats.client.JetStreamSubscription;
-import io.nats.client.PullSubscribeOptions;
-import io.nats.client.PushSubscribeOptions;
+import io.nats.client.*;
 import io.nats.client.api.ConsumerConfiguration;
 import io.opentelemetry.instrumentation.api.instrumenter.Instrumenter;
 import io.quarkiverse.reactive.messaging.nats.jetstream.JetStreamIncomingMessage;
@@ -29,7 +24,6 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.processors.Status;
 import io.quarkiverse.reactive.messaging.nats.jetstream.tracing.JetStreamInstrumenter;
 import io.quarkiverse.reactive.messaging.nats.jetstream.tracing.JetStreamTrace;
 import io.smallrye.mutiny.Multi;
-import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.core.Context;
 
 public class MessagePublisherProcessor implements MessageProcessor {
@@ -135,22 +129,10 @@ public class MessagePublisherProcessor implements MessageProcessor {
             subscription = jetStream.subscribe(subject, pullSubscribeOptions);
             JetStreamReader reader = subscription.reader(batchSize, repullAt);
             setStatus(true, "Is connected");
-            return Multi.createBy().repeating().uni(() -> Uni.createFrom().<io.nats.client.Message> emitter(e -> {
-                if (subscription.isActive()) {
-                    try {
-                        e.complete(reader.nextMessage(pollTimeout));
-                    } catch (Throwable throwable) {
-                        // log and continue
-                        logger.warnf("Error while pulling from the subscription %s: %s",
-                                configuration.getChannel(), throwable.getMessage());
-                        if (logger.isTraceEnabled()) {
-                            logger.tracef(throwable, "Error while pulling from the subscription %s",
-                                    configuration.getChannel());
-                        }
-                    }
-                }
-            }).runSubscriptionOn(pullExecutor))
+            return Multi.createBy().repeating()
+                    .supplier(() -> nextNatsMessage(reader, pollTimeout))
                     .until(message -> closed || !subscription.isActive())
+                    .runSubscriptionOn(pullExecutor)
                     .onTermination().invoke(pullExecutor::shutdownNow)
                     .emitOn(runnable -> connection.context().runOnContext(runnable))
                     .map(message -> create(message, traceEnabled, payloadType, connection.context()));
@@ -159,6 +141,23 @@ public class MessagePublisherProcessor implements MessageProcessor {
             setStatus(false, e.getMessage());
             throw new RuntimeException(e);
         }
+    }
+
+    private io.nats.client.Message nextNatsMessage(JetStreamReader reader, Duration pollTimeout) {
+        io.nats.client.Message message = null;
+        if (subscription.isActive()) {
+            try {
+                message = reader.nextMessage(pollTimeout);
+            } catch (Throwable throwable) {
+                logger.warnf("Error while pulling from the subscription %s: %s",
+                        configuration.getChannel(), throwable.getMessage());
+                if (logger.isTraceEnabled()) {
+                    logger.tracef(throwable, "Error while pulling from the subscription %s",
+                            configuration.getChannel());
+                }
+            }
+        }
+        return message;
     }
 
     private void setStatus(boolean healthy, String message) {
@@ -228,7 +227,7 @@ public class MessagePublisherProcessor implements MessageProcessor {
         if (backoff == null || backoff.length == 0) {
             return Optional.empty();
         } else {
-            return Optional.of(Arrays.stream(backoff).map(MessagePublisherProcessor::toDuration).collect(Collectors.toList())
+            return Optional.of(Arrays.stream(backoff).map(MessagePublisherProcessor::toDuration).toList()
                     .toArray(new Duration[] {}));
         }
     }
