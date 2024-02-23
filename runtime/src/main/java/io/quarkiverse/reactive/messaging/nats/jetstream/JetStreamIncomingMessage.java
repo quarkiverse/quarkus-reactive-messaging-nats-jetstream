@@ -77,7 +77,7 @@ public class JetStreamIncomingMessage<T> implements JetStreamMessage<T> {
     public CompletionStage<Void> nack(Throwable reason, Metadata metadata) {
         return VertxContext.runOnContext(context.getDelegate(), f -> {
             message.nak();
-            this.runOnMessageContext(() -> f.completeExceptionally(reason));
+            this.runOnMessageContext(() -> f.complete(null));
         });
     }
 
