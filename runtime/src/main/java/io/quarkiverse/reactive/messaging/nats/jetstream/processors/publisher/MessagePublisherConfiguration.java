@@ -32,6 +32,8 @@ public interface MessagePublisherConfiguration {
 
     Long getRetryBackoff();
 
+    boolean getExponentialBackoff();
+
     static MessagePublisherConfiguration of(JetStreamConnectorIncomingConfiguration configuration) {
         return new DefaultMessagePublisherConfiguration(configuration);
     }

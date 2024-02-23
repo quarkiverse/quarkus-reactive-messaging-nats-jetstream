@@ -76,4 +76,9 @@ public class DefaultMessagePublisherConfiguration implements MessagePublisherCon
     public Long getRetryBackoff() {
         return configuration.getRetryBackoff();
     }
+
+    @Override
+    public boolean getExponentialBackoff() {
+        return configuration.getExponentialBackoff();
+    }
 }

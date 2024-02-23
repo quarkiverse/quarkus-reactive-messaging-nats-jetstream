@@ -3,6 +3,7 @@ package io.quarkiverse.reactive.messaging.nats.jetstream;
 import static io.quarkiverse.reactive.messaging.nats.jetstream.mapper.HeaderMapper.toMessageHeaders;
 import static io.smallrye.reactive.messaging.providers.locals.ContextAwareMessage.captureContextMetadata;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
@@ -21,10 +22,12 @@ public class JetStreamIncomingMessage<T> implements JetStreamMessage<T> {
     private final JetStreamIncomingMessageMetadata incomingMetadata;
     private final T payload;
     private final Context context;
+    private final boolean exponentialBackoff;
 
-    public JetStreamIncomingMessage(final Message message, final T payload, Context context) {
+    public JetStreamIncomingMessage(final Message message, final T payload, Context context, boolean exponentialBackoff) {
         this.message = message;
         this.incomingMetadata = JetStreamIncomingMessageMetadata.create(message);
+        this.exponentialBackoff = exponentialBackoff;
         this.metadata = captureContextMetadata(incomingMetadata);
         this.payload = payload;
         this.context = context;
@@ -76,8 +79,17 @@ public class JetStreamIncomingMessage<T> implements JetStreamMessage<T> {
     @Override
     public CompletionStage<Void> nack(Throwable reason, Metadata metadata) {
         return VertxContext.runOnContext(context.getDelegate(), f -> {
-            message.nak();
-            this.runOnMessageContext(() -> f.completeExceptionally(reason));
+            if (exponentialBackoff) {
+                metadata.get(JetStreamIncomingMessageMetadata.class)
+                        .ifPresentOrElse(m -> {
+                            long backoffSeconds = Math.round(Math.pow(2D, m.deliveredCount()));
+                            message.nakWithDelay(Duration.ofSeconds(backoffSeconds));
+                        }, message::nak);
+            } else {
+                message.nak();
+            }
+
+            this.runOnMessageContext(() -> f.complete(null));
         });
     }
 
