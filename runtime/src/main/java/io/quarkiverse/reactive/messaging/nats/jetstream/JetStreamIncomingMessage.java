@@ -1,7 +1,9 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream;
 
-import static io.quarkiverse.reactive.messaging.nats.jetstream.mapper.HeaderMapper.toMessageHeaders;
-import static io.smallrye.reactive.messaging.providers.locals.ContextAwareMessage.captureContextMetadata;
+import io.nats.client.Message;
+import io.smallrye.reactive.messaging.providers.helpers.VertxContext;
+import io.vertx.mutiny.core.Context;
+import org.eclipse.microprofile.reactive.messaging.Metadata;
 
 import java.time.Duration;
 import java.util.List;
@@ -10,11 +12,8 @@ import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import org.eclipse.microprofile.reactive.messaging.Metadata;
-
-import io.nats.client.Message;
-import io.smallrye.reactive.messaging.providers.helpers.VertxContext;
-import io.vertx.mutiny.core.Context;
+import static io.quarkiverse.reactive.messaging.nats.jetstream.mapper.HeaderMapper.toMessageHeaders;
+import static io.smallrye.reactive.messaging.providers.locals.ContextAwareMessage.captureContextMetadata;
 
 public class JetStreamIncomingMessage<T> implements JetStreamMessage<T> {
     private final Message message;
@@ -23,11 +22,14 @@ public class JetStreamIncomingMessage<T> implements JetStreamMessage<T> {
     private final T payload;
     private final Context context;
     private final boolean exponentialBackoff;
+    private final Duration exponentialBackoffMaxDuration;
 
-    public JetStreamIncomingMessage(final Message message, final T payload, Context context, boolean exponentialBackoff) {
+    public JetStreamIncomingMessage(final Message message, final T payload, Context context, boolean exponentialBackoff,
+                                    Duration exponentialBackoffMaxDuration) {
         this.message = message;
         this.incomingMetadata = JetStreamIncomingMessageMetadata.create(message);
         this.exponentialBackoff = exponentialBackoff;
+        this.exponentialBackoffMaxDuration = exponentialBackoffMaxDuration;
         this.metadata = captureContextMetadata(incomingMetadata);
         this.payload = payload;
         this.context = context;
@@ -83,7 +85,11 @@ public class JetStreamIncomingMessage<T> implements JetStreamMessage<T> {
                 metadata.get(JetStreamIncomingMessageMetadata.class)
                         .ifPresentOrElse(m -> {
                             long backoffSeconds = Math.round(Math.pow(2D, m.deliveredCount()));
-                            message.nakWithDelay(Duration.ofSeconds(backoffSeconds));
+                            if (backoffSeconds < exponentialBackoffMaxDuration.getSeconds()) {
+                                message.nakWithDelay(Duration.ofSeconds(backoffSeconds));
+                            } else {
+                                message.nakWithDelay(exponentialBackoffMaxDuration);
+                            }
                         }, message::nak);
             } else {
                 message.nak();

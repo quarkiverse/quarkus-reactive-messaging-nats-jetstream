@@ -1,8 +1,9 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.processors.publisher;
 
-import java.util.Optional;
-
 import io.quarkiverse.reactive.messaging.nats.jetstream.JetStreamConnectorIncomingConfiguration;
+
+import java.time.Duration;
+import java.util.Optional;
 
 public interface MessagePublisherConfiguration {
 
@@ -33,6 +34,8 @@ public interface MessagePublisherConfiguration {
     Long getRetryBackoff();
 
     boolean getExponentialBackoff();
+
+    Duration getExponentialBackoffMaxDuration();
 
     static MessagePublisherConfiguration of(JetStreamConnectorIncomingConfiguration configuration) {
         return new DefaultMessagePublisherConfiguration(configuration);

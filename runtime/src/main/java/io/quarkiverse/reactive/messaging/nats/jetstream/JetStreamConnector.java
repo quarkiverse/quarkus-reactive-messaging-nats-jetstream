@@ -1,23 +1,5 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream;
 
-import static io.smallrye.reactive.messaging.annotations.ConnectorAttribute.Direction.INCOMING;
-import static io.smallrye.reactive.messaging.annotations.ConnectorAttribute.Direction.INCOMING_AND_OUTGOING;
-
-import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.Flow;
-
-import jakarta.annotation.Priority;
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.context.BeforeDestroyed;
-import jakarta.enterprise.event.Observes;
-import jakarta.enterprise.event.Reception;
-import jakarta.inject.Inject;
-
-import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.reactive.messaging.Message;
-import org.eclipse.microprofile.reactive.messaging.spi.Connector;
-
 import io.quarkiverse.reactive.messaging.nats.NatsConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.ConnectionConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.JetStreamClient;
@@ -35,6 +17,22 @@ import io.smallrye.reactive.messaging.health.HealthReport;
 import io.smallrye.reactive.messaging.health.HealthReporter;
 import io.smallrye.reactive.messaging.providers.connectors.ExecutionHolder;
 import io.vertx.mutiny.core.Vertx;
+import jakarta.annotation.Priority;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.BeforeDestroyed;
+import jakarta.enterprise.event.Observes;
+import jakarta.enterprise.event.Reception;
+import jakarta.inject.Inject;
+import org.eclipse.microprofile.config.Config;
+import org.eclipse.microprofile.reactive.messaging.Message;
+import org.eclipse.microprofile.reactive.messaging.spi.Connector;
+
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.Flow;
+
+import static io.smallrye.reactive.messaging.annotations.ConnectorAttribute.Direction.INCOMING;
+import static io.smallrye.reactive.messaging.annotations.ConnectorAttribute.Direction.INCOMING_AND_OUTGOING;
 
 @ApplicationScoped
 @Connector(JetStreamConnector.CONNECTOR_NAME)
@@ -57,7 +55,8 @@ import io.vertx.mutiny.core.Vertx;
 @ConnectorAttribute(name = "pull.repull-at", description = "The point in the current batch to tell the server to start the next batch", direction = INCOMING, type = "int", defaultValue = "50")
 @ConnectorAttribute(name = "pull.poll-timeout", description = "The poll timeout in milliseconds, use 0 to wait indefinitely", direction = INCOMING, type = "int", defaultValue = "500")
 @ConnectorAttribute(name = "retry-backoff", description = "The retry backoff in milliseconds for retry publishing messages", direction = INCOMING, type = "Long", defaultValue = "10000")
-@ConnectorAttribute(name = "exponential-backoff", description = "calculation a exponential backoff using deliveredCount metadata (NB back-off must undefined to work properly)", direction = INCOMING, type = "Boolean", defaultValue = "false")
+@ConnectorAttribute(name = "exponential-backoff", description = "Calculation a exponential backoff using deliveredCount metadata (NB back-off must undefined to work properly)", direction = INCOMING, type = "Boolean", defaultValue = "false")
+@ConnectorAttribute(name = "exponential-backoff-max-duration", description = "The maximum duration of exponential backoff", direction = INCOMING, type = "String", defaultValue = "PT2M")
 public class JetStreamConnector implements InboundConnector, OutboundConnector, HealthReporter {
     public static final String CONNECTOR_NAME = "quarkus-jetstream";
 

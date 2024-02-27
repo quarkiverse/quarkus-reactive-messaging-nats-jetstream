@@ -125,6 +125,7 @@ mp.messaging.incoming.[channel-name].pull.repull-at,The point in the current bat
 mp.messaging.incoming.[channel-name].pull.poll-timeout,The poll timeout in milliseconds, use 0 to wait indefinitely
 mp.messaging.incoming.[channel-name].retry-backoff,The retry backoff in milliseconds for retry publishing messages
 mp.messaging.incoming.[channel-name].exponential-backoff, calculation a exponential backoff using deliveredCount metadata (NB back-off must undefined to work properly)
+mp.messaging.incoming.[channel-name].exponential-backoff-max-duration, The maximum duration of exponential backoff
 |======
 
 == NATS JetStream
