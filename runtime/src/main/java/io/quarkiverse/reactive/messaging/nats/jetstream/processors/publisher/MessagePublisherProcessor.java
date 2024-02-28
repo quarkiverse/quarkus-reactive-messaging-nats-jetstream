@@ -41,9 +41,9 @@ public class MessagePublisherProcessor implements MessageProcessor {
     private volatile boolean closed = false;
 
     public MessagePublisherProcessor(final JetStreamClient jetStreamClient,
-                                     final MessagePublisherConfiguration configuration,
-                                     final PayloadMapper payloadMapper,
-                                     final JetStreamInstrumenter jetStreamInstrumenter) {
+            final MessagePublisherConfiguration configuration,
+            final PayloadMapper payloadMapper,
+            final JetStreamInstrumenter jetStreamInstrumenter) {
         this.configuration = configuration;
         this.jetStreamClient = jetStreamClient;
         this.payloadMapper = payloadMapper;
@@ -97,29 +97,29 @@ public class MessagePublisherProcessor implements MessageProcessor {
     public Multi<org.eclipse.microprofile.reactive.messaging.Message<?>> push(Connection connection) {
         boolean traceEnabled = configuration.traceEnabled();
         Class<?> payloadType = configuration.getType().map(PayloadMapper::loadClass).orElse(null);
-        return Multi.createFrom().<io.nats.client.Message>emitter(emitter -> {
-                    try {
-                        final var jetStream = connection.jetStream();
-                        final var subject = configuration.getSubject();
-                        dispatcher = connection.createDispatcher();
-                        final var pushOptions = createPushSubscribeOptions(configuration);
-                        subscription = jetStream.subscribe(subject, dispatcher, emitter::emit, false, pushOptions);
-                        setStatus(true, "Is connected");
-                    } catch (JetStreamApiException e) {
-                        if (CONSUMER_ALREADY_IN_USE == e.getApiErrorCode()) {
-                            setStatus(true, "Consumer already in use");
-                            emitter.fail(e);
-                        } else {
-                            logger.errorf(e, "Failed subscribing to stream with message: %s", e.getMessage());
-                            setStatus(false, e.getMessage());
-                            emitter.fail(e);
-                        }
-                    } catch (Throwable e) {
-                        logger.errorf(e, "Failed subscribing to stream with message: %s", e.getMessage());
-                        setStatus(false, e.getMessage());
-                        emitter.fail(e);
-                    }
-                })
+        return Multi.createFrom().<io.nats.client.Message> emitter(emitter -> {
+            try {
+                final var jetStream = connection.jetStream();
+                final var subject = configuration.getSubject();
+                dispatcher = connection.createDispatcher();
+                final var pushOptions = createPushSubscribeOptions(configuration);
+                subscription = jetStream.subscribe(subject, dispatcher, emitter::emit, false, pushOptions);
+                setStatus(true, "Is connected");
+            } catch (JetStreamApiException e) {
+                if (CONSUMER_ALREADY_IN_USE == e.getApiErrorCode()) {
+                    setStatus(true, "Consumer already in use");
+                    emitter.fail(e);
+                } else {
+                    logger.errorf(e, "Failed subscribing to stream with message: %s", e.getMessage());
+                    setStatus(false, e.getMessage());
+                    emitter.fail(e);
+                }
+            } catch (Throwable e) {
+                logger.errorf(e, "Failed subscribing to stream with message: %s", e.getMessage());
+                setStatus(false, e.getMessage());
+                emitter.fail(e);
+            }
+        })
                 .onTermination().invoke(() -> shutDown(dispatcher))
                 .emitOn(runnable -> connection.context().runOnContext(runnable))
                 .map(message -> create(message, traceEnabled, payloadType, connection.context()));
@@ -175,7 +175,7 @@ public class MessagePublisherProcessor implements MessageProcessor {
     }
 
     private org.eclipse.microprofile.reactive.messaging.Message<?> create(io.nats.client.Message message,
-                                                                          boolean tracingEnabled, Class<?> payloadType, Context context) {
+            boolean tracingEnabled, Class<?> payloadType, Context context) {
         final var incomingMessage = payloadType != null
                 ? new JetStreamIncomingMessage<>(message, payloadMapper.toPayload(message, payloadType), context)
                 : new JetStreamIncomingMessage<>(message, payloadMapper.toPayload(message).orElse(null), context);
@@ -187,7 +187,7 @@ public class MessagePublisherProcessor implements MessageProcessor {
     }
 
     private Multi<org.eclipse.microprofile.reactive.messaging.Message<?>> createMulti(io.nats.client.Message message,
-                                                                                      boolean tracingEnabled, Class<?> payloadType, Context context) {
+            boolean tracingEnabled, Class<?> payloadType, Context context) {
         if (message == null || message.getData() == null) {
             return Multi.createFrom().empty();
         } else {
@@ -211,7 +211,7 @@ public class MessagePublisherProcessor implements MessageProcessor {
     }
 
     static PushSubscribeOptions createPushSubscribeOptions(final String durable, final String deliverGroup, String[] backoff,
-                                                           Long maxDeliever) {
+            Long maxDeliever) {
         return PushSubscribeOptions.builder()
                 .deliverGroup(deliverGroup)
                 .durable(durable)
@@ -246,7 +246,7 @@ public class MessagePublisherProcessor implements MessageProcessor {
             return Optional.empty();
         } else {
             return Optional.of(Arrays.stream(backoff).map(MessagePublisherProcessor::toDuration).toList()
-                    .toArray(new Duration[]{}));
+                    .toArray(new Duration[] {}));
         }
     }
 
