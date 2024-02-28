@@ -1,17 +1,5 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.processors.publisher;
 
-import static io.smallrye.reactive.messaging.tracing.TracingUtils.traceIncoming;
-
-import java.time.Duration;
-import java.util.Arrays;
-import java.util.Optional;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicReference;
-
-import org.eclipse.microprofile.reactive.messaging.Message;
-import org.jboss.logging.Logger;
-
 import io.nats.client.*;
 import io.nats.client.api.ConsumerConfiguration;
 import io.opentelemetry.instrumentation.api.instrumenter.Instrumenter;
@@ -25,6 +13,17 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.tracing.JetStreamInstrum
 import io.quarkiverse.reactive.messaging.nats.jetstream.tracing.JetStreamTrace;
 import io.smallrye.mutiny.Multi;
 import io.vertx.mutiny.core.Context;
+import org.eclipse.microprofile.reactive.messaging.Message;
+import org.jboss.logging.Logger;
+
+import java.time.Duration;
+import java.util.Arrays;
+import java.util.Optional;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicReference;
+
+import static io.smallrye.reactive.messaging.tracing.TracingUtils.traceIncoming;
 
 public class MessagePublisherProcessor implements MessageProcessor {
     private final static Logger logger = Logger.getLogger(MessagePublisherProcessor.class);
@@ -38,12 +37,13 @@ public class MessagePublisherProcessor implements MessageProcessor {
     private final AtomicReference<Status> status;
 
     private volatile JetStreamSubscription subscription;
+    private volatile Dispatcher dispatcher;
     private volatile boolean closed = false;
 
     public MessagePublisherProcessor(final JetStreamClient jetStreamClient,
-            final MessagePublisherConfiguration configuration,
-            final PayloadMapper payloadMapper,
-            final JetStreamInstrumenter jetStreamInstrumenter) {
+                                     final MessagePublisherConfiguration configuration,
+                                     final PayloadMapper payloadMapper,
+                                     final JetStreamInstrumenter jetStreamInstrumenter) {
         this.configuration = configuration;
         this.jetStreamClient = jetStreamClient;
         this.payloadMapper = payloadMapper;
@@ -59,11 +59,19 @@ public class MessagePublisherProcessor implements MessageProcessor {
     @Override
     public void close() {
         try {
-            subscription.drain(Duration.ofMillis(1000));
-        } catch (InterruptedException e) {
-            logger.errorf("Interrupted while draining subscription");
+            if (subscription.isActive()) {
+                subscription.drain(Duration.ofMillis(1000));
+            }
+        } catch (InterruptedException | IllegalStateException e) {
+            logger.warnf("Interrupted while draining subscription");
         }
-        subscription.unsubscribe();
+        try {
+            if (subscription.isActive()) {
+                subscription.unsubscribe();
+            }
+        } catch (IllegalStateException e) {
+            logger.warnf("Failed to unsubscribe subscription");
+        }
         closed = true;
         jetStreamClient.close();
     }
@@ -89,29 +97,31 @@ public class MessagePublisherProcessor implements MessageProcessor {
     public Multi<org.eclipse.microprofile.reactive.messaging.Message<?>> push(Connection connection) {
         boolean traceEnabled = configuration.traceEnabled();
         Class<?> payloadType = configuration.getType().map(PayloadMapper::loadClass).orElse(null);
-        return Multi.createFrom().<io.nats.client.Message> emitter(emitter -> {
-            try {
-                final var jetStream = connection.jetStream();
-                final var subject = configuration.getSubject();
-                final var dispatcher = connection.createDispatcher();
-                final var pushOptions = createPushSubscribeOptions(configuration);
-                subscription = jetStream.subscribe(subject, dispatcher, emitter::emit, false, pushOptions);
-                setStatus(true, "Is connected");
-            } catch (JetStreamApiException e) {
-                if (CONSUMER_ALREADY_IN_USE == e.getApiErrorCode()) {
-                    setStatus(true, "Consumer already in use");
-                    emitter.fail(e);
-                } else {
-                    logger.errorf(e, "Failed subscribing to stream with message: %s", e.getMessage());
-                    setStatus(false, e.getMessage());
-                    emitter.fail(e);
-                }
-            } catch (Throwable e) {
-                logger.errorf(e, "Failed subscribing to stream with message: %s", e.getMessage());
-                setStatus(false, e.getMessage());
-                emitter.fail(e);
-            }
-        }).emitOn(runnable -> connection.context().runOnContext(runnable))
+        return Multi.createFrom().<io.nats.client.Message>emitter(emitter -> {
+                    try {
+                        final var jetStream = connection.jetStream();
+                        final var subject = configuration.getSubject();
+                        dispatcher = connection.createDispatcher();
+                        final var pushOptions = createPushSubscribeOptions(configuration);
+                        subscription = jetStream.subscribe(subject, dispatcher, emitter::emit, false, pushOptions);
+                        setStatus(true, "Is connected");
+                    } catch (JetStreamApiException e) {
+                        if (CONSUMER_ALREADY_IN_USE == e.getApiErrorCode()) {
+                            setStatus(true, "Consumer already in use");
+                            emitter.fail(e);
+                        } else {
+                            logger.errorf(e, "Failed subscribing to stream with message: %s", e.getMessage());
+                            setStatus(false, e.getMessage());
+                            emitter.fail(e);
+                        }
+                    } catch (Throwable e) {
+                        logger.errorf(e, "Failed subscribing to stream with message: %s", e.getMessage());
+                        setStatus(false, e.getMessage());
+                        emitter.fail(e);
+                    }
+                })
+                .onTermination().invoke(() -> shutDown(dispatcher))
+                .emitOn(runnable -> connection.context().runOnContext(runnable))
                 .map(message -> create(message, traceEnabled, payloadType, connection.context()));
     }
 
@@ -133,9 +143,9 @@ public class MessagePublisherProcessor implements MessageProcessor {
                     .supplier(() -> nextNatsMessage(reader, pollTimeout))
                     .until(message -> closed || !subscription.isActive())
                     .runSubscriptionOn(pullExecutor)
-                    .onTermination().invoke(pullExecutor::shutdownNow)
+                    .onTermination().invoke(() -> shutDown(pullExecutor))
                     .emitOn(runnable -> connection.context().runOnContext(runnable))
-                    .map(message -> create(message, traceEnabled, payloadType, connection.context()));
+                    .flatMap(message -> createMulti(message, traceEnabled, payloadType, connection.context()));
         } catch (Throwable e) {
             logger.errorf(e, "Failed subscribing to stream with message: %s", e.getMessage());
             setStatus(false, e.getMessage());
@@ -165,7 +175,7 @@ public class MessagePublisherProcessor implements MessageProcessor {
     }
 
     private org.eclipse.microprofile.reactive.messaging.Message<?> create(io.nats.client.Message message,
-            boolean tracingEnabled, Class<?> payloadType, Context context) {
+                                                                          boolean tracingEnabled, Class<?> payloadType, Context context) {
         final var incomingMessage = payloadType != null
                 ? new JetStreamIncomingMessage<>(message, payloadMapper.toPayload(message, payloadType), context)
                 : new JetStreamIncomingMessage<>(message, payloadMapper.toPayload(message).orElse(null), context);
@@ -176,9 +186,17 @@ public class MessagePublisherProcessor implements MessageProcessor {
         }
     }
 
+    private Multi<org.eclipse.microprofile.reactive.messaging.Message<?>> createMulti(io.nats.client.Message message,
+                                                                                      boolean tracingEnabled, Class<?> payloadType, Context context) {
+        if (message == null || message.getData() == null) {
+            return Multi.createFrom().empty();
+        } else {
+            return Multi.createFrom().item(() -> create(message, tracingEnabled, payloadType, context));
+        }
+    }
+
     private boolean isConsumerAlreadyInUse(Throwable throwable) {
-        if (throwable instanceof JetStreamApiException) {
-            final var jetStreamApiException = (JetStreamApiException) throwable;
+        if (throwable instanceof JetStreamApiException jetStreamApiException) {
             return jetStreamApiException.getApiErrorCode() == CONSUMER_ALREADY_IN_USE;
         }
         return false;
@@ -193,7 +211,7 @@ public class MessagePublisherProcessor implements MessageProcessor {
     }
 
     static PushSubscribeOptions createPushSubscribeOptions(final String durable, final String deliverGroup, String[] backoff,
-            Long maxDeliever) {
+                                                           Long maxDeliever) {
         return PushSubscribeOptions.builder()
                 .deliverGroup(deliverGroup)
                 .durable(durable)
@@ -228,7 +246,7 @@ public class MessagePublisherProcessor implements MessageProcessor {
             return Optional.empty();
         } else {
             return Optional.of(Arrays.stream(backoff).map(MessagePublisherProcessor::toDuration).toList()
-                    .toArray(new Duration[] {}));
+                    .toArray(new Duration[]{}));
         }
     }
 
@@ -236,4 +254,23 @@ public class MessagePublisherProcessor implements MessageProcessor {
         return Duration.parse(value);
     }
 
+    private void shutDown(ExecutorService pullExecutor) {
+        try {
+            pullExecutor.shutdownNow();
+        } catch (Exception e) {
+            logger.errorf(e, "Failed to shutdown pull executor");
+        }
+        close();
+    }
+
+    private void shutDown(Dispatcher dispatcher) {
+        try {
+            if (dispatcher != null && dispatcher.isActive()) {
+                dispatcher.unsubscribe(subscription);
+            }
+        } catch (Exception e) {
+            logger.errorf(e, "Failed to shutdown pull executor");
+        }
+        close();
+    }
 }

@@ -1,5 +1,7 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client;
 
+import static io.quarkiverse.reactive.messaging.nats.jetstream.mapper.PayloadMapper.loadClass;
+
 import java.lang.reflect.InvocationTargetException;
 import java.util.Optional;
 
@@ -55,10 +57,10 @@ class DefaultConnectionConfiguration implements ConnectionConfiguration {
 
     private ErrorListener getInstanceOfErrorListener(String className) {
         try {
-            var clazz = Class.forName(className);
+            var clazz = loadClass(className);
             var constructor = clazz.getConstructor();
             return (ErrorListener) constructor.newInstance();
-        } catch (ClassNotFoundException | NoSuchMethodException | InstantiationException | IllegalAccessException
+        } catch (NoSuchMethodException | InstantiationException | IllegalAccessException
                 | InvocationTargetException e) {
             throw new RuntimeException("Not able to create instance of error listener", e);
         }
