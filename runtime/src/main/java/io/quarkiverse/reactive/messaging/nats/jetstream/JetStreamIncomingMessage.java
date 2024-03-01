@@ -94,7 +94,6 @@ public class JetStreamIncomingMessage<T> implements JetStreamMessage<T> {
             } else {
                 message.nak();
             }
-
             this.runOnMessageContext(() -> f.complete(null));
         });
     }

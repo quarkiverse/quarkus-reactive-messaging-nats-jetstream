@@ -53,6 +53,7 @@ public class MessageSubscriberProcessor implements MessageProcessor {
                 .onItem()
                 .transformToUniAndConcatenate(this::send)
                 .onCompletion().invoke(this::close)
+                .onTermination().invoke(this::close)
                 .onFailure().invoke(throwable -> {
                     logger.errorf(throwable, "Failed to publish: %s", throwable.getMessage());
                     close();
