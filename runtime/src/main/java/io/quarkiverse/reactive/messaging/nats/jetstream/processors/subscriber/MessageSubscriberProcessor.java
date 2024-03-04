@@ -4,6 +4,7 @@ import static io.quarkiverse.reactive.messaging.nats.jetstream.mapper.HeaderMapp
 import static io.quarkiverse.reactive.messaging.nats.jetstream.mapper.PayloadMapper.MESSAGE_TYPE_HEADER;
 import static io.smallrye.reactive.messaging.tracing.TracingUtils.traceOutgoing;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
@@ -12,6 +13,7 @@ import java.util.concurrent.Flow;
 import org.eclipse.microprofile.reactive.messaging.Message;
 import org.jboss.logging.Logger;
 
+import io.nats.client.JetStreamApiException;
 import io.nats.client.PublishOptions;
 import io.opentelemetry.instrumentation.api.instrumenter.Instrumenter;
 import io.quarkiverse.reactive.messaging.nats.jetstream.JetStreamOutgoingMessageMetadata;
@@ -83,9 +85,8 @@ public class MessageSubscriberProcessor implements MessageProcessor {
             jetStream.publish(subject, toJetStreamHeaders(headers), payload, options);
 
             return message;
-        } catch (Exception e) {
-            logger.errorf(e, "Failed to publish message: %s", e.getMessage());
-            throw new RuntimeException(e);
+        } catch (IOException | JetStreamApiException e) {
+            throw new MessageSubscriberException(String.format("Failed to publish message: %s", e.getMessage()), e);
         }
     }
 
@@ -116,7 +117,7 @@ public class MessageSubscriberProcessor implements MessageProcessor {
                 .transformToUni(connection -> send(message, connection));
     }
 
-    private Uni<? extends Message<?>> send(Message<?> message, Connection connection) {
+    private Uni<Message<?>> send(Message<?> message, Connection connection) {
         return Uni.createFrom().<Message<?>> emitter(em -> {
             try {
                 em.complete(publish(connection, message));
@@ -124,7 +125,20 @@ public class MessageSubscriberProcessor implements MessageProcessor {
                 logger.errorf(e, "Failed sending message: %s", e.getMessage());
                 em.fail(e);
             }
-        }).emitOn(runnable -> connection.context().runOnContext(runnable));
+        })
+                .emitOn(runnable -> connection.context().runOnContext(runnable))
+                .onItem().transformToUni(this::acknowledge)
+                .onFailure().recoverWithUni(throwable -> notAcknowledge(message, throwable));
+    }
+
+    private Uni<Message<?>> acknowledge(Message<?> message) {
+        return Uni.createFrom().completionStage(message.ack())
+                .onItem().transform(v -> message);
+    }
+
+    private Uni<Message<?>> notAcknowledge(Message<?> message, Throwable throwable) {
+        return Uni.createFrom().completionStage(message.nack(throwable))
+                .onItem().transform(v -> null);
     }
 
     private Uni<Connection> getOrEstablishConnection() {
