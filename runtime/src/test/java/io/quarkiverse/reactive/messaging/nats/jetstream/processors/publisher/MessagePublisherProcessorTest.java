@@ -7,7 +7,6 @@ import java.time.Duration;
 
 import org.junit.jupiter.api.Test;
 
-
 public class MessagePublisherProcessorTest {
 
     @Test

@@ -3,7 +3,6 @@ package io.quarkiverse.reactive.messaging.nats.jetstream;
 import static io.quarkiverse.reactive.messaging.nats.jetstream.mapper.HeaderMapper.toMessageHeaders;
 import static io.smallrye.reactive.messaging.providers.locals.ContextAwareMessage.captureContextMetadata;
 
-import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
@@ -22,15 +21,13 @@ public class JetStreamIncomingMessage<T> implements JetStreamMessage<T> {
     private final JetStreamIncomingMessageMetadata incomingMetadata;
     private final T payload;
     private final Context context;
-    private final boolean exponentialBackoff;
-    private final Duration exponentialBackoffMaxDuration;
+    private final ExponentialBackoff exponentialBackoff;
 
-    public JetStreamIncomingMessage(final Message message, final T payload, Context context, boolean exponentialBackoff,
-                                    Duration exponentialBackoffMaxDuration) {
+    public JetStreamIncomingMessage(final Message message, final T payload, Context context,
+            ExponentialBackoff exponentialBackoff) {
         this.message = message;
         this.incomingMetadata = JetStreamIncomingMessageMetadata.create(message);
         this.exponentialBackoff = exponentialBackoff;
-        this.exponentialBackoffMaxDuration = exponentialBackoffMaxDuration;
         this.metadata = captureContextMetadata(incomingMetadata);
         this.payload = payload;
         this.context = context;
@@ -82,16 +79,10 @@ public class JetStreamIncomingMessage<T> implements JetStreamMessage<T> {
     @Override
     public CompletionStage<Void> nack(Throwable reason, Metadata metadata) {
         return VertxContext.runOnContext(context.getDelegate(), f -> {
-            if (exponentialBackoff) {
+            if (exponentialBackoff.isEnabled()) {
                 metadata.get(JetStreamIncomingMessageMetadata.class)
-                        .ifPresentOrElse(m -> {
-                            long backoffSeconds = Math.round(Math.pow(2D, m.deliveredCount()));
-                            if (backoffSeconds < exponentialBackoffMaxDuration.getSeconds()) {
-                                message.nakWithDelay(Duration.ofSeconds(backoffSeconds));
-                            } else {
-                                message.nakWithDelay(exponentialBackoffMaxDuration);
-                            }
-                        }, message::nak);
+                        .ifPresentOrElse(m -> message.nakWithDelay(exponentialBackoff.getDuration(m.deliveredCount())),
+                                message::nak);
             } else {
                 message.nak();
             }
