@@ -1,11 +1,12 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.processors.publisher;
 
-import org.junit.jupiter.api.Test;
+import static io.quarkiverse.reactive.messaging.nats.jetstream.processors.publisher.MessagePublisherProcessor.createPushSubscribeOptions;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.Duration;
 
-import static io.quarkiverse.reactive.messaging.nats.jetstream.processors.publisher.MessagePublisherProcessor.createPushSubscribeOptions;
-import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.jupiter.api.Test;
+
 
 public class MessagePublisherProcessorTest {
 

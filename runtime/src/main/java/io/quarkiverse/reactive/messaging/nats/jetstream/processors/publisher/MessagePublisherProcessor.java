@@ -1,6 +1,5 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.processors.publisher;
 
-
 import static io.smallrye.reactive.messaging.tracing.TracingUtils.traceIncoming;
 
 import java.time.Duration;
@@ -12,6 +11,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.microprofile.reactive.messaging.Message;
 import org.jboss.logging.Logger;
+
 import io.nats.client.*;
 import io.nats.client.api.ConsumerConfiguration;
 import io.opentelemetry.instrumentation.api.instrumenter.Instrumenter;
@@ -25,18 +25,6 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.tracing.JetStreamInstrum
 import io.quarkiverse.reactive.messaging.nats.jetstream.tracing.JetStreamTrace;
 import io.smallrye.mutiny.Multi;
 import io.vertx.mutiny.core.Context;
-import org.eclipse.microprofile.reactive.messaging.Message;
-import org.jboss.logging.Logger;
-
-import java.time.Duration;
-import java.util.Arrays;
-import java.util.Optional;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Collectors;
-
-import static io.smallrye.reactive.messaging.tracing.TracingUtils.traceIncoming;
 
 public class MessagePublisherProcessor implements MessageProcessor {
     private final static Logger logger = Logger.getLogger(MessagePublisherProcessor.class);

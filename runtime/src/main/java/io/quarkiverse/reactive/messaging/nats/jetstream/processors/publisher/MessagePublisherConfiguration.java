@@ -1,9 +1,9 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.processors.publisher;
 
-import io.quarkiverse.reactive.messaging.nats.jetstream.JetStreamConnectorIncomingConfiguration;
-
 import java.time.Duration;
 import java.util.Optional;
+
+import io.quarkiverse.reactive.messaging.nats.jetstream.JetStreamConnectorIncomingConfiguration;
 
 public interface MessagePublisherConfiguration {
 

@@ -1,9 +1,7 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream;
 
-import io.nats.client.Message;
-import io.smallrye.reactive.messaging.providers.helpers.VertxContext;
-import io.vertx.mutiny.core.Context;
-import org.eclipse.microprofile.reactive.messaging.Metadata;
+import static io.quarkiverse.reactive.messaging.nats.jetstream.mapper.HeaderMapper.toMessageHeaders;
+import static io.smallrye.reactive.messaging.providers.locals.ContextAwareMessage.captureContextMetadata;
 
 import java.time.Duration;
 import java.util.List;
@@ -12,8 +10,11 @@ import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import static io.quarkiverse.reactive.messaging.nats.jetstream.mapper.HeaderMapper.toMessageHeaders;
-import static io.smallrye.reactive.messaging.providers.locals.ContextAwareMessage.captureContextMetadata;
+import org.eclipse.microprofile.reactive.messaging.Metadata;
+
+import io.nats.client.Message;
+import io.smallrye.reactive.messaging.providers.helpers.VertxContext;
+import io.vertx.mutiny.core.Context;
 
 public class JetStreamIncomingMessage<T> implements JetStreamMessage<T> {
     private final Message message;
