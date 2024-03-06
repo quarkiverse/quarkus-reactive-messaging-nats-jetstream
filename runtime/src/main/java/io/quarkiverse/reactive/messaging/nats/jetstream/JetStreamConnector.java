@@ -25,6 +25,8 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.mapper.PayloadMapper;
 import io.quarkiverse.reactive.messaging.nats.jetstream.processors.MessageProcessor;
 import io.quarkiverse.reactive.messaging.nats.jetstream.processors.publisher.MessagePublisherConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.processors.publisher.MessagePublisherProcessor;
+import io.quarkiverse.reactive.messaging.nats.jetstream.processors.publisher.MessagePullPublisherProcessor;
+import io.quarkiverse.reactive.messaging.nats.jetstream.processors.publisher.MessagePushPublisherProcessor;
 import io.quarkiverse.reactive.messaging.nats.jetstream.processors.subscriber.MessageSubscriberConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.processors.subscriber.MessageSubscriberProcessor;
 import io.quarkiverse.reactive.messaging.nats.jetstream.tracing.JetStreamInstrumenter;
@@ -84,8 +86,7 @@ public class JetStreamConnector implements InboundConnector, OutboundConnector, 
     public Flow.Publisher<? extends Message<?>> getPublisher(Config config) {
         final var configuration = new JetStreamConnectorIncomingConfiguration(config);
         final var client = new JetStreamClient(ConnectionConfiguration.of(natsConfiguration), getVertx());
-        final var processor = new MessagePublisherProcessor(client, MessagePublisherConfiguration.of(configuration),
-                payloadMapper, jetStreamInstrumenter);
+        final var processor = createMessagePublisherProcessor(client, configuration);
         processors.add(processor);
         return processor.getPublisher();
     }
@@ -126,5 +127,20 @@ public class JetStreamConnector implements InboundConnector, OutboundConnector, 
 
     public Vertx getVertx() {
         return executionHolder.vertx();
+    }
+
+    private MessagePublisherProcessor createMessagePublisherProcessor(JetStreamClient client,
+            JetStreamConnectorIncomingConfiguration configuration) {
+        if (configuration.getPull()) {
+            return new MessagePullPublisherProcessor(client,
+                    MessagePublisherConfiguration.of(configuration),
+                    payloadMapper,
+                    jetStreamInstrumenter);
+        } else {
+            return new MessagePushPublisherProcessor(client,
+                    MessagePublisherConfiguration.of(configuration),
+                    payloadMapper,
+                    jetStreamInstrumenter);
+        }
     }
 }

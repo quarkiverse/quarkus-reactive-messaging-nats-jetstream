@@ -1,6 +1,5 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.processors.publisher;
 
-import static io.quarkiverse.reactive.messaging.nats.jetstream.processors.publisher.MessagePublisherProcessor.createPushSubscribeOptions;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.Duration;
@@ -16,7 +15,8 @@ public class MessagePublisherProcessorTest {
         final var backoff = new String[] { "PT1S" };
         final var maxDeliever = 3L;
 
-        final var options = createPushSubscribeOptions(durable, deleiverGroup, backoff, maxDeliever);
+        final var factory = new PushSubscribeOptionsFactory();
+        final var options = factory.create(durable, deleiverGroup, backoff, maxDeliever);
 
         assertThat(options.getDurable()).isEqualTo(durable);
         assertThat(options.getDeliverGroup()).isEqualTo(deleiverGroup);
