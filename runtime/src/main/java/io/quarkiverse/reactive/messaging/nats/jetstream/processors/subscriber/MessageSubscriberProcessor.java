@@ -9,6 +9,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.Flow;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.microprofile.reactive.messaging.Message;
 import org.jboss.logging.Logger;
@@ -36,6 +37,7 @@ public class MessageSubscriberProcessor implements MessageProcessor {
     private final Instrumenter<JetStreamTrace, Void> instrumenter;
     private final String streamName;
     private final String subject;
+    private final AtomicReference<Status> status;
 
     public MessageSubscriberProcessor(final JetStreamClient jetStreamClient,
             final MessageSubscriberConfiguration configuration,
@@ -47,6 +49,7 @@ public class MessageSubscriberProcessor implements MessageProcessor {
         this.instrumenter = jetStreamInstrumenter.publisher();
         this.streamName = getStreamName(configuration);
         this.subject = getSubject(configuration);
+        this.status = new AtomicReference<>(new Status(true, "Not connected"));
     }
 
     public Flow.Subscriber<? extends Message<?>> getSubscriber() {
@@ -58,6 +61,7 @@ public class MessageSubscriberProcessor implements MessageProcessor {
                 .onTermination().invoke(this::close)
                 .onFailure().invoke(throwable -> {
                     logger.errorf(throwable, "Failed to publish: %s", throwable.getMessage());
+                    status.set(new Status(false, throwable.getMessage()));
                     close();
                 }));
     }
@@ -86,6 +90,7 @@ public class MessageSubscriberProcessor implements MessageProcessor {
 
             return message;
         } catch (IOException | JetStreamApiException e) {
+            status.set(new Status(false, e.getMessage()));
             throw new MessageSubscriberException(String.format("Failed to publish message: %s", e.getMessage()), e);
         }
     }
@@ -96,9 +101,7 @@ public class MessageSubscriberProcessor implements MessageProcessor {
      */
     @Override
     public Status getStatus() {
-        return jetStreamClient.getConnection()
-                .map(c -> new Status(c.isConnected(), c.isConnected() ? "Is connected" : "Not connected"))
-                .orElseGet(() -> new Status(true, "Not connected"));
+        return status.get();
     }
 
     @Override
@@ -142,7 +145,10 @@ public class MessageSubscriberProcessor implements MessageProcessor {
     }
 
     private Uni<Connection> getOrEstablishConnection() {
-        return jetStreamClient.getOrEstablishConnection();
+        return jetStreamClient.getOrEstablishConnection()
+                .onItem().invoke(() -> status.set(new Status(true, "Is connected")))
+                .onFailure().invoke(throwable -> status.set(
+                        new Status(false, "Connection failed with message: " + throwable.getMessage())));
     }
 
     private String getStreamName(final MessageSubscriberConfiguration configuration) {
