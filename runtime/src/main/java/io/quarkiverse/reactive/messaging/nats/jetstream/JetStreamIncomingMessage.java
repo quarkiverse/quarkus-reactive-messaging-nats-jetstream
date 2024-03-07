@@ -21,10 +21,13 @@ public class JetStreamIncomingMessage<T> implements JetStreamMessage<T> {
     private final JetStreamIncomingMessageMetadata incomingMetadata;
     private final T payload;
     private final Context context;
+    private final ExponentialBackoff exponentialBackoff;
 
-    public JetStreamIncomingMessage(final Message message, final T payload, Context context) {
+    public JetStreamIncomingMessage(final Message message, final T payload, Context context,
+            ExponentialBackoff exponentialBackoff) {
         this.message = message;
         this.incomingMetadata = JetStreamIncomingMessageMetadata.create(message);
+        this.exponentialBackoff = exponentialBackoff;
         this.metadata = captureContextMetadata(incomingMetadata);
         this.payload = payload;
         this.context = context;
@@ -76,7 +79,13 @@ public class JetStreamIncomingMessage<T> implements JetStreamMessage<T> {
     @Override
     public CompletionStage<Void> nack(Throwable reason, Metadata metadata) {
         return VertxContext.runOnContext(context.getDelegate(), f -> {
-            message.nak();
+            if (exponentialBackoff.isEnabled()) {
+                metadata.get(JetStreamIncomingMessageMetadata.class)
+                        .ifPresentOrElse(m -> message.nakWithDelay(exponentialBackoff.getDuration(m.deliveredCount())),
+                                message::nak);
+            } else {
+                message.nak();
+            }
             this.runOnMessageContext(() -> f.complete(null));
         });
     }

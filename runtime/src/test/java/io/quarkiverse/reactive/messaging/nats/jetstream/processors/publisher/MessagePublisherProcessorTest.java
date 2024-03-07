@@ -24,5 +24,4 @@ public class MessagePublisherProcessorTest {
         assertThat(options.getConsumerConfiguration().getBackoff()).hasSize(1);
         assertThat(options.getConsumerConfiguration().getBackoff()).contains(Duration.ofSeconds(1));
     }
-
 }

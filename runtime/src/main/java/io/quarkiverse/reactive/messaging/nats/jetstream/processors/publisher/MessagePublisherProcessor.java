@@ -15,6 +15,7 @@ import org.jboss.logging.Logger;
 import io.nats.client.*;
 import io.nats.client.api.ConsumerConfiguration;
 import io.opentelemetry.instrumentation.api.instrumenter.Instrumenter;
+import io.quarkiverse.reactive.messaging.nats.jetstream.ExponentialBackoff;
 import io.quarkiverse.reactive.messaging.nats.jetstream.JetStreamIncomingMessage;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.Connection;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.JetStreamClient;
@@ -96,8 +97,6 @@ public class MessagePublisherProcessor implements MessageProcessor {
     }
 
     public Multi<org.eclipse.microprofile.reactive.messaging.Message<?>> push(Connection connection) {
-        boolean traceEnabled = configuration.traceEnabled();
-        Class<?> payloadType = configuration.getType().map(PayloadMapper::loadClass).orElse(null);
         return Multi.createFrom().<io.nats.client.Message> emitter(emitter -> {
             try {
                 final var jetStream = connection.jetStream();
@@ -123,15 +122,13 @@ public class MessagePublisherProcessor implements MessageProcessor {
         })
                 .onTermination().invoke(() -> shutDown(dispatcher))
                 .emitOn(runnable -> connection.context().runOnContext(runnable))
-                .map(message -> create(message, traceEnabled, payloadType, connection.context()));
+                .map(message -> create(message, connection.context(), configuration));
     }
 
-    public Multi<org.eclipse.microprofile.reactive.messaging.Message<?>> pull(Connection connection) {
-        boolean traceEnabled = configuration.traceEnabled();
+    public Multi<? extends org.eclipse.microprofile.reactive.messaging.Message<?>> pull(Connection connection) {
         int batchSize = configuration.getPullBatchSize();
         int repullAt = configuration.getPullRepullAt();
         Duration pollTimeout = Duration.ofMillis(configuration.getPullPollTimeout());
-        Class<?> payloadType = configuration.getType().map(PayloadMapper::loadClass).orElse(null);
         ExecutorService pullExecutor = Executors.newSingleThreadExecutor(JetstreamWorkerThread::new);
         try {
             var jetStream = connection.jetStream();
@@ -146,7 +143,7 @@ public class MessagePublisherProcessor implements MessageProcessor {
                     .runSubscriptionOn(pullExecutor)
                     .onTermination().invoke(() -> shutDown(pullExecutor))
                     .emitOn(runnable -> connection.context().runOnContext(runnable))
-                    .flatMap(message -> createMulti(message, traceEnabled, payloadType, connection.context()));
+                    .flatMap(message -> createMulti(message, connection.context(), configuration));
         } catch (Throwable e) {
             logger.errorf(e, "Failed subscribing to stream with message: %s", e.getMessage());
             setStatus(false, e.getMessage());
@@ -176,11 +173,18 @@ public class MessagePublisherProcessor implements MessageProcessor {
     }
 
     private org.eclipse.microprofile.reactive.messaging.Message<?> create(io.nats.client.Message message,
-            boolean tracingEnabled, Class<?> payloadType, Context context) {
+            Context context, MessagePublisherConfiguration configuration) {
+
+        ExponentialBackoff exponentialBackoff = new ExponentialBackoff(configuration.getExponentialBackoff(),
+                configuration.getExponentialBackoffMaxDuration());
+        Class<?> payloadType = configuration.getType().map(PayloadMapper::loadClass).orElse(null);
         final var incomingMessage = payloadType != null
-                ? new JetStreamIncomingMessage<>(message, payloadMapper.toPayload(message, payloadType), context)
-                : new JetStreamIncomingMessage<>(message, payloadMapper.toPayload(message).orElse(null), context);
-        if (tracingEnabled) {
+                ? new JetStreamIncomingMessage<>(message, payloadMapper.toPayload(message, payloadType), context,
+                        exponentialBackoff)
+                : new JetStreamIncomingMessage<>(message, payloadMapper.toPayload(message).orElse(null), context,
+                        exponentialBackoff);
+
+        if (configuration.traceEnabled()) {
             return traceIncoming(instrumenter, incomingMessage, JetStreamTrace.trace(incomingMessage));
         } else {
             return incomingMessage;
@@ -188,11 +192,11 @@ public class MessagePublisherProcessor implements MessageProcessor {
     }
 
     private Multi<org.eclipse.microprofile.reactive.messaging.Message<?>> createMulti(io.nats.client.Message message,
-            boolean tracingEnabled, Class<?> payloadType, Context context) {
+            Context context, MessagePublisherConfiguration configuration) {
         if (message == null || message.getData() == null) {
             return Multi.createFrom().empty();
         } else {
-            return Multi.createFrom().item(() -> create(message, tracingEnabled, payloadType, context));
+            return Multi.createFrom().item(() -> create(message, context, configuration));
         }
     }
 
