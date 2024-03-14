@@ -32,6 +32,8 @@ public interface MessagePublisherProcessor extends MessageProcessor {
                     close();
                 })
                 .onFailure().retry().withBackOff(Duration.ofMillis(configuration().getRetryBackoff())).indefinitely()
+                .onTermination().invoke(this::close)
+                .onCancellation().invoke(this::close)
                 .onCompletion().invoke(this::close);
     }
 

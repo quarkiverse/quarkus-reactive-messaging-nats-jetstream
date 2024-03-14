@@ -111,6 +111,8 @@ public class MessagePullPublisherProcessor implements MessagePublisherProcessor 
                     .until(message -> closed || !subscription.isActive())
                     .runSubscriptionOn(pullExecutor)
                     .onTermination().invoke(() -> shutDown(pullExecutor))
+                    .onCompletion().invoke(() -> shutDown(pullExecutor))
+                    .onCancellation().invoke(() -> shutDown(pullExecutor))
                     .emitOn(runnable -> connection.context().runOnContext(runnable))
                     .flatMap(message -> createMulti(message, traceEnabled, payloadType, connection.context()));
         } catch (Throwable e) {

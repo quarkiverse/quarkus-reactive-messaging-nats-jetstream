@@ -7,7 +7,9 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.jboss.logging.Logger;
 
-import io.nats.client.*;
+import io.nats.client.Dispatcher;
+import io.nats.client.JetStreamApiException;
+import io.nats.client.JetStreamSubscription;
 import io.opentelemetry.instrumentation.api.instrumenter.Instrumenter;
 import io.quarkiverse.reactive.messaging.nats.jetstream.ExponentialBackoff;
 import io.quarkiverse.reactive.messaging.nats.jetstream.JetStreamIncomingMessage;
@@ -72,11 +74,11 @@ public class MessagePushPublisherProcessor implements MessagePublisherProcessor 
             logger.warnf("Interrupted while draining subscription");
         }
         try {
-            if (subscription.isActive()) {
-                subscription.unsubscribe();
+            if (dispatcher.isActive()) {
+                dispatcher.unsubscribe(subscription);
             }
         } catch (IllegalStateException e) {
-            logger.warnf("Failed to unsubscribe subscription");
+            logger.warnf(e, "Failed to unsubscribe subscription with message: %s", e.getMessage());
         }
         jetStreamClient.close();
     }
@@ -114,6 +116,8 @@ public class MessagePushPublisherProcessor implements MessagePublisherProcessor 
             }
         })
                 .onTermination().invoke(() -> shutDown(dispatcher))
+                .onCompletion().invoke(() -> shutDown(dispatcher))
+                .onCancellation().invoke(() -> shutDown(dispatcher))
                 .emitOn(runnable -> connection.context().runOnContext(runnable))
                 .map(message -> create(message, traceEnabled, payloadType, connection.context(), configuration));
     }
