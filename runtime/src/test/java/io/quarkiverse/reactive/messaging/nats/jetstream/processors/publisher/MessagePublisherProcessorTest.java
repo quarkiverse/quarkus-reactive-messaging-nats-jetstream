@@ -16,7 +16,7 @@ public class MessagePublisherProcessorTest {
         final var maxDeliever = 3L;
 
         final var factory = new PushSubscribeOptionsFactory();
-        final var options = factory.create(durable, deleiverGroup, backoff, maxDeliever);
+        final var options = factory.create(durable, deleiverGroup, backoff, maxDeliever, null);
 
         assertThat(options.getDurable()).isEqualTo(durable);
         assertThat(options.getDeliverGroup()).isEqualTo(deleiverGroup);

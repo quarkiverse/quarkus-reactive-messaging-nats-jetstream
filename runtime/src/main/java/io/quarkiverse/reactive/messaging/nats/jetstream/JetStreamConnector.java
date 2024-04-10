@@ -54,6 +54,7 @@ import io.vertx.mutiny.core.Vertx;
 @ConnectorAttribute(name = "max-deliver", description = "The maximum number of times a specific message delivery will be attempted", direction = INCOMING, type = "Long", defaultValue = "1")
 @ConnectorAttribute(name = "back-off", description = "The timing of re-deliveries as a comma-separated list of durations", direction = INCOMING, type = "String")
 @ConnectorAttribute(name = "payload-type", description = "The payload type", direction = INCOMING, type = "String")
+@ConnectorAttribute(name = "max-ack-pending", description = "Defines the maximum number of messages, without an acknowledgement, that can be outstanding.", direction = INCOMING, type = "Integer")
 @ConnectorAttribute(name = "pull", description = "The subscription type", direction = INCOMING, type = "boolean", defaultValue = "true")
 @ConnectorAttribute(name = "pull.batch-size", description = "The size of batch of messages to be pulled in pull mode", direction = INCOMING, type = "int", defaultValue = "100")
 @ConnectorAttribute(name = "pull.repull-at", description = "The point in the current batch to tell the server to start the next batch", direction = INCOMING, type = "int", defaultValue = "50")
@@ -61,6 +62,7 @@ import io.vertx.mutiny.core.Vertx;
 @ConnectorAttribute(name = "retry-backoff", description = "The retry backoff in milliseconds for retry publishing messages", direction = INCOMING, type = "Long", defaultValue = "10000")
 @ConnectorAttribute(name = "exponential-backoff", description = "Calculation a exponential backoff using deliveredCount metadata (NB back-off must undefined to work properly)", direction = INCOMING, type = "Boolean", defaultValue = "false")
 @ConnectorAttribute(name = "exponential-backoff-max-duration", description = "The maximum duration of exponential backoff", direction = INCOMING, type = "String", defaultValue = "PT2M")
+
 public class JetStreamConnector implements InboundConnector, OutboundConnector, HealthReporter {
     public static final String CONNECTOR_NAME = "quarkus-jetstream";
 

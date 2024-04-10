@@ -87,4 +87,9 @@ public class DefaultMessagePublisherConfiguration implements MessagePublisherCon
     public Duration getExponentialBackoffMaxDuration() {
         return Duration.parse(configuration.getExponentialBackoffMaxDuration());
     }
+
+    @Override
+    public Optional<Integer> getMaxAckPending() {
+        return configuration.getMaxAckPending();
+    }
 }
