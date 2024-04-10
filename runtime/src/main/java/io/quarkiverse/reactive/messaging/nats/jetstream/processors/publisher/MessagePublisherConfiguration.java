@@ -37,6 +37,8 @@ public interface MessagePublisherConfiguration {
 
     Duration getExponentialBackoffMaxDuration();
 
+    Optional<Integer> getMaxAckPending();
+
     static MessagePublisherConfiguration of(JetStreamConnectorIncomingConfiguration configuration) {
         return new DefaultMessagePublisherConfiguration(configuration);
     }
