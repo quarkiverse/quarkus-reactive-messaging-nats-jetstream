@@ -2,20 +2,18 @@ package io.quarkiverse.reactive.messaging.nats.jetstream.processors.publisher;
 
 import static io.smallrye.reactive.messaging.tracing.TracingUtils.traceIncoming;
 
-import java.time.Duration;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.jboss.logging.Logger;
 
-import io.nats.client.JetStreamReader;
-import io.nats.client.JetStreamSubscription;
 import io.opentelemetry.instrumentation.api.instrumenter.Instrumenter;
 import io.quarkiverse.reactive.messaging.nats.jetstream.ExponentialBackoff;
 import io.quarkiverse.reactive.messaging.nats.jetstream.JetStreamIncomingMessage;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.Connection;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.JetStreamClient;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.JetStreamReader;
 import io.quarkiverse.reactive.messaging.nats.jetstream.mapper.PayloadMapper;
 import io.quarkiverse.reactive.messaging.nats.jetstream.processors.Status;
 import io.quarkiverse.reactive.messaging.nats.jetstream.tracing.JetStreamInstrumenter;
@@ -29,18 +27,16 @@ public class MessagePullPublisherProcessor implements MessagePublisherProcessor 
 
     final static int CONSUMER_ALREADY_IN_USE = 10013;
 
-    private final MessagePublisherConfiguration configuration;
+    private final MessagePullPublisherConfiguration configuration;
     private final JetStreamClient jetStreamClient;
     private final PayloadMapper payloadMapper;
     private final Instrumenter<JetStreamTrace, Void> instrumenter;
     private final AtomicReference<Status> status;
-    private final PullSubscribeOptionsFactory optionsFactory;
 
-    private volatile JetStreamSubscription subscription;
-    private volatile boolean closed = false;
+    private volatile JetStreamReader jetStreamReader;
 
     public MessagePullPublisherProcessor(final JetStreamClient jetStreamClient,
-            final MessagePublisherConfiguration configuration,
+            final MessagePullPublisherConfiguration configuration,
             final PayloadMapper payloadMapper,
             final JetStreamInstrumenter jetStreamInstrumenter) {
         this.configuration = configuration;
@@ -48,7 +44,6 @@ public class MessagePullPublisherProcessor implements MessagePublisherProcessor 
         this.payloadMapper = payloadMapper;
         this.instrumenter = jetStreamInstrumenter.receiver();
         this.status = new AtomicReference<>(new Status(false, "Not connected"));
-        this.optionsFactory = new PullSubscribeOptionsFactory();
     }
 
     @Override
@@ -68,47 +63,28 @@ public class MessagePullPublisherProcessor implements MessagePublisherProcessor 
 
     @Override
     public void close() {
-        try {
-            if (subscription.isActive()) {
-                subscription.drain(Duration.ofMillis(1000));
-            }
-        } catch (InterruptedException | IllegalStateException e) {
-            logger.warnf("Interrupted while draining subscription");
+        if (jetStreamReader != null) {
+            jetStreamReader.close();
         }
-        try {
-            if (subscription.isActive()) {
-                subscription.unsubscribe();
-            }
-        } catch (IllegalStateException e) {
-            logger.warnf("Failed to unsubscribe subscription");
-        }
-        closed = true;
         jetStreamClient.close();
     }
 
     @Override
     public String getChannel() {
-        return configuration.getChannel();
+        return configuration.channel();
     }
 
     @Override
     public Multi<org.eclipse.microprofile.reactive.messaging.Message<?>> publish(Connection connection) {
         boolean traceEnabled = configuration.traceEnabled();
-        int batchSize = configuration.getPullBatchSize();
-        int repullAt = configuration.getPullRepullAt();
-        Duration pollTimeout = Duration.ofMillis(configuration.getPullPollTimeout());
-        Class<?> payloadType = configuration.getType().map(PayloadMapper::loadClass).orElse(null);
+        Class<?> payloadType = configuration.payloadType().orElse(null);
         ExecutorService pullExecutor = Executors.newSingleThreadExecutor(JetstreamWorkerThread::new);
         try {
-            var jetStream = connection.jetStream();
-            var subject = configuration.getSubject();
-            var pullSubscribeOptions = optionsFactory.create(configuration);
-            subscription = jetStream.subscribe(subject, pullSubscribeOptions);
-            JetStreamReader reader = subscription.reader(batchSize, repullAt);
+            jetStreamReader = new JetStreamReader(connection, configuration);
             setStatus(true, "Is connected");
             return Multi.createBy().repeating()
-                    .supplier(() -> nextNatsMessage(reader, pollTimeout))
-                    .until(message -> closed || !subscription.isActive())
+                    .supplier(() -> jetStreamReader.nextMessage())
+                    .until(message -> !jetStreamReader.isActive())
                     .runSubscriptionOn(pullExecutor)
                     .onTermination().invoke(() -> shutDown(pullExecutor))
                     .onCompletion().invoke(() -> shutDown(pullExecutor))
@@ -122,23 +98,6 @@ public class MessagePullPublisherProcessor implements MessagePublisherProcessor 
         }
     }
 
-    private io.nats.client.Message nextNatsMessage(JetStreamReader reader, Duration pollTimeout) {
-        io.nats.client.Message message = null;
-        if (subscription.isActive()) {
-            try {
-                message = reader.nextMessage(pollTimeout);
-            } catch (Throwable throwable) {
-                logger.warnf("Error while pulling from the subscription %s: %s",
-                        configuration.getChannel(), throwable.getMessage());
-                if (logger.isTraceEnabled()) {
-                    logger.tracef(throwable, "Error while pulling from the subscription %s",
-                            configuration.getChannel());
-                }
-            }
-        }
-        return message;
-    }
-
     private void setStatus(boolean healthy, String message) {
         this.status.set(new Status(healthy, message));
     }
@@ -148,8 +107,8 @@ public class MessagePullPublisherProcessor implements MessagePublisherProcessor 
             Class<?> payloadType,
             Context context,
             MessagePublisherConfiguration configuration) {
-        final var exponentialBackoff = new ExponentialBackoff(configuration.getExponentialBackoff(),
-                configuration.getExponentialBackoffMaxDuration());
+        final var exponentialBackoff = new ExponentialBackoff(configuration.exponentialBackoff(),
+                configuration.exponentialBackoffMaxDuration());
         final var incomingMessage = payloadType != null
                 ? new JetStreamIncomingMessage<>(message, payloadMapper.toPayload(message, payloadType), context,
                         exponentialBackoff)

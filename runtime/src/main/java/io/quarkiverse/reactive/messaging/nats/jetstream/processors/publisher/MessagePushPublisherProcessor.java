@@ -15,6 +15,7 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.ExponentialBackoff;
 import io.quarkiverse.reactive.messaging.nats.jetstream.JetStreamIncomingMessage;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.Connection;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.JetStreamClient;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.PushSubscribeOptionsFactory;
 import io.quarkiverse.reactive.messaging.nats.jetstream.mapper.PayloadMapper;
 import io.quarkiverse.reactive.messaging.nats.jetstream.processors.Status;
 import io.quarkiverse.reactive.messaging.nats.jetstream.tracing.JetStreamInstrumenter;
@@ -27,7 +28,7 @@ public class MessagePushPublisherProcessor implements MessagePublisherProcessor 
 
     final static int CONSUMER_ALREADY_IN_USE = 10013;
 
-    private final MessagePublisherConfiguration configuration;
+    private final MessagePushPublisherConfiguration configuration;
     private final JetStreamClient jetStreamClient;
     private final PayloadMapper payloadMapper;
     private final Instrumenter<JetStreamTrace, Void> instrumenter;
@@ -38,7 +39,7 @@ public class MessagePushPublisherProcessor implements MessagePublisherProcessor 
     private volatile Dispatcher dispatcher;
 
     public MessagePushPublisherProcessor(final JetStreamClient jetStreamClient,
-            final MessagePublisherConfiguration configuration,
+            final MessagePushPublisherConfiguration configuration,
             final PayloadMapper payloadMapper,
             final JetStreamInstrumenter jetStreamInstrumenter) {
         this.configuration = configuration;
@@ -85,17 +86,17 @@ public class MessagePushPublisherProcessor implements MessagePublisherProcessor 
 
     @Override
     public String getChannel() {
-        return configuration.getChannel();
+        return configuration.channel();
     }
 
     @Override
     public Multi<org.eclipse.microprofile.reactive.messaging.Message<?>> publish(Connection connection) {
         boolean traceEnabled = configuration.traceEnabled();
-        Class<?> payloadType = configuration.getType().map(PayloadMapper::loadClass).orElse(null);
+        Class<?> payloadType = configuration.payloadType().orElse(null);
         return Multi.createFrom().<io.nats.client.Message> emitter(emitter -> {
             try {
                 final var jetStream = connection.jetStream();
-                final var subject = configuration.getSubject();
+                final var subject = configuration.subject();
                 dispatcher = connection.createDispatcher();
                 final var pushOptions = optionsFactory.create(configuration);
                 subscription = jetStream.subscribe(subject, dispatcher, emitter::emit, false, pushOptions);
@@ -131,8 +132,8 @@ public class MessagePushPublisherProcessor implements MessagePublisherProcessor 
             Class<?> payloadType,
             Context context,
             MessagePublisherConfiguration configuration) {
-        final var exponentialBackoff = new ExponentialBackoff(configuration.getExponentialBackoff(),
-                configuration.getExponentialBackoffMaxDuration());
+        final var exponentialBackoff = new ExponentialBackoff(configuration.exponentialBackoff(),
+                configuration.exponentialBackoffMaxDuration());
         final var incomingMessage = payloadType != null
                 ? new JetStreamIncomingMessage<>(message, payloadMapper.toPayload(message, payloadType), context,
                         exponentialBackoff)

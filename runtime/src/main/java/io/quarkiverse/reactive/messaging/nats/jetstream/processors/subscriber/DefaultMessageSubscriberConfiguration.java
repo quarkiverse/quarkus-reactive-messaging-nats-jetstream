@@ -1,7 +1,5 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.processors.subscriber;
 
-import java.util.Optional;
-
 import io.quarkiverse.reactive.messaging.nats.jetstream.JetStreamConnectorIncomingConfiguration;
 
 public class DefaultMessageSubscriberConfiguration implements MessageSubscriberConfiguration {
@@ -17,13 +15,13 @@ public class DefaultMessageSubscriberConfiguration implements MessageSubscriberC
     }
 
     @Override
-    public Optional<String> getStream() {
-        return configuration.getStream();
+    public String getStream() {
+        return configuration.getStream().orElseThrow(() -> new IllegalArgumentException("No stream configured"));
     }
 
     @Override
-    public Optional<String> getSubject() {
-        return configuration.getSubject();
+    public String getSubject() {
+        return configuration.getSubject().orElseThrow((() -> new IllegalArgumentException("No subject configured")));
     }
 
     @Override

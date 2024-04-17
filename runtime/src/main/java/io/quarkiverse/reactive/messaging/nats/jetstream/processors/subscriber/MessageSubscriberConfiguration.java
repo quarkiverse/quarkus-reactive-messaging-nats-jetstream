@@ -1,18 +1,11 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.processors.subscriber;
 
-import java.util.Optional;
-
 import io.quarkiverse.reactive.messaging.nats.jetstream.JetStreamConnectorIncomingConfiguration;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.JetStreamPublishConfiguration;
 
-public interface MessageSubscriberConfiguration {
+public interface MessageSubscriberConfiguration extends JetStreamPublishConfiguration {
 
     String getChannel();
-
-    Optional<String> getStream();
-
-    Optional<String> getSubject();
-
-    boolean traceEnabled();
 
     static MessageSubscriberConfiguration of(JetStreamConnectorIncomingConfiguration configuration) {
         return new DefaultMessageSubscriberConfiguration(configuration);

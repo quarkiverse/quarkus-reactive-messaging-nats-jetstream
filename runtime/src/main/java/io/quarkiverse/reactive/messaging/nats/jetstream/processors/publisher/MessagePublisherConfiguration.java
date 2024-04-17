@@ -3,43 +3,20 @@ package io.quarkiverse.reactive.messaging.nats.jetstream.processors.publisher;
 import java.time.Duration;
 import java.util.Optional;
 
-import io.quarkiverse.reactive.messaging.nats.jetstream.JetStreamConnectorIncomingConfiguration;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.JetStreamConsumerConfiguration;
 
-public interface MessagePublisherConfiguration {
+public interface MessagePublisherConfiguration extends JetStreamConsumerConfiguration {
 
-    String getChannel();
+    String channel();
 
-    String getSubject();
+    Optional<Class> payloadType();
 
-    Optional<String> getDeliverGroup();
+    Duration retryBackoff();
 
-    Optional<String> getDurable();
+    boolean exponentialBackoff();
 
-    Long getMaxDeliver();
-
-    Optional<String> getBackOff();
+    Duration exponentialBackoffMaxDuration();
 
     boolean traceEnabled();
 
-    Optional<String> getType();
-
-    boolean getPull();
-
-    int getPullBatchSize();
-
-    int getPullRepullAt();
-
-    long getPullPollTimeout();
-
-    Long getRetryBackoff();
-
-    boolean getExponentialBackoff();
-
-    Duration getExponentialBackoffMaxDuration();
-
-    Optional<Integer> getMaxAckPending();
-
-    static MessagePublisherConfiguration of(JetStreamConnectorIncomingConfiguration configuration) {
-        return new DefaultMessagePublisherConfiguration(configuration);
-    }
 }
