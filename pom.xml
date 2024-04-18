@@ -31,7 +31,7 @@
 
         <jnats.version>2.17.6</jnats.version>
         <eddsa.version>0.3.0</eddsa.version>
-        <smallrye-connector-attribute-processor.version>4.20.0</smallrye-connector-attribute-processor.version>
+        <smallrye-connector-attribute-processor.version>4.21.0</smallrye-connector-attribute-processor.version>
         <smallrye-reactive-messaging-otel.version>4.20.0</smallrye-reactive-messaging-otel.version>
         <microprofile-config-api.version>3.1</microprofile-config-api.version>
         <assertj-core.version>3.25.3</assertj-core.version>
