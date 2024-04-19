@@ -84,7 +84,14 @@ public class MessagePullPublisherProcessor implements MessagePublisherProcessor 
             setStatus(true, "Is connected");
             return Multi.createBy().repeating()
                     .supplier(() -> jetStreamReader.nextMessage())
-                    .until(message -> !jetStreamReader.isActive())
+                    .until(message -> {
+                        if (jetStreamReader.isActive()) {
+                            return false;
+                        } else {
+                            setStatus(false, "Reader become inactive");
+                            return true;
+                        }
+                    })
                     .runSubscriptionOn(pullExecutor)
                     .onTermination().invoke(() -> shutDown(pullExecutor))
                     .onCompletion().invoke(() -> shutDown(pullExecutor))
