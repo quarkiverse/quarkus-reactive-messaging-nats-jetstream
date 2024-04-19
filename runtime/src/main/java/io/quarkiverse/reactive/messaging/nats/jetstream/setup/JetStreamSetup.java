@@ -1,12 +1,9 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.setup;
 
-import static io.quarkiverse.reactive.messaging.nats.jetstream.JetStreamConnector.CONNECTOR_NAME;
-
 import java.io.IOException;
 import java.util.*;
+import java.util.stream.Collectors;
 
-import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
 import io.nats.client.JetStreamApiException;
@@ -22,17 +19,38 @@ public class JetStreamSetup {
     public void setup(Connection connection,
             JetStreamBuildConfiguration jetStreamConfiguration) {
         try {
-            final var jsm = connection.jetStreamManagement();
-            getStreams()
-                    .stream()
-                    .filter(streamConfig -> !streamConfig.subjects().isEmpty())
-                    .forEach(streamConfig -> getStreamConfiguration(jsm, streamConfig)
-                            .ifPresentOrElse(
-                                    streamConfiguration -> updateStreamConfiguration(jsm, streamConfiguration, streamConfig,
-                                            jetStreamConfiguration),
-                                    () -> createStreamConfiguration(jsm, streamConfig, jetStreamConfiguration)));
+            if (jetStreamConfiguration.autoConfigure()) {
+                final var jsm = connection.jetStreamManagement();
+                getStreams(jetStreamConfiguration)
+                        .stream()
+                        .filter(streamConfig -> !streamConfig.subjects().isEmpty())
+                        .forEach(streamConfig -> getStreamConfiguration(jsm, streamConfig)
+                                .ifPresentOrElse(
+                                        streamConfiguration -> updateStreamConfiguration(jsm, streamConfiguration, streamConfig,
+                                                jetStreamConfiguration),
+                                        () -> createStreamConfiguration(jsm, streamConfig, jetStreamConfiguration)));
+            }
         } catch (Exception e) {
             // Either not allowed or stream already configured by another instance
+            throw new JetStreamSetupException(String.format("Unable to configure stream: %s", e.getMessage()), e);
+        }
+    }
+
+    public Set<String> addSubject(Connection connection, String stream, String subject) {
+        try {
+            final var jsm = connection.jetStreamManagement();
+            final var streamInfo = jsm.getStreamInfo(stream, StreamInfoOptions.allSubjects());
+            final var streamConfiguration = streamInfo.getConfiguration();
+            if (!streamConfiguration.getSubjects().contains(subject)) {
+                final var subjects = new HashSet<>(streamConfiguration.getSubjects());
+                subjects.add(subject);
+                logger.infof("Updating stream %s with subjects %s", streamConfiguration.getName(), subjects);
+                jsm.updateStream(StreamConfiguration.builder(streamConfiguration).subjects(subjects).build());
+                return subjects;
+            } else {
+                return new HashSet<>(streamConfiguration.getSubjects());
+            }
+        } catch (IOException | JetStreamApiException e) {
             throw new JetStreamSetupException(String.format("Unable to configure stream: %s", e.getMessage()), e);
         }
     }
@@ -85,56 +103,12 @@ public class JetStreamSetup {
         }
     }
 
-    private Collection<Stream> getStreams() {
-        final var configs = new HashMap<String, Stream>();
-        final var config = ConfigProvider.getConfig();
-        getChannelPrefixes(config).forEach(channelPrefix -> {
-            if (isNatsConnector(config, channelPrefix) && (autoConfigure(config, channelPrefix))) {
-                getStream(config, channelPrefix).ifPresent(streamName -> {
-                    final var streamConfig = Optional.ofNullable(configs.get(streamName))
-                            .orElseGet(() -> new Stream(streamName, new HashSet<>()));
-                    getSubject(config, channelPrefix).ifPresent(subject -> streamConfig.subjects().add(subject));
-                    configs.putIfAbsent(streamName, streamConfig);
-                });
-
-            }
-        });
-        return configs.values();
-    }
-
-    private Set<String> getChannelPrefixes(Config config) {
-        final var channelPrefixes = new HashSet<String>();
-        config.getPropertyNames().forEach(propertyName -> {
-            if (propertyName.startsWith("mp.messaging.incoming.")) {
-                final var index = propertyName.indexOf(".", "mp.messaging.incoming.".length());
-                channelPrefixes.add(propertyName.substring(0, index));
-            } else if (propertyName.startsWith("mp.messaging.outgoing.")) {
-                var index = propertyName.indexOf(".", "mp.messaging.outgoing.".length());
-                channelPrefixes.add(propertyName.substring(0, index));
-            }
-        });
-        return channelPrefixes;
-    }
-
-    private boolean isNatsConnector(Config config, String channelPrefix) {
-        return config.getOptionalValue(channelPrefix + ".connector", String.class).filter(CONNECTOR_NAME::equals).isPresent();
-    }
-
-    private Optional<String> getStream(Config config, String channelPrefix) {
-        return config.getOptionalValue(channelPrefix + ".stream", String.class);
-    }
-
-    private Optional<String> getSubject(Config config, String channelPrefix) {
-        return config.getOptionalValue(channelPrefix + ".subject", String.class).map(subject -> {
-            if (subject.endsWith(".>")) {
-                return subject.substring(0, subject.length() - 2);
-            } else {
-                return subject;
-            }
-        });
-    }
-
-    private boolean autoConfigure(Config config, String channelPrefix) {
-        return config.getOptionalValue(channelPrefix + ".auto-configure", Boolean.class).orElse(true);
+    private List<Stream> getStreams(JetStreamBuildConfiguration configuration) {
+        if (configuration.streams() != null) {
+            return configuration.streams().stream().map(stream -> new Stream(stream.name(), stream.subjects()))
+                    .collect(Collectors.toList());
+        } else {
+            return Collections.emptyList();
+        }
     }
 }

@@ -4,8 +4,8 @@ public interface JetStreamPublishConfiguration {
 
     boolean traceEnabled();
 
-    String getStream();
+    String stream();
 
-    String getSubject();
+    String subject();
 
 }

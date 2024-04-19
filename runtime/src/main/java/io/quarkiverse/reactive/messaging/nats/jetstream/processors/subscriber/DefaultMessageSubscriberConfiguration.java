@@ -15,12 +15,12 @@ public class DefaultMessageSubscriberConfiguration implements MessageSubscriberC
     }
 
     @Override
-    public String getStream() {
+    public String stream() {
         return configuration.getStream().orElseThrow(() -> new IllegalArgumentException("No stream configured"));
     }
 
     @Override
-    public String getSubject() {
+    public String subject() {
         return configuration.getSubject().orElseThrow((() -> new IllegalArgumentException("No subject configured")));
     }
 
@@ -28,4 +28,5 @@ public class DefaultMessageSubscriberConfiguration implements MessageSubscriberC
     public boolean traceEnabled() {
         return configuration.getTraceEnabled();
     }
+
 }

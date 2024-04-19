@@ -58,7 +58,8 @@ public class DataResource {
     private Message<Data> emitData(String messageId, Data data) {
         final var headers = new HashMap<String, List<String>>();
         headers.put("RESOURCE_ID", List.of(data.getResourceId()));
-        final var message = Message.of(data, Metadata.of(new JetStreamOutgoingMessageMetadata(messageId, headers)));
+        final var message = Message.of(data,
+                Metadata.of(new JetStreamOutgoingMessageMetadata(messageId, headers, null)));
         emitter.send(message);
         return message;
     }

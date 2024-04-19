@@ -106,12 +106,14 @@ public class MessagePushPublisherProcessor implements MessagePublisherProcessor 
                     setStatus(true, "Consumer already in use");
                     emitter.fail(e);
                 } else {
-                    logger.errorf(e, "Failed subscribing to stream with message: %s", e.getMessage());
+                    logger.errorf(e, "Failed subscribing to stream: %s, subject: %s with message: %s", configuration.stream(),
+                            configuration.subject(), e.getMessage());
                     setStatus(false, e.getMessage());
                     emitter.fail(e);
                 }
             } catch (Throwable e) {
-                logger.errorf(e, "Failed subscribing to stream with message: %s", e.getMessage());
+                logger.errorf(e, "Failed subscribing to stream: %s, subject: %s with message: %s", configuration.stream(),
+                        configuration.subject(), e.getMessage());
                 setStatus(false, e.getMessage());
                 emitter.fail(e);
             }
@@ -148,7 +150,7 @@ public class MessagePushPublisherProcessor implements MessagePublisherProcessor 
 
     private void shutDown(Dispatcher dispatcher) {
         try {
-            if (dispatcher != null && dispatcher.isActive()) {
+            if (subscription != null && dispatcher != null && dispatcher.isActive()) {
                 dispatcher.unsubscribe(subscription);
             }
         } catch (Exception e) {

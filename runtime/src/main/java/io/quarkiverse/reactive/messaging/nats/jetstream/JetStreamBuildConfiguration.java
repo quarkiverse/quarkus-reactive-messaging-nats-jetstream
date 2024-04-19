@@ -1,5 +1,8 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream;
 
+import java.util.List;
+import java.util.Set;
+
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.smallrye.config.ConfigMapping;
@@ -33,4 +36,24 @@ public interface JetStreamBuildConfiguration {
      */
     @WithDefault("Interest")
     String retentionPolicy();
+
+    /**
+     * If auto-configure is true the streams are created on Nats server.
+     *
+     * The setup process also reads the application configuration to setup configured streams from channel configuration.
+     */
+    List<Stream> streams();
+
+    interface Stream {
+
+        /**
+         * Name of stream
+         */
+        String name();
+
+        /**
+         * Stream subjects
+         */
+        Set<String> subjects();
+    }
 }

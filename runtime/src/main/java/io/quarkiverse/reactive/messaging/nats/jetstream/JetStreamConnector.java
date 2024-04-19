@@ -44,7 +44,6 @@ import io.vertx.mutiny.core.Vertx;
 @ConnectorAttribute(name = "stream", description = "The stream to subscribe or publish messages to", direction = INCOMING_AND_OUTGOING, type = "String")
 @ConnectorAttribute(name = "subject", description = "The subject to subscribe or publish messages to", direction = INCOMING_AND_OUTGOING, type = "String")
 @ConnectorAttribute(name = "trace-enabled", description = "Enable traces for publisher or subscriber", direction = INCOMING_AND_OUTGOING, type = "Boolean", defaultValue = "true")
-@ConnectorAttribute(name = "auto-configure", description = "Auto configure subject on NATS", direction = INCOMING_AND_OUTGOING, type = "Boolean", defaultValue = "true")
 
 // Publish common processor attributes
 @ConnectorAttribute(name = "publisher-type", description = "The publisher type (Pull, Push)", direction = INCOMING, type = "String", defaultValue = "Pull")

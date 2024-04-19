@@ -24,7 +24,8 @@ public class ReactiveMesssagingNatsJetstreamPullTest {
                             TestSpanExporter.class, Data.class, DataResource.class, DataConsumingBean.class,
                             Advisory.class, DeadLetterResource.class, DeadLetterConsumingBean.class,
                             DurableResource.class, DurableConsumingBean.class, RedeliveryResource.class,
-                            RedeliveryConsumingBean.class))
+                            RedeliveryConsumingBean.class, SubtopicsResource.class, SubtopicsConsumingBean.class,
+                            SubjectData.class))
             .withConfigurationResource("application.properties");
 
     @BeforeEach
@@ -40,7 +41,7 @@ public class ReactiveMesssagingNatsJetstreamPullTest {
 
     @Test
     public void metadata() {
-        final var messageId = "9a99811a-ef82-468e-9f0b-7879f7be16a9";
+        final var messageId = "4dc58197-8cfb-4099-a211-25d5c2d04f4b";
         final var data = "N6cXzM";
 
         given().pathParam("id", messageId).pathParam("data", data).post("/data/{id}/{data}").then().statusCode(204);
@@ -88,4 +89,21 @@ public class ReactiveMesssagingNatsJetstreamPullTest {
         });
     }
 
+    @Test
+    public void subtopic() {
+        final var messageId = "9a99811a-ef82-468e-9f0b-7879f7be16a9";
+        final var data = "N6cXzM";
+        final var subject = "subtopic";
+        final var subtopic = "data";
+
+        given().pathParam("subtopic", subtopic).pathParam("id", messageId).pathParam("data", data)
+                .post("/subtopics/{subtopic}/{id}/{data}").then().statusCode(204);
+
+        await().atMost(1, TimeUnit.MINUTES).until(() -> {
+            final var dataValue = get("/subtopics/last").as(SubjectData.class);
+            return data.equals(dataValue.getData()) && data.equals(dataValue.getResourceId())
+                    && messageId.equals(dataValue.getMessageId())
+                    && dataValue.getSubject().equals(subject + "." + subtopic);
+        });
+    }
 }

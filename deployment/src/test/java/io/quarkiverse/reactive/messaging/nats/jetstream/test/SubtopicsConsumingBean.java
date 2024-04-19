@@ -1,7 +1,6 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.test;
 
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicReference;
 
 import jakarta.enterprise.context.ApplicationScoped;
 
@@ -14,27 +13,30 @@ import io.smallrye.mutiny.Uni;
 import io.smallrye.reactive.messaging.annotations.Blocking;
 
 @ApplicationScoped
-public class DataConsumingBean {
+public class SubtopicsConsumingBean {
     private final static Logger logger = Logger.getLogger(DataConsumingBean.class);
 
-    private AtomicReference<Data> lastData = new AtomicReference<>();
+    volatile Optional<SubjectData> lastData = Optional.empty();
 
     @Blocking
-    @Incoming("data-consumer")
+    @Incoming("subtopics-consumer")
     public Uni<Void> data(Message<String> message) {
-        return Uni.createFrom().item(message)
-                .onItem().invoke(m -> {
-                    logger.infof("Received message: %s", message);
-                    message.getMetadata(JetStreamIncomingMessageMetadata.class)
-                            .ifPresent(metadata -> lastData.set(
-                                    new Data(message.getPayload(), metadata.headers().get("RESOURCE_ID").get(0),
-                                            metadata.messageId())));
-                })
+        return Uni.createFrom().item(() -> handleData(message))
                 .onItem().transformToUni(m -> Uni.createFrom().completionStage(m.ack()))
                 .onFailure().recoverWithUni(throwable -> Uni.createFrom().completionStage(message.nack(throwable)));
     }
 
-    public Optional<Data> getLast() {
-        return Optional.ofNullable(lastData.get());
+    public Optional<SubjectData> getLast() {
+        return lastData;
+    }
+
+    private Message<String> handleData(Message<String> message) {
+        logger.infof("Received message: %s", message);
+        message.getMetadata(JetStreamIncomingMessageMetadata.class)
+                .ifPresent(metadata -> lastData = Optional.of(
+                        new SubjectData(message.getPayload(), metadata.headers().get("RESOURCE_ID").get(0),
+                                metadata.messageId(),
+                                metadata.subject())));
+        return message;
     }
 }
