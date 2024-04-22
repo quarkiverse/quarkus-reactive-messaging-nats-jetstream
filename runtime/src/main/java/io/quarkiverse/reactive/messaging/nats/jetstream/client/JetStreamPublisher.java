@@ -17,7 +17,6 @@ import io.nats.client.PublishOptions;
 import io.opentelemetry.instrumentation.api.instrumenter.Instrumenter;
 import io.quarkiverse.reactive.messaging.nats.jetstream.JetStreamOutgoingMessageMetadata;
 import io.quarkiverse.reactive.messaging.nats.jetstream.mapper.PayloadMapper;
-import io.quarkiverse.reactive.messaging.nats.jetstream.setup.JetStreamSetup;
 import io.quarkiverse.reactive.messaging.nats.jetstream.setup.JetStreamSetupException;
 import io.quarkiverse.reactive.messaging.nats.jetstream.tracing.JetStreamInstrumenter;
 import io.quarkiverse.reactive.messaging.nats.jetstream.tracing.JetStreamTrace;
@@ -26,21 +25,17 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.tracing.JetStreamTrace;
 public class JetStreamPublisher {
     private final PayloadMapper payloadMapper;
     private final Instrumenter<JetStreamTrace, Void> instrumenter;
-    private final JetStreamSetup jetStreamSetup;
-    private final Set<String> configuredSubjects;
 
     @Inject
     public JetStreamPublisher(PayloadMapper payloadMapper,
             final JetStreamInstrumenter jetStreamInstrumenter) {
         this.payloadMapper = payloadMapper;
         this.instrumenter = jetStreamInstrumenter.publisher();
-        this.jetStreamSetup = new JetStreamSetup();
-        this.configuredSubjects = new HashSet<>();
     }
 
-    public Message<?> publish(final Connection connection,
+    public <T> Message<T> publish(final Connection connection,
             final JetStreamPublishConfiguration configuration,
-            final Message<?> message) {
+            final Message<T> message) {
         try {
             final var metadata = message.getMetadata(JetStreamOutgoingMessageMetadata.class);
             final var messageId = metadata.map(JetStreamOutgoingMessageMetadata::messageId)
@@ -59,12 +54,6 @@ public class JetStreamPublisher {
                         new JetStreamTrace(configuration.stream(), subject, messageId, headers,
                                 new String(payload)));
             }
-
-            /**
-             * if (configuration.autoConfigure() && !configuredSubjects.contains(subject)) {
-             * configuredSubjects.addAll(jetStreamSetup.addSubject(connection, configuration.stream(), subject));
-             * }
-             */
 
             final var jetStream = connection.jetStream();
             final var options = createPublishOptions(messageId, configuration.stream());

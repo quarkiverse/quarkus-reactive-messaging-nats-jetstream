@@ -4,12 +4,14 @@ import java.time.Duration;
 import java.util.Optional;
 
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.JetStreamConsumerConfiguration;
+import io.quarkiverse.reactive.messaging.nats.jetstream.util.RequestReplyConfiguration;
+import io.quarkiverse.reactive.messaging.nats.jetstream.util.RequestReplyMessagePublisherConfiguration;
 
-public interface MessagePublisherConfiguration extends JetStreamConsumerConfiguration {
+public interface MessagePublisherConfiguration<T> extends JetStreamConsumerConfiguration {
 
     String channel();
 
-    Optional<Class> payloadType();
+    Optional<Class<T>> payloadType();
 
     Duration retryBackoff();
 
@@ -18,5 +20,9 @@ public interface MessagePublisherConfiguration extends JetStreamConsumerConfigur
     Duration exponentialBackoffMaxDuration();
 
     boolean traceEnabled();
+
+    static <T> MessagePublisherConfiguration<T> of(RequestReplyConfiguration<T> requestReplyConfiguration) {
+        return new RequestReplyMessagePublisherConfiguration<>(requestReplyConfiguration);
+    }
 
 }

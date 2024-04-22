@@ -13,7 +13,7 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.JetStreamConnectorIncomi
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.JetStreamConsumerType;
 import io.quarkiverse.reactive.messaging.nats.jetstream.mapper.PayloadMapper;
 
-public abstract class AbstractMessagePublisherConfiguration implements MessagePublisherConfiguration {
+public abstract class AbstractMessagePublisherConfiguration<T> implements MessagePublisherConfiguration<T> {
     protected final JetStreamConnectorIncomingConfiguration configuration;
 
     public AbstractMessagePublisherConfiguration(final JetStreamConnectorIncomingConfiguration configuration) {
@@ -26,7 +26,7 @@ public abstract class AbstractMessagePublisherConfiguration implements MessagePu
     }
 
     @Override
-    public Optional<Class> payloadType() {
+    public Optional<Class<T>> payloadType() {
         return configuration.getPayloadType().map(PayloadMapper::loadClass);
     }
 
@@ -108,7 +108,7 @@ public abstract class AbstractMessagePublisherConfiguration implements MessagePu
     }
 
     @Override
-    public Integer maxDeliver() {
+    public Optional<Integer> maxDeliver() {
         return configuration.getMaxDeliver();
     }
 

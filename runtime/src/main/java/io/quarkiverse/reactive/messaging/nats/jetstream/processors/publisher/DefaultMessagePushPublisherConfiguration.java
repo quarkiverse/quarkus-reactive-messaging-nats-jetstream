@@ -5,8 +5,8 @@ import java.util.Optional;
 
 import io.quarkiverse.reactive.messaging.nats.jetstream.JetStreamConnectorIncomingConfiguration;
 
-public class DefaultMessagePushPublisherConfiguration extends AbstractMessagePublisherConfiguration
-        implements MessagePushPublisherConfiguration {
+public class DefaultMessagePushPublisherConfiguration<T> extends AbstractMessagePublisherConfiguration<T>
+        implements MessagePushPublisherConfiguration<T> {
 
     public DefaultMessagePushPublisherConfiguration(JetStreamConnectorIncomingConfiguration configuration) {
         super(configuration);

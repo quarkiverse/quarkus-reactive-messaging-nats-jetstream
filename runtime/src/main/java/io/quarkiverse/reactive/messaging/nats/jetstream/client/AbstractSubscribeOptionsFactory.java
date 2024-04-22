@@ -19,7 +19,7 @@ public abstract class AbstractSubscribeOptionsFactory {
         builder = configuration.description().map(builder::description).orElse(builder);
         builder = configuration.inactiveThreshold().map(builder::inactiveThreshold).orElse(builder);
         builder = configuration.maxAckPending().map(builder::maxAckPending).orElse(builder);
-        builder = builder.maxDeliver(configuration.maxDeliver());
+        builder = configuration.maxDeliver().map(builder::maxDeliver).orElse(builder);
         builder = configuration.replayPolicy().map(builder::replayPolicy).orElse(builder);
         builder = configuration.replicas().map(builder::numReplicas).orElse(builder);
         builder = configuration.memoryStorage().map(builder::memStorage).orElse(builder);

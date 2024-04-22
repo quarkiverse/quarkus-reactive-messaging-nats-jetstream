@@ -1,48 +1,37 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.processors.publisher;
 
-import static io.smallrye.reactive.messaging.tracing.TracingUtils.traceIncoming;
-
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.jboss.logging.Logger;
 
-import io.opentelemetry.instrumentation.api.instrumenter.Instrumenter;
-import io.quarkiverse.reactive.messaging.nats.jetstream.ExponentialBackoff;
-import io.quarkiverse.reactive.messaging.nats.jetstream.JetStreamIncomingMessage;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.Connection;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.JetStreamClient;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.JetStreamReader;
-import io.quarkiverse.reactive.messaging.nats.jetstream.mapper.PayloadMapper;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.MessageFactory;
 import io.quarkiverse.reactive.messaging.nats.jetstream.processors.Status;
-import io.quarkiverse.reactive.messaging.nats.jetstream.tracing.JetStreamInstrumenter;
-import io.quarkiverse.reactive.messaging.nats.jetstream.tracing.JetStreamTrace;
 import io.smallrye.mutiny.Multi;
 import io.vertx.mutiny.core.Context;
 
 public class MessagePullPublisherProcessor implements MessagePublisherProcessor {
-
     private final static Logger logger = Logger.getLogger(MessagePullPublisherProcessor.class);
 
     final static int CONSUMER_ALREADY_IN_USE = 10013;
 
-    private final MessagePullPublisherConfiguration configuration;
+    private final MessagePullPublisherConfiguration<?> configuration;
     private final JetStreamClient jetStreamClient;
-    private final PayloadMapper payloadMapper;
-    private final Instrumenter<JetStreamTrace, Void> instrumenter;
     private final AtomicReference<Status> status;
+    private final MessageFactory messageFactory;
 
     private volatile JetStreamReader jetStreamReader;
 
     public MessagePullPublisherProcessor(final JetStreamClient jetStreamClient,
-            final MessagePullPublisherConfiguration configuration,
-            final PayloadMapper payloadMapper,
-            final JetStreamInstrumenter jetStreamInstrumenter) {
+            final MessagePullPublisherConfiguration<?> configuration,
+            final MessageFactory messageFactory) {
         this.configuration = configuration;
         this.jetStreamClient = jetStreamClient;
-        this.payloadMapper = payloadMapper;
-        this.instrumenter = jetStreamInstrumenter.receiver();
+        this.messageFactory = messageFactory;
         this.status = new AtomicReference<>(new Status(false, "Not connected"));
     }
 
@@ -52,7 +41,7 @@ public class MessagePullPublisherProcessor implements MessagePublisherProcessor 
     }
 
     @Override
-    public MessagePublisherConfiguration configuration() {
+    public MessagePublisherConfiguration<?> configuration() {
         return configuration;
     }
 
@@ -109,31 +98,13 @@ public class MessagePullPublisherProcessor implements MessagePublisherProcessor 
         this.status.set(new Status(healthy, message));
     }
 
-    private org.eclipse.microprofile.reactive.messaging.Message<?> create(io.nats.client.Message message,
-            boolean tracingEnabled,
-            Class<?> payloadType,
-            Context context,
-            MessagePublisherConfiguration configuration) {
-        final var exponentialBackoff = new ExponentialBackoff(configuration.exponentialBackoff(),
-                configuration.exponentialBackoffMaxDuration());
-        final var incomingMessage = payloadType != null
-                ? new JetStreamIncomingMessage<>(message, payloadMapper.toPayload(message, payloadType), context,
-                        exponentialBackoff)
-                : new JetStreamIncomingMessage<>(message, payloadMapper.toPayload(message).orElse(null), context,
-                        exponentialBackoff);
-        if (tracingEnabled) {
-            return traceIncoming(instrumenter, incomingMessage, JetStreamTrace.trace(incomingMessage));
-        } else {
-            return incomingMessage;
-        }
-    }
-
     private Multi<org.eclipse.microprofile.reactive.messaging.Message<?>> createMulti(io.nats.client.Message message,
             boolean tracingEnabled, Class<?> payloadType, Context context) {
         if (message == null || message.getData() == null) {
             return Multi.createFrom().empty();
         } else {
-            return Multi.createFrom().item(() -> create(message, tracingEnabled, payloadType, context, configuration));
+            return Multi.createFrom()
+                    .item(() -> messageFactory.create(message, tracingEnabled, payloadType, context, configuration));
         }
     }
 

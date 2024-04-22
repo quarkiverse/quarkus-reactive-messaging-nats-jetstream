@@ -19,16 +19,11 @@ import org.eclipse.microprofile.reactive.messaging.Message;
 import org.eclipse.microprofile.reactive.messaging.spi.Connector;
 
 import io.quarkiverse.reactive.messaging.nats.NatsConfiguration;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.ConnectionConfiguration;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.JetStreamClient;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.JetStreamConsumerType;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.JetStreamPublisher;
-import io.quarkiverse.reactive.messaging.nats.jetstream.mapper.PayloadMapper;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.*;
 import io.quarkiverse.reactive.messaging.nats.jetstream.processors.MessageProcessor;
 import io.quarkiverse.reactive.messaging.nats.jetstream.processors.publisher.*;
 import io.quarkiverse.reactive.messaging.nats.jetstream.processors.subscriber.MessageSubscriberConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.processors.subscriber.MessageSubscriberProcessor;
-import io.quarkiverse.reactive.messaging.nats.jetstream.tracing.JetStreamInstrumenter;
 import io.smallrye.reactive.messaging.annotations.ConnectorAttribute;
 import io.smallrye.reactive.messaging.connector.InboundConnector;
 import io.smallrye.reactive.messaging.connector.OutboundConnector;
@@ -55,7 +50,7 @@ import io.vertx.mutiny.core.Vertx;
 @ConnectorAttribute(name = "description", description = "A description of the consumer.", direction = INCOMING, type = "String")
 @ConnectorAttribute(name = "inactive-threshold", description = "Duration that instructs the server to cleanup consumers that are inactive for that long.", direction = INCOMING, type = "String")
 @ConnectorAttribute(name = "max-ack-pending", description = "Defines the maximum number of messages, without an acknowledgement, that can be outstanding.", direction = INCOMING, type = "Integer")
-@ConnectorAttribute(name = "max-deliver", description = "The maximum number of times a specific message delivery will be attempted", direction = INCOMING, type = "Integer", defaultValue = "1")
+@ConnectorAttribute(name = "max-deliver", description = "The maximum number of times a specific message delivery will be attempted", direction = INCOMING, type = "Integer")
 @ConnectorAttribute(name = "replay-policy", description = "If the policy is ReplayOriginal, the messages in the stream will be pushed to the client at the same rate that they were originally received, simulating the original timing of messages. If the policy is ReplayInstant (the default), the messages will be pushed to the client as fast as possible while adhering to the Ack Policy, Max Ack Pending and the client's ability to consume those messages.", direction = INCOMING, type = "String")
 @ConnectorAttribute(name = "replicas", description = "Sets the number of replicas for the consumer's state. By default, when the value is set to zero, consumers inherit the number of replicas from the stream.", direction = INCOMING, type = "Integer")
 @ConnectorAttribute(name = "memory-storage", description = "If set, forces the consumer state to be kept in memory rather than inherit the storage type of the stream (file in this case).", direction = INCOMING, type = "Boolean")
@@ -83,23 +78,21 @@ public class JetStreamConnector implements InboundConnector, OutboundConnector, 
 
     private final List<MessageProcessor> processors;
     private final ExecutionHolder executionHolder;
-    private final PayloadMapper payloadMapper;
-    private final JetStreamInstrumenter jetStreamInstrumenter;
     private final NatsConfiguration natsConfiguration;
     private final JetStreamPublisher jetStreamPublisher;
+    private final MessageFactory messageFactory;
 
     @Inject
-    public JetStreamConnector(PayloadMapper payloadMapper,
-            JetStreamInstrumenter jetStreamInstrumenter,
+    public JetStreamConnector(
             ExecutionHolder executionHolder,
             NatsConfiguration natsConfiguration,
-            JetStreamPublisher jetStreamPublisher) {
-        this.payloadMapper = payloadMapper;
-        this.jetStreamInstrumenter = jetStreamInstrumenter;
+            JetStreamPublisher jetStreamPublisher,
+            MessageFactory messageFactory) {
         this.processors = new CopyOnWriteArrayList<>();
         this.executionHolder = executionHolder;
         this.natsConfiguration = natsConfiguration;
         this.jetStreamPublisher = jetStreamPublisher;
+        this.messageFactory = messageFactory;
     }
 
     @Override
@@ -157,13 +150,11 @@ public class JetStreamConnector implements InboundConnector, OutboundConnector, 
         if (JetStreamConsumerType.Pull.equals(type)) {
             return new MessagePullPublisherProcessor(client,
                     MessagePullPublisherConfiguration.of(configuration),
-                    payloadMapper,
-                    jetStreamInstrumenter);
+                    messageFactory);
         } else {
             return new MessagePushPublisherProcessor(client,
                     MessagePushPublisherConfiguration.of(configuration),
-                    payloadMapper,
-                    jetStreamInstrumenter);
+                    messageFactory);
         }
     }
 }

@@ -147,8 +147,8 @@ public class MessagePublisherProcessorTest {
             }
 
             @Override
-            public Integer maxDeliver() {
-                return maxDeliever;
+            public Optional<Integer> maxDeliver() {
+                return Optional.of(maxDeliever);
             }
 
             @Override

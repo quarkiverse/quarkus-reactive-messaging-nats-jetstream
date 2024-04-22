@@ -1,7 +1,5 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.processors.publisher;
 
-import static io.smallrye.reactive.messaging.tracing.TracingUtils.traceIncoming;
-
 import java.time.Duration;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -10,42 +8,33 @@ import org.jboss.logging.Logger;
 import io.nats.client.Dispatcher;
 import io.nats.client.JetStreamApiException;
 import io.nats.client.JetStreamSubscription;
-import io.opentelemetry.instrumentation.api.instrumenter.Instrumenter;
-import io.quarkiverse.reactive.messaging.nats.jetstream.ExponentialBackoff;
-import io.quarkiverse.reactive.messaging.nats.jetstream.JetStreamIncomingMessage;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.Connection;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.JetStreamClient;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.MessageFactory;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.PushSubscribeOptionsFactory;
-import io.quarkiverse.reactive.messaging.nats.jetstream.mapper.PayloadMapper;
 import io.quarkiverse.reactive.messaging.nats.jetstream.processors.Status;
-import io.quarkiverse.reactive.messaging.nats.jetstream.tracing.JetStreamInstrumenter;
-import io.quarkiverse.reactive.messaging.nats.jetstream.tracing.JetStreamTrace;
 import io.smallrye.mutiny.Multi;
-import io.vertx.mutiny.core.Context;
 
 public class MessagePushPublisherProcessor implements MessagePublisherProcessor {
     private final static Logger logger = Logger.getLogger(MessagePushPublisherProcessor.class);
 
     final static int CONSUMER_ALREADY_IN_USE = 10013;
 
-    private final MessagePushPublisherConfiguration configuration;
+    private final MessagePushPublisherConfiguration<?> configuration;
     private final JetStreamClient jetStreamClient;
-    private final PayloadMapper payloadMapper;
-    private final Instrumenter<JetStreamTrace, Void> instrumenter;
     private final AtomicReference<Status> status;
     private final PushSubscribeOptionsFactory optionsFactory;
+    private final MessageFactory messageFactory;
 
     private volatile JetStreamSubscription subscription;
     private volatile Dispatcher dispatcher;
 
     public MessagePushPublisherProcessor(final JetStreamClient jetStreamClient,
-            final MessagePushPublisherConfiguration configuration,
-            final PayloadMapper payloadMapper,
-            final JetStreamInstrumenter jetStreamInstrumenter) {
+            final MessagePushPublisherConfiguration<?> configuration,
+            final MessageFactory messageFactory) {
         this.configuration = configuration;
         this.jetStreamClient = jetStreamClient;
-        this.payloadMapper = payloadMapper;
-        this.instrumenter = jetStreamInstrumenter.receiver();
+        this.messageFactory = messageFactory;
         this.status = new AtomicReference<>(new Status(false, "Not connected"));
         this.optionsFactory = new PushSubscribeOptionsFactory();
     }
@@ -56,7 +45,7 @@ public class MessagePushPublisherProcessor implements MessagePublisherProcessor 
     }
 
     @Override
-    public MessagePublisherConfiguration configuration() {
+    public MessagePublisherConfiguration<?> configuration() {
         return configuration;
     }
 
@@ -122,30 +111,11 @@ public class MessagePushPublisherProcessor implements MessagePublisherProcessor 
                 .onCompletion().invoke(() -> shutDown(dispatcher))
                 .onCancellation().invoke(() -> shutDown(dispatcher))
                 .emitOn(runnable -> connection.context().runOnContext(runnable))
-                .map(message -> create(message, traceEnabled, payloadType, connection.context(), configuration));
+                .map(message -> messageFactory.create(message, traceEnabled, payloadType, connection.context(), configuration));
     }
 
     private void setStatus(boolean healthy, String message) {
         this.status.set(new Status(healthy, message));
-    }
-
-    private org.eclipse.microprofile.reactive.messaging.Message<?> create(io.nats.client.Message message,
-            boolean tracingEnabled,
-            Class<?> payloadType,
-            Context context,
-            MessagePublisherConfiguration configuration) {
-        final var exponentialBackoff = new ExponentialBackoff(configuration.exponentialBackoff(),
-                configuration.exponentialBackoffMaxDuration());
-        final var incomingMessage = payloadType != null
-                ? new JetStreamIncomingMessage<>(message, payloadMapper.toPayload(message, payloadType), context,
-                        exponentialBackoff)
-                : new JetStreamIncomingMessage<>(message, payloadMapper.toPayload(message).orElse(null), context,
-                        exponentialBackoff);
-        if (tracingEnabled) {
-            return traceIncoming(instrumenter, incomingMessage, JetStreamTrace.trace(incomingMessage));
-        } else {
-            return incomingMessage;
-        }
     }
 
     private void shutDown(Dispatcher dispatcher) {

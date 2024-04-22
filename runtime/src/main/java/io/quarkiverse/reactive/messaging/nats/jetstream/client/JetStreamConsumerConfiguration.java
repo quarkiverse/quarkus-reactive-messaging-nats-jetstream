@@ -35,7 +35,7 @@ public interface JetStreamConsumerConfiguration {
 
     Optional<Integer> maxAckPending();
 
-    Integer maxDeliver();
+    Optional<Integer> maxDeliver();
 
     Optional<ReplayPolicy> replayPolicy();
 

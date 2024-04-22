@@ -3,10 +3,11 @@ package io.quarkiverse.reactive.messaging.nats.jetstream.processors.publisher;
 import io.quarkiverse.reactive.messaging.nats.jetstream.JetStreamConnectorIncomingConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.JetStreamPushConsumerConfiguration;
 
-public interface MessagePushPublisherConfiguration extends MessagePublisherConfiguration, JetStreamPushConsumerConfiguration {
+public interface MessagePushPublisherConfiguration<T>
+        extends MessagePublisherConfiguration<T>, JetStreamPushConsumerConfiguration {
 
-    static MessagePushPublisherConfiguration of(JetStreamConnectorIncomingConfiguration configuration) {
-        return new DefaultMessagePushPublisherConfiguration(configuration);
+    static <T> MessagePushPublisherConfiguration<T> of(JetStreamConnectorIncomingConfiguration configuration) {
+        return new DefaultMessagePushPublisherConfiguration<T>(configuration);
     }
 
 }
