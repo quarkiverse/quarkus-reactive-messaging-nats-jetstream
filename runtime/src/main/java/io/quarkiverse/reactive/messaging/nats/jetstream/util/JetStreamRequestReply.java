@@ -1,5 +1,9 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.util;
 
+import java.io.IOException;
+import java.util.HashSet;
+import java.util.Set;
+
 import jakarta.annotation.Priority;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.context.BeforeDestroyed;
@@ -10,6 +14,7 @@ import jakarta.inject.Inject;
 import org.eclipse.microprofile.reactive.messaging.Message;
 import org.jboss.logging.Logger;
 
+import io.nats.client.JetStreamApiException;
 import io.quarkiverse.reactive.messaging.nats.NatsConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.*;
 import io.quarkiverse.reactive.messaging.nats.jetstream.mapper.PayloadMapper;
@@ -51,6 +56,18 @@ public class JetStreamRequestReply {
         return jetStreamClient.getOrEstablishConnection()
                 .onItem()
                 .transformToUni(connection -> nextReply(connection, configuration));
+    }
+
+    public Uni<Set<String>> getStreams() {
+        return jetStreamClient.getOrEstablishConnection()
+                .onItem().transformToUni(connection -> Uni.createFrom().item(() -> {
+                    try {
+                        final var jsm = connection.jetStreamManagement();
+                        return new HashSet<>(jsm.getStreamNames());
+                    } catch (IOException | JetStreamApiException e) {
+                        throw new RuntimeException(e);
+                    }
+                }));
     }
 
     public void terminate(

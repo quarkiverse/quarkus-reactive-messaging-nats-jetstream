@@ -18,6 +18,15 @@ public class JetStreamOutgoingMessageMetadata {
         this.subtopic = subtopic;
     }
 
+    public JetStreamOutgoingMessageMetadata(final String messageId,
+            final Map<String, List<String>> headers) {
+        this(messageId, headers, null);
+    }
+
+    public JetStreamOutgoingMessageMetadata(final String messageId) {
+        this(messageId, Collections.emptyMap(), null);
+    }
+
     public String messageId() {
         return messageId;
     }
