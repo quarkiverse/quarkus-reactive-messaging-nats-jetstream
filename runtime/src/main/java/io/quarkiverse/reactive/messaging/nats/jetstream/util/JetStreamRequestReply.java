@@ -94,12 +94,12 @@ public class JetStreamRequestReply {
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
-        });
+        }).emitOn(runnable -> connection.context().runOnContext(runnable));
     }
 
     private <T> Message<T> nextMessage(Connection connection, JetStreamPuller puller,
             RequestReplyConfiguration<T> configuration) {
-        return (Message<T>) puller.nextMessage()
+        return puller.nextMessage()
                 .map(message -> messageFactory.create(message, configuration.traceEnabled(),
                         configuration.payloadType(), connection.context(),
                         MessagePublisherConfiguration.of(configuration)))
