@@ -1,6 +1,7 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.util;
 
 import io.nats.client.JetStreamApiException;
+import io.nats.client.impl.NatsJetStreamPullSubscription;
 import io.quarkiverse.reactive.messaging.nats.NatsConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.*;
 import io.quarkiverse.reactive.messaging.nats.jetstream.mapper.PayloadMapper;
@@ -83,9 +84,10 @@ public class JetStreamStreamUtility {
             final var subject = configuration.subject();
 
             final var optionsFactory = new PullSubscribeOptionsFactory();
-            final var subscription = jetStream.subscribe(subject, optionsFactory.create(JetStreamPullConsumerConfiguration.of(configuration)));
+            final var subscription = (NatsJetStreamPullSubscription) jetStream.subscribe(subject, optionsFactory.create(JetStreamPullConsumerConfiguration.of(configuration)));
+            final var messages = subscription.fetch(1, fetchTimeout);
 
-            return subscription.fetch(1, fetchTimeout).stream().findAny();
+            return messages.stream().findAny();
         } catch (IOException | JetStreamApiException e) {
             logger.errorf(e, "Failed to subscribe stream: %s and subject: %s",
                     configuration.stream(), configuration.subject());

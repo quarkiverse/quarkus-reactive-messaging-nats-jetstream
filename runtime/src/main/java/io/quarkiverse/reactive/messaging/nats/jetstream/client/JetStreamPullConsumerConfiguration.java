@@ -15,6 +15,6 @@ public interface JetStreamPullConsumerConfiguration extends JetStreamConsumerCon
     Duration pollTimeout();
 
     static <T> JetStreamPullConsumerConfiguration of(RequestReplyConfiguration<T> requestReplyConfiguration) {
-        return new RequestReplyPullConsumerConfiguration(requestReplyConfiguration);
+        return new RequestReplyPullConsumerConfiguration<>(requestReplyConfiguration);
     }
 }
