@@ -4,46 +4,52 @@ import java.io.IOException;
 import java.time.Duration;
 import java.util.Optional;
 
+import io.nats.client.*;
+import io.nats.client.impl.NatsJetStreamPullSubscription;
 import org.jboss.logging.Logger;
 
-import io.nats.client.JetStreamApiException;
-import io.nats.client.JetStreamSubscription;
-import io.nats.client.Message;
-
-public class JetStreamPuller implements AutoCloseable {
+public class JetStreamPuller {
     private final static Logger logger = Logger.getLogger(JetStreamPuller.class);
 
     private final JetStreamPullConsumerConfiguration configuration;
-    private final JetStreamSubscription subscription;
+    private final PullSubscribeOptions pullSubscribeOptions;
 
-    public JetStreamPuller(Connection connection, JetStreamPullConsumerConfiguration configuration)
-            throws IOException, JetStreamApiException {
+    public JetStreamPuller(JetStreamPullConsumerConfiguration configuration) {
         this.configuration = configuration;
-        final var jetStream = connection.jetStream();
         final var optionsFactory = new PullSubscribeOptionsFactory();
-        subscription = jetStream.subscribe(configuration.subject(), optionsFactory.create(configuration));
+        this.pullSubscribeOptions = optionsFactory.create(configuration);
     }
 
-    public Optional<Message> nextMessage() {
+    public Optional<Message> nextMessage(Connection connection) {
         try {
-            return Optional.ofNullable(subscription.nextMessage(configuration.pollTimeout()));
-        } catch (IllegalStateException e) {
-            logger.debugf(e, "The subscription become inactive for stream: %s and subject: %s",
+            final var jetStream = connection.jetStream();
+            final var subject = configuration.subject();
+            return nextMessage((NatsJetStreamPullSubscription) jetStream.subscribe(subject, pullSubscribeOptions));
+        } catch (IOException | JetStreamApiException e) {
+            logger.errorf(e, "Failed to subscribe stream: %s and subject: %s",
                     configuration.stream(), configuration.subject());
             return Optional.empty();
-        } catch (InterruptedException e) {
-            logger.debugf(e, "The reader was interrupted for stream: %s and subject: %s",
+        }
+    }
+
+    private Optional<Message> nextMessage(NatsJetStreamPullSubscription subscription) {
+        try {
+            final var fetch = subscription.fetch(1, Duration.ofSeconds(10));
+            return fetch.stream().findAny();
+        } catch (IllegalStateException e) {
+            logger.debugf(e, "The subscription become inactive for stream: %s and subject: %s",
                     configuration.stream(), configuration.subject());
             return Optional.empty();
         } catch (Throwable throwable) {
             logger.warnf(throwable, "Error reading next message from stream: %s and subject: %s",
                     configuration.stream(), configuration.subject());
             return Optional.empty();
+        } finally {
+            close(subscription);
         }
     }
 
-    @Override
-    public void close() {
+    public void close(Subscription subscription) {
         try {
             if (subscription.isActive()) {
                 subscription.drain(Duration.ofMillis(1000));

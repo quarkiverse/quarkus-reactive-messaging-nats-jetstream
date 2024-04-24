@@ -5,6 +5,7 @@ import static io.quarkiverse.reactive.messaging.nats.jetstream.mapper.PayloadMap
 import static io.smallrye.reactive.messaging.tracing.TracingUtils.traceOutgoing;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.util.*;
 
 import jakarta.enterprise.context.ApplicationScoped;
@@ -20,22 +21,24 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.mapper.PayloadMapper;
 import io.quarkiverse.reactive.messaging.nats.jetstream.setup.JetStreamSetupException;
 import io.quarkiverse.reactive.messaging.nats.jetstream.tracing.JetStreamInstrumenter;
 import io.quarkiverse.reactive.messaging.nats.jetstream.tracing.JetStreamTrace;
+import org.jboss.logging.Logger;
 
 @ApplicationScoped
 public class JetStreamPublisher {
+    private static final Logger logger = Logger.getLogger(JetStreamPublisher.class);
     private final PayloadMapper payloadMapper;
     private final Instrumenter<JetStreamTrace, Void> instrumenter;
 
     @Inject
     public JetStreamPublisher(PayloadMapper payloadMapper,
-            final JetStreamInstrumenter jetStreamInstrumenter) {
+                              final JetStreamInstrumenter jetStreamInstrumenter) {
         this.payloadMapper = payloadMapper;
         this.instrumenter = jetStreamInstrumenter.publisher();
     }
 
     public <T> Message<T> publish(final Connection connection,
-            final JetStreamPublishConfiguration configuration,
-            final Message<T> message) {
+                                  final JetStreamPublishConfiguration configuration,
+                                  final Message<T> message) {
         try {
             final var metadata = message.getMetadata(JetStreamOutgoingMessageMetadata.class);
             final var messageId = metadata.map(JetStreamOutgoingMessageMetadata::messageId)
@@ -45,7 +48,9 @@ public class JetStreamPublisher {
                     .map(subtopic -> configuration.subject() + "." + subtopic).orElseGet(configuration::subject);
             final var headers = new HashMap<String, List<String>>();
             metadata.ifPresent(m -> headers.putAll(m.headers()));
-            headers.putIfAbsent(MESSAGE_TYPE_HEADER, List.of(message.getPayload().getClass().getTypeName()));
+            if (message.getPayload() != null) {
+                headers.putIfAbsent(MESSAGE_TYPE_HEADER, List.of(message.getPayload().getClass().getTypeName()));
+            }
 
             if (configuration.traceEnabled()) {
                 // Create a new span for the outbound message and record updated tracing information in
@@ -57,7 +62,14 @@ public class JetStreamPublisher {
 
             final var jetStream = connection.jetStream();
             final var options = createPublishOptions(messageId, configuration.stream());
-            jetStream.publish(subject, toJetStreamHeaders(headers), payload, options);
+            final var ack = jetStream.publish(subject, toJetStreamHeaders(headers), payload, options);
+
+            if (logger.isDebugEnabled()) {
+                logger.debugf("Published message: %s", ack);
+            }
+
+            // flush all outgoing messages
+            connection.flush(Duration.ZERO);
 
             return message;
         } catch (IOException | JetStreamApiException | JetStreamSetupException e) {

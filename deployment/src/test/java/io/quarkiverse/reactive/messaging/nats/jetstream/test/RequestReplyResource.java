@@ -1,56 +1,47 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.test;
 
-import java.time.Duration;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
-
-import jakarta.enterprise.context.RequestScoped;
-import jakarta.inject.Inject;
-import jakarta.ws.rs.*;
-
-import org.eclipse.microprofile.reactive.messaging.Message;
-import org.eclipse.microprofile.reactive.messaging.Metadata;
-
 import io.nats.client.api.RetentionPolicy;
 import io.nats.client.api.StorageType;
 import io.quarkiverse.reactive.messaging.nats.jetstream.JetStreamOutgoingMessageMetadata;
-import io.quarkiverse.reactive.messaging.nats.jetstream.util.JetStreamRequestReply;
+import io.quarkiverse.reactive.messaging.nats.jetstream.util.JetStreamStreamUtility;
 import io.quarkiverse.reactive.messaging.nats.jetstream.util.RequestReplyConfiguration;
-import io.smallrye.mutiny.Uni;
+import jakarta.enterprise.context.RequestScoped;
+import jakarta.ws.rs.*;
+import org.eclipse.microprofile.reactive.messaging.Message;
+import org.eclipse.microprofile.reactive.messaging.Metadata;
+
+import java.time.Duration;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 
 @Path("/request-reply")
 @Produces("application/json")
 @RequestScoped
 public class RequestReplyResource {
-    private final JetStreamRequestReply jetStreamRequestReply;
-
-    @Inject
-    public RequestReplyResource(JetStreamRequestReply jetStreamRequestReply) {
-        this.jetStreamRequestReply = jetStreamRequestReply;
-    }
 
     @GET
     @Path("/streams")
-    public Set<String> getLast() {
-        return jetStreamRequestReply.getStreams().await().indefinitely();
+    public List<String> getLast() {
+        final var utility = new JetStreamStreamUtility();
+        return utility.getStreams(Duration.ofSeconds(1));
     }
 
     @POST
     @Path("/{id}/{data}")
-    public Uni<Data> produceData(@PathParam("id") String id, @PathParam("data") String data) {
+    public Data produceData(@PathParam("id") String id, @PathParam("data") String data) {
         final var messageId = UUID.randomUUID().toString();
         final var newMessage = Message.of(new Data(data, id, messageId),
                 Metadata.of(new JetStreamOutgoingMessageMetadata(messageId)));
         final var configuration = new RequestReplyConfiguration<Data>() {
             @Override
             public String stream() {
-                return "test";
+                return "request-reply";
             }
 
             @Override
             public String subject() {
-                return "test-subject";
+                return "test";
             }
 
             @Override
@@ -80,25 +71,22 @@ public class RequestReplyResource {
 
             @Override
             public Duration pollTimeout() {
-                return Duration.ofSeconds(10);
+                return Duration.ofSeconds(20);
             }
 
             @Override
             public Optional<Integer> maxDeliver() {
                 return Optional.empty();
             }
-        };
 
-        return jetStreamRequestReply.request(newMessage, configuration)
-                .onItem().transformToUni(reply -> jetStreamRequestReply.nextReply(configuration))
-                .onItem().transformToUni(reply -> Uni.createFrom().item(() -> {
-                    try {
-                        reply.ack().wait();
-                        return reply.getPayload();
-                    } catch (InterruptedException e) {
-                        throw new RuntimeException(e);
-                    }
-                }));
+            @Override
+            public Optional<String> durable() {
+                return Optional.of("test-durable");
+            }
+        };
+        final var utility = new JetStreamStreamUtility();
+        utility.publish(newMessage, configuration, Duration.ofSeconds(1));
+        return utility.pullNextMessage(configuration, Duration.ofSeconds(1)).map(Message::getPayload).orElse(null);
     }
 
 }

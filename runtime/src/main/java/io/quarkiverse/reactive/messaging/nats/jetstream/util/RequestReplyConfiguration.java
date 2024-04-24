@@ -25,4 +25,6 @@ public interface RequestReplyConfiguration<T> {
     Duration pollTimeout();
 
     Optional<Integer> maxDeliver();
+
+    Optional<String> durable();
 }

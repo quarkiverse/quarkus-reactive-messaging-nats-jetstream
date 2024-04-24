@@ -3,6 +3,8 @@ package io.quarkiverse.reactive.messaging.nats.jetstream.client;
 import static io.nats.client.Connection.Status.CONNECTED;
 
 import java.io.IOException;
+import java.time.Duration;
+import java.util.concurrent.TimeoutException;
 
 import org.jboss.logging.Logger;
 
@@ -48,6 +50,14 @@ public class Connection implements AutoCloseable {
 
     public boolean isConnected() {
         return CONNECTED.equals(getStatus());
+    }
+
+    public void flush(Duration duration) {
+        try {
+            connection.flush(duration);
+        } catch (TimeoutException | InterruptedException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override

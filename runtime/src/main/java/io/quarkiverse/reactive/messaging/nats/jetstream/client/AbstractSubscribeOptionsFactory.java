@@ -2,7 +2,9 @@ package io.quarkiverse.reactive.messaging.nats.jetstream.client;
 
 import java.time.Duration;
 
+import io.nats.client.api.AckPolicy;
 import io.nats.client.api.ConsumerConfiguration;
+import io.nats.client.api.DeliverPolicy;
 
 public abstract class AbstractSubscribeOptionsFactory {
 
@@ -12,8 +14,9 @@ public abstract class AbstractSubscribeOptionsFactory {
         if (!configuration.filterSubjects().isEmpty()) {
             builder = builder.filterSubjects(configuration.filterSubjects());
         }
-        builder = configuration.ackWait().map(builder::ackWait).orElse(builder);
-        builder = configuration.deliverPolicy().map(builder::deliverPolicy).orElse(builder);
+        builder = builder.ackPolicy(AckPolicy.Explicit);
+        builder = configuration.ackWait().map(builder::ackWait).orElse(builder.ackWait(Duration.ofMillis(2500)));
+        builder = configuration.deliverPolicy().map(builder::deliverPolicy).orElse(builder.deliverPolicy(DeliverPolicy.All));
         builder = configuration.startSeq().map(builder::startSequence).orElse(builder);
         builder = configuration.startTime().map(builder::startTime).orElse(builder);
         builder = configuration.description().map(builder::description).orElse(builder);

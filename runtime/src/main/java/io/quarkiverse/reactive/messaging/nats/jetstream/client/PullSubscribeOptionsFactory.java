@@ -6,7 +6,7 @@ public class PullSubscribeOptionsFactory extends AbstractSubscribeOptionsFactory
 
     public PullSubscribeOptions create(final JetStreamPullConsumerConfiguration configuration) {
         var builder = PullSubscribeOptions.builder();
-        configuration.durable().map(builder::durable).orElse(builder);
+        builder = configuration.durable().map(builder::durable).orElse(builder);
         builder = builder.configuration(consumerConfiguration(configuration));
         return builder.build();
     }

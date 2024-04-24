@@ -30,7 +30,7 @@ public interface JetStreamSetupConfiguration {
                 .collect(Collectors.toUnmodifiableList());
     }
 
-    static JetStreamSetupConfiguration of(RequestReplyConfiguration configuration) {
+    static <T> JetStreamSetupConfiguration of(RequestReplyConfiguration<T> configuration) {
         return new DefaultJetStreamSetupConfiguration(configuration.stream(), Set.of(configuration.subject()),
                 configuration.replicas(), configuration.storageType(), configuration.retentionPolicy());
     }

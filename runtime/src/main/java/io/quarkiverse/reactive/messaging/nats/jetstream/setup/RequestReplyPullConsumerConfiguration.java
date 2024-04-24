@@ -12,10 +12,10 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.client.JetStreamConsumer
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.JetStreamPullConsumerConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.util.RequestReplyConfiguration;
 
-public class RequestReplyPullConsumerConfiguration implements JetStreamPullConsumerConfiguration {
-    private RequestReplyConfiguration requestReplyConfiguration;
+public class RequestReplyPullConsumerConfiguration<T> implements JetStreamPullConsumerConfiguration {
+    private final RequestReplyConfiguration<T> requestReplyConfiguration;
 
-    public RequestReplyPullConsumerConfiguration(RequestReplyConfiguration requestReplyConfiguration) {
+    public RequestReplyPullConsumerConfiguration(RequestReplyConfiguration<T> requestReplyConfiguration) {
         this.requestReplyConfiguration = requestReplyConfiguration;
     }
 
@@ -51,7 +51,7 @@ public class RequestReplyPullConsumerConfiguration implements JetStreamPullConsu
 
     @Override
     public Optional<String> durable() {
-        return Optional.empty();
+        return requestReplyConfiguration.durable();
     }
 
     @Override
