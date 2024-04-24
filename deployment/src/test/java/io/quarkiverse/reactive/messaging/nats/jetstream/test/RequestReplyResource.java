@@ -86,7 +86,7 @@ public class RequestReplyResource {
         };
         final var utility = new JetStreamStreamUtility();
         utility.publish(newMessage, configuration, Duration.ofSeconds(1));
-        return utility.pullNextMessage(configuration, Duration.ofSeconds(1)).map(Message::getPayload).orElse(null);
+        return utility.pullNextMessage(configuration, Duration.ofSeconds(1), Duration.ofSeconds(10)).map(Message::getPayload).orElse(null);
     }
 
 }

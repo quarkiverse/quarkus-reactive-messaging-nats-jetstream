@@ -32,11 +32,11 @@ public class JetStreamStreamUtility {
         }
     }
 
-    public <T> Optional<Message<T>> pullNextMessage(RequestReplyConfiguration<T> configuration, Duration connectionTimeout) {
+    public <T> Optional<Message<T>> pullNextMessage(RequestReplyConfiguration<T> configuration, Duration connectionTimeout, Duration fetchTimeout) {
         try (JetStreamClient jetStreamClient = getJetStreamClient()) {
             try (Connection connection = jetStreamClient.getOrEstablishConnection().await().atMost(connectionTimeout)) {
                 final var messageFactory = getMessageFactory();
-                return pullNextMessage(configuration, connection).map(message -> messageFactory.create(
+                return pullNextMessage(configuration, connection, fetchTimeout).map(message -> messageFactory.create(
                         message,
                         configuration.traceEnabled(),
                         configuration.payloadType(),
@@ -77,7 +77,7 @@ public class JetStreamStreamUtility {
         }, message);
     }
 
-    public <T> Optional<io.nats.client.Message> pullNextMessage(RequestReplyConfiguration<T> configuration, Connection connection) {
+    public <T> Optional<io.nats.client.Message> pullNextMessage(RequestReplyConfiguration<T> configuration, Connection connection, Duration fetchTimeout) {
         try {
             final var jetStream = connection.jetStream();
             final var subject = configuration.subject();
@@ -85,7 +85,7 @@ public class JetStreamStreamUtility {
             final var optionsFactory = new PullSubscribeOptionsFactory();
             final var subscription = jetStream.subscribe(subject, optionsFactory.create(JetStreamPullConsumerConfiguration.of(configuration)));
 
-            return subscription.fetch(1, Duration.ofSeconds(10)).stream().findAny();
+            return subscription.fetch(1, fetchTimeout).stream().findAny();
         } catch (IOException | JetStreamApiException e) {
             logger.errorf(e, "Failed to subscribe stream: %s and subject: %s",
                     configuration.stream(), configuration.subject());
