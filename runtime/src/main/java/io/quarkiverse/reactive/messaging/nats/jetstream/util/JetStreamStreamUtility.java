@@ -1,5 +1,15 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.util;
 
+import java.io.IOException;
+import java.time.Duration;
+import java.util.List;
+import java.util.Optional;
+
+import jakarta.enterprise.inject.spi.CDI;
+
+import org.eclipse.microprofile.reactive.messaging.Message;
+import org.jboss.logging.Logger;
+
 import io.nats.client.JetStreamApiException;
 import io.nats.client.impl.NatsJetStreamPullSubscription;
 import io.quarkiverse.reactive.messaging.nats.NatsConfiguration;
@@ -10,14 +20,6 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.setup.JetStreamSetup;
 import io.quarkiverse.reactive.messaging.nats.jetstream.setup.JetStreamSetupConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.tracing.JetStreamInstrumenter;
 import io.smallrye.reactive.messaging.providers.connectors.ExecutionHolder;
-import jakarta.enterprise.inject.spi.CDI;
-import org.eclipse.microprofile.reactive.messaging.Message;
-import org.jboss.logging.Logger;
-
-import java.io.IOException;
-import java.time.Duration;
-import java.util.List;
-import java.util.Optional;
 
 public class JetStreamStreamUtility {
     private static final Logger logger = Logger.getLogger(JetStreamStreamUtility.class);
@@ -27,13 +29,14 @@ public class JetStreamStreamUtility {
             try (Connection connection = jetStreamClient.getOrEstablishConnection().await().atMost(connectionTimeout)) {
                 final var setup = new JetStreamSetup();
                 final var setupResult = setup.addOrUpdateStream(connection, JetStreamSetupConfiguration.of(configuration));
-                logger.infof("Setup result: %s", setupResult);
+                logger.debugf("Setup result: %s", setupResult);
                 return publish(connection, message, configuration);
             }
         }
     }
 
-    public <T> Optional<Message<T>> pullNextMessage(RequestReplyConfiguration<T> configuration, Duration connectionTimeout, Duration fetchTimeout) {
+    public <T> Optional<Message<T>> pullNextMessage(RequestReplyConfiguration<T> configuration, Duration connectionTimeout,
+            Duration fetchTimeout) {
         try (JetStreamClient jetStreamClient = getJetStreamClient()) {
             try (Connection connection = jetStreamClient.getOrEstablishConnection().await().atMost(connectionTimeout)) {
                 final var messageFactory = getMessageFactory();
@@ -78,12 +81,14 @@ public class JetStreamStreamUtility {
         }, message);
     }
 
-    private <T> Optional<io.nats.client.Message> pullNextMessage(RequestReplyConfiguration<T> configuration, Connection connection, Duration fetchTimeout) {
+    private <T> Optional<io.nats.client.Message> pullNextMessage(RequestReplyConfiguration<T> configuration,
+            Connection connection, Duration fetchTimeout) {
         try {
             final var jetStream = connection.jetStream();
             final var subject = configuration.subject();
             final var optionsFactory = new PullSubscribeOptionsFactory();
-            return pullNextMessage((NatsJetStreamPullSubscription) jetStream.subscribe(subject, optionsFactory.create(JetStreamPullConsumerConfiguration.of(configuration))), fetchTimeout);
+            return pullNextMessage((NatsJetStreamPullSubscription) jetStream.subscribe(subject,
+                    optionsFactory.create(JetStreamPullConsumerConfiguration.of(configuration))), fetchTimeout);
         } catch (IOException | JetStreamApiException e) {
             logger.errorf(e, "Failed to subscribe stream: %s and subject: %s",
                     configuration.stream(), configuration.subject());
@@ -91,7 +96,8 @@ public class JetStreamStreamUtility {
         }
     }
 
-    private Optional<io.nats.client.Message> pullNextMessage(NatsJetStreamPullSubscription subscription, Duration fetchTimeout) {
+    private Optional<io.nats.client.Message> pullNextMessage(NatsJetStreamPullSubscription subscription,
+            Duration fetchTimeout) {
         try {
             return subscription.fetch(1, fetchTimeout).stream().findAny();
         } finally {

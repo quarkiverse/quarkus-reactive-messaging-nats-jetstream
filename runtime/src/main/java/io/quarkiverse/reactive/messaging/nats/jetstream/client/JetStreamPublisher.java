@@ -12,6 +12,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
 import org.eclipse.microprofile.reactive.messaging.Message;
+import org.jboss.logging.Logger;
 
 import io.nats.client.JetStreamApiException;
 import io.nats.client.PublishOptions;
@@ -21,7 +22,6 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.mapper.PayloadMapper;
 import io.quarkiverse.reactive.messaging.nats.jetstream.setup.JetStreamSetupException;
 import io.quarkiverse.reactive.messaging.nats.jetstream.tracing.JetStreamInstrumenter;
 import io.quarkiverse.reactive.messaging.nats.jetstream.tracing.JetStreamTrace;
-import org.jboss.logging.Logger;
 
 @ApplicationScoped
 public class JetStreamPublisher {
@@ -31,14 +31,14 @@ public class JetStreamPublisher {
 
     @Inject
     public JetStreamPublisher(PayloadMapper payloadMapper,
-                              final JetStreamInstrumenter jetStreamInstrumenter) {
+            final JetStreamInstrumenter jetStreamInstrumenter) {
         this.payloadMapper = payloadMapper;
         this.instrumenter = jetStreamInstrumenter.publisher();
     }
 
     public <T> Message<T> publish(final Connection connection,
-                                  final JetStreamPublishConfiguration configuration,
-                                  final Message<T> message) {
+            final JetStreamPublishConfiguration configuration,
+            final Message<T> message) {
         try {
             final var metadata = message.getMetadata(JetStreamOutgoingMessageMetadata.class);
             final var messageId = metadata.map(JetStreamOutgoingMessageMetadata::messageId)

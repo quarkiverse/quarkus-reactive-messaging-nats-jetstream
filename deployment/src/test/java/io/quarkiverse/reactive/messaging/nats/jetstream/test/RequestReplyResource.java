@@ -1,19 +1,21 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.test;
 
+import java.time.Duration;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+import jakarta.enterprise.context.RequestScoped;
+import jakarta.ws.rs.*;
+
+import org.eclipse.microprofile.reactive.messaging.Message;
+import org.eclipse.microprofile.reactive.messaging.Metadata;
+
 import io.nats.client.api.RetentionPolicy;
 import io.nats.client.api.StorageType;
 import io.quarkiverse.reactive.messaging.nats.jetstream.JetStreamOutgoingMessageMetadata;
 import io.quarkiverse.reactive.messaging.nats.jetstream.util.JetStreamStreamUtility;
 import io.quarkiverse.reactive.messaging.nats.jetstream.util.RequestReplyConfiguration;
-import jakarta.enterprise.context.RequestScoped;
-import jakarta.ws.rs.*;
-import org.eclipse.microprofile.reactive.messaging.Message;
-import org.eclipse.microprofile.reactive.messaging.Metadata;
-
-import java.time.Duration;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
 
 @Path("/request-reply")
 @Produces("application/json")
@@ -30,7 +32,7 @@ public class RequestReplyResource {
 
             @Override
             public String subject() {
-                return "test";
+                return "requests";
             }
 
             @Override
@@ -70,7 +72,7 @@ public class RequestReplyResource {
 
             @Override
             public Optional<String> durable() {
-                return Optional.of("test-durable");
+                return Optional.of("test-request-reply");
             }
         };
     }
@@ -95,6 +97,7 @@ public class RequestReplyResource {
     @GET
     public Data consumeData() {
         final var utility = new JetStreamStreamUtility();
-        return utility.pullNextMessage(configuration, Duration.ofSeconds(1), Duration.ofSeconds(10)).map(Message::getPayload).orElse(new Data());
+        return utility.pullNextMessage(configuration, Duration.ofSeconds(1), Duration.ofSeconds(10)).map(Message::getPayload)
+                .orElse(new Data());
     }
 }
