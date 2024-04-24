@@ -78,20 +78,24 @@ public class JetStreamStreamUtility {
         }, message);
     }
 
-    public <T> Optional<io.nats.client.Message> pullNextMessage(RequestReplyConfiguration<T> configuration, Connection connection, Duration fetchTimeout) {
+    private <T> Optional<io.nats.client.Message> pullNextMessage(RequestReplyConfiguration<T> configuration, Connection connection, Duration fetchTimeout) {
         try {
             final var jetStream = connection.jetStream();
             final var subject = configuration.subject();
-
             final var optionsFactory = new PullSubscribeOptionsFactory();
-            final var subscription = (NatsJetStreamPullSubscription) jetStream.subscribe(subject, optionsFactory.create(JetStreamPullConsumerConfiguration.of(configuration)));
-            final var messages = subscription.fetch(1, fetchTimeout);
-
-            return messages.stream().findAny();
+            return pullNextMessage((NatsJetStreamPullSubscription) jetStream.subscribe(subject, optionsFactory.create(JetStreamPullConsumerConfiguration.of(configuration))), fetchTimeout);
         } catch (IOException | JetStreamApiException e) {
             logger.errorf(e, "Failed to subscribe stream: %s and subject: %s",
                     configuration.stream(), configuration.subject());
             return Optional.empty();
+        }
+    }
+
+    private Optional<io.nats.client.Message> pullNextMessage(NatsJetStreamPullSubscription subscription, Duration fetchTimeout) {
+        try {
+            return subscription.fetch(1, fetchTimeout).stream().findAny();
+        } finally {
+            subscription.unsubscribe();
         }
     }
 

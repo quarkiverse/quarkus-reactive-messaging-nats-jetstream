@@ -19,21 +19,10 @@ import java.util.UUID;
 @Produces("application/json")
 @RequestScoped
 public class RequestReplyResource {
+    private final RequestReplyConfiguration<Data> configuration;
 
-    @GET
-    @Path("/streams")
-    public List<String> getLast() {
-        final var utility = new JetStreamStreamUtility();
-        return utility.getStreams(Duration.ofSeconds(1));
-    }
-
-    @POST
-    @Path("/{id}/{data}")
-    public Data produceData(@PathParam("id") String id, @PathParam("data") String data) {
-        final var messageId = UUID.randomUUID().toString();
-        final var newMessage = Message.of(new Data(data, id, messageId),
-                Metadata.of(new JetStreamOutgoingMessageMetadata(messageId)));
-        final var configuration = new RequestReplyConfiguration<Data>() {
+    public RequestReplyResource() {
+        this.configuration = new RequestReplyConfiguration<>() {
             @Override
             public String stream() {
                 return "request-reply";
@@ -51,12 +40,12 @@ public class RequestReplyResource {
 
             @Override
             public StorageType storageType() {
-                return StorageType.Memory;
+                return StorageType.File;
             }
 
             @Override
             public RetentionPolicy retentionPolicy() {
-                return RetentionPolicy.Interest;
+                return RetentionPolicy.WorkQueue;
             }
 
             @Override
@@ -76,7 +65,7 @@ public class RequestReplyResource {
 
             @Override
             public Optional<Integer> maxDeliver() {
-                return Optional.empty();
+                return Optional.of(1);
             }
 
             @Override
@@ -84,9 +73,28 @@ public class RequestReplyResource {
                 return Optional.of("test-durable");
             }
         };
-        final var utility = new JetStreamStreamUtility();
-        utility.publish(newMessage, configuration, Duration.ofSeconds(1));
-        return utility.pullNextMessage(configuration, Duration.ofSeconds(1), Duration.ofSeconds(10)).map(Message::getPayload).orElse(null);
     }
 
+    @GET
+    @Path("/streams")
+    public List<String> getStream() {
+        final var utility = new JetStreamStreamUtility();
+        return utility.getStreams(Duration.ofSeconds(1));
+    }
+
+    @POST
+    @Path("/{id}/{data}")
+    public void produceData(@PathParam("id") String id, @PathParam("data") String data) {
+        final var messageId = UUID.randomUUID().toString();
+        final var newMessage = Message.of(new Data(data, id, messageId),
+                Metadata.of(new JetStreamOutgoingMessageMetadata(messageId)));
+        final var utility = new JetStreamStreamUtility();
+        utility.publish(newMessage, configuration, Duration.ofSeconds(1));
+    }
+
+    @GET
+    public Data consumeData() {
+        final var utility = new JetStreamStreamUtility();
+        return utility.pullNextMessage(configuration, Duration.ofSeconds(1), Duration.ofSeconds(10)).map(Message::getPayload).orElse(new Data());
+    }
 }

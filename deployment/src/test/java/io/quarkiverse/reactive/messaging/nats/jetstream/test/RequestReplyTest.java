@@ -3,8 +3,10 @@ package io.quarkiverse.reactive.messaging.nats.jetstream.test;
 import static io.restassured.RestAssured.get;
 import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import jakarta.inject.Inject;
 
@@ -40,14 +42,15 @@ public class RequestReplyTest {
         final var id = "b41b2f79-118b-47c0-ba14-ae1a55ebf1e1";
         final var data = "N6cXzMdfaf";
 
-        final var result = given()
+        given()
                 .pathParam("id", id).pathParam("data", data)
                 .post("/request-reply/{id}/{data}")
-                .then().statusCode(200).extract().as(Data.class);
+                .then().statusCode(204);
 
-        assertThat(result).isNotNull();
-        assertThat(result.getData()).isEqualTo(data);
-        assertThat(result.getResourceId()).isEqualTo(id);
+        await().atMost(1, TimeUnit.MINUTES).until(() -> {
+            final var dataValue = get("/request-reply").as(Data.class);
+            return data.equals(dataValue.getData()) && data.equals(dataValue.getResourceId());
+        });
 
         final var streams = (Set<String>) get("/request-reply/streams").as(Set.class);
         assertThat(streams).contains("test");
