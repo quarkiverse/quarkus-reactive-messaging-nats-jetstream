@@ -2,11 +2,13 @@ package io.quarkiverse.reactive.messaging.nats.jetstream.deployment;
 
 import java.time.Duration;
 
+import org.jboss.logging.Logger;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.utility.DockerImageName;
 
 public class NatsJetStreamContainer extends GenericContainer<NatsJetStreamContainer> {
+    private static final Logger logger = Logger.getLogger(NatsJetStreamContainer.class);
     public static final DockerImageName NATS_IMAGE = DockerImageName.parse("nats:2.10");
 
     static final Integer NATS_PORT = 4222;
@@ -27,6 +29,7 @@ public class NatsJetStreamContainer extends GenericContainer<NatsJetStreamContai
         super.withStartupTimeout(Duration.ofSeconds(180L));
         super.withExposedPorts(NATS_PORT, NATS_HTTP_PORT);
         super.withCommand("--jetstream", "--user", USERNAME, "--pass", PASSWORD, "--http_port", NATS_HTTP_PORT.toString());
+        super.withLogConsumer(outputFrame -> logger.info(outputFrame.getUtf8String().replace("\n", "")));
     }
 
     public String getServerUrl() {

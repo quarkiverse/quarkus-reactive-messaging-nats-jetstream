@@ -2,12 +2,10 @@ package io.quarkiverse.reactive.messaging.nats.jetstream.processors.publisher;
 
 import static io.quarkiverse.reactive.messaging.nats.jetstream.processors.publisher.MessagePullPublisherProcessor.CONSUMER_ALREADY_IN_USE;
 
-import java.time.Duration;
-
 import org.eclipse.microprofile.reactive.messaging.Message;
 import org.jboss.logging.Logger;
 
-import io.nats.client.*;
+import io.nats.client.JetStreamApiException;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.Connection;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.JetStreamClient;
 import io.quarkiverse.reactive.messaging.nats.jetstream.processors.MessageProcessor;
@@ -31,7 +29,7 @@ public interface MessagePublisherProcessor extends MessageProcessor {
                     }
                     close();
                 })
-                .onFailure().retry().withBackOff(Duration.ofMillis(configuration().getRetryBackoff())).indefinitely()
+                .onFailure().retry().withBackOff(configuration().retryBackoff()).indefinitely()
                 .onTermination().invoke(this::close)
                 .onCancellation().invoke(this::close)
                 .onCompletion().invoke(this::close);

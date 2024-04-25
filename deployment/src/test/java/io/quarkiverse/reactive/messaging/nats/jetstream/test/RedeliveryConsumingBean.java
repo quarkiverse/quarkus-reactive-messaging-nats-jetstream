@@ -19,18 +19,18 @@ public class RedeliveryConsumingBean {
     @Blocking
     public Uni<Void> unstable(Message<Integer> message) {
         return Uni.createFrom().item(message)
-                .onItem().invoke(m -> {
+                .onItem().transformToUni(m -> Uni.createFrom().item(() -> {
                     final var metadata = message.getMetadata(JetStreamIncomingMessageMetadata.class)
                             .orElseThrow(() -> new RuntimeException("No metadata"));
                     if (metadata.deliveredCount() < 3) {
-                        message.nack(new Exception("Redeliver message"));
+                        throw new RuntimeException("Redeliver message");
                     } else {
                         lastValue = message.getPayload();
-                        message.ack();
                     }
-                })
-                .onFailure().invoke(message::nack)
-                .onItem().ignore().andContinueWithNull();
+                    return m;
+                }))
+                .onItem().transformToUni(m -> Uni.createFrom().completionStage(m.ack()))
+                .onFailure().recoverWithUni(throwable -> Uni.createFrom().completionStage(message.nack(throwable)));
     }
 
     public Integer getLast() {

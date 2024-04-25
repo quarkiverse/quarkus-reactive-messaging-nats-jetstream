@@ -37,13 +37,15 @@ mp.messaging.outgoing.[channel-name].connector=quarkus-jetstream
 Let’s imagine you have a NATS JetStream broker running, and accessible using the localhost:4242 address. Configure your application to receive NATS messages on the data channel from the stream named: test and the subject named: data as follows:
 
 ----
-quarkus.reactive-messaging.nats.servers=nats://localhost:4242
-quarkus.reactive-messaging.nats.username=guest
-quarkus.reactive-messaging.nats.password=guest
-quarkus.reactive-messaging.nats.ssl-enabled=false
+quarkus.messaging.nats.servers=nats://localhost:4242
+quarkus.messaging.nats.nats.username=guest
+quarkus.messaging.nats.nats.password=guest
+quarkus.messaging.nats.nats.ssl-enabled=false
 
 # Streams and subjects are auto-created by default based on channel configuration
-quarkus.reactive-messaging.nats.jet-stream.auto-configure=true
+quarkus.messaging.nats.nats.jet-stream.auto-configure=true
+quarkus.messaging.nats.nats.jet-stream.streams[0].name=test
+quarkus.messaging.nats.nats.jet-stream.streams[0].subjects[0]=data
 
 mp.messaging.incoming.data.connector=quarkus-jetstream
 mp.messaging.incoming.data.stream=test
@@ -76,23 +78,25 @@ If you want more examples, please take a look at the tests of the extension.
 .NATS configuration
 [format="csv",cols="2"]
 |======
-quarkus.reactive-messaging.nats.servers,A comma-separated list of URI's nats://{host}:{port} to use for establishing the initial connection to the NATS cluster.
-quarkus.reactive-messaging.nats.username,The username to connect to the NATS server
-quarkus.reactive-messaging.nats.password,The password to connect to the NATS server
-quarkus.reactive-messaging.nats.ssl-enabled,Whether to enable SSL/TLS secure connections to the NATS server
-quarkus.reactive-messaging.nats.max-reconnects,The maximum number of reconnect attempts
-quarkus.reactive-messaging.nats.connection-timeout,The connection timeout in milliseconds
-quarkus.reactive-messaging.nats.error-listener,The classname for the error listener
-quarkus.reactive-messaging.nats.buffer-size,The size in bytes to make buffers for connections
+quarkus.messaging.nats.nats.servers,A comma-separated list of URI's nats://{host}:{port} to use for establishing the initial connection to the NATS cluster.
+quarkus.messaging.nats.nats.username,The username to connect to the NATS server
+quarkus.messaging.nats.nats.password,The password to connect to the NATS server
+quarkus.messaging.nats.nats.ssl-enabled,Whether to enable SSL/TLS secure connections to the NATS server
+quarkus.messaging.nats.nats.max-reconnects,The maximum number of reconnect attempts
+quarkus.messaging.nats.nats.connection-timeout,The connection timeout in milliseconds
+quarkus.messaging.nats.nats.error-listener,The classname for the error listener
+quarkus.messaging.nats.nats.buffer-size,The size in bytes to make buffers for connections
 |======
 
 .NATS JetStream configuration
 [format="csv",cols="2"]
 |======
-quarkus.reactive-messaging.nats.jet-stream.auto-configure,Autoconfigure stream and subjects based on channel configuration
-quarkus.reactive-messaging.nats.jet-stream.replicas,The number of replicas a message must be stored. Default value is 1
-quarkus.reactive-messaging.nats.jet-stream.storage-type,The storage type for stream data (File or Memory)
-quarkus.reactive-messaging.nats.jet-stream.retention-policy,Declares the retention policy for the stream (Limits or Interest)
+quarkus.messaging.nats.nats.jet-stream.auto-configure,Autoconfigure stream and subjects based on channel configuration
+quarkus.messaging.nats.nats.jet-stream.replicas,The number of replicas a message must be stored. Default value is 1
+quarkus.messaging.nats.nats.jet-stream.storage-type,The storage type for stream data (File or Memory)
+quarkus.messaging.nats.nats.jet-stream.retention-policy,Declares the retention policy for the stream (Limits or Interest)
+quarkus.messaging.nats.nats.jet-stream.streams[i].name,Name of the stream to setup if auto-configure is enabled
+quarkus.messaging.nats.nats.jet-stream.streams[i].subjects[n],Name of the subject in stream to setup if auto-configure is enabled
 |======
 
 === Channel configuration
@@ -103,7 +107,6 @@ quarkus.reactive-messaging.nats.jet-stream.retention-policy,Declares the retenti
 mp.messaging.outgoing.[channel-name].stream,The stream to subscribe messages to
 mp.messaging.outgoing.[channel-name].subject,The subject to subscribe messages to
 mp.messaging.outgoing.[channel-name].trace-enabled,Enable traces for subscriber
-mp.messaging.outgoing.[channel-name].auto-configure,Auto configure subject on NATS
 |======
 
 .Publisher processor attributes
@@ -112,20 +115,36 @@ mp.messaging.outgoing.[channel-name].auto-configure,Auto configure subject on NA
 mp.messaging.incoming.[channel-name].stream,The stream to publish messages from
 mp.messaging.incoming.[channel-name].subject,The subject to publish messages from
 mp.messaging.incoming.[channel-name].trace-enabled,Enable traces for publisher
-mp.messaging.incoming.[channel-name].auto-configure,Auto configure subject on NATS
-mp.messaging.incoming.[channel-name].ordered,Flag indicating whether this subscription should be ordered
-mp.messaging.incoming.[channel-name].deliver-group,The optional deliver group to join
-mp.messaging.incoming.[channel-name].durable,Sets the durable name for the consumer
-mp.messaging.incoming.[channel-name].max-deliver,The maximum number of times a specific message delivery will be attempted
-mp.messaging.incoming.[channel-name].back-off,The timing of re-deliveries as a comma-separated list of durations
+mp.messaging.incoming.[channel-name].publisher-type,The publisher type (Pull, Push)
 mp.messaging.incoming.[channel-name].payload-type,The class name of the payload type
-mp.messaging.incoming.[channel-name].pull,The subscription type
-mp.messaging.incoming.[channel-name].pull.batch-size,The size of batch of messages to be pulled in pull mode
-mp.messaging.incoming.[channel-name].pull.repull-at,The point in the current batch to tell the server to start the next batch
-mp.messaging.incoming.[channel-name].pull.poll-timeout,The poll timeout in milliseconds, use 0 to wait indefinitely
+mp.messaging.incoming.[channel-name].durable,Sets the durable name for the consumer
+mp.messaging.incoming.[channel-name].filter-subjects,A comma separated list of subjects that overlap with the subjects bound to the stream to filter delivery to subscribers
+mp.messaging.incoming.[channel-name].ack-wait,The duration that the server will wait for an ack for any individual message once it has been delivered to a consumer. If an ack is not received in time, the message will be redelivered
+mp.messaging.incoming.[channel-name].deliver-policy,The point in the stream to receive messages from, either DeliverAll, DeliverLast, DeliverNew, DeliverByStartSequence, DeliverByStartTime, or DeliverLastPerSubject
+mp.messaging.incoming.[channel-name].description,A description of the consumer
+mp.messaging.incoming.[channel-name].inactive-threshold,Duration that instructs the server to cleanup consumers that are inactive for that long
+mp.messaging.incoming.[channel-name].description,A description of the consumer
+mp.messaging.incoming.[channel-name].max-ack-pending,Defines the maximum number of messages, without an acknowledgement, that can be outstanding
+mp.messaging.incoming.[channel-name].max-deliver,The maximum number of times a specific message delivery will be attempted
+mp.messaging.incoming.[channel-name].replay-policy,If the policy is ReplayOriginal, the messages in the stream will be pushed to the client at the same rate that they were originally received, simulating the original timing of messages. If the policy is ReplayInstant (the default), the messages will be pushed to the client as fast as possible while adhering to the Ack Policy, Max Ack Pending and the client's ability to consume those messages.
+mp.messaging.incoming.[channel-name].replicas,Sets the number of replicas for the consumer's state. By default, when the value is set to zero, consumers inherit the number of replicas from the stream
+mp.messaging.incoming.[channel-name].memory-storage,If set, forces the consumer state to be kept in memory rather than inherit the storage type of the stream (file in this case).
+mp.messaging.incoming.[channel-name].back-off,The timing of re-deliveries as a comma-separated list of durations
 mp.messaging.incoming.[channel-name].retry-backoff,The retry backoff in milliseconds for retry publishing messages
 mp.messaging.incoming.[channel-name].exponential-backoff, calculation a exponential backoff using deliveredCount metadata (NB back-off must undefined to work properly)
 mp.messaging.incoming.[channel-name].exponential-backoff-max-duration, The maximum duration of exponential backoff
+mp.messaging.incoming.[channel-name].pull.batch-size,The size of batch of messages to be pulled in pull mode
+mp.messaging.incoming.[channel-name].pull.repull-at,The point in the current batch to tell the server to start the next batch
+mp.messaging.incoming.[channel-name].pull.poll-timeout,The poll timeout in milliseconds, use 0 to wait indefinitely
+mp.messaging.incoming.[channel-name].pull.max-waiting,The maximum number of waiting pull requests
+mp.messaging.incoming.[channel-name].pull.max-expires,The maximum duration a single pull request will wait for messages to be available to pull
+mp.messaging.incoming.[channel-name].push.ordered,Flag indicating whether this subscription should be ordered
+mp.messaging.incoming.[channel-name].push.deliver-group,The optional deliver group to join
+mp.messaging.incoming.[channel-name].push.flow-control,Enables per-subscription flow control using a sliding-window protocol. This protocol relies on the server and client exchanging messages to regulate when and how many messages are pushed to the client. This one-to-one flow control mechanism works in tandem with the one-to-many flow control imposed by MaxAckPending across all subscriptions bound to a consumer.
+mp.messaging.incoming.[channel-name].push.deliver-group,The optional deliver group to join
+mp.messaging.incoming.[channel-name].push.idle-heart-beat,If the idle heartbeat period is set, the server will regularly send a status message to the client (i.e. when the period has elapsed) while there are no new messages to send. This lets the client know that the JetStream service is still up and running, even when there is no activity on the stream. The message status header will have a code of 100. Unlike FlowControl, it will have no reply to address. It may have a description such \"Idle Heartbeat\". Note that this heartbeat mechanism is all handled transparently by supported clients and does not need to be handled by the application.
+mp.messaging.incoming.[channel-name].push.rate-limit,Used to throttle the delivery of messages to the consumer, in bits per second.
+mp.messaging.incoming.[channel-name].push.headers-only,Delivers only the headers of messages in the stream and not the bodies. Additionally adds Nats-Msg-Size header to indicate the size of the removed payload.
 |======
 
 == NATS JetStream

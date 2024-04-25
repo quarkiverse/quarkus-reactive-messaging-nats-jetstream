@@ -7,7 +7,7 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithDefault;
 
-@ConfigMapping(prefix = "quarkus.reactive-messaging.nats")
+@ConfigMapping(prefix = "quarkus.messaging.nats")
 @ConfigRoot(phase = ConfigPhase.RUN_TIME)
 public interface NatsConfiguration {
 

@@ -1,6 +1,7 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.test;
 
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 
 import jakarta.enterprise.context.ApplicationScoped;
 
@@ -16,25 +17,24 @@ import io.smallrye.reactive.messaging.annotations.Blocking;
 public class DataConsumingBean {
     private final static Logger logger = Logger.getLogger(DataConsumingBean.class);
 
-    volatile Optional<Data> lastData = Optional.empty();
+    private AtomicReference<Data> lastData = new AtomicReference<>();
 
     @Blocking
     @Incoming("data-consumer")
     public Uni<Void> data(Message<String> message) {
         return Uni.createFrom().item(message)
-                .onItem().invoke(this::handleData)
-                .onItem().ignore().andContinueWithNull();
+                .onItem().invoke(m -> {
+                    logger.infof("Received message: %s", message);
+                    message.getMetadata(JetStreamIncomingMessageMetadata.class)
+                            .ifPresent(metadata -> lastData.set(
+                                    new Data(message.getPayload(), metadata.headers().get("RESOURCE_ID").get(0),
+                                            metadata.messageId())));
+                })
+                .onItem().transformToUni(m -> Uni.createFrom().completionStage(m.ack()))
+                .onFailure().recoverWithUni(throwable -> Uni.createFrom().completionStage(message.nack(throwable)));
     }
 
     public Optional<Data> getLast() {
-        return lastData;
-    }
-
-    private void handleData(Message<String> message) {
-        logger.infof("Received message: %s", message);
-        message.getMetadata(JetStreamIncomingMessageMetadata.class)
-                .ifPresent(metadata -> lastData = Optional.of(
-                        new Data(message.getPayload(), metadata.headers().get("RESOURCE_ID").get(0), metadata.messageId())));
-        message.ack();
+        return Optional.ofNullable(lastData.get());
     }
 }

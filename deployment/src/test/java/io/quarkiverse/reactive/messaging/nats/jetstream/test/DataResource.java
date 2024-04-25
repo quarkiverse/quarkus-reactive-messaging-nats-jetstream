@@ -33,15 +33,17 @@ public class DataResource {
     @POST
     @Path("/{id}/{data}")
     public Uni<Void> produceData(@PathParam("id") String id, @PathParam("data") String data) {
-        return Uni.createFrom().item(() -> emitData(id, data))
-                .onItem().ignore().andContinueWithNull();
+        return emitData(id, data)
+                .onItem().transformToUni(message -> Uni.createFrom().completionStage(message.ack()));
     }
 
-    private Message<String> emitData(String id, String data) {
-        final var headers = new HashMap<String, List<String>>();
-        headers.put("RESOURCE_ID", List.of(data));
-        final var message = Message.of(data, Metadata.of(new JetStreamOutgoingMessageMetadata(id, headers)));
-        emitter.send(message);
-        return message;
+    private Uni<Message<String>> emitData(String id, String data) {
+        return Uni.createFrom().item(() -> {
+            final var headers = new HashMap<String, List<String>>();
+            headers.put("RESOURCE_ID", List.of(data));
+            final var message = Message.of(data, Metadata.of(new JetStreamOutgoingMessageMetadata(id, headers, null)));
+            emitter.send(message);
+            return message;
+        });
     }
 }

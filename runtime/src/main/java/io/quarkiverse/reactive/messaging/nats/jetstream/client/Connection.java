@@ -3,12 +3,12 @@ package io.quarkiverse.reactive.messaging.nats.jetstream.client;
 import static io.nats.client.Connection.Status.CONNECTED;
 
 import java.io.IOException;
+import java.time.Duration;
+import java.util.concurrent.TimeoutException;
 
 import org.jboss.logging.Logger;
 
-import io.nats.client.Dispatcher;
-import io.nats.client.JetStream;
-import io.nats.client.JetStreamManagement;
+import io.nats.client.*;
 import io.vertx.mutiny.core.Context;
 
 public class Connection implements AutoCloseable {
@@ -48,6 +48,18 @@ public class Connection implements AutoCloseable {
 
     public boolean isConnected() {
         return CONNECTED.equals(getStatus());
+    }
+
+    public StreamContext getStreamContext(String stream) throws IOException, JetStreamApiException {
+        return connection.getStreamContext(stream);
+    }
+
+    public void flush(Duration duration) {
+        try {
+            connection.flush(duration);
+        } catch (TimeoutException | InterruptedException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override

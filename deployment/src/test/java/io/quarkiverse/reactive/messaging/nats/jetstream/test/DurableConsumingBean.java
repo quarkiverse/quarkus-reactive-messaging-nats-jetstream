@@ -25,30 +25,30 @@ public class DurableConsumingBean {
     @Incoming("durable-consumer-1")
     public Uni<Void> durableConsumer1(Message<Integer> message) {
         return Uni.createFrom().item(message)
-                .onItem().invoke(() -> {
+                .onItem().transformToUni(m -> Uni.createFrom().item(() -> {
                     logger.infof("Received message on durable-consumer-1 channel: %s", message);
                     values.updateAndGet(values -> {
                         values.add(message.getPayload());
                         return values;
                     });
-                    message.ack();
-                })
-                .onFailure().invoke(message::nack)
-                .onItem().ignore().andContinueWithNull();
+                    return m;
+                }))
+                .onItem().transformToUni(m -> Uni.createFrom().completionStage(m.ack()))
+                .onFailure().recoverWithUni(throwable -> Uni.createFrom().completionStage(message.nack(throwable)));
     }
 
     @Incoming("durable-consumer-2")
     public Uni<Void> durableConsumer2(Message<Integer> message) {
         return Uni.createFrom().item(message)
-                .onItem().invoke(() -> {
+                .onItem().transformToUni(m -> Uni.createFrom().item(() -> {
                     logger.infof("Received message on durable-consumer-2 channel: %s", message);
                     values.updateAndGet(values -> {
                         values.add(message.getPayload());
                         return values;
                     });
-                    message.ack();
-                })
-                .onFailure().invoke(message::nack)
-                .onItem().ignore().andContinueWithNull();
+                    return m;
+                }))
+                .onItem().transformToUni(m -> Uni.createFrom().completionStage(m.ack()))
+                .onFailure().recoverWithUni(throwable -> Uni.createFrom().completionStage(message.nack(throwable)));
     }
 }

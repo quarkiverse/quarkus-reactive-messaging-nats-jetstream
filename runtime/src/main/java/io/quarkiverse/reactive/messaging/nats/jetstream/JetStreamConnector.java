@@ -19,17 +19,11 @@ import org.eclipse.microprofile.reactive.messaging.Message;
 import org.eclipse.microprofile.reactive.messaging.spi.Connector;
 
 import io.quarkiverse.reactive.messaging.nats.NatsConfiguration;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.ConnectionConfiguration;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.JetStreamClient;
-import io.quarkiverse.reactive.messaging.nats.jetstream.mapper.PayloadMapper;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.*;
 import io.quarkiverse.reactive.messaging.nats.jetstream.processors.MessageProcessor;
-import io.quarkiverse.reactive.messaging.nats.jetstream.processors.publisher.MessagePublisherConfiguration;
-import io.quarkiverse.reactive.messaging.nats.jetstream.processors.publisher.MessagePublisherProcessor;
-import io.quarkiverse.reactive.messaging.nats.jetstream.processors.publisher.MessagePullPublisherProcessor;
-import io.quarkiverse.reactive.messaging.nats.jetstream.processors.publisher.MessagePushPublisherProcessor;
+import io.quarkiverse.reactive.messaging.nats.jetstream.processors.publisher.*;
 import io.quarkiverse.reactive.messaging.nats.jetstream.processors.subscriber.MessageSubscriberConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.processors.subscriber.MessageSubscriberProcessor;
-import io.quarkiverse.reactive.messaging.nats.jetstream.tracing.JetStreamInstrumenter;
 import io.smallrye.reactive.messaging.annotations.ConnectorAttribute;
 import io.smallrye.reactive.messaging.connector.InboundConnector;
 import io.smallrye.reactive.messaging.connector.OutboundConnector;
@@ -45,43 +39,59 @@ import io.vertx.mutiny.core.Vertx;
 @ConnectorAttribute(name = "stream", description = "The stream to subscribe or publish messages to", direction = INCOMING_AND_OUTGOING, type = "String")
 @ConnectorAttribute(name = "subject", description = "The subject to subscribe or publish messages to", direction = INCOMING_AND_OUTGOING, type = "String")
 @ConnectorAttribute(name = "trace-enabled", description = "Enable traces for publisher or subscriber", direction = INCOMING_AND_OUTGOING, type = "Boolean", defaultValue = "true")
-@ConnectorAttribute(name = "auto-configure", description = "Auto configure subject on NATS", direction = INCOMING_AND_OUTGOING, type = "Boolean", defaultValue = "true")
 
-// Publish processor attributes
-@ConnectorAttribute(name = "ordered", description = "Flag indicating whether this subscription should be ordered", direction = INCOMING, type = "Boolean")
-@ConnectorAttribute(name = "deliver-group", description = "The optional deliver group to join", direction = INCOMING, type = "String")
-@ConnectorAttribute(name = "durable", description = "Sets the durable name for the consumer", direction = INCOMING, type = "String")
-@ConnectorAttribute(name = "max-deliver", description = "The maximum number of times a specific message delivery will be attempted", direction = INCOMING, type = "Long", defaultValue = "1")
-@ConnectorAttribute(name = "back-off", description = "The timing of re-deliveries as a comma-separated list of durations", direction = INCOMING, type = "String")
+// Publish common processor attributes
+@ConnectorAttribute(name = "publisher-type", description = "The publisher type (Pull, Push)", direction = INCOMING, type = "String", defaultValue = "Pull")
 @ConnectorAttribute(name = "payload-type", description = "The payload type", direction = INCOMING, type = "String")
+@ConnectorAttribute(name = "durable", description = "Sets the durable name for the consumer", direction = INCOMING, type = "String")
+@ConnectorAttribute(name = "filter-subjects", description = "A comma separated list of subjects that overlap with the subjects bound to the stream to filter delivery to subscribers", direction = INCOMING, type = "String")
+@ConnectorAttribute(name = "ack-wait", description = "The duration that the server will wait for an ack for any individual message once it has been delivered to a consumer. If an ack is not received in time, the message will be redelivered.", direction = INCOMING, type = "String")
+@ConnectorAttribute(name = "deliver-policy", description = "The point in the stream to receive messages from, either DeliverAll, DeliverLast, DeliverNew, DeliverByStartSequence, DeliverByStartTime, or DeliverLastPerSubject.", direction = INCOMING, type = "String")
+@ConnectorAttribute(name = "description", description = "A description of the consumer.", direction = INCOMING, type = "String")
+@ConnectorAttribute(name = "inactive-threshold", description = "Duration that instructs the server to cleanup consumers that are inactive for that long.", direction = INCOMING, type = "String")
 @ConnectorAttribute(name = "max-ack-pending", description = "Defines the maximum number of messages, without an acknowledgement, that can be outstanding.", direction = INCOMING, type = "Integer")
-@ConnectorAttribute(name = "pull", description = "The subscription type", direction = INCOMING, type = "boolean", defaultValue = "true")
-@ConnectorAttribute(name = "pull.batch-size", description = "The size of batch of messages to be pulled in pull mode", direction = INCOMING, type = "int", defaultValue = "100")
-@ConnectorAttribute(name = "pull.repull-at", description = "The point in the current batch to tell the server to start the next batch", direction = INCOMING, type = "int", defaultValue = "50")
-@ConnectorAttribute(name = "pull.poll-timeout", description = "The poll timeout in milliseconds, use 0 to wait indefinitely", direction = INCOMING, type = "int", defaultValue = "500")
+@ConnectorAttribute(name = "max-deliver", description = "The maximum number of times a specific message delivery will be attempted", direction = INCOMING, type = "Integer")
+@ConnectorAttribute(name = "replay-policy", description = "If the policy is ReplayOriginal, the messages in the stream will be pushed to the client at the same rate that they were originally received, simulating the original timing of messages. If the policy is ReplayInstant (the default), the messages will be pushed to the client as fast as possible while adhering to the Ack Policy, Max Ack Pending and the client's ability to consume those messages.", direction = INCOMING, type = "String")
+@ConnectorAttribute(name = "replicas", description = "Sets the number of replicas for the consumer's state. By default, when the value is set to zero, consumers inherit the number of replicas from the stream.", direction = INCOMING, type = "Integer")
+@ConnectorAttribute(name = "memory-storage", description = "If set, forces the consumer state to be kept in memory rather than inherit the storage type of the stream (file in this case).", direction = INCOMING, type = "Boolean")
+@ConnectorAttribute(name = "back-off", description = "The timing of re-deliveries as a comma-separated list of durations", direction = INCOMING, type = "String")
 @ConnectorAttribute(name = "retry-backoff", description = "The retry backoff in milliseconds for retry publishing messages", direction = INCOMING, type = "Long", defaultValue = "10000")
 @ConnectorAttribute(name = "exponential-backoff", description = "Calculation a exponential backoff using deliveredCount metadata (NB back-off must undefined to work properly)", direction = INCOMING, type = "Boolean", defaultValue = "false")
 @ConnectorAttribute(name = "exponential-backoff-max-duration", description = "The maximum duration of exponential backoff", direction = INCOMING, type = "String", defaultValue = "PT2M")
 
+// Publish pull processor attributes
+@ConnectorAttribute(name = "pull.batch-size", description = "The size of batch of messages to be pulled in pull mode", direction = INCOMING, type = "int", defaultValue = "100")
+@ConnectorAttribute(name = "pull.repull-at", description = "The point in the current batch to tell the server to start the next batch", direction = INCOMING, type = "int", defaultValue = "50")
+@ConnectorAttribute(name = "pull.max-waiting", description = "The maximum number of waiting pull requests.", direction = INCOMING, type = "Integer")
+@ConnectorAttribute(name = "pull.max-expires", description = "The maximum duration a single pull request will wait for messages to be available to pull.", direction = INCOMING, type = "String")
+
+// Publish push processor attributes
+@ConnectorAttribute(name = "push.ordered", description = "Flag indicating whether this subscription should be ordered", direction = INCOMING, type = "Boolean")
+@ConnectorAttribute(name = "push.deliver-group", description = "The optional deliver group to join", direction = INCOMING, type = "String")
+@ConnectorAttribute(name = "push.flow-control", description = "Enables per-subscription flow control using a sliding-window protocol. This protocol relies on the server and client exchanging messages to regulate when and how many messages are pushed to the client. This one-to-one flow control mechanism works in tandem with the one-to-many flow control imposed by MaxAckPending across all subscriptions bound to a consumer.", direction = INCOMING, type = "String")
+@ConnectorAttribute(name = "push.idle-heart-beat", description = "If the idle heartbeat period is set, the server will regularly send a status message to the client (i.e. when the period has elapsed) while there are no new messages to send. This lets the client know that the JetStream service is still up and running, even when there is no activity on the stream. The message status header will have a code of 100. Unlike FlowControl, it will have no reply to address. It may have a description such \"Idle Heartbeat\". Note that this heartbeat mechanism is all handled transparently by supported clients and does not need to be handled by the application.", direction = INCOMING, type = "String")
+@ConnectorAttribute(name = "push.rate-limit", description = "Used to throttle the delivery of messages to the consumer, in bits per second.", direction = INCOMING, type = "Long")
+@ConnectorAttribute(name = "push.headers-only", description = "Delivers only the headers of messages in the stream and not the bodies. Additionally adds Nats-Msg-Size header to indicate the size of the removed payload.", direction = INCOMING, type = "Boolean")
 public class JetStreamConnector implements InboundConnector, OutboundConnector, HealthReporter {
     public static final String CONNECTOR_NAME = "quarkus-jetstream";
 
     private final List<MessageProcessor> processors;
     private final ExecutionHolder executionHolder;
-    private final PayloadMapper payloadMapper;
-    private final JetStreamInstrumenter jetStreamInstrumenter;
     private final NatsConfiguration natsConfiguration;
+    private final JetStreamPublisher jetStreamPublisher;
+    private final MessageFactory messageFactory;
 
     @Inject
-    public JetStreamConnector(PayloadMapper payloadMapper,
-            JetStreamInstrumenter jetStreamInstrumenter,
+    public JetStreamConnector(
             ExecutionHolder executionHolder,
-            NatsConfiguration natsConfiguration) {
-        this.payloadMapper = payloadMapper;
-        this.jetStreamInstrumenter = jetStreamInstrumenter;
+            NatsConfiguration natsConfiguration,
+            JetStreamPublisher jetStreamPublisher,
+            MessageFactory messageFactory) {
         this.processors = new CopyOnWriteArrayList<>();
         this.executionHolder = executionHolder;
         this.natsConfiguration = natsConfiguration;
+        this.jetStreamPublisher = jetStreamPublisher;
+        this.messageFactory = messageFactory;
     }
 
     @Override
@@ -97,8 +107,10 @@ public class JetStreamConnector implements InboundConnector, OutboundConnector, 
     public Flow.Subscriber<? extends Message<?>> getSubscriber(Config config) {
         final var configuration = new JetStreamConnectorIncomingConfiguration(config);
         final var client = new JetStreamClient(ConnectionConfiguration.of(natsConfiguration), getVertx());
-        final var processor = new MessageSubscriberProcessor(client, MessageSubscriberConfiguration.of(configuration),
-                payloadMapper, jetStreamInstrumenter);
+        final var processor = new MessageSubscriberProcessor(
+                client,
+                MessageSubscriberConfiguration.of(configuration),
+                jetStreamPublisher);
         processors.add(processor);
         return processor.getSubscriber();
     }
@@ -133,16 +145,15 @@ public class JetStreamConnector implements InboundConnector, OutboundConnector, 
 
     private MessagePublisherProcessor createMessagePublisherProcessor(JetStreamClient client,
             JetStreamConnectorIncomingConfiguration configuration) {
-        if (configuration.getPull()) {
+        final var type = JetStreamConsumerType.valueOf(configuration.getPublisherType());
+        if (JetStreamConsumerType.Pull.equals(type)) {
             return new MessagePullPublisherProcessor(client,
-                    MessagePublisherConfiguration.of(configuration),
-                    payloadMapper,
-                    jetStreamInstrumenter);
+                    MessagePullPublisherConfiguration.of(configuration),
+                    messageFactory);
         } else {
             return new MessagePushPublisherProcessor(client,
-                    MessagePublisherConfiguration.of(configuration),
-                    payloadMapper,
-                    jetStreamInstrumenter);
+                    MessagePushPublisherConfiguration.of(configuration),
+                    messageFactory);
         }
     }
 }

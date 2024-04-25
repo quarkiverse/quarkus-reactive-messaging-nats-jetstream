@@ -168,10 +168,10 @@ public class ReactiveMesssagingNatsJetstreamDevServicesProcessor {
 
     private RunningDevService getRunningService(String containerId, Closeable closeable, String serverUrl) {
         Map<String, String> configMap = new HashMap<>();
-        configMap.put("quarkus.reactive-messaging.nats.servers", serverUrl);
-        configMap.put("quarkus.reactive-messaging.nats.username", NatsJetStreamContainer.USERNAME);
-        configMap.put("quarkus.reactive-messaging.nats.password", NatsJetStreamContainer.PASSWORD);
-        configMap.put("quarkus.reactive-messaging.nats.ssl-enabled", "false");
+        configMap.put("quarkus.messaging.nats.servers", serverUrl);
+        configMap.put("quarkus.messaging.nats.username", NatsJetStreamContainer.USERNAME);
+        configMap.put("quarkus.messaging.nats.password", NatsJetStreamContainer.PASSWORD);
+        configMap.put("quarkus.messaging.nats.ssl-enabled", "false");
         return new RunningDevService(FEATURE, containerId, closeable, configMap);
     }
 
