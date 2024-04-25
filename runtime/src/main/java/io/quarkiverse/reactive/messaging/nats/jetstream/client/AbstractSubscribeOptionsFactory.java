@@ -43,6 +43,7 @@ public abstract class AbstractSubscribeOptionsFactory {
             builder = pushConsumerConfiguration.rateLimit().map(builder::rateLimit).orElse(builder);
             builder = pushConsumerConfiguration.headersOnly().map(builder::headersOnly).orElse(builder);
         }
+
         return builder.build();
     }
 

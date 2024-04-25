@@ -5,14 +5,15 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 
+import io.nats.client.*;
+import io.nats.client.api.ConsumerInfo;
+import io.nats.client.impl.NatsJetStreamPullSubscription;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.Connection;
 import jakarta.enterprise.inject.spi.CDI;
 
 import org.eclipse.microprofile.reactive.messaging.Message;
 import org.jboss.logging.Logger;
 
-import io.nats.client.ConsumerContext;
-import io.nats.client.FetchConsumer;
-import io.nats.client.JetStreamApiException;
 import io.quarkiverse.reactive.messaging.nats.NatsConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.ExponentialBackoff;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.*;
@@ -88,15 +89,16 @@ public class JetStreamStreamUtility {
         try {
             final var optionsFactory = new PullSubscribeOptionsFactory();
             final var consumerConfiguration = optionsFactory
-                    .consumerConfiguration(configuration);
-            final var jsm = connection.jetStreamManagement();
-            jsm.addOrUpdateConsumer(configuration.stream(), consumerConfiguration);
+                    .create(configuration);
 
-            final var streamContext = connection.getStreamContext(configuration.stream());
-            final var consumerContext = streamContext.getConsumerContext(
-                    configuration.durable().orElseThrow(() -> new IllegalStateException("Consumer durable is required.")));
+            final var jetStream = connection.jetStream();
+            NatsJetStreamPullSubscription subscription = (NatsJetStreamPullSubscription) jetStream.subscribe(configuration.subject(), consumerConfiguration);
+            connection.flush(Duration.ofSeconds(1));
 
-            return nextMessage(consumerContext);
+            ConsumerInfo ci = subscription.getConsumerInfo();
+            logger.infof("Server consumer is named -> %s", ci.getName());
+
+            return nextMessage(configuration, subscription);
         } catch (Exception e) {
             logger.errorf(e, "Failed to fetch message from stream: %s and subject: %s",
                     configuration.stream(), configuration.subject());
@@ -104,10 +106,9 @@ public class JetStreamStreamUtility {
         }
     }
 
-    private Optional<io.nats.client.Message> nextMessage(ConsumerContext consumerContext) throws Exception {
-        try (FetchConsumer fetchConsumer = consumerContext.fetchMessages(1)) {
-            return Optional.ofNullable(fetchConsumer.nextMessage());
-        }
+    private <T> Optional<io.nats.client.Message> nextMessage(RequestReplyConfiguration<T> configuration, NatsJetStreamPullSubscription subscription) throws Exception {
+        subscription.pull(1);
+        return Optional.ofNullable(subscription.nextMessage(configuration.maxRequestExpires().orElse(Duration.ZERO)));
     }
 
     private JetStreamClient getJetStreamClient() {
