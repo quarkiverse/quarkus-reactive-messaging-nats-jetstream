@@ -3,10 +3,6 @@ package io.quarkiverse.reactive.messaging.nats.jetstream.test;
 import static io.restassured.RestAssured.get;
 import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.awaitility.Awaitility.await;
-
-import java.time.Duration;
-import java.util.concurrent.TimeUnit;
 
 import jakarta.inject.Inject;
 
