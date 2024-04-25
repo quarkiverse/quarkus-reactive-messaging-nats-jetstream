@@ -5,6 +5,7 @@ import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
+import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
 import jakarta.inject.Inject;
@@ -51,10 +52,13 @@ public class RequestReplyTest {
                 .then().statusCode(200).extract().as(String[].class);
         assertThat(streams).contains("request-reply");
 
-        await().atMost(30, TimeUnit.SECONDS).until(() -> {
-            final var dataValue = get("/request-reply").as(Data.class);
-            return data.equals(dataValue.getData()) && data.equals(dataValue.getResourceId());
-        });
+        final var result = given()
+                .get("/request-reply")
+                .then().statusCode(200).extract().as(Data.class);
+
+        assertThat(result).isNotNull();
+        assertThat(result.getResourceId()).isEqualTo(id);
+        assertThat(result.getData()).isEqualTo(data);
     }
 
 }
