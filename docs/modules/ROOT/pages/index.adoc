@@ -37,15 +37,15 @@ mp.messaging.outgoing.[channel-name].connector=quarkus-jetstream
 Let’s imagine you have a NATS JetStream broker running, and accessible using the localhost:4242 address. Configure your application to receive NATS messages on the data channel from the stream named: test and the subject named: data as follows:
 
 ----
-quarkus.reactive-messaging.nats.servers=nats://localhost:4242
-quarkus.reactive-messaging.nats.username=guest
-quarkus.reactive-messaging.nats.password=guest
-quarkus.reactive-messaging.nats.ssl-enabled=false
+quarkus.messaging.nats.servers=nats://localhost:4242
+quarkus.messaging.nats.nats.username=guest
+quarkus.messaging.nats.nats.password=guest
+quarkus.messaging.nats.nats.ssl-enabled=false
 
 # Streams and subjects are auto-created by default based on channel configuration
-quarkus.reactive-messaging.nats.jet-stream.auto-configure=true
-quarkus.reactive-messaging.nats.jet-stream.streams[0].name=test
-quarkus.reactive-messaging.nats.jet-stream.streams[0].subjects[0]=data
+quarkus.messaging.nats.nats.jet-stream.auto-configure=true
+quarkus.messaging.nats.nats.jet-stream.streams[0].name=test
+quarkus.messaging.nats.nats.jet-stream.streams[0].subjects[0]=data
 
 mp.messaging.incoming.data.connector=quarkus-jetstream
 mp.messaging.incoming.data.stream=test
@@ -78,25 +78,25 @@ If you want more examples, please take a look at the tests of the extension.
 .NATS configuration
 [format="csv",cols="2"]
 |======
-quarkus.reactive-messaging.nats.servers,A comma-separated list of URI's nats://{host}:{port} to use for establishing the initial connection to the NATS cluster.
-quarkus.reactive-messaging.nats.username,The username to connect to the NATS server
-quarkus.reactive-messaging.nats.password,The password to connect to the NATS server
-quarkus.reactive-messaging.nats.ssl-enabled,Whether to enable SSL/TLS secure connections to the NATS server
-quarkus.reactive-messaging.nats.max-reconnects,The maximum number of reconnect attempts
-quarkus.reactive-messaging.nats.connection-timeout,The connection timeout in milliseconds
-quarkus.reactive-messaging.nats.error-listener,The classname for the error listener
-quarkus.reactive-messaging.nats.buffer-size,The size in bytes to make buffers for connections
+quarkus.messaging.nats.nats.servers,A comma-separated list of URI's nats://{host}:{port} to use for establishing the initial connection to the NATS cluster.
+quarkus.messaging.nats.nats.username,The username to connect to the NATS server
+quarkus.messaging.nats.nats.password,The password to connect to the NATS server
+quarkus.messaging.nats.nats.ssl-enabled,Whether to enable SSL/TLS secure connections to the NATS server
+quarkus.messaging.nats.nats.max-reconnects,The maximum number of reconnect attempts
+quarkus.messaging.nats.nats.connection-timeout,The connection timeout in milliseconds
+quarkus.messaging.nats.nats.error-listener,The classname for the error listener
+quarkus.messaging.nats.nats.buffer-size,The size in bytes to make buffers for connections
 |======
 
 .NATS JetStream configuration
 [format="csv",cols="2"]
 |======
-quarkus.reactive-messaging.nats.jet-stream.auto-configure,Autoconfigure stream and subjects based on channel configuration
-quarkus.reactive-messaging.nats.jet-stream.replicas,The number of replicas a message must be stored. Default value is 1
-quarkus.reactive-messaging.nats.jet-stream.storage-type,The storage type for stream data (File or Memory)
-quarkus.reactive-messaging.nats.jet-stream.retention-policy,Declares the retention policy for the stream (Limits or Interest)
-quarkus.reactive-messaging.nats.jet-stream.streams[i].name,Name of the stream to setup if auto-configure is enabled
-quarkus.reactive-messaging.nats.jet-stream.streams[i].subjects[n],Name of the subject in stream to setup if auto-configure is enabled
+quarkus.messaging.nats.nats.jet-stream.auto-configure,Autoconfigure stream and subjects based on channel configuration
+quarkus.messaging.nats.nats.jet-stream.replicas,The number of replicas a message must be stored. Default value is 1
+quarkus.messaging.nats.nats.jet-stream.storage-type,The storage type for stream data (File or Memory)
+quarkus.messaging.nats.nats.jet-stream.retention-policy,Declares the retention policy for the stream (Limits or Interest)
+quarkus.messaging.nats.nats.jet-stream.streams[i].name,Name of the stream to setup if auto-configure is enabled
+quarkus.messaging.nats.nats.jet-stream.streams[i].subjects[n],Name of the subject in stream to setup if auto-configure is enabled
 |======
 
 === Channel configuration

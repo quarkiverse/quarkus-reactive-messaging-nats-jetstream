@@ -7,7 +7,7 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithDefault;
 
-@ConfigMapping(prefix = "quarkus.reactive-messaging.nats.jet-stream.devservices")
+@ConfigMapping(prefix = "quarkus.messaging.nats.jet-stream.devservices")
 @ConfigRoot(phase = ConfigPhase.BUILD_TIME)
 public interface ReactiveMesssagingNatsJetstreamDevServicesBuildTimeConfig {
 
