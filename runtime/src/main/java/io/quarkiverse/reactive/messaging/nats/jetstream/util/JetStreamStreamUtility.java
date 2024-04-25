@@ -88,7 +88,7 @@ public class JetStreamStreamUtility {
         try {
             final var optionsFactory = new PullSubscribeOptionsFactory();
             final var consumerConfiguration = optionsFactory
-                    .consumerConfiguration(JetStreamPullConsumerConfiguration.of(configuration));
+                    .consumerConfiguration(configuration);
             final var jsm = connection.jetStreamManagement();
             jsm.addOrUpdateConsumer(configuration.stream(), consumerConfiguration);
 
