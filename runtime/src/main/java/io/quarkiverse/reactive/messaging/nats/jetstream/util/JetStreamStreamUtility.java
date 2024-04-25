@@ -92,7 +92,8 @@ public class JetStreamStreamUtility {
                     .create(configuration);
 
             final var jetStream = connection.jetStream();
-            NatsJetStreamPullSubscription subscription = (NatsJetStreamPullSubscription) jetStream.subscribe(configuration.subject(), consumerConfiguration);
+            NatsJetStreamPullSubscription subscription = (NatsJetStreamPullSubscription) jetStream
+                    .subscribe(configuration.subject(), consumerConfiguration);
             connection.flush(Duration.ofSeconds(1));
 
             ConsumerInfo ci = subscription.getConsumerInfo();
@@ -106,7 +107,8 @@ public class JetStreamStreamUtility {
         }
     }
 
-    private <T> Optional<io.nats.client.Message> nextMessage(RequestReplyConfiguration<T> configuration, NatsJetStreamPullSubscription subscription) throws Exception {
+    private <T> Optional<io.nats.client.Message> nextMessage(RequestReplyConfiguration<T> configuration,
+            NatsJetStreamPullSubscription subscription) throws Exception {
         return subscription.fetch(1, configuration.maxRequestExpires().orElse(Duration.ZERO)).stream().findAny();
     }
 
