@@ -25,7 +25,7 @@ public class MessagePublisherProcessorTest {
         final var maxDeliever = 3;
 
         final var factory = new PushSubscribeOptionsFactory();
-        final var options = factory.create(new MessagePushPublisherConfiguration() {
+        final var options = factory.create(new MessagePushPublisherConfiguration<>() {
 
             @Override
             public Optional<Boolean> ordered() {
@@ -63,7 +63,7 @@ public class MessagePublisherProcessorTest {
             }
 
             @Override
-            public Optional<Class> payloadType() {
+            public Optional<Class<Object>> payloadType() {
                 return Optional.empty();
             }
 
