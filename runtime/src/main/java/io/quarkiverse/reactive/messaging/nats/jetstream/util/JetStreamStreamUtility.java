@@ -1,19 +1,8 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.util;
 
-import java.io.IOException;
-import java.time.Duration;
-import java.util.List;
-import java.util.Optional;
-
-import io.nats.client.*;
+import io.nats.client.JetStreamApiException;
 import io.nats.client.api.ConsumerInfo;
 import io.nats.client.impl.NatsJetStreamPullSubscription;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.Connection;
-import jakarta.enterprise.inject.spi.CDI;
-
-import org.eclipse.microprofile.reactive.messaging.Message;
-import org.jboss.logging.Logger;
-
 import io.quarkiverse.reactive.messaging.nats.NatsConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.ExponentialBackoff;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.*;
@@ -22,6 +11,14 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.setup.JetStreamSetup;
 import io.quarkiverse.reactive.messaging.nats.jetstream.setup.JetStreamSetupConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.tracing.JetStreamInstrumenter;
 import io.smallrye.reactive.messaging.providers.connectors.ExecutionHolder;
+import jakarta.enterprise.inject.spi.CDI;
+import org.eclipse.microprofile.reactive.messaging.Message;
+import org.jboss.logging.Logger;
+
+import java.io.IOException;
+import java.time.Duration;
+import java.util.List;
+import java.util.Optional;
 
 public class JetStreamStreamUtility {
     private static final Logger logger = Logger.getLogger(JetStreamStreamUtility.class);
