@@ -26,6 +26,7 @@ public class MessagePublisherProcessorTest {
 
         final var factory = new PushSubscribeOptionsFactory();
         final var options = factory.create(new MessagePushPublisherConfiguration() {
+
             @Override
             public Optional<Boolean> ordered() {
                 return Optional.empty();

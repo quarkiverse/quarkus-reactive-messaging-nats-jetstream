@@ -1,7 +1,9 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.test;
 
 import java.time.Duration;
+import java.time.ZonedDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -11,9 +13,12 @@ import jakarta.ws.rs.*;
 import org.eclipse.microprofile.reactive.messaging.Message;
 import org.eclipse.microprofile.reactive.messaging.Metadata;
 
+import io.nats.client.api.DeliverPolicy;
+import io.nats.client.api.ReplayPolicy;
 import io.nats.client.api.RetentionPolicy;
 import io.nats.client.api.StorageType;
 import io.quarkiverse.reactive.messaging.nats.jetstream.JetStreamOutgoingMessageMetadata;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.JetStreamConsumerType;
 import io.quarkiverse.reactive.messaging.nats.jetstream.util.JetStreamStreamUtility;
 import io.quarkiverse.reactive.messaging.nats.jetstream.util.RequestReplyConfiguration;
 
@@ -25,6 +30,7 @@ public class RequestReplyResource {
 
     public RequestReplyResource() {
         this.configuration = new RequestReplyConfiguration<>() {
+
             @Override
             public String stream() {
                 return "request-reply";
@@ -36,8 +42,8 @@ public class RequestReplyResource {
             }
 
             @Override
-            public Integer replicas() {
-                return 1;
+            public Optional<Integer> replicas() {
+                return Optional.of(1);
             }
 
             @Override
@@ -51,8 +57,8 @@ public class RequestReplyResource {
             }
 
             @Override
-            public Class<Data> payloadType() {
-                return Data.class;
+            public Optional<Class<Data>> payloadType() {
+                return Optional.of(Data.class);
             }
 
             @Override
@@ -61,8 +67,88 @@ public class RequestReplyResource {
             }
 
             @Override
-            public Duration pollTimeout() {
-                return Duration.ofSeconds(20);
+            public Duration connectionTimeout() {
+                return Duration.ofSeconds(10);
+            }
+
+            @Override
+            public Optional<Integer> maxWaiting() {
+                return Optional.empty();
+            }
+
+            @Override
+            public Optional<Duration> maxRequestExpires() {
+                return Optional.of(Duration.ofSeconds(20));
+            }
+
+            @Override
+            public JetStreamConsumerType type() {
+                return JetStreamConsumerType.Pull;
+            }
+
+            @Override
+            public List<String> filterSubjects() {
+                return List.of();
+            }
+
+            @Override
+            public Optional<Duration> ackWait() {
+                return Optional.empty();
+            }
+
+            @Override
+            public Optional<DeliverPolicy> deliverPolicy() {
+                return Optional.empty();
+            }
+
+            @Override
+            public Optional<Long> startSeq() {
+                return Optional.empty();
+            }
+
+            @Override
+            public Optional<ZonedDateTime> startTime() {
+                return Optional.empty();
+            }
+
+            @Override
+            public Optional<String> description() {
+                return Optional.empty();
+            }
+
+            @Override
+            public Optional<Duration> inactiveThreshold() {
+                return Optional.empty();
+            }
+
+            @Override
+            public Optional<Integer> maxAckPending() {
+                return Optional.empty();
+            }
+
+            @Override
+            public Optional<ReplayPolicy> replayPolicy() {
+                return Optional.empty();
+            }
+
+            @Override
+            public Optional<Boolean> memoryStorage() {
+                return Optional.empty();
+            }
+
+            @Override
+            public Optional<String> sampleFrequency() {
+                return Optional.empty();
+            }
+
+            @Override
+            public Map<String, String> metadata() {
+                return Map.of();
+            }
+
+            @Override
+            public List<Duration> backoff() {
+                return List.of();
             }
 
             @Override
@@ -97,7 +183,7 @@ public class RequestReplyResource {
     @GET
     public Data consumeData() {
         final var utility = new JetStreamStreamUtility();
-        return utility.pullNextMessage(configuration, Duration.ofSeconds(1), Duration.ofSeconds(10)).map(Message::getPayload)
+        return utility.nextMessage(configuration).map(Message::getPayload)
                 .orElse(new Data());
     }
 }

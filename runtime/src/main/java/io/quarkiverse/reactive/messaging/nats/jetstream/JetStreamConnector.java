@@ -62,7 +62,6 @@ import io.vertx.mutiny.core.Vertx;
 // Publish pull processor attributes
 @ConnectorAttribute(name = "pull.batch-size", description = "The size of batch of messages to be pulled in pull mode", direction = INCOMING, type = "int", defaultValue = "100")
 @ConnectorAttribute(name = "pull.repull-at", description = "The point in the current batch to tell the server to start the next batch", direction = INCOMING, type = "int", defaultValue = "50")
-@ConnectorAttribute(name = "pull.poll-timeout", description = "The the maximum time to wait", direction = INCOMING, type = "String")
 @ConnectorAttribute(name = "pull.max-waiting", description = "The maximum number of waiting pull requests.", direction = INCOMING, type = "Integer")
 @ConnectorAttribute(name = "pull.max-expires", description = "The maximum duration a single pull request will wait for messages to be available to pull.", direction = INCOMING, type = "String")
 

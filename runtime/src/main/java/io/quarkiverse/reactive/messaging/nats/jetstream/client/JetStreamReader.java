@@ -30,7 +30,7 @@ public class JetStreamReader implements AutoCloseable {
     public Message nextMessage() {
         if (isActive()) {
             try {
-                return reader.nextMessage(configuration.pollTimeout());
+                return reader.nextMessage(configuration.maxRequestExpires().orElse(Duration.ZERO));
             } catch (IllegalStateException e) {
                 logger.debugf(e, "The subscription become inactive for stream: %s and subject: %s",
                         configuration.stream(), configuration.subject());

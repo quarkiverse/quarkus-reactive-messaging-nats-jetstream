@@ -5,26 +5,17 @@ import java.util.Optional;
 
 import io.nats.client.api.RetentionPolicy;
 import io.nats.client.api.StorageType;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.JetStreamPullConsumerConfiguration;
 
-public interface RequestReplyConfiguration<T> {
-
-    String stream();
-
-    String subject();
-
-    Integer replicas();
+public interface RequestReplyConfiguration<T> extends JetStreamPullConsumerConfiguration {
 
     StorageType storageType();
 
     RetentionPolicy retentionPolicy();
 
-    Class<T> payloadType();
+    Optional<Class<T>> payloadType();
 
     boolean traceEnabled();
 
-    Duration pollTimeout();
-
-    Optional<Integer> maxDeliver();
-
-    Optional<String> durable();
+    Duration connectionTimeout();
 }

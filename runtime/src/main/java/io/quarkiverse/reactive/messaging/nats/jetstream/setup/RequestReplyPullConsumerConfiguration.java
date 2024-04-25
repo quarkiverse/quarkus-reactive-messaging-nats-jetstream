@@ -25,13 +25,8 @@ public class RequestReplyPullConsumerConfiguration<T> implements JetStreamPullCo
     }
 
     @Override
-    public Optional<Duration> maxExpires() {
-        return Optional.empty();
-    }
-
-    @Override
-    public Duration pollTimeout() {
-        return requestReplyConfiguration.pollTimeout();
+    public Optional<Duration> maxRequestExpires() {
+        return requestReplyConfiguration.maxRequestExpires();
     }
 
     @Override

@@ -8,7 +8,7 @@ import io.nats.client.api.DeliverPolicy;
 
 public abstract class AbstractSubscribeOptionsFactory {
 
-    protected ConsumerConfiguration consumerConfiguration(final JetStreamConsumerConfiguration configuration) {
+    public ConsumerConfiguration consumerConfiguration(final JetStreamConsumerConfiguration configuration) {
         var builder = ConsumerConfiguration.builder();
         builder = configuration.durable().map(builder::durable).orElse(builder);
         if (!configuration.filterSubjects().isEmpty()) {
@@ -35,7 +35,7 @@ public abstract class AbstractSubscribeOptionsFactory {
         }
         if (configuration instanceof JetStreamPullConsumerConfiguration pullConsumerConfiguration) {
             builder = pullConsumerConfiguration.maxWaiting().map(builder::maxPullWaiting).orElse(builder);
-            builder = pullConsumerConfiguration.maxExpires().map(builder::maxExpires).orElse(builder);
+            builder = pullConsumerConfiguration.maxRequestExpires().map(builder::maxExpires).orElse(builder);
         }
         if (configuration instanceof JetStreamPushConsumerConfiguration pushConsumerConfiguration) {
             builder = pushConsumerConfiguration.flowControl().map(builder::flowControl).orElse(builder);

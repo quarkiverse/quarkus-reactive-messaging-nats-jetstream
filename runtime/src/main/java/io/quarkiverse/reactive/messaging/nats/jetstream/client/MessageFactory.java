@@ -13,7 +13,6 @@ import io.opentelemetry.instrumentation.api.instrumenter.Instrumenter;
 import io.quarkiverse.reactive.messaging.nats.jetstream.ExponentialBackoff;
 import io.quarkiverse.reactive.messaging.nats.jetstream.JetStreamIncomingMessage;
 import io.quarkiverse.reactive.messaging.nats.jetstream.mapper.PayloadMapper;
-import io.quarkiverse.reactive.messaging.nats.jetstream.processors.publisher.MessagePublisherConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.tracing.JetStreamInstrumenter;
 import io.quarkiverse.reactive.messaging.nats.jetstream.tracing.JetStreamTrace;
 import io.vertx.mutiny.core.Context;
@@ -35,10 +34,8 @@ public class MessageFactory {
             boolean tracingEnabled,
             Class<?> payloadType,
             Context context,
-            MessagePublisherConfiguration<T> configuration) {
+            ExponentialBackoff exponentialBackoff) {
         try {
-            final var exponentialBackoff = new ExponentialBackoff(configuration.exponentialBackoff(),
-                    configuration.exponentialBackoffMaxDuration());
             final var incomingMessage = payloadType != null
                     ? new JetStreamIncomingMessage<>(message, payloadMapper.toPayload(message, payloadType), context,
                             exponentialBackoff)

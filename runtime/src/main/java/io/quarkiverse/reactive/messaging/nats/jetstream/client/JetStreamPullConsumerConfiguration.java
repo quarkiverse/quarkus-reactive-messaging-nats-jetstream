@@ -10,9 +10,7 @@ public interface JetStreamPullConsumerConfiguration extends JetStreamConsumerCon
 
     Optional<Integer> maxWaiting();
 
-    Optional<Duration> maxExpires();
-
-    Duration pollTimeout();
+    Optional<Duration> maxRequestExpires();
 
     static <T> JetStreamPullConsumerConfiguration of(RequestReplyConfiguration<T> requestReplyConfiguration) {
         return new RequestReplyPullConsumerConfiguration<>(requestReplyConfiguration);

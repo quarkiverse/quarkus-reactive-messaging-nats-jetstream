@@ -18,18 +18,13 @@ public class DefaultMessagePullPublisherConfiguration<T> extends AbstractMessage
     }
 
     @Override
-    public Optional<Duration> maxExpires() {
+    public Optional<Duration> maxRequestExpires() {
         return configuration.getPullMaxExpires().map(this::toDuration);
     }
 
     @Override
     public Integer maxRequestBatch() {
         return configuration.getPullBatchSize();
-    }
-
-    @Override
-    public Duration pollTimeout() {
-        return configuration.getPullPollTimeout().map(this::toDuration).orElseGet(() -> Duration.ofMillis(500));
     }
 
     @Override

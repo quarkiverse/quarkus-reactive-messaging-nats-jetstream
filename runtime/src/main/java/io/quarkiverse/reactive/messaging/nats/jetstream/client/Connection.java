@@ -8,9 +8,7 @@ import java.util.concurrent.TimeoutException;
 
 import org.jboss.logging.Logger;
 
-import io.nats.client.Dispatcher;
-import io.nats.client.JetStream;
-import io.nats.client.JetStreamManagement;
+import io.nats.client.*;
 import io.vertx.mutiny.core.Context;
 
 public class Connection implements AutoCloseable {
@@ -50,6 +48,10 @@ public class Connection implements AutoCloseable {
 
     public boolean isConnected() {
         return CONNECTED.equals(getStatus());
+    }
+
+    public StreamContext getStreamContext(String stream) throws IOException, JetStreamApiException {
+        return connection.getStreamContext(stream);
     }
 
     public void flush(Duration duration) {

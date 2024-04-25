@@ -32,6 +32,6 @@ public interface JetStreamSetupConfiguration {
 
     static <T> JetStreamSetupConfiguration of(RequestReplyConfiguration<T> configuration) {
         return new DefaultJetStreamSetupConfiguration(configuration.stream(), Set.of(configuration.subject()),
-                configuration.replicas(), configuration.storageType(), configuration.retentionPolicy());
+                configuration.replicas().orElse(1), configuration.storageType(), configuration.retentionPolicy());
     }
 }

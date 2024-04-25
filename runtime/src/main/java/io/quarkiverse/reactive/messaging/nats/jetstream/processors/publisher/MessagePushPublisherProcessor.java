@@ -8,6 +8,7 @@ import org.jboss.logging.Logger;
 import io.nats.client.Dispatcher;
 import io.nats.client.JetStreamApiException;
 import io.nats.client.JetStreamSubscription;
+import io.quarkiverse.reactive.messaging.nats.jetstream.ExponentialBackoff;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.Connection;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.JetStreamClient;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.MessageFactory;
@@ -111,7 +112,9 @@ public class MessagePushPublisherProcessor implements MessagePublisherProcessor 
                 .onCompletion().invoke(() -> shutDown(dispatcher))
                 .onCancellation().invoke(() -> shutDown(dispatcher))
                 .emitOn(runnable -> connection.context().runOnContext(runnable))
-                .map(message -> messageFactory.create(message, traceEnabled, payloadType, connection.context(), configuration));
+                .map(message -> messageFactory.create(message, traceEnabled, payloadType, connection.context(),
+                        new ExponentialBackoff(configuration.exponentialBackoff(),
+                                configuration.exponentialBackoffMaxDuration())));
     }
 
     private void setStatus(boolean healthy, String message) {

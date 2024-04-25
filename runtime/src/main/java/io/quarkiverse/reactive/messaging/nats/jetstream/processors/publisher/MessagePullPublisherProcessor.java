@@ -6,6 +6,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.jboss.logging.Logger;
 
+import io.quarkiverse.reactive.messaging.nats.jetstream.ExponentialBackoff;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.Connection;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.JetStreamClient;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.JetStreamReader;
@@ -104,7 +105,8 @@ public class MessagePullPublisherProcessor implements MessagePublisherProcessor 
             return Multi.createFrom().empty();
         } else {
             return Multi.createFrom()
-                    .item(() -> messageFactory.create(message, tracingEnabled, payloadType, context, configuration));
+                    .item(() -> messageFactory.create(message, tracingEnabled, payloadType, context, new ExponentialBackoff(
+                            configuration().exponentialBackoff(), configuration().exponentialBackoffMaxDuration())));
         }
     }
 
