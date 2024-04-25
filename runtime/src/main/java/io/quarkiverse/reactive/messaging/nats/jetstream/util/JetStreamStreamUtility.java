@@ -107,8 +107,7 @@ public class JetStreamStreamUtility {
     }
 
     private <T> Optional<io.nats.client.Message> nextMessage(RequestReplyConfiguration<T> configuration, NatsJetStreamPullSubscription subscription) throws Exception {
-        subscription.pull(1);
-        return Optional.ofNullable(subscription.nextMessage(configuration.maxRequestExpires().orElse(Duration.ZERO)));
+        return subscription.fetch(1, configuration.maxRequestExpires().orElse(Duration.ZERO)).stream().findAny();
     }
 
     private JetStreamClient getJetStreamClient() {
