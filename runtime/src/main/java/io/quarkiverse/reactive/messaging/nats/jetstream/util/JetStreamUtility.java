@@ -5,7 +5,8 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 
-import jakarta.enterprise.inject.spi.CDI;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 
 import org.eclipse.microprofile.reactive.messaging.Message;
 import org.jboss.logging.Logger;
@@ -22,8 +23,25 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.setup.JetStreamSetupConf
 import io.quarkiverse.reactive.messaging.nats.jetstream.tracing.JetStreamInstrumenter;
 import io.smallrye.reactive.messaging.providers.connectors.ExecutionHolder;
 
-public class JetStreamStreamUtility {
-    private static final Logger logger = Logger.getLogger(JetStreamStreamUtility.class);
+@ApplicationScoped
+public class JetStreamUtility {
+    private static final Logger logger = Logger.getLogger(JetStreamUtility.class);
+
+    private final NatsConfiguration natsConfiguration;
+    private final ExecutionHolder executionHolder;
+    private final PayloadMapper payloadMapper;
+    private final JetStreamInstrumenter jetStreamInstrumenter;
+    private final MessageFactory messageFactory;
+
+    @Inject
+    public JetStreamUtility(NatsConfiguration natsConfiguration, ExecutionHolder executionHolder, PayloadMapper payloadMapper,
+            JetStreamInstrumenter jetStreamInstrumenter, MessageFactory messageFactory) {
+        this.natsConfiguration = natsConfiguration;
+        this.executionHolder = executionHolder;
+        this.payloadMapper = payloadMapper;
+        this.jetStreamInstrumenter = jetStreamInstrumenter;
+        this.messageFactory = messageFactory;
+    }
 
     public <T> Message<T> publish(Message<T> message, RequestReplyConfiguration<T> configuration, Duration connectionTimeout) {
         try (JetStreamClient jetStreamClient = getJetStreamClient()) {
@@ -40,7 +58,6 @@ public class JetStreamStreamUtility {
         try (JetStreamClient jetStreamClient = getJetStreamClient()) {
             try (Connection connection = jetStreamClient.getOrEstablishConnection().await()
                     .atMost(configuration.connectionTimeout())) {
-                final var messageFactory = getMessageFactory();
                 return nextMessage(configuration, connection).map(message -> messageFactory.create(
                         message,
                         configuration.traceEnabled(),
@@ -112,19 +129,11 @@ public class JetStreamStreamUtility {
     }
 
     private JetStreamClient getJetStreamClient() {
-        final var natsConfiguration = CDI.current().select(NatsConfiguration.class).get();
-        final var executionHolder = CDI.current().select(ExecutionHolder.class).get();
         return new JetStreamClient(ConnectionConfiguration.of(natsConfiguration), executionHolder.vertx());
     }
 
     private JetStreamPublisher getJetStreamPublisher() {
-        final var payloadMapper = CDI.current().select(PayloadMapper.class).get();
-        final var jetStreamInstrumenter = CDI.current().select(JetStreamInstrumenter.class).get();
         return new JetStreamPublisher(payloadMapper, jetStreamInstrumenter);
-    }
-
-    private MessageFactory getMessageFactory() {
-        return CDI.current().select(MessageFactory.class).get();
     }
 
 }

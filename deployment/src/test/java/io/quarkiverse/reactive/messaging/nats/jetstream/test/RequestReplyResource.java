@@ -8,6 +8,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import jakarta.enterprise.context.RequestScoped;
+import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 
 import org.eclipse.microprofile.reactive.messaging.Message;
@@ -19,7 +20,7 @@ import io.nats.client.api.RetentionPolicy;
 import io.nats.client.api.StorageType;
 import io.quarkiverse.reactive.messaging.nats.jetstream.JetStreamOutgoingMessageMetadata;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.JetStreamConsumerType;
-import io.quarkiverse.reactive.messaging.nats.jetstream.util.JetStreamStreamUtility;
+import io.quarkiverse.reactive.messaging.nats.jetstream.util.JetStreamUtility;
 import io.quarkiverse.reactive.messaging.nats.jetstream.util.RequestReplyConfiguration;
 
 @Path("/request-reply")
@@ -27,8 +28,11 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.util.RequestReplyConfigu
 @RequestScoped
 public class RequestReplyResource {
     private final RequestReplyConfiguration<Data> configuration;
+    private final JetStreamUtility jetStreamUtility;
 
-    public RequestReplyResource() {
+    @Inject
+    public RequestReplyResource(JetStreamUtility jetStreamUtility) {
+        this.jetStreamUtility = jetStreamUtility;
         this.configuration = new RequestReplyConfiguration<>() {
 
             @Override
@@ -166,8 +170,7 @@ public class RequestReplyResource {
     @GET
     @Path("/streams")
     public List<String> getStream() {
-        final var utility = new JetStreamStreamUtility();
-        return utility.getStreams(Duration.ofSeconds(1));
+        return jetStreamUtility.getStreams(Duration.ofSeconds(1));
     }
 
     @POST
@@ -176,14 +179,12 @@ public class RequestReplyResource {
         final var messageId = UUID.randomUUID().toString();
         final var newMessage = Message.of(new Data(data, id, messageId),
                 Metadata.of(new JetStreamOutgoingMessageMetadata(messageId)));
-        final var utility = new JetStreamStreamUtility();
-        utility.publish(newMessage, configuration, Duration.ofSeconds(1));
+        jetStreamUtility.publish(newMessage, configuration, Duration.ofSeconds(1));
     }
 
     @GET
     public Data consumeData() {
-        final var utility = new JetStreamStreamUtility();
-        return utility.nextMessage(configuration).map(Message::getPayload)
+        return jetStreamUtility.nextMessage(configuration).map(Message::getPayload)
                 .orElse(new Data());
     }
 }
