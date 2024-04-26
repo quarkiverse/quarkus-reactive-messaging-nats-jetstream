@@ -15,7 +15,7 @@ public abstract class AbstractSubscribeOptionsFactory {
             builder = builder.filterSubjects(configuration.filterSubjects());
         }
         builder = builder.ackPolicy(AckPolicy.Explicit);
-        builder = configuration.ackWait().map(builder::ackWait).orElse(builder.ackWait(Duration.ofMillis(2500)));
+        builder = configuration.ackWait().map(builder::ackWait).orElse(builder);
         builder = configuration.deliverPolicy().map(builder::deliverPolicy).orElse(builder.deliverPolicy(DeliverPolicy.All));
         builder = configuration.startSeq().map(builder::startSequence).orElse(builder);
         builder = configuration.startTime().map(builder::startTime).orElse(builder);
