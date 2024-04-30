@@ -13,6 +13,8 @@ import org.jboss.logging.Logger;
 
 import io.nats.client.JetStreamApiException;
 import io.nats.client.api.ConsumerInfo;
+import io.nats.client.api.StreamInfo;
+import io.nats.client.api.StreamInfoOptions;
 import io.nats.client.impl.NatsJetStreamPullSubscription;
 import io.quarkiverse.reactive.messaging.nats.NatsConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.ExponentialBackoff;
@@ -76,6 +78,18 @@ public class JetStreamUtility {
             }
         } catch (IOException | JetStreamApiException e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    public Optional<StreamInfo> getStreamInfo(String streamName, Duration connectionTimeout) {
+        try (JetStreamClient jetStreamClient = getJetStreamClient()) {
+            try (Connection connection = jetStreamClient.getOrEstablishConnection().await().atMost(connectionTimeout)) {
+                final var jsm = connection.jetStreamManagement();
+                return Optional.of(jsm.getStreamInfo(streamName, StreamInfoOptions.allSubjects()));
+            }
+        } catch (IOException | JetStreamApiException e) {
+            logger.debugf(e, "Unable to read stream %s with message: %s", streamName, e.getMessage());
+            return Optional.empty();
         }
     }
 

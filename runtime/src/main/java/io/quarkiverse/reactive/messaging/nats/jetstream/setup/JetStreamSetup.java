@@ -65,9 +65,7 @@ public class JetStreamSetup {
             } else {
                 return Optional.of(new SetupResult(connection, streamInfo));
             }
-        } catch (IOException e) {
-            throw new JetStreamSetupException(String.format("Unable to update stream: %s", e.getMessage()), e);
-        } catch (JetStreamApiException e) {
+        } catch (IOException | JetStreamApiException e) {
             logger.warnf(e, "Unable to update stream: %s with message: %s", setupConfiguration.stream(), e.getMessage());
             return Optional.empty();
         }
@@ -84,9 +82,7 @@ public class JetStreamSetup {
                     .replicas(setupConfiguration.replicas())
                     .subjects(setupConfiguration.subjects());
             return Optional.of(new SetupResult(connection, jsm.addStream(streamConfigBuilder.build())));
-        } catch (IOException e) {
-            throw new JetStreamSetupException(String.format("Unable to create stream: %s", e.getMessage()), e);
-        } catch (JetStreamApiException e) {
+        } catch (IOException | JetStreamApiException e) {
             logger.warnf(e, "Unable to create stream: %s with message: %s", setupConfiguration.stream(), e.getMessage());
             return Optional.empty();
         }
@@ -95,9 +91,7 @@ public class JetStreamSetup {
     private Optional<StreamInfo> getStreamInfo(JetStreamManagement jsm, String stream) {
         try {
             return Optional.of(jsm.getStreamInfo(stream, StreamInfoOptions.allSubjects()));
-        } catch (IOException e) {
-            throw new JetStreamSetupException(String.format("Unable to read stream info: %s", e.getMessage()), e);
-        } catch (JetStreamApiException e) {
+        } catch (IOException | JetStreamApiException e) {
             return Optional.empty();
         }
     }
