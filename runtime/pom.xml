@@ -4,7 +4,7 @@
     <parent>
         <groupId>io.quarkiverse.reactivemessaging.nats-jetstream</groupId>
         <artifactId>quarkus-reactive-messsaging-nats-jetstream-parent</artifactId>
-        <version>1.6.3</version>
+        <version>1.7.0-SNAPSHOT</version>
     </parent>
     <artifactId>quarkus-reactive-messsaging-nats-jetstream</artifactId>
     <name>Quarkus Reactive Messsaging Nats Jetstream - Runtime</name>
