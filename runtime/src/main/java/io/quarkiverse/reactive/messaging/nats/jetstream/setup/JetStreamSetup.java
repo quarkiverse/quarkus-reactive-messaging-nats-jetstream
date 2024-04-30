@@ -38,7 +38,10 @@ public class JetStreamSetup {
             final var jsm = connection.jetStreamManagement();
             final var streamNames = jsm.getStreamNames();
             return addOrUpdateStream(connection, jsm, streamNames, setupConfiguration);
-        } catch (IOException | JetStreamApiException e) {
+        } catch (JetStreamApiException e) {
+            logger.warnf(e, "Unable to add or update stream: %s", e.getMessage());
+            return Optional.empty();
+        } catch (IOException e) {
             throw new JetStreamSetupException(String.format("Unable to configure stream: %s", e.getMessage()), e);
         }
     }
