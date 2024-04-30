@@ -2,6 +2,6 @@ package io.quarkiverse.reactive.messaging.nats.jetstream.graal;
 
 import io.quarkus.runtime.annotations.RegisterForReflection;
 
-@RegisterForReflection(targets = { byte[].class, byte.class })
+@RegisterForReflection(targets = { Byte[].class, Byte.class })
 public class Reflection {
 }
