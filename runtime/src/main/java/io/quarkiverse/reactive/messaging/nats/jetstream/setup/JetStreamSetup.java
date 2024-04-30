@@ -22,7 +22,6 @@ public class JetStreamSetup {
         try {
             if (jetStreamConfiguration.autoConfigure()) {
                 final var setupConfigurations = JetStreamSetupConfiguration.of(jetStreamConfiguration);
-                final var jsm = connection.jetStreamManagement();
                 setupConfigurations
                         .forEach(setupConfiguration -> addOrUpdateStream(connection, setupConfiguration));
             }
