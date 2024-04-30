@@ -47,8 +47,8 @@ public class JetStreamUtility {
         try (JetStreamClient jetStreamClient = getJetStreamClient()) {
             try (Connection connection = jetStreamClient.getOrEstablishConnection().await().atMost(connectionTimeout)) {
                 final var setup = new JetStreamSetup();
-                final var setupResult = setup.addOrUpdateStream(connection, JetStreamSetupConfiguration.of(configuration));
-                logger.debugf("Setup result: %s", setupResult);
+                setup.addOrUpdateStream(connection, JetStreamSetupConfiguration.of(configuration))
+                        .ifPresent(setupResult -> logger.debugf("Setup result: %s", setupResult));
                 return publish(connection, message, configuration);
             }
         }

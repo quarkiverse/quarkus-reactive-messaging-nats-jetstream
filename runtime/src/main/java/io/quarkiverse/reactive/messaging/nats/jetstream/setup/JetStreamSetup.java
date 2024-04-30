@@ -3,6 +3,7 @@ package io.quarkiverse.reactive.messaging.nats.jetstream.setup;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 
 import org.jboss.logging.Logger;
 
@@ -32,7 +33,7 @@ public class JetStreamSetup {
         }
     }
 
-    public SetupResult addOrUpdateStream(Connection connection, JetStreamSetupConfiguration setupConfiguration) {
+    public Optional<SetupResult> addOrUpdateStream(Connection connection, JetStreamSetupConfiguration setupConfiguration) {
         try {
             final var jsm = connection.jetStreamManagement();
             final var streamNames = jsm.getStreamNames();
@@ -42,7 +43,7 @@ public class JetStreamSetup {
         }
     }
 
-    private SetupResult addOrUpdateStream(Connection connection, JetStreamManagement jsm, List<String> streamNames,
+    private Optional<SetupResult> addOrUpdateStream(Connection connection, JetStreamManagement jsm, List<String> streamNames,
             JetStreamSetupConfiguration setupConfiguration) {
         try {
             if (streamNames.contains(setupConfiguration.stream())) {
@@ -53,14 +54,14 @@ public class JetStreamSetup {
                     final var streamConfiguration = streamInfo.getConfiguration();
                     final var newSubjects = new HashSet<>(streamConfiguration.getSubjects());
                     newSubjects.addAll(setupConfiguration.subjects());
-                    logger.infof("Updating stream %s with subjects %s", streamConfiguration.getName(), newSubjects);
-                    return new SetupResult(connection,
-                            jsm.updateStream(StreamConfiguration.builder(streamConfiguration).subjects(newSubjects).build()));
+                    logger.debugf("Updating stream %s with subjects %s", streamConfiguration.getName(), newSubjects);
+                    return Optional.of(new SetupResult(connection,
+                            jsm.updateStream(StreamConfiguration.builder(streamConfiguration).subjects(newSubjects).build())));
                 } else {
-                    return new SetupResult(connection, streamInfo);
+                    return Optional.of(new SetupResult(connection, streamInfo));
                 }
             } else {
-                logger.infof("Creating stream: %s with subjects: %s", setupConfiguration.stream(),
+                logger.debugf("Creating stream: %s with subjects: %s", setupConfiguration.stream(),
                         setupConfiguration.subjects());
                 StreamConfiguration.Builder streamConfigBuilder = StreamConfiguration.builder()
                         .name(setupConfiguration.stream())
@@ -68,9 +69,12 @@ public class JetStreamSetup {
                         .retentionPolicy(setupConfiguration.retentionPolicy())
                         .replicas(setupConfiguration.replicas())
                         .subjects(setupConfiguration.subjects());
-                return new SetupResult(connection, jsm.addStream(streamConfigBuilder.build()));
+                return Optional.of(new SetupResult(connection, jsm.addStream(streamConfigBuilder.build())));
             }
-        } catch (IOException | JetStreamApiException e) {
+        } catch (JetStreamApiException e) {
+            logger.warnf(e, "Unable to update stream: %s with message: %s", setupConfiguration.stream(), e.getMessage());
+            return Optional.empty();
+        } catch (IOException e) {
             throw new JetStreamSetupException(String.format("Unable to configure stream: %s", e.getMessage()), e);
         }
     }
