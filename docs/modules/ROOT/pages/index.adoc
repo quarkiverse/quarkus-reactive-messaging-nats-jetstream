@@ -38,14 +38,14 @@ Let’s imagine you have a NATS JetStream broker running, and accessible using t
 
 ----
 quarkus.messaging.nats.servers=nats://localhost:4242
-quarkus.messaging.nats.nats.username=guest
-quarkus.messaging.nats.nats.password=guest
-quarkus.messaging.nats.nats.ssl-enabled=false
+quarkus.messaging.nats.username=guest
+quarkus.messaging.nats.password=guest
+quarkus.messaging.nats.ssl-enabled=false
 
 # Streams and subjects are auto-created by default based on channel configuration
-quarkus.messaging.nats.nats.jet-stream.auto-configure=true
-quarkus.messaging.nats.nats.jet-stream.streams[0].name=test
-quarkus.messaging.nats.nats.jet-stream.streams[0].subjects[0]=data
+quarkus.messaging.nats.jet-stream.auto-configure=true
+quarkus.messaging.nats.jet-stream.streams[0].name=test
+quarkus.messaging.nats.jet-stream.streams[0].subjects[0]=data
 
 mp.messaging.incoming.data.connector=quarkus-jetstream
 mp.messaging.incoming.data.stream=test
