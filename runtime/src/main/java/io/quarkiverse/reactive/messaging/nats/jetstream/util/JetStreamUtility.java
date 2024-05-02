@@ -45,55 +45,18 @@ public class JetStreamUtility {
         this.messageFactory = messageFactory;
     }
 
-    public <T> Message<T> publish(Message<T> message, RequestReplyConfiguration<T> configuration, Duration connectionTimeout) {
-        try (JetStreamClient jetStreamClient = getJetStreamClient()) {
-            try (Connection connection = jetStreamClient.getOrEstablishConnection().await().atMost(connectionTimeout)) {
-                final var setup = new JetStreamSetup();
-                setup.addOrUpdateStream(connection, JetStreamSetupConfiguration.of(configuration))
-                        .ifPresent(setupResult -> logger.debugf("Setup result: %s", setupResult));
-                return publish(connection, message, configuration);
-            }
-        }
+    public JetStreamClient getJetStreamClient() {
+        return new JetStreamClient(ConnectionConfiguration.of(natsConfiguration), executionHolder.vertx());
     }
 
-    public <T> Optional<Message<T>> nextMessage(RequestReplyConfiguration<T> configuration) {
-        try (JetStreamClient jetStreamClient = getJetStreamClient()) {
-            try (Connection connection = jetStreamClient.getOrEstablishConnection().await()
-                    .atMost(configuration.connectionTimeout())) {
-                return nextMessage(configuration, connection).map(message -> messageFactory.create(
-                        message,
-                        configuration.traceEnabled(),
-                        configuration.payloadType().orElse(null),
-                        connection.context(),
-                        new ExponentialBackoff(false, Duration.ZERO)));
-            }
-        }
+    public Connection getConnection(JetStreamClient jetStreamClient, Duration connectionTimeout) {
+        return jetStreamClient.getOrEstablishConnection().await().atMost(connectionTimeout);
     }
 
-    public List<String> getStreams(Duration connectionTimeout) {
-        try (JetStreamClient jetStreamClient = getJetStreamClient()) {
-            try (Connection connection = jetStreamClient.getOrEstablishConnection().await().atMost(connectionTimeout)) {
-                final var jsm = connection.jetStreamManagement();
-                return jsm.getStreamNames();
-            }
-        } catch (IOException | JetStreamApiException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    public Optional<StreamInfo> getStreamInfo(String streamName, Duration connectionTimeout) {
-        try (JetStreamClient jetStreamClient = getJetStreamClient()) {
-            try (Connection connection = jetStreamClient.getOrEstablishConnection().await().atMost(connectionTimeout)) {
-                final var jsm = connection.jetStreamManagement();
-                return Optional.of(jsm.getStreamInfo(streamName, StreamInfoOptions.allSubjects()));
-            }
-        } catch (IOException | JetStreamApiException e) {
-            logger.debugf(e, "Unable to read stream %s with message: %s", streamName, e.getMessage());
-            return Optional.empty();
-        }
-    }
-
-    private <T> Message<T> publish(Connection connection, Message<T> message, RequestReplyConfiguration<T> configuration) {
+    public <T> Message<T> publish(Connection connection, Message<T> message, RequestReplyConfiguration<T> configuration) {
+        final var setup = new JetStreamSetup();
+        setup.addOrUpdateStream(connection, JetStreamSetupConfiguration.of(configuration))
+                .ifPresent(setupResult -> logger.debugf("Setup result: %s", setupResult));
         final var jetStreamPublisher = getJetStreamPublisher();
         return jetStreamPublisher.publish(connection, new JetStreamPublishConfiguration() {
             @Override
@@ -111,6 +74,34 @@ public class JetStreamUtility {
                 return configuration.subject();
             }
         }, message);
+    }
+
+    public <T> Optional<Message<T>> nextMessage(Connection connection, RequestReplyConfiguration<T> configuration) {
+        return nextMessage(configuration, connection).map(message -> messageFactory.create(
+                message,
+                configuration.traceEnabled(),
+                configuration.payloadType().orElse(null),
+                connection.context(),
+                new ExponentialBackoff(false, Duration.ZERO)));
+    }
+
+    public List<String> getStreams(Connection connection) {
+        try {
+            final var jsm = connection.jetStreamManagement();
+            return jsm.getStreamNames();
+        } catch (IOException | JetStreamApiException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public Optional<StreamInfo> getStreamInfo(Connection connection, String streamName) {
+        try {
+            final var jsm = connection.jetStreamManagement();
+            return Optional.of(jsm.getStreamInfo(streamName, StreamInfoOptions.allSubjects()));
+        } catch (IOException | JetStreamApiException e) {
+            logger.debugf(e, "Unable to read stream %s with message: %s", streamName, e.getMessage());
+            return Optional.empty();
+        }
     }
 
     private <T> Optional<io.nats.client.Message> nextMessage(
@@ -142,12 +133,7 @@ public class JetStreamUtility {
         return subscription.fetch(1, configuration.maxRequestExpires().orElse(Duration.ZERO)).stream().findAny();
     }
 
-    private JetStreamClient getJetStreamClient() {
-        return new JetStreamClient(ConnectionConfiguration.of(natsConfiguration), executionHolder.vertx());
-    }
-
     private JetStreamPublisher getJetStreamPublisher() {
         return new JetStreamPublisher(payloadMapper, jetStreamInstrumenter);
     }
-
 }
