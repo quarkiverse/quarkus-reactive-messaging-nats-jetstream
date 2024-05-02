@@ -8,7 +8,7 @@
     </parent>
     <groupId>io.quarkiverse.reactivemessaging.nats-jetstream</groupId>
     <artifactId>quarkus-reactive-messsaging-nats-jetstream-parent</artifactId>
-    <version>1.7.0-SNAPSHOT</version>
+    <version>1.6.6</version>
     <packaging>pom</packaging>
     <name>Quarkus Reactive Messsaging Nats Jetstream - Parent</name>
     <modules>
@@ -20,7 +20,7 @@
         <connection>scm:git:git@github.com:quarkiverse/quarkus-reactive-messsaging-nats-jetstream.git</connection>
         <developerConnection>scm:git:git@github.com:quarkiverse/quarkus-reactive-messsaging-nats-jetstream.git</developerConnection>
         <url>https://github.com/quarkiverse/quarkus-reactive-messsaging-nats-jetstream</url>
-      <tag>HEAD</tag>
+      <tag>1.6.6</tag>
   </scm>
     <properties>
         <compiler-plugin.version>3.13.0</compiler-plugin.version>
