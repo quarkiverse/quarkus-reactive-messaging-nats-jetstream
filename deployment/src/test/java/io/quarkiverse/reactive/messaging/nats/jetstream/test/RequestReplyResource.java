@@ -14,11 +14,10 @@ import jakarta.ws.rs.*;
 import org.eclipse.microprofile.reactive.messaging.Message;
 import org.eclipse.microprofile.reactive.messaging.Metadata;
 
-import io.nats.client.api.DeliverPolicy;
-import io.nats.client.api.ReplayPolicy;
-import io.nats.client.api.RetentionPolicy;
-import io.nats.client.api.StorageType;
+import io.nats.client.api.*;
 import io.quarkiverse.reactive.messaging.nats.jetstream.JetStreamOutgoingMessageMetadata;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.Connection;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.JetStreamClient;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.JetStreamConsumerType;
 import io.quarkiverse.reactive.messaging.nats.jetstream.util.JetStreamUtility;
 import io.quarkiverse.reactive.messaging.nats.jetstream.util.RequestReplyConfiguration;
@@ -170,21 +169,49 @@ public class RequestReplyResource {
     @GET
     @Path("/streams")
     public List<String> getStream() {
-        return jetStreamUtility.getStreams(Duration.ofSeconds(1));
+        try (JetStreamClient client = jetStreamUtility.getJetStreamClient()) {
+            try (Connection connection = jetStreamUtility.getConnection(client, Duration.ofSeconds(1))) {
+                return jetStreamUtility.getStreams(connection);
+            }
+        }
+    }
+
+    @GET
+    @Path("/stream-info/{stream}")
+    public StreamInfo getStream(@PathParam("stream") String stream) {
+        try (JetStreamClient client = jetStreamUtility.getJetStreamClient()) {
+            try (Connection connection = jetStreamUtility.getConnection(client, Duration.ofSeconds(1))) {
+                return jetStreamUtility.getStreamInfo(connection, stream)
+                        .map(info -> new StreamInfo(info.getConfiguration().getName(), info.getConfiguration().getSubjects()))
+                        .orElseThrow(NotFoundException::new);
+            }
+        }
     }
 
     @POST
     @Path("/{id}/{data}")
     public void produceData(@PathParam("id") String id, @PathParam("data") String data) {
-        final var messageId = UUID.randomUUID().toString();
-        final var newMessage = Message.of(new Data(data, id, messageId),
-                Metadata.of(new JetStreamOutgoingMessageMetadata(messageId)));
-        jetStreamUtility.publish(newMessage, configuration, Duration.ofSeconds(1));
+        try (JetStreamClient client = jetStreamUtility.getJetStreamClient()) {
+            try (Connection connection = jetStreamUtility.getConnection(client, Duration.ofSeconds(1))) {
+                final var messageId = UUID.randomUUID().toString();
+                final var newMessage = Message.of(new Data(data, id, messageId),
+                        Metadata.of(new JetStreamOutgoingMessageMetadata(messageId)));
+                jetStreamUtility.publish(connection, newMessage, configuration);
+            }
+        }
     }
 
     @GET
     public Data consumeData() {
-        return jetStreamUtility.nextMessage(configuration).map(Message::getPayload)
-                .orElse(new Data());
+        try (JetStreamClient client = jetStreamUtility.getJetStreamClient()) {
+            try (Connection connection = jetStreamUtility.getConnection(client, Duration.ofSeconds(1))) {
+                return jetStreamUtility.nextMessage(connection, configuration)
+                        .map(message -> {
+                            message.ack();
+                            return message.getPayload();
+                        })
+                        .orElse(new Data());
+            }
+        }
     }
 }

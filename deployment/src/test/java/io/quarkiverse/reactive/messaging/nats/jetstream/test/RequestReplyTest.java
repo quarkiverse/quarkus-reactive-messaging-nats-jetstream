@@ -1,6 +1,5 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.test;
 
-import static io.restassured.RestAssured.get;
 import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -21,7 +20,7 @@ public class RequestReplyTest {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
             () -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(TestSpanExporter.class, Data.class, RequestReplyResource.class))
+                    .addClasses(TestSpanExporter.class, Data.class, RequestReplyResource.class, StreamInfo.class))
             .withConfigurationResource("application-request-reply.properties");
 
     @Inject
@@ -55,6 +54,14 @@ public class RequestReplyTest {
         assertThat(result).isNotNull();
         assertThat(result.getResourceId()).isEqualTo(id);
         assertThat(result.getData()).isEqualTo(data);
+
+        final var streamInfo = given()
+                .pathParam("stream", "request-reply")
+                .get("/request-reply/stream-info/{stream}")
+                .then().statusCode(200).extract().as(StreamInfo.class);
+
+        assertThat(streamInfo).isNotNull();
+        assertThat(streamInfo.name()).isEqualTo("request-reply");
     }
 
 }
