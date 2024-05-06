@@ -20,6 +20,10 @@ import org.eclipse.microprofile.reactive.messaging.spi.Connector;
 
 import io.quarkiverse.reactive.messaging.nats.NatsConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.*;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ConnectionConfiguration;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.io.JetStreamConsumerType;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.io.JetStreamPublisher;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.io.MessageFactory;
 import io.quarkiverse.reactive.messaging.nats.jetstream.processors.MessageProcessor;
 import io.quarkiverse.reactive.messaging.nats.jetstream.processors.publisher.*;
 import io.quarkiverse.reactive.messaging.nats.jetstream.processors.subscriber.MessageSubscriberConfiguration;

@@ -17,7 +17,7 @@ import io.smallrye.reactive.messaging.annotations.Blocking;
 public class DataConsumingBean {
     private final static Logger logger = Logger.getLogger(DataConsumingBean.class);
 
-    private AtomicReference<Data> lastData = new AtomicReference<>();
+    private final AtomicReference<Data> lastData = new AtomicReference<>();
 
     @Blocking
     @Incoming("data-consumer")

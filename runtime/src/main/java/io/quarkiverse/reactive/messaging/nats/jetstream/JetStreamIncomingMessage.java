@@ -79,7 +79,7 @@ public class JetStreamIncomingMessage<T> implements JetStreamMessage<T> {
     @Override
     public CompletionStage<Void> nack(Throwable reason, Metadata metadata) {
         return VertxContext.runOnContext(context.getDelegate(), f -> {
-            if (exponentialBackoff.isEnabled()) {
+            if (exponentialBackoff.enabled()) {
                 metadata.get(JetStreamIncomingMessageMetadata.class)
                         .ifPresentOrElse(m -> message.nakWithDelay(exponentialBackoff.getDuration(m.deliveredCount())),
                                 message::nak);

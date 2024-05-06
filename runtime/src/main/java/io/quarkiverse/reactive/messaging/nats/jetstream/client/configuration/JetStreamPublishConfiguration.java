@@ -1,4 +1,4 @@
-package io.quarkiverse.reactive.messaging.nats.jetstream.client;
+package io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration;
 
 public interface JetStreamPublishConfiguration {
 

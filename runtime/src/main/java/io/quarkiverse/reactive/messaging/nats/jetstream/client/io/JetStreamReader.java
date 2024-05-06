@@ -1,4 +1,4 @@
-package io.quarkiverse.reactive.messaging.nats.jetstream.client;
+package io.quarkiverse.reactive.messaging.nats.jetstream.client.io;
 
 import java.io.IOException;
 import java.time.Duration;
@@ -8,6 +8,9 @@ import org.jboss.logging.Logger;
 import io.nats.client.JetStreamApiException;
 import io.nats.client.JetStreamSubscription;
 import io.nats.client.Message;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.Connection;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.JetStreamReaderConsumerConfiguration;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.PullSubscribeOptionsFactory;
 
 public class JetStreamReader implements AutoCloseable {
     private final static Logger logger = Logger.getLogger(JetStreamReader.class);
@@ -15,7 +18,6 @@ public class JetStreamReader implements AutoCloseable {
     private final JetStreamReaderConsumerConfiguration configuration;
     private final JetStreamSubscription subscription;
     private final io.nats.client.JetStreamReader reader;
-    private boolean closed;
 
     public JetStreamReader(Connection connection, JetStreamReaderConsumerConfiguration configuration)
             throws IOException, JetStreamApiException {
@@ -24,7 +26,6 @@ public class JetStreamReader implements AutoCloseable {
         final var optionsFactory = new PullSubscribeOptionsFactory();
         subscription = jetStream.subscribe(configuration.subject(), optionsFactory.create(configuration));
         reader = subscription.reader(configuration.maxRequestBatch(), configuration.rePullAt());
-        closed = false;
     }
 
     public Message nextMessage() {
@@ -46,7 +47,7 @@ public class JetStreamReader implements AutoCloseable {
     }
 
     public boolean isActive() {
-        return !closed && subscription.isActive();
+        return subscription.isActive();
     }
 
     @Override
@@ -65,6 +66,5 @@ public class JetStreamReader implements AutoCloseable {
         } catch (IllegalStateException e) {
             logger.warnf("Failed to unsubscribe subscription");
         }
-        closed = true;
     }
 }

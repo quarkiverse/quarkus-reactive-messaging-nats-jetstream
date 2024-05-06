@@ -12,8 +12,8 @@ import org.junit.jupiter.api.Test;
 
 import io.nats.client.api.DeliverPolicy;
 import io.nats.client.api.ReplayPolicy;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.JetStreamConsumerType;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.PushSubscribeOptionsFactory;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.PushSubscribeOptionsFactory;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.io.JetStreamConsumerType;
 
 public class MessagePublisherProcessorTest {
 

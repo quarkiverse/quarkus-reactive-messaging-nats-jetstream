@@ -5,7 +5,7 @@ import java.util.Optional;
 
 import io.nats.client.api.RetentionPolicy;
 import io.nats.client.api.StorageType;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.JetStreamPullConsumerConfiguration;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.JetStreamPullConsumerConfiguration;
 
 public interface RequestReplyConfiguration<T> extends JetStreamPullConsumerConfiguration {
 
