@@ -8,17 +8,16 @@ import org.jboss.logging.Logger;
 
 import io.quarkiverse.reactive.messaging.nats.jetstream.ExponentialBackoff;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.Connection;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.ConnectionEvent;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.JetStreamClient;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.JetStreamReader;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.MessageFactory;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.io.JetStreamReader;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.io.MessageFactory;
 import io.quarkiverse.reactive.messaging.nats.jetstream.processors.Status;
 import io.smallrye.mutiny.Multi;
 import io.vertx.mutiny.core.Context;
 
 public class MessagePullPublisherProcessor implements MessagePublisherProcessor {
     private final static Logger logger = Logger.getLogger(MessagePullPublisherProcessor.class);
-
-    final static int CONSUMER_ALREADY_IN_USE = 10013;
 
     private final MessagePullPublisherConfiguration<?> configuration;
     private final JetStreamClient jetStreamClient;
@@ -33,7 +32,8 @@ public class MessagePullPublisherProcessor implements MessagePublisherProcessor 
         this.configuration = configuration;
         this.jetStreamClient = jetStreamClient;
         this.messageFactory = messageFactory;
-        this.status = new AtomicReference<>(new Status(false, "Not connected"));
+        this.status = new AtomicReference<>(new Status(false, "Not connected", ConnectionEvent.Closed));
+        this.jetStreamClient.addListener(this);
     }
 
     @Override
@@ -71,14 +71,13 @@ public class MessagePullPublisherProcessor implements MessagePublisherProcessor 
         ExecutorService pullExecutor = Executors.newSingleThreadExecutor(JetstreamWorkerThread::new);
         try {
             jetStreamReader = new JetStreamReader(connection, configuration);
-            setStatus(true, "Is connected");
             return Multi.createBy().repeating()
                     .supplier(() -> jetStreamReader.nextMessage())
                     .until(message -> {
-                        if (jetStreamReader.isActive()) {
+                        if (connection.isConnected() && jetStreamReader.isActive()) {
                             return false;
                         } else {
-                            setStatus(false, "Reader become inactive");
+                            setStatus(new Status(false, "Reader become inactive", ConnectionEvent.CommunicationFailed));
                             return true;
                         }
                     })
@@ -90,13 +89,13 @@ public class MessagePullPublisherProcessor implements MessagePublisherProcessor 
                     .flatMap(message -> createMulti(message, traceEnabled, payloadType, connection.context()));
         } catch (Throwable e) {
             logger.errorf(e, "Failed subscribing to stream with message: %s", e.getMessage());
-            setStatus(false, e.getMessage());
             throw new RuntimeException(e);
         }
     }
 
-    private void setStatus(boolean healthy, String message) {
-        this.status.set(new Status(healthy, message));
+    @Override
+    public void setStatus(Status status) {
+        this.status.set(status);
     }
 
     private Multi<org.eclipse.microprofile.reactive.messaging.Message<?>> createMulti(io.nats.client.Message message,

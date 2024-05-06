@@ -3,7 +3,7 @@ package io.quarkiverse.reactive.messaging.nats.jetstream.processors.publisher;
 import java.time.Duration;
 import java.util.Optional;
 
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.JetStreamConsumerConfiguration;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.JetStreamConsumerConfiguration;
 
 public interface MessagePublisherConfiguration<T> extends JetStreamConsumerConfiguration {
 

@@ -5,8 +5,8 @@ import java.time.Duration;
 import org.jboss.logging.Logger;
 
 import io.quarkiverse.reactive.messaging.nats.NatsConfiguration;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.ConnectionConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.JetStreamClient;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ConnectionConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.setup.JetStreamSetup;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;

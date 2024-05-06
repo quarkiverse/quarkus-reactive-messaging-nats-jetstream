@@ -7,8 +7,8 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.JetStreamBuildConfigurat
 import io.quarkiverse.reactive.messaging.nats.jetstream.JetStreamConnector;
 import io.quarkiverse.reactive.messaging.nats.jetstream.JetStreamRecorder;
 import io.quarkiverse.reactive.messaging.nats.jetstream.administration.MessageResolver;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.JetStreamPublisher;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.MessageFactory;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.io.JetStreamPublisher;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.io.MessageFactory;
 import io.quarkiverse.reactive.messaging.nats.jetstream.mapper.PayloadMapper;
 import io.quarkiverse.reactive.messaging.nats.jetstream.tracing.JetStreamInstrumenter;
 import io.quarkiverse.reactive.messaging.nats.jetstream.util.JetStreamUtility;

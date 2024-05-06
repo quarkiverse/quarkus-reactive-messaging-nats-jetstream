@@ -6,20 +6,18 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.jboss.logging.Logger;
 
 import io.nats.client.Dispatcher;
-import io.nats.client.JetStreamApiException;
 import io.nats.client.JetStreamSubscription;
 import io.quarkiverse.reactive.messaging.nats.jetstream.ExponentialBackoff;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.Connection;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.ConnectionEvent;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.JetStreamClient;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.MessageFactory;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.PushSubscribeOptionsFactory;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.PushSubscribeOptionsFactory;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.io.MessageFactory;
 import io.quarkiverse.reactive.messaging.nats.jetstream.processors.Status;
 import io.smallrye.mutiny.Multi;
 
 public class MessagePushPublisherProcessor implements MessagePublisherProcessor {
     private final static Logger logger = Logger.getLogger(MessagePushPublisherProcessor.class);
-
-    final static int CONSUMER_ALREADY_IN_USE = 10013;
 
     private final MessagePushPublisherConfiguration<?> configuration;
     private final JetStreamClient jetStreamClient;
@@ -36,8 +34,9 @@ public class MessagePushPublisherProcessor implements MessagePublisherProcessor 
         this.configuration = configuration;
         this.jetStreamClient = jetStreamClient;
         this.messageFactory = messageFactory;
-        this.status = new AtomicReference<>(new Status(false, "Not connected"));
+        this.status = new AtomicReference<>(new Status(false, "Not connected", ConnectionEvent.Closed));
         this.optionsFactory = new PushSubscribeOptionsFactory();
+        this.jetStreamClient.addListener(this);
     }
 
     @Override
@@ -89,22 +88,18 @@ public class MessagePushPublisherProcessor implements MessagePublisherProcessor 
                 final var subject = configuration.subject();
                 dispatcher = connection.createDispatcher();
                 final var pushOptions = optionsFactory.create(configuration);
-                subscription = jetStream.subscribe(subject, dispatcher, emitter::emit, false, pushOptions);
-                setStatus(true, "Is connected");
-            } catch (JetStreamApiException e) {
-                if (CONSUMER_ALREADY_IN_USE == e.getApiErrorCode()) {
-                    setStatus(true, "Consumer already in use");
-                    emitter.fail(e);
-                } else {
-                    logger.errorf(e, "Failed subscribing to stream: %s, subject: %s with message: %s", configuration.stream(),
-                            configuration.subject(), e.getMessage());
-                    setStatus(false, e.getMessage());
-                    emitter.fail(e);
-                }
+                subscription = jetStream.subscribe(
+                        subject, dispatcher,
+                        emitter::emit,
+                        false,
+                        pushOptions);
             } catch (Throwable e) {
-                logger.errorf(e, "Failed subscribing to stream: %s, subject: %s with message: %s", configuration.stream(),
-                        configuration.subject(), e.getMessage());
-                setStatus(false, e.getMessage());
+                logger.errorf(
+                        e,
+                        "Failed subscribing to stream: %s, subject: %s with message: %s",
+                        configuration.stream(),
+                        configuration.subject(),
+                        e.getMessage());
                 emitter.fail(e);
             }
         })
@@ -112,13 +107,18 @@ public class MessagePushPublisherProcessor implements MessagePublisherProcessor 
                 .onCompletion().invoke(() -> shutDown(dispatcher))
                 .onCancellation().invoke(() -> shutDown(dispatcher))
                 .emitOn(runnable -> connection.context().runOnContext(runnable))
-                .map(message -> messageFactory.create(message, traceEnabled, payloadType, connection.context(),
-                        new ExponentialBackoff(configuration.exponentialBackoff(),
+                .map(message -> messageFactory.create(
+                        message,
+                        traceEnabled,
+                        payloadType, connection.context(),
+                        new ExponentialBackoff(
+                                configuration.exponentialBackoff(),
                                 configuration.exponentialBackoffMaxDuration())));
     }
 
-    private void setStatus(boolean healthy, String message) {
-        this.status.set(new Status(healthy, message));
+    @Override
+    public void setStatus(Status status) {
+        this.status.set(status);
     }
 
     private void shutDown(Dispatcher dispatcher) {

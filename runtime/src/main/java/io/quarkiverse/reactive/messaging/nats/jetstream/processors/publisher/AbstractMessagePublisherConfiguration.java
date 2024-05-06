@@ -10,7 +10,7 @@ import java.util.Optional;
 import io.nats.client.api.DeliverPolicy;
 import io.nats.client.api.ReplayPolicy;
 import io.quarkiverse.reactive.messaging.nats.jetstream.JetStreamConnectorIncomingConfiguration;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.JetStreamConsumerType;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.io.JetStreamConsumerType;
 import io.quarkiverse.reactive.messaging.nats.jetstream.mapper.PayloadMapper;
 
 public abstract class AbstractMessagePublisherConfiguration<T> implements MessagePublisherConfiguration<T> {

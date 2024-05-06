@@ -17,7 +17,7 @@ import io.smallrye.mutiny.Uni;
 public class DeadLetterConsumingBean {
     private final static Logger logger = Logger.getLogger(DeadLetterConsumingBean.class);
 
-    private AtomicReference<Data> lastData = new AtomicReference<>();
+    private final AtomicReference<Data> lastData = new AtomicReference<>();
 
     @Inject
     MessageResolver resolver;

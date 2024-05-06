@@ -7,5 +7,4 @@ public interface MessageProcessor {
     Status getStatus();
 
     void close();
-
 }

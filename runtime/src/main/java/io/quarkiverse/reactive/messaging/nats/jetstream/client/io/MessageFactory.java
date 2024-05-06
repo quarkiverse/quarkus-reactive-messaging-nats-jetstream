@@ -1,4 +1,4 @@
-package io.quarkiverse.reactive.messaging.nats.jetstream.client;
+package io.quarkiverse.reactive.messaging.nats.jetstream.client.io;
 
 import static io.smallrye.reactive.messaging.tracing.TracingUtils.traceIncoming;
 

@@ -18,7 +18,7 @@ import io.nats.client.api.*;
 import io.quarkiverse.reactive.messaging.nats.jetstream.JetStreamOutgoingMessageMetadata;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.Connection;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.JetStreamClient;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.JetStreamConsumerType;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.io.JetStreamConsumerType;
 import io.quarkiverse.reactive.messaging.nats.jetstream.util.JetStreamUtility;
 import io.quarkiverse.reactive.messaging.nats.jetstream.util.RequestReplyConfiguration;
 
