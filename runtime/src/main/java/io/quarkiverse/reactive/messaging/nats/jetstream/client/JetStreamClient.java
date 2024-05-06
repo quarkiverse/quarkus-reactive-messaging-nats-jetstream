@@ -157,6 +157,8 @@ public class JetStreamClient implements AutoCloseable {
                 case LAME_DUCK:
                     fireEvent(ConnectionEvent.LameDuck, "Lame duck");
                     break;
+                default:
+                    throw new RuntimeException(String.format("Unknown event type: %s", type));
             }
         }
     }
