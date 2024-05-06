@@ -30,7 +30,7 @@ public interface MessagePublisherProcessor extends MessageProcessor, ConnectionL
                 .onItem().transformToMulti(this::publish)
                 .onFailure().invoke(throwable -> {
                     if (!isConsumerAlreadyInUse(throwable)) {
-                        logger.errorf(throwable, "Failed to publish messages", throwable);
+                        logger.errorf(throwable, "Failed to publish messages: %s", throwable.getMessage());
                         setStatus(new Status(false, throwable.getMessage(), ConnectionEvent.CommunicationFailed));
                     }
                 })
