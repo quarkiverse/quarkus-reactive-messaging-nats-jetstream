@@ -89,7 +89,7 @@ public class MessageSubscriberProcessor implements MessageProcessor, ConnectionL
                 .transformToUni(connection -> publish(message, connection));
     }
 
-    private Uni<Message<?>> publish(Message<?> message, Connection connection) {
+    public Uni<Message<?>> publish(Message<?> message, Connection connection) {
         return Uni.createFrom().item(() -> jetStreamPublisher.publish(connection, configuration, message))
                 .emitOn(runnable -> connection.context().runOnContext(runnable))
                 .onItem().transformToUni(this::acknowledge)
