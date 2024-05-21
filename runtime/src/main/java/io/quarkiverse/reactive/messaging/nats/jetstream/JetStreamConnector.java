@@ -62,6 +62,7 @@ import io.vertx.mutiny.core.Vertx;
 @ConnectorAttribute(name = "retry-backoff", description = "The retry backoff in milliseconds for retry publishing messages", direction = INCOMING, type = "Long", defaultValue = "10000")
 @ConnectorAttribute(name = "exponential-backoff", description = "Calculation a exponential backoff using deliveredCount metadata (NB back-off must undefined to work properly)", direction = INCOMING, type = "Boolean", defaultValue = "false")
 @ConnectorAttribute(name = "exponential-backoff-max-duration", description = "The maximum duration of exponential backoff", direction = INCOMING, type = "String", defaultValue = "PT2M")
+@ConnectorAttribute(name = "ack-timeout", description = "The duration to wait for an ack confirmation", direction = INCOMING, type = "String", defaultValue = "PT2S")
 
 // Publish pull processor attributes
 @ConnectorAttribute(name = "pull.batch-size", description = "The size of batch of messages to be pulled in pull mode", direction = INCOMING, type = "int", defaultValue = "100")

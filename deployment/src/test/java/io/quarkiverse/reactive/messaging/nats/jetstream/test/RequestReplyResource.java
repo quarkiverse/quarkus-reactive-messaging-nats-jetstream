@@ -163,6 +163,11 @@ public class RequestReplyResource {
             public Optional<String> durable() {
                 return Optional.of("test-request-reply");
             }
+
+            @Override
+            public Duration ackTimeout() {
+                return Duration.ofSeconds(3);
+            }
         };
     }
 

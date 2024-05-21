@@ -105,7 +105,8 @@ public class MessagePullPublisherProcessor implements MessagePublisherProcessor 
         } else {
             return Multi.createFrom()
                     .item(() -> messageFactory.create(message, tracingEnabled, payloadType, context, new ExponentialBackoff(
-                            configuration().exponentialBackoff(), configuration().exponentialBackoffMaxDuration())));
+                            configuration().exponentialBackoff(), configuration().exponentialBackoffMaxDuration()),
+                            configuration().ackTimeout()));
         }
     }
 

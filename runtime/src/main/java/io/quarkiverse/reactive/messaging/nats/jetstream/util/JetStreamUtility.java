@@ -87,7 +87,8 @@ public class JetStreamUtility {
                 configuration.traceEnabled(),
                 configuration.payloadType().orElse(null),
                 connection.context(),
-                new ExponentialBackoff(false, Duration.ZERO)));
+                new ExponentialBackoff(false, Duration.ZERO),
+                configuration.ackTimeout()));
     }
 
     public List<String> getStreams(Connection connection) {

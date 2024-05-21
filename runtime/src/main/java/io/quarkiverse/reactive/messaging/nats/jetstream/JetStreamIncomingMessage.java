@@ -3,9 +3,11 @@ package io.quarkiverse.reactive.messaging.nats.jetstream;
 import static io.quarkiverse.reactive.messaging.nats.jetstream.mapper.HeaderMapper.toMessageHeaders;
 import static io.smallrye.reactive.messaging.providers.locals.ContextAwareMessage.captureContextMetadata;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -22,15 +24,20 @@ public class JetStreamIncomingMessage<T> implements JetStreamMessage<T> {
     private final T payload;
     private final Context context;
     private final ExponentialBackoff exponentialBackoff;
+    private final Duration ackTimeout;
 
-    public JetStreamIncomingMessage(final Message message, final T payload, Context context,
-            ExponentialBackoff exponentialBackoff) {
+    public JetStreamIncomingMessage(final Message message,
+            final T payload,
+            Context context,
+            ExponentialBackoff exponentialBackoff,
+            Duration ackTimeout) {
         this.message = message;
         this.incomingMetadata = JetStreamIncomingMessageMetadata.create(message);
         this.exponentialBackoff = exponentialBackoff;
         this.metadata = captureContextMetadata(incomingMetadata);
         this.payload = payload;
         this.context = context;
+        this.ackTimeout = ackTimeout;
     }
 
     @Override
@@ -71,8 +78,12 @@ public class JetStreamIncomingMessage<T> implements JetStreamMessage<T> {
     @Override
     public CompletionStage<Void> ack() {
         return VertxContext.runOnContext(context.getDelegate(), f -> {
-            message.ack();
-            this.runOnMessageContext(() -> f.complete(null));
+            try {
+                message.ackSync(ackTimeout);
+                this.runOnMessageContext(() -> f.complete(null));
+            } catch (TimeoutException | InterruptedException e) {
+                this.runOnMessageContext(() -> f.completeExceptionally(e));
+            }
         });
     }
 

@@ -3,6 +3,7 @@ package io.quarkiverse.reactive.messaging.nats.jetstream.client.io;
 import static io.smallrye.reactive.messaging.tracing.TracingUtils.traceIncoming;
 
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -34,15 +35,16 @@ public class MessageFactory {
             boolean tracingEnabled,
             Class<?> payloadType,
             Context context,
-            ExponentialBackoff exponentialBackoff) {
+            ExponentialBackoff exponentialBackoff,
+            Duration ackTimeout) {
         try {
             final var incomingMessage = payloadType != null
                     ? new JetStreamIncomingMessage<>(message, payloadMapper.toPayload(message, payloadType), context,
-                            exponentialBackoff)
+                            exponentialBackoff, ackTimeout)
                     : new JetStreamIncomingMessage<>(message,
                             payloadMapper.toPayload(message).orElse(new String(message.getData(), StandardCharsets.UTF_8)),
                             context,
-                            exponentialBackoff);
+                            exponentialBackoff, ackTimeout);
             if (tracingEnabled) {
                 return (Message<T>) traceIncoming(instrumenter, incomingMessage, JetStreamTrace.trace(incomingMessage));
             } else {

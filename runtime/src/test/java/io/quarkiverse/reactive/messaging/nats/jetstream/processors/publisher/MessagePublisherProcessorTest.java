@@ -181,6 +181,11 @@ public class MessagePublisherProcessorTest {
             public List<Duration> backoff() {
                 return backoff;
             }
+
+            @Override
+            public Duration ackTimeout() {
+                return Duration.ofSeconds(3);
+            }
         });
 
         assertThat(options.getDurable()).isEqualTo(durable);
