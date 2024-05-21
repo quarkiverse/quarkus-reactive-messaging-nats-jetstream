@@ -113,7 +113,8 @@ public class MessagePushPublisherProcessor implements MessagePublisherProcessor 
                         payloadType, connection.context(),
                         new ExponentialBackoff(
                                 configuration.exponentialBackoff(),
-                                configuration.exponentialBackoffMaxDuration())));
+                                configuration.exponentialBackoffMaxDuration()),
+                        configuration.ackTimeout()));
     }
 
     @Override

@@ -19,4 +19,5 @@ public interface MessagePublisherConfiguration<T> extends JetStreamConsumerConfi
 
     boolean traceEnabled();
 
+    Duration ackTimeout();
 }

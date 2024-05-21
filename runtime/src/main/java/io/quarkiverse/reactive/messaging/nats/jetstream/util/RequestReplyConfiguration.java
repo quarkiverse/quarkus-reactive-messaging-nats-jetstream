@@ -18,4 +18,6 @@ public interface RequestReplyConfiguration<T> extends JetStreamPullConsumerConfi
     boolean traceEnabled();
 
     Duration connectionTimeout();
+
+    Duration ackTimeout();
 }

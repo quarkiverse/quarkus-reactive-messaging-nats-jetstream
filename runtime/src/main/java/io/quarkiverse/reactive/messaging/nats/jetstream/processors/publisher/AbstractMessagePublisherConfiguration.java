@@ -151,6 +151,11 @@ public abstract class AbstractMessagePublisherConfiguration<T> implements Messag
         return configuration.getTraceEnabled() != null ? configuration.getTraceEnabled() : true;
     }
 
+    @Override
+    public Duration ackTimeout() {
+        return toDuration(configuration.getAckTimeout());
+    }
+
     protected List<Duration> getBackOff(List<String> backoff) {
         if (backoff == null || backoff.isEmpty()) {
             return List.of();
