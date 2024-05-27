@@ -31,6 +31,11 @@ class DefaultConnectionConfiguration implements ConnectionConfiguration {
     }
 
     @Override
+    public Optional<String> getToken() {
+        return configuration.token();
+    }
+
+    @Override
     public Optional<Integer> getMaxReconnects() {
         return configuration.maxReconnects();
     }

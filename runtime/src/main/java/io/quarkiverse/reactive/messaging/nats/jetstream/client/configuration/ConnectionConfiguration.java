@@ -13,6 +13,8 @@ public interface ConnectionConfiguration {
 
     Optional<String> getUsername();
 
+    Optional<String> getToken();
+
     Optional<Integer> getMaxReconnects();
 
     boolean sslEnabled();

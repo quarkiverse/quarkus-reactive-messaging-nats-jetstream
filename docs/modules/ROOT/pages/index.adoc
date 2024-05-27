@@ -81,6 +81,7 @@ If you want more examples, please take a look at the tests of the extension.
 quarkus.messaging.nats.nats.servers,A comma-separated list of URI's nats://{host}:{port} to use for establishing the initial connection to the NATS cluster.
 quarkus.messaging.nats.nats.username,The username to connect to the NATS server
 quarkus.messaging.nats.nats.password,The password to connect to the NATS server
+quarkus.messaging.nats.nats.token,The token to connect to the NATS server
 quarkus.messaging.nats.nats.ssl-enabled,Whether to enable SSL/TLS secure connections to the NATS server
 quarkus.messaging.nats.nats.max-reconnects,The maximum number of reconnect attempts
 quarkus.messaging.nats.nats.connection-timeout,The connection timeout in milliseconds

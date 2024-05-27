@@ -13,12 +13,14 @@ import org.jboss.logging.Logger;
 
 import io.nats.client.JetStreamApiException;
 import io.nats.client.api.ConsumerInfo;
+import io.nats.client.api.PurgeResponse;
 import io.nats.client.api.StreamInfo;
 import io.nats.client.api.StreamInfoOptions;
 import io.nats.client.impl.NatsJetStreamPullSubscription;
 import io.quarkiverse.reactive.messaging.nats.NatsConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.ExponentialBackoff;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.*;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.Connection;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.JetStreamClient;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ConnectionConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.JetStreamPublishConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.PullSubscribeOptionsFactory;
@@ -108,6 +110,20 @@ public class JetStreamUtility {
             logger.debugf(e, "Unable to read stream %s with message: %s", streamName, e.getMessage());
             return Optional.empty();
         }
+    }
+
+    public Optional<PurgeResponse> purgeStream(Connection connection, String streamName) {
+        try {
+            final var jsm = connection.jetStreamManagement();
+            return Optional.of(jsm.purgeStream(streamName));
+        } catch (IOException | JetStreamApiException e) {
+            logger.debugf(e, "Unable to purge stream %s with message: %s", streamName, e.getMessage());
+            return Optional.empty();
+        }
+    }
+
+    public List<PurgeResponse> purgeAllStreams(Connection connection) {
+        return getStreams(connection).stream().flatMap(streamName -> purgeStream(connection, streamName).stream()).toList();
     }
 
     private <T> Optional<io.nats.client.Message> nextMessage(

@@ -27,6 +27,11 @@ public interface NatsConfiguration {
     Optional<String> password();
 
     /**
+     * The token to connect to the NATS server
+     */
+    Optional<String> token();
+
+    /**
      * Enable SSL connecting to servers
      */
     @WithDefault("true")
