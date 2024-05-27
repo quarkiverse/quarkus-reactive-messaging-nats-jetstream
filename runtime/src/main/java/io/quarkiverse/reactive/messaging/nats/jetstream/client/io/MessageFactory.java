@@ -2,7 +2,6 @@ package io.quarkiverse.reactive.messaging.nats.jetstream.client.io;
 
 import static io.smallrye.reactive.messaging.tracing.TracingUtils.traceIncoming;
 
-import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 
 import jakarta.enterprise.context.ApplicationScoped;
@@ -42,7 +41,7 @@ public class MessageFactory {
                     ? new JetStreamIncomingMessage<>(message, payloadMapper.toPayload(message, payloadType), context,
                             exponentialBackoff, ackTimeout)
                     : new JetStreamIncomingMessage<>(message,
-                            payloadMapper.toPayload(message).orElse(new String(message.getData(), StandardCharsets.UTF_8)),
+                            payloadMapper.toPayload(message).orElseGet(() -> message.getData()),
                             context,
                             exponentialBackoff, ackTimeout);
             if (tracingEnabled) {
