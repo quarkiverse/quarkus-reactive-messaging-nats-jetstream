@@ -40,8 +40,8 @@ public class JetStreamClient implements AutoCloseable {
 
     public Uni<Connection> getOrEstablishConnection() {
         return Uni.createFrom().item(() -> Optional.ofNullable(connection.get())
-                .filter(this::isConnected)
-                .orElse(null))
+                        .filter(this::isConnected)
+                        .orElse(null))
                 .onItem().ifNull().switchTo(this::connect)
                 .onItem().invoke(this.connection::set);
     }
@@ -99,8 +99,12 @@ public class JetStreamClient implements AutoCloseable {
         return connection != null && connection.isConnected();
     }
 
+    private void updateConnection(io.nats.client.Connection connection) {
+        this.connection.set(new Connection(connection, this.connection.get().context()));
+    }
+
     private Options createConnectionOptions(ConnectionConfiguration configuration,
-            io.nats.client.ConnectionListener connectionListener)
+                                            io.nats.client.ConnectionListener connectionListener)
             throws NoSuchAlgorithmException {
         final var servers = configuration.getServers().split(",");
         final var optionsBuilder = new Options.Builder();
@@ -137,18 +141,19 @@ public class JetStreamClient implements AutoCloseable {
 
     private class InternalConnectionListener implements io.nats.client.ConnectionListener {
         @Override
-        public void connectionEvent(io.nats.client.Connection conn, Events type) {
+        public void connectionEvent(io.nats.client.Connection connection, Events type) {
             switch (type) {
                 case CONNECTED:
                     fireEvent(ConnectionEvent.Connected, "Connection established");
                     break;
                 case DISCONNECTED:
-                    fireEvent(ConnectionEvent.Disconnected, "Conection disconnected");
+                    fireEvent(ConnectionEvent.Disconnected, "Connection disconnected");
                     break;
                 case CLOSED:
                     fireEvent(ConnectionEvent.Closed, "Connection closed");
                     break;
                 case RECONNECTED:
+                    updateConnection(connection);
                     fireEvent(ConnectionEvent.Reconnected, "Connection restored");
                     break;
                 case RESUBSCRIBED:
