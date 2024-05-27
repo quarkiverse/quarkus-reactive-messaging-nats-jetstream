@@ -40,8 +40,8 @@ public class JetStreamClient implements AutoCloseable {
 
     public Uni<Connection> getOrEstablishConnection() {
         return Uni.createFrom().item(() -> Optional.ofNullable(connection.get())
-                        .filter(this::isConnected)
-                        .orElse(null))
+                .filter(this::isConnected)
+                .orElse(null))
                 .onItem().ifNull().switchTo(this::connect)
                 .onItem().invoke(this.connection::set);
     }
@@ -104,7 +104,7 @@ public class JetStreamClient implements AutoCloseable {
     }
 
     private Options createConnectionOptions(ConnectionConfiguration configuration,
-                                            io.nats.client.ConnectionListener connectionListener)
+            io.nats.client.ConnectionListener connectionListener)
             throws NoSuchAlgorithmException {
         final var servers = configuration.getServers().split(",");
         final var optionsBuilder = new Options.Builder();
