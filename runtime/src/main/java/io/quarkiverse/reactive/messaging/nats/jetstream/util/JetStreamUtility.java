@@ -1,19 +1,7 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.util;
 
-import java.io.IOException;
-import java.time.Duration;
-import java.util.List;
-import java.util.Optional;
-
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
-
-import org.eclipse.microprofile.reactive.messaging.Message;
-import org.jboss.logging.Logger;
-
 import io.nats.client.JetStreamApiException;
 import io.nats.client.api.ConsumerInfo;
-import io.nats.client.api.PurgeResponse;
 import io.nats.client.api.StreamInfo;
 import io.nats.client.api.StreamInfoOptions;
 import io.nats.client.impl.NatsJetStreamPullSubscription;
@@ -31,6 +19,15 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.setup.JetStreamSetup;
 import io.quarkiverse.reactive.messaging.nats.jetstream.setup.JetStreamSetupConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.tracing.JetStreamInstrumenter;
 import io.smallrye.reactive.messaging.providers.connectors.ExecutionHolder;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import org.eclipse.microprofile.reactive.messaging.Message;
+import org.jboss.logging.Logger;
+
+import java.io.IOException;
+import java.time.Duration;
+import java.util.List;
+import java.util.Optional;
 
 @ApplicationScoped
 public class JetStreamUtility {
@@ -112,17 +109,18 @@ public class JetStreamUtility {
         }
     }
 
-    public Optional<PurgeResponse> purgeStream(Connection connection, String streamName) {
+    public Optional<PurgeResult> purgeStream(Connection connection, String streamName) {
         try {
             final var jsm = connection.jetStreamManagement();
-            return Optional.of(jsm.purgeStream(streamName));
+            final var response = jsm.purgeStream(streamName);
+            return Optional.of(new PurgeResult(streamName, response.isSuccess(), response.getPurged()));
         } catch (IOException | JetStreamApiException e) {
             logger.debugf(e, "Unable to purge stream %s with message: %s", streamName, e.getMessage());
             return Optional.empty();
         }
     }
 
-    public List<PurgeResponse> purgeAllStreams(Connection connection) {
+    public List<PurgeResult> purgeAllStreams(Connection connection) {
         return getStreams(connection).stream().flatMap(streamName -> purgeStream(connection, streamName).stream()).toList();
     }
 
