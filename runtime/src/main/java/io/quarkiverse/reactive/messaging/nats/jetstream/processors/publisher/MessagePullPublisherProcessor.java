@@ -33,17 +33,6 @@ public class MessagePullPublisherProcessor implements MessagePublisherProcessor 
         this.jetStreamClient = jetStreamClient;
         this.messageFactory = messageFactory;
         this.status = new AtomicReference<>(new Status(false, "Not connected", ConnectionEvent.Closed));
-        this.jetStreamClient.addListener(this);
-    }
-
-    @Override
-    public JetStreamClient jetStreamClient() {
-        return jetStreamClient;
-    }
-
-    @Override
-    public MessagePublisherConfiguration<?> configuration() {
-        return configuration;
     }
 
     @Override
@@ -65,37 +54,57 @@ public class MessagePullPublisherProcessor implements MessagePublisherProcessor 
     }
 
     @Override
-    public Multi<org.eclipse.microprofile.reactive.messaging.Message<?>> publish(Connection connection) {
-        boolean traceEnabled = configuration.traceEnabled();
-        Class<?> payloadType = configuration.payloadType().orElse(null);
-        ExecutorService pullExecutor = Executors.newSingleThreadExecutor(JetstreamWorkerThread::new);
-        try {
-            jetStreamReader = new JetStreamReader(connection, configuration);
-            return Multi.createBy().repeating()
-                    .supplier(() -> jetStreamReader.nextMessage())
-                    .until(message -> {
-                        if (connection.isConnected() && jetStreamReader.isActive()) {
-                            return false;
-                        } else {
-                            setStatus(new Status(false, "Reader become inactive", ConnectionEvent.CommunicationFailed));
-                            return true;
-                        }
-                    })
-                    .runSubscriptionOn(pullExecutor)
-                    .onTermination().invoke(() -> shutDown(pullExecutor))
-                    .onCompletion().invoke(() -> shutDown(pullExecutor))
-                    .onCancellation().invoke(() -> shutDown(pullExecutor))
-                    .emitOn(runnable -> connection.context().runOnContext(runnable))
-                    .flatMap(message -> createMulti(message, traceEnabled, payloadType, connection.context()));
-        } catch (Throwable e) {
-            logger.errorf(e, "Failed subscribing to stream with message: %s", e.getMessage());
-            throw new RuntimeException(e);
-        }
+    public Multi<org.eclipse.microprofile.reactive.messaging.Message<?>> publisher() {
+        return jetStreamClient.getOrEstablishConnection()
+                .onItem().transformToMulti(this::publisher)
+                .onFailure().invoke(throwable -> {
+                    if (!isConsumerAlreadyInUse(throwable)) {
+                        logger.errorf(throwable, "Failed to publish messages: %s", throwable.getMessage());
+                        status.set(new Status(false, throwable.getMessage(), ConnectionEvent.CommunicationFailed));
+                    }
+                })
+                .onFailure().retry().withBackOff(configuration.retryBackoff()).indefinitely()
+                .onTermination().invoke(this::close)
+                .onCancellation().invoke(this::close)
+                .onCompletion().invoke(this::close);
     }
 
     @Override
-    public void setStatus(Status status) {
-        this.status.set(status);
+    public void onEvent(ConnectionEvent event, Connection connection, String message) {
+        switch (event) {
+            case Connected -> this.status.set(new Status(true, message, event));
+            case Closed -> this.status.set(new Status(false, message, event));
+            case Reconnected -> this.status.set(new Status(true, message, event));
+            case DiscoveredServers -> this.status.set(new Status(true, message, event));
+            case Resubscribed -> this.status.set(new Status(true, message, event));
+            case LameDuck -> this.status.set(new Status(false, message, event));
+            case CommunicationFailed -> this.status.set(new Status(false, message, event));
+        }
+    }
+
+    private Multi<org.eclipse.microprofile.reactive.messaging.Message<?>> publisher(Connection connection) {
+        boolean traceEnabled = configuration.traceEnabled();
+        Class<?> payloadType = configuration.payloadType().orElse(null);
+        ExecutorService pullExecutor = Executors.newSingleThreadExecutor(JetstreamWorkerThread::new);
+        jetStreamReader = new JetStreamReader(connection, configuration);
+        jetStreamClient.addListener(jetStreamReader);
+        return Multi.createBy().repeating()
+                .supplier(() -> jetStreamReader.nextMessage())
+                .until(message -> {
+                    if (jetStreamReader.isActive()) {
+                        return false;
+                    } else {
+                        this.status.set(new Status(false, "Reader become inactive", ConnectionEvent.CommunicationFailed));
+                        return true;
+                    }
+                })
+                .runSubscriptionOn(pullExecutor)
+                .onTermination().invoke(() -> shutDown(pullExecutor))
+                .onCompletion().invoke(() -> shutDown(pullExecutor))
+                .onCancellation().invoke(() -> shutDown(pullExecutor))
+                .emitOn(runnable -> connection.context().runOnContext(runnable))
+                .flatMap(message -> createMulti(message, traceEnabled, payloadType, connection.context()));
+
     }
 
     private Multi<org.eclipse.microprofile.reactive.messaging.Message<?>> createMulti(io.nats.client.Message message,
@@ -105,8 +114,8 @@ public class MessagePullPublisherProcessor implements MessagePublisherProcessor 
         } else {
             return Multi.createFrom()
                     .item(() -> messageFactory.create(message, tracingEnabled, payloadType, context, new ExponentialBackoff(
-                            configuration().exponentialBackoff(), configuration().exponentialBackoffMaxDuration()),
-                            configuration().ackTimeout()));
+                            configuration.exponentialBackoff(), configuration.exponentialBackoffMaxDuration()),
+                            configuration.ackTimeout()));
         }
     }
 

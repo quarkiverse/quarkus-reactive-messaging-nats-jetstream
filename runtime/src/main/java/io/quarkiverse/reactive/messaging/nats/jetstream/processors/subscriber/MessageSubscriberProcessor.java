@@ -32,10 +32,9 @@ public class MessageSubscriberProcessor implements MessageProcessor, ConnectionL
         this.configuration = configuration;
         this.jetStreamPublisher = jetStreamPublisher;
         this.status = new AtomicReference<>(new Status(true, "Connection closed", ConnectionEvent.Closed));
-        this.jetStreamClient.addListener(this);
     }
 
-    public Flow.Subscriber<? extends Message<?>> getSubscriber() {
+    public Flow.Subscriber<? extends Message<?>> subscriber() {
         return MultiUtils.via(m -> m.onSubscription()
                 .call(this::getOrEstablishConnection)
                 .onItem()
@@ -70,7 +69,7 @@ public class MessageSubscriberProcessor implements MessageProcessor, ConnectionL
     }
 
     @Override
-    public void onEvent(ConnectionEvent event, String message) {
+    public void onEvent(ConnectionEvent event, Connection connection, String message) {
         switch (event) {
             case Closed -> status.set(new Status(true, message, event));
             case Disconnected -> status.set(new Status(false, message, event));

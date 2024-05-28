@@ -105,7 +105,8 @@ public class JetStreamConnector implements InboundConnector, OutboundConnector, 
         final var client = new JetStreamClient(ConnectionConfiguration.of(natsConfiguration), getVertx());
         final var processor = createMessagePublisherProcessor(client, configuration);
         processors.add(processor);
-        return processor.getPublisher();
+        client.addListener(processor);
+        return processor.publisher();
     }
 
     @Override
@@ -116,8 +117,9 @@ public class JetStreamConnector implements InboundConnector, OutboundConnector, 
                 client,
                 MessageSubscriberConfiguration.of(configuration),
                 jetStreamPublisher);
+        client.addListener(processor);
         processors.add(processor);
-        return processor.getSubscriber();
+        return processor.subscriber();
     }
 
     @Override
