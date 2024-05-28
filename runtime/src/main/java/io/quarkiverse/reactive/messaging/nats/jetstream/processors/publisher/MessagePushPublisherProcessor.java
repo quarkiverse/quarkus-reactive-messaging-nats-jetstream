@@ -36,17 +36,22 @@ public class MessagePushPublisherProcessor implements MessagePublisherProcessor 
         this.messageFactory = messageFactory;
         this.status = new AtomicReference<>(new Status(false, "Not connected", ConnectionEvent.Closed));
         this.optionsFactory = new PushSubscribeOptionsFactory();
-        this.jetStreamClient.addListener(this);
     }
 
     @Override
-    public JetStreamClient jetStreamClient() {
-        return jetStreamClient;
-    }
-
-    @Override
-    public MessagePublisherConfiguration<?> configuration() {
-        return configuration;
+    public Multi<org.eclipse.microprofile.reactive.messaging.Message<?>> publisher() {
+        return jetStreamClient.getOrEstablishConnection()
+                .onItem().transformToMulti(this::publisher)
+                .onFailure().invoke(throwable -> {
+                    if (!isConsumerAlreadyInUse(throwable)) {
+                        logger.errorf(throwable, "Failed to publish messages: %s", throwable.getMessage());
+                        status.set(new Status(false, throwable.getMessage(), ConnectionEvent.CommunicationFailed));
+                    }
+                })
+                .onFailure().retry().withBackOff(configuration.retryBackoff()).indefinitely()
+                .onTermination().invoke(this::close)
+                .onCancellation().invoke(this::close)
+                .onCompletion().invoke(this::close);
     }
 
     @Override
@@ -56,20 +61,6 @@ public class MessagePushPublisherProcessor implements MessagePublisherProcessor 
 
     @Override
     public void close() {
-        try {
-            if (subscription.isActive()) {
-                subscription.drain(Duration.ofMillis(1000));
-            }
-        } catch (InterruptedException | IllegalStateException e) {
-            logger.warnf("Interrupted while draining subscription");
-        }
-        try {
-            if (dispatcher.isActive()) {
-                dispatcher.unsubscribe(subscription);
-            }
-        } catch (IllegalStateException e) {
-            logger.warnf(e, "Failed to unsubscribe subscription with message: %s", e.getMessage());
-        }
         jetStreamClient.close();
     }
 
@@ -78,8 +69,7 @@ public class MessagePushPublisherProcessor implements MessagePublisherProcessor 
         return configuration.channel();
     }
 
-    @Override
-    public Multi<org.eclipse.microprofile.reactive.messaging.Message<?>> publish(Connection connection) {
+    private Multi<org.eclipse.microprofile.reactive.messaging.Message<?>> publisher(Connection connection) {
         boolean traceEnabled = configuration.traceEnabled();
         Class<?> payloadType = configuration.payloadType().orElse(null);
         return Multi.createFrom().<io.nats.client.Message> emitter(emitter -> {
@@ -103,9 +93,9 @@ public class MessagePushPublisherProcessor implements MessagePublisherProcessor 
                 emitter.fail(e);
             }
         })
-                .onTermination().invoke(() -> shutDown(dispatcher))
-                .onCompletion().invoke(() -> shutDown(dispatcher))
-                .onCancellation().invoke(() -> shutDown(dispatcher))
+                .onTermination().invoke(() -> shutDown())
+                .onCompletion().invoke(() -> shutDown())
+                .onCancellation().invoke(() -> shutDown())
                 .emitOn(runnable -> connection.context().runOnContext(runnable))
                 .map(message -> messageFactory.create(
                         message,
@@ -118,11 +108,26 @@ public class MessagePushPublisherProcessor implements MessagePublisherProcessor 
     }
 
     @Override
-    public void setStatus(Status status) {
-        this.status.set(status);
+    public void onEvent(ConnectionEvent event, Connection connection, String message) {
+        switch (event) {
+            case Connected -> this.status.set(new Status(true, message, event));
+            case Closed -> this.status.set(new Status(false, message, event));
+            case Reconnected -> this.status.set(new Status(false, message, event)); // Lost connection to server, the subscription is dead
+            case DiscoveredServers -> this.status.set(new Status(true, message, event));
+            case Resubscribed -> this.status.set(new Status(true, message, event));
+            case LameDuck -> this.status.set(new Status(false, message, event));
+            case CommunicationFailed -> this.status.set(new Status(false, message, event));
+        }
     }
 
-    private void shutDown(Dispatcher dispatcher) {
+    private void shutDown() {
+        try {
+            if (subscription.isActive()) {
+                subscription.drain(Duration.ofMillis(1000));
+            }
+        } catch (InterruptedException | IllegalStateException e) {
+            logger.warnf("Interrupted while draining subscription");
+        }
         try {
             if (subscription != null && dispatcher != null && dispatcher.isActive()) {
                 dispatcher.unsubscribe(subscription);

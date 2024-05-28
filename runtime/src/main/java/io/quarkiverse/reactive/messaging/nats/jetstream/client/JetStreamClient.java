@@ -62,15 +62,15 @@ public class JetStreamClient implements AutoCloseable {
         });
     }
 
-    private void fireEvent(ConnectionEvent event, String message) {
+    private void fireEvent(ConnectionEvent event, Connection connection, String message) {
         if (!(ConnectionEvent.Connected.equals(event) || ConnectionEvent.Closed.equals(event))) {
             logger.warnf("Fire event: %s with message: %s", event, message);
         }
-        listeners.get().forEach(listener -> listener.onEvent(event, message));
+        listeners.get().forEach(listener -> listener.onEvent(event, connection, message));
     }
 
     private Uni<Connection> connect() {
-        return getVertx().map(v -> connectWithContext(v.getOrCreateContext())).orElseGet(this::connectWithoutContext);
+        return getContext().map(this::connectWithContext).orElseGet(this::connectWithoutContext);
     }
 
     private Uni<Connection> connectWithContext(Context context) {
@@ -99,6 +99,14 @@ public class JetStreamClient implements AutoCloseable {
         return connection != null && connection.isConnected();
     }
 
+    private void updateConnection(io.nats.client.Connection connection) {
+        this.connection.set(new Connection(connection, getContext().orElse(null)));
+    }
+
+    private Optional<Context> getContext() {
+        return getVertx().map(Vertx::getOrCreateContext);
+    }
+
     private Options createConnectionOptions(ConnectionConfiguration configuration,
             io.nats.client.ConnectionListener connectionListener)
             throws NoSuchAlgorithmException {
@@ -112,7 +120,7 @@ public class JetStreamClient implements AutoCloseable {
             optionsBuilder.userInfo(configuration.getUsername().get(), configuration.getPassword().orElse(""));
         }
         if (configuration.getToken().isPresent()) {
-            optionsBuilder.token(configuration.getToken().get());
+            optionsBuilder.token(configuration.getToken().get().toCharArray());
         }
         configuration.getBufferSize().ifPresent(optionsBuilder::bufferSize);
         configuration.getConnectionTimeout()
@@ -137,28 +145,29 @@ public class JetStreamClient implements AutoCloseable {
 
     private class InternalConnectionListener implements io.nats.client.ConnectionListener {
         @Override
-        public void connectionEvent(io.nats.client.Connection conn, Events type) {
+        public void connectionEvent(io.nats.client.Connection connection, Events type) {
             switch (type) {
                 case CONNECTED:
-                    fireEvent(ConnectionEvent.Connected, "Connection established");
+                    fireEvent(ConnectionEvent.Connected, getConnection().orElse(null), "Connection established");
                     break;
                 case DISCONNECTED:
-                    fireEvent(ConnectionEvent.Disconnected, "Conection disconnected");
+                    fireEvent(ConnectionEvent.Disconnected, getConnection().orElse(null), "Connection disconnected");
                     break;
                 case CLOSED:
-                    fireEvent(ConnectionEvent.Closed, "Connection closed");
+                    fireEvent(ConnectionEvent.Closed, getConnection().orElse(null), "Connection closed");
                     break;
                 case RECONNECTED:
-                    fireEvent(ConnectionEvent.Reconnected, "Connection restored");
+                    updateConnection(connection);
+                    fireEvent(ConnectionEvent.Reconnected, getConnection().orElse(null), "Connection restored");
                     break;
                 case RESUBSCRIBED:
-                    fireEvent(ConnectionEvent.Resubscribed, "Resubscribed");
+                    fireEvent(ConnectionEvent.Resubscribed, getConnection().orElse(null), "Resubscribed");
                     break;
                 case DISCOVERED_SERVERS:
-                    fireEvent(ConnectionEvent.DiscoveredServers, "Discovered servers");
+                    fireEvent(ConnectionEvent.DiscoveredServers, getConnection().orElse(null), "Discovered servers");
                     break;
                 case LAME_DUCK:
-                    fireEvent(ConnectionEvent.LameDuck, "Lame duck");
+                    fireEvent(ConnectionEvent.LameDuck, getConnection().orElse(null), "Lame duck");
                     break;
                 default:
                     throw new RuntimeException(String.format("Unknown event type: %s", type));
