@@ -25,6 +25,8 @@ public interface ConnectionConfiguration {
 
     Optional<Long> getConnectionTimeout();
 
+    Optional<String> getCredentialPath();
+
     static ConnectionConfiguration of(NatsConfiguration configuration) {
         return new DefaultConnectionConfiguration(configuration);
     }

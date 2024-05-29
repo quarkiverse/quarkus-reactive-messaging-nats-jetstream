@@ -36,6 +36,11 @@ class DefaultConnectionConfiguration implements ConnectionConfiguration {
     }
 
     @Override
+    public Optional<String> getCredentialPath() {
+        return configuration.credentialPath();
+    }
+
+    @Override
     public Optional<Integer> getMaxReconnects() {
         return configuration.maxReconnects();
     }

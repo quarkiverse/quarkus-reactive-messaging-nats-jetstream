@@ -122,6 +122,9 @@ public class JetStreamClient implements AutoCloseable {
         if (configuration.getToken().isPresent()) {
             optionsBuilder.token(configuration.getToken().get().toCharArray());
         }
+        if (configuration.getCredentialPath().isPresent()) {
+            optionsBuilder.credentialPath(configuration.getCredentialPath().get());
+        }
         configuration.getBufferSize().ifPresent(optionsBuilder::bufferSize);
         configuration.getConnectionTimeout()
                 .ifPresent(connectionTimeout -> optionsBuilder.connectionTimeout(Duration.ofMillis(connectionTimeout)));

@@ -2,6 +2,7 @@ package io.quarkiverse.reactive.messaging.nats;
 
 import java.util.Optional;
 
+import io.nats.client.AuthHandler;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.smallrye.config.ConfigMapping;
@@ -30,6 +31,11 @@ public interface NatsConfiguration {
      * The token to connect to the NATS server
      */
     Optional<String> token();
+
+    /**
+     * The path to the credentials file for creating an {@link AuthHandler AuthHandler}
+     */
+    Optional<String> credentialPath();
 
     /**
      * Enable SSL connecting to servers
