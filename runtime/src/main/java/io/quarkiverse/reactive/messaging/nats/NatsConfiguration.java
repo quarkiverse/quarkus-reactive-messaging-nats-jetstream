@@ -3,6 +3,7 @@ package io.quarkiverse.reactive.messaging.nats;
 import java.util.Optional;
 
 import io.nats.client.AuthHandler;
+import io.nats.client.support.SSLUtils;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.smallrye.config.ConfigMapping;
@@ -62,5 +63,30 @@ public interface NatsConfiguration {
      * The size in bytes to make buffers for connections
      */
     Optional<Integer> bufferSize();
+
+    /**
+     * The path to the keystore file
+     */
+    Optional<String> keystorePath();
+
+    /**
+     * The password for the keystore
+     */
+    Optional<String> keystorePassword();
+
+    /**
+     * The path to the trust store file
+     */
+    Optional<String> truststorePath();
+
+    /**
+     * The password for the trust store
+     */
+    Optional<String> truststorePassword();
+
+    /**
+     * The tls algorithm. Default is {@value SSLUtils#DEFAULT_TLS_ALGORITHM}
+     */
+    Optional<String> tlsAlgorithm();
 
 }

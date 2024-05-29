@@ -116,21 +116,21 @@ public class JetStreamClient implements AutoCloseable {
         optionsBuilder.maxReconnects(configuration.getMaxReconnects().orElse(-1));
         optionsBuilder.connectionListener(connectionListener);
         optionsBuilder.errorListener(getErrorListener(configuration));
-        if (configuration.getUsername().isPresent()) {
-            optionsBuilder.userInfo(configuration.getUsername().get(), configuration.getPassword().orElse(""));
-        }
-        if (configuration.getToken().isPresent()) {
-            optionsBuilder.token(configuration.getToken().get().toCharArray());
-        }
-        if (configuration.getCredentialPath().isPresent()) {
-            optionsBuilder.credentialPath(configuration.getCredentialPath().get());
-        }
+        configuration.getUsername()
+                .ifPresent(username -> optionsBuilder.userInfo(username, configuration.getPassword().orElse("")));
+        configuration.getToken().ifPresent(optionsBuilder::token);
+        configuration.getCredentialPath().ifPresent(optionsBuilder::credentialPath);
+        configuration.getKeystorePath().ifPresent(optionsBuilder::keystorePath);
+        configuration.getKeystorePassword().map(String::toCharArray).ifPresent(optionsBuilder::keystorePassword);
+        configuration.getTruststorePath().ifPresent(optionsBuilder::truststorePath);
+        configuration.getKeystorePassword().map(String::toCharArray).ifPresent(optionsBuilder::truststorePassword);
         configuration.getBufferSize().ifPresent(optionsBuilder::bufferSize);
         configuration.getConnectionTimeout()
                 .ifPresent(connectionTimeout -> optionsBuilder.connectionTimeout(Duration.ofMillis(connectionTimeout)));
         if (configuration.sslEnabled()) {
             optionsBuilder.opentls();
         }
+        configuration.getTlsAlgorithm().ifPresent(optionsBuilder::tlsAlgorithm);
         return optionsBuilder.build();
     }
 

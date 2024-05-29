@@ -88,6 +88,11 @@ quarkus.messaging.nats.nats.max-reconnects,The maximum number of reconnect attem
 quarkus.messaging.nats.nats.connection-timeout,The connection timeout in milliseconds
 quarkus.messaging.nats.nats.error-listener,The classname for the error listener
 quarkus.messaging.nats.nats.buffer-size,The size in bytes to make buffers for connections
+quarkus.messaging.nats.nats.keystore-path,The path to the keystore file
+quarkus.messaging.nats.nats.keystore-password,The password for the keystore
+quarkus.messaging.nats.nats.truststore-path,The path to the trust store file
+quarkus.messaging.nats.nats.truststore-password,The password for the trust store
+quarkus.messaging.nats.nats.tls-algorithm,The TLS algorithm
 |======
 
 .NATS JetStream configuration

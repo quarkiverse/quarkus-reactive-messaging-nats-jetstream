@@ -27,6 +27,16 @@ public interface ConnectionConfiguration {
 
     Optional<String> getCredentialPath();
 
+    Optional<String> getKeystorePath();
+
+    Optional<String> getKeystorePassword();
+
+    Optional<String> getTruststorePath();
+
+    Optional<String> getTruststorePassword();
+
+    Optional<String> getTlsAlgorithm();
+
     static ConnectionConfiguration of(NatsConfiguration configuration) {
         return new DefaultConnectionConfiguration(configuration);
     }

@@ -65,6 +65,31 @@ class DefaultConnectionConfiguration implements ConnectionConfiguration {
         return configuration.connectionTimeout();
     }
 
+    @Override
+    public Optional<String> getKeystorePath() {
+        return configuration.keystorePath();
+    }
+
+    @Override
+    public Optional<String> getKeystorePassword() {
+        return configuration.keystorePassword();
+    }
+
+    @Override
+    public Optional<String> getTruststorePath() {
+        return configuration.truststorePath();
+    }
+
+    @Override
+    public Optional<String> getTruststorePassword() {
+        return configuration.truststorePassword();
+    }
+
+    @Override
+    public Optional<String> getTlsAlgorithm() {
+        return configuration.tlsAlgorithm();
+    }
+
     private ErrorListener getInstanceOfErrorListener(String className) {
         try {
             var clazz = loadClass(className);
