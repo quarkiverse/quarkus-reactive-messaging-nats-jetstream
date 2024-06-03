@@ -89,7 +89,7 @@ public class MessagePullPublisherProcessor implements MessagePublisherProcessor 
         jetStreamClient.addListener(jetStreamReader);
         return Multi.createBy().repeating()
                 .supplier(() -> jetStreamReader.nextMessage(
-                        () -> jetStreamClient.getConnection().orElseThrow(() -> new RuntimeException("Lost connection"))))
+                        () -> jetStreamClient.getConnection()))
                 .until(message -> {
                     if (jetStreamReader.isActive()) {
                         return false;
