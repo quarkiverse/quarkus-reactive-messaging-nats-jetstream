@@ -49,13 +49,9 @@ public class MessageSubscriberProcessor implements MessageProcessor, ConnectionL
                 }));
     }
 
-    /**
-     * Connections are made only on first message dispatch for subscribers. To avoid health is reporting not ok
-     * the method returns true if connection is not established.
-     */
     @Override
     public Status getStatus() {
-        return status.get();
+        return this.status.get();
     }
 
     @Override
@@ -69,16 +65,14 @@ public class MessageSubscriberProcessor implements MessageProcessor, ConnectionL
     }
 
     @Override
-    public void onEvent(ConnectionEvent event, Connection connection, String message) {
+    public void onEvent(ConnectionEvent event, String message) {
         switch (event) {
-            case Closed -> status.set(new Status(true, message, event));
-            case Disconnected -> status.set(new Status(false, message, event));
-            case Connected -> status.set(new Status(true, message, event));
-            case Reconnected -> status.set(new Status(true, message, event));
-            case DiscoveredServers -> status.set(new Status(true, message, event));
-            case Resubscribed -> status.set(new Status(true, message, event));
-            case LameDuck -> status.set(new Status(false, message, event));
-            case CommunicationFailed -> status.set(new Status(false, message, event));
+            case Connected -> this.status.set(new Status(true, message, event));
+            case Closed -> this.status.set(new Status(true, message, event));
+            case Disconnected -> this.status.set(new Status(false, message, event));
+            case Reconnecting -> this.status.set(new Status(false, message, event));
+            case Connecting -> this.status.set(new Status(false, message, event));
+            case CommunicationFailed -> this.status.set(new Status(false, message, event));
         }
     }
 

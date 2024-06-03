@@ -70,14 +70,13 @@ public class MessagePullPublisherProcessor implements MessagePublisherProcessor 
     }
 
     @Override
-    public void onEvent(ConnectionEvent event, Connection connection, String message) {
+    public void onEvent(ConnectionEvent event, String message) {
         switch (event) {
             case Connected -> this.status.set(new Status(true, message, event));
             case Closed -> this.status.set(new Status(false, message, event));
-            case Reconnected -> this.status.set(new Status(true, message, event));
-            case DiscoveredServers -> this.status.set(new Status(true, message, event));
-            case Resubscribed -> this.status.set(new Status(true, message, event));
-            case LameDuck -> this.status.set(new Status(false, message, event));
+            case Disconnected -> this.status.set(new Status(false, message, event));
+            case Reconnecting -> this.status.set(new Status(false, message, event));
+            case Connecting -> this.status.set(new Status(false, message, event));
             case CommunicationFailed -> this.status.set(new Status(false, message, event));
         }
     }
@@ -86,10 +85,10 @@ public class MessagePullPublisherProcessor implements MessagePublisherProcessor 
         boolean traceEnabled = configuration.traceEnabled();
         Class<?> payloadType = configuration.payloadType().orElse(null);
         ExecutorService pullExecutor = Executors.newSingleThreadExecutor(JetstreamWorkerThread::new);
-        jetStreamReader = new JetStreamReader(connection, configuration);
-        jetStreamClient.addListener(jetStreamReader);
+        jetStreamReader = new JetStreamReader(configuration);
         return Multi.createBy().repeating()
-                .supplier(() -> jetStreamReader.nextMessage())
+                .supplier(() -> jetStreamReader.nextMessage(
+                        () -> jetStreamClient.getConnection().orElseThrow(() -> new RuntimeException("Lost connection"))))
                 .until(message -> {
                     if (jetStreamReader.isActive()) {
                         return false;
