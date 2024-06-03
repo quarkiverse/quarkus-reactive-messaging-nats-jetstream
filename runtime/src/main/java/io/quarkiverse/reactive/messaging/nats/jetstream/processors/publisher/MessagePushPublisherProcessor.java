@@ -108,14 +108,13 @@ public class MessagePushPublisherProcessor implements MessagePublisherProcessor 
     }
 
     @Override
-    public void onEvent(ConnectionEvent event, Connection connection, String message) {
+    public void onEvent(ConnectionEvent event, String message) {
         switch (event) {
             case Connected -> this.status.set(new Status(true, message, event));
             case Closed -> this.status.set(new Status(false, message, event));
-            case Reconnected -> this.status.set(new Status(false, message, event)); // Lost connection to server, the subscription is dead
-            case DiscoveredServers -> this.status.set(new Status(true, message, event));
-            case Resubscribed -> this.status.set(new Status(true, message, event));
-            case LameDuck -> this.status.set(new Status(false, message, event));
+            case Disconnected -> this.status.set(new Status(false, message, event));
+            case Reconnecting -> this.status.set(new Status(false, message, event));
+            case Connecting -> this.status.set(new Status(false, message, event));
             case CommunicationFailed -> this.status.set(new Status(false, message, event));
         }
     }
