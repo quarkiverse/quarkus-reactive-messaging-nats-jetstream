@@ -99,10 +99,6 @@ public class JetStreamClient implements AutoCloseable {
         return connection != null && connection.isConnected();
     }
 
-    private void updateConnection(io.nats.client.Connection connection) {
-        this.connection.set(new Connection(connection, getContext().orElse(null)));
-    }
-
     private Optional<Context> getContext() {
         return getVertx().map(Vertx::getOrCreateContext);
     }
@@ -113,7 +109,7 @@ public class JetStreamClient implements AutoCloseable {
         final var servers = configuration.getServers().split(",");
         final var optionsBuilder = new Options.Builder();
         optionsBuilder.servers(servers);
-        optionsBuilder.maxReconnects(configuration.getMaxReconnects().orElse(-1));
+        optionsBuilder.maxReconnects(0);
         optionsBuilder.connectionListener(connectionListener);
         optionsBuilder.errorListener(getErrorListener(configuration));
         configuration.getUsername()
@@ -160,7 +156,6 @@ public class JetStreamClient implements AutoCloseable {
                     fireEvent(ConnectionEvent.Closed, getConnection().orElse(null), "Connection closed");
                     break;
                 case RECONNECTED:
-                    updateConnection(connection);
                     fireEvent(ConnectionEvent.Reconnected, getConnection().orElse(null), "Connection restored");
                     break;
                 case RESUBSCRIBED:

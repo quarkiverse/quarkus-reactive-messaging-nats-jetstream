@@ -45,11 +45,6 @@ public interface NatsConfiguration {
     Boolean sslEnabled();
 
     /**
-     * The maximum number of reconnect attempts
-     */
-    Optional<Integer> maxReconnects();
-
-    /**
      * The connection timeout in milliseconds
      */
     Optional<Long> connectionTimeout();

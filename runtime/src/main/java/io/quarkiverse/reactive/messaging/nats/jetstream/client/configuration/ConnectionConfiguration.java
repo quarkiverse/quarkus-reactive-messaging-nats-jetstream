@@ -15,8 +15,6 @@ public interface ConnectionConfiguration {
 
     Optional<String> getToken();
 
-    Optional<Integer> getMaxReconnects();
-
     boolean sslEnabled();
 
     Optional<Integer> getBufferSize();

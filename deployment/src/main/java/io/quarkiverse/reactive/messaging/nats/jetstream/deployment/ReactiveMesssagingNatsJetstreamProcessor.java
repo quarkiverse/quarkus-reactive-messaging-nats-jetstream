@@ -12,6 +12,7 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.client.io.MessageFactory
 import io.quarkiverse.reactive.messaging.nats.jetstream.mapper.PayloadMapper;
 import io.quarkiverse.reactive.messaging.nats.jetstream.tracing.JetStreamInstrumenter;
 import io.quarkiverse.reactive.messaging.nats.jetstream.util.JetStreamUtility;
+import io.quarkiverse.reactive.messaging.nats.jetstream.util.KeyValueStore;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -58,6 +59,7 @@ class ReactiveMesssagingNatsJetstreamProcessor {
         buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(JetStreamPublisher.class));
         buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(MessageFactory.class));
         buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(JetStreamUtility.class));
+        buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(KeyValueStore.class));
     }
 
     @BuildStep
