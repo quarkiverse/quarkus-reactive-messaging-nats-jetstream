@@ -86,6 +86,7 @@ public class MessagePullPublisherProcessor implements MessagePublisherProcessor 
         Class<?> payloadType = configuration.payloadType().orElse(null);
         ExecutorService pullExecutor = Executors.newSingleThreadExecutor(JetstreamWorkerThread::new);
         jetStreamReader = new JetStreamReader(configuration);
+        jetStreamClient.addListener(jetStreamReader);
         return Multi.createBy().repeating()
                 .supplier(() -> jetStreamReader.nextMessage(
                         () -> jetStreamClient.getConnection().orElseThrow(() -> new RuntimeException("Lost connection"))))

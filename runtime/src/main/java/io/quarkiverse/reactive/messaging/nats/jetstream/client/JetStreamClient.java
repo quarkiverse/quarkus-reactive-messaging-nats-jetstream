@@ -67,7 +67,7 @@ public class JetStreamClient implements AutoCloseable {
     }
 
     private void fireEvent(ConnectionEvent event, String message) {
-        logger.infof("Connection event: %s with message: %s", event, message);
+        logger.debugf("Connection event: %s with message: %s", event, message);
         listeners.get().forEach(listener -> listener.onEvent(event, message));
     }
 
