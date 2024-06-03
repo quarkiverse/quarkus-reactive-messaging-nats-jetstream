@@ -29,7 +29,7 @@ public class JetStreamReader implements AutoCloseable, ConnectionListener {
         this.subscription = new AtomicReference<>();
     }
 
-    public Message nextMessage(Supplier<Connection> connection) {
+    public Message nextMessage(Supplier<Optional<Connection>> connection) {
         if (isActive()) {
             return getReader(connection).flatMap(this::nextMessage).orElse(null);
         }
@@ -91,9 +91,13 @@ public class JetStreamReader implements AutoCloseable, ConnectionListener {
         return Optional.ofNullable(subscription.get());
     }
 
-    private synchronized Optional<io.nats.client.JetStreamReader> getReader(Supplier<Connection> connection) {
-        if (connection.get().isConnected()) {
-            final var subscription = getSubscription().orElseGet(() -> createSubscription(connection.get()));
+    private synchronized Optional<io.nats.client.JetStreamReader> getReader(Supplier<Optional<Connection>> connection) {
+        return connection.get().flatMap(this::getReader);
+    }
+
+    private synchronized Optional<io.nats.client.JetStreamReader> getReader(Connection connection) {
+        if (connection.isConnected()) {
+            final var subscription = getSubscription().orElseGet(() -> createSubscription(connection));
             return Optional.of(subscription.reader(configuration.maxRequestBatch(), configuration.rePullAt()));
         } else {
             return Optional.empty();
