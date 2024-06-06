@@ -64,7 +64,7 @@ public class JetStreamUtility {
         setup.addOrUpdateStream(connection, JetStreamSetupConfiguration.of(configuration))
                 .ifPresent(setupResult -> logger.debugf("Setup result: %s", setupResult));
         final var jetStreamPublisher = getJetStreamPublisher();
-        return jetStreamPublisher.publish(connection, new JetStreamPublishConfiguration() {
+        return jetStreamPublisher.publish(() -> connection, new JetStreamPublishConfiguration() {
             @Override
             public boolean traceEnabled() {
                 return configuration.traceEnabled();

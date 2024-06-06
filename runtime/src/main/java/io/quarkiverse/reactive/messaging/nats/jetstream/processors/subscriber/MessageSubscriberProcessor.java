@@ -2,6 +2,7 @@ package io.quarkiverse.reactive.messaging.nats.jetstream.processors.subscriber;
 
 import java.util.concurrent.Flow;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 
 import org.eclipse.microprofile.reactive.messaging.Message;
 import org.jboss.logging.Logger;
@@ -79,12 +80,13 @@ public class MessageSubscriberProcessor implements MessageProcessor, ConnectionL
     private Uni<? extends Message<?>> publish(Message<?> message) {
         return getOrEstablishConnection()
                 .onItem()
-                .transformToUni(connection -> publish(message, connection));
+                .transformToUni(connection -> publish(message, () -> jetStreamClient.getConnection()
+                        .orElseThrow(() -> new IllegalStateException("Connection closed"))));
     }
 
-    public Uni<Message<?>> publish(Message<?> message, Connection connection) {
+    public Uni<Message<?>> publish(Message<?> message, Supplier<Connection> connection) {
         return Uni.createFrom().item(() -> jetStreamPublisher.publish(connection, configuration, message))
-                .emitOn(runnable -> connection.context().runOnContext(runnable))
+                .emitOn(runnable -> connection.get().context().runOnContext(runnable))
                 .onItem().transformToUni(this::acknowledge)
                 .onFailure().recoverWithUni(throwable -> notAcknowledge(message, throwable));
     }
