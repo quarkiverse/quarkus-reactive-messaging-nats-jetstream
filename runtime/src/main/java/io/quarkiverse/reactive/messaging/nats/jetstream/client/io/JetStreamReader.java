@@ -8,10 +8,7 @@ import java.util.function.Supplier;
 
 import org.jboss.logging.Logger;
 
-import io.nats.client.JetStreamApiException;
-import io.nats.client.JetStreamSubscription;
-import io.nats.client.Message;
-import io.nats.client.Subscription;
+import io.nats.client.*;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.Connection;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.ConnectionEvent;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.ConnectionListener;
@@ -43,6 +40,9 @@ public class JetStreamReader implements AutoCloseable, ConnectionListener {
     private Optional<Message> nextMessage(io.nats.client.JetStreamReader reader) {
         try {
             return Optional.ofNullable(reader.nextMessage(configuration.maxRequestExpires().orElse(Duration.ZERO)));
+        } catch (JetStreamStatusException e) {
+            logger.debugf(e, e.getMessage());
+            return Optional.empty();
         } catch (IllegalStateException e) {
             logger.debugf(e, "The subscription become inactive for stream: %s and subject: %s",
                     configuration.stream(), configuration.subject());
