@@ -6,9 +6,9 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
-import io.nats.client.*;
 import org.jboss.logging.Logger;
 
+import io.nats.client.*;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.Connection;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.ConnectionEvent;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.ConnectionListener;
