@@ -75,8 +75,7 @@ public class MessagePullPublisherProcessor implements MessagePublisherProcessor 
             case Connected -> this.status.set(new Status(true, message, event));
             case Closed -> this.status.set(new Status(false, message, event));
             case Disconnected -> this.status.set(new Status(false, message, event));
-            case Reconnecting -> this.status.set(new Status(false, message, event));
-            case Connecting -> this.status.set(new Status(false, message, event));
+            case Reconnected -> this.status.set(new Status(true, message, event));
             case CommunicationFailed -> this.status.set(new Status(false, message, event));
         }
     }

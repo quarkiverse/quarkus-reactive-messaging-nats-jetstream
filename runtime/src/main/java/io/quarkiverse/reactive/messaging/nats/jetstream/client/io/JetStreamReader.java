@@ -66,7 +66,7 @@ public class JetStreamReader implements AutoCloseable, ConnectionListener {
     @Override
     public void onEvent(ConnectionEvent event, String message) {
         if (!ConnectionEvent.Connected.equals(event)) {
-            subscription.set(null); // force resubscribe
+            getSubscription().ifPresent(this::close);
         }
     }
 
@@ -85,6 +85,7 @@ public class JetStreamReader implements AutoCloseable, ConnectionListener {
         } catch (IllegalStateException e) {
             logger.warnf("Failed to unsubscribe subscription");
         }
+        this.subscription.set(null);
     }
 
     private Optional<JetStreamSubscription> getSubscription() {

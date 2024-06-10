@@ -157,15 +157,28 @@ public class JetStreamClient implements AutoCloseable {
 
         @Override
         public void connectionEvent(io.nats.client.Connection connection, Events type) {
-            switch (connection.getStatus()) {
+            logger.info(type);
+            switch (type) {
                 case CONNECTED -> {
                     setConnection(new Connection(connection, context));
                     fireEvent(ConnectionEvent.Connected, "Connection established");
                 }
-                case CONNECTING -> fireEvent(ConnectionEvent.Connecting, "Connecting to server");
-                case CLOSED -> fireEvent(ConnectionEvent.Closed, "Connection closed");
-                case RECONNECTING -> fireEvent(ConnectionEvent.Reconnecting, "Reconnecting to server");
-                case DISCONNECTED -> fireEvent(ConnectionEvent.Disconnected, "Connection disconnected");
+                case RECONNECTED -> {
+                    setConnection(new Connection(connection, context));
+                    fireEvent(ConnectionEvent.Reconnected, "Connection reestablished to server");
+                }
+                case CLOSED -> {
+                    close();
+                    fireEvent(ConnectionEvent.Closed, "Connection closed");
+                }
+                case DISCONNECTED -> {
+                    close();
+                    fireEvent(ConnectionEvent.Disconnected, "Connection disconnected");
+                }
+                case LAME_DUCK -> {
+                    close();
+                    fireEvent(ConnectionEvent.CommunicationFailed, "Lame duck mode");
+                }
             }
         }
     }
