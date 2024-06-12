@@ -7,7 +7,6 @@ import static io.smallrye.reactive.messaging.tracing.TracingUtils.traceOutgoing;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.*;
-import java.util.function.Supplier;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -39,7 +38,7 @@ public class JetStreamPublisher {
         this.instrumenter = jetStreamInstrumenter.publisher();
     }
 
-    public <T> Message<T> publish(final Supplier<Connection> connection,
+    public <T> Message<T> publish(final Connection connection,
             final JetStreamPublishConfiguration configuration,
             final Message<T> message) {
         try {
@@ -63,7 +62,7 @@ public class JetStreamPublisher {
                                 new String(payload)));
             }
 
-            final var jetStream = connection.get().jetStream();
+            final var jetStream = connection.jetStream();
             final var options = createPublishOptions(messageId, configuration.stream());
             final var ack = jetStream.publish(subject, toJetStreamHeaders(headers), payload, options);
 
@@ -72,7 +71,7 @@ public class JetStreamPublisher {
             }
 
             // flush all outgoing messages
-            connection.get().flush(Duration.ZERO);
+            connection.flush(Duration.ZERO);
 
             return message;
         } catch (IOException | JetStreamApiException | JetStreamSetupException e) {

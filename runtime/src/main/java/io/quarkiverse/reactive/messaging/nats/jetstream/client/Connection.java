@@ -66,8 +66,8 @@ public class Connection implements AutoCloseable {
     public void close() {
         try {
             connection.close();
-        } catch (InterruptedException e) {
-            logger.warn(e.getMessage(), e);
+        } catch (Throwable throwable) {
+            logger.warnf(throwable, "Could not close connection: %s", throwable.getMessage());
         }
     }
 }

@@ -84,7 +84,6 @@ quarkus.messaging.nats.nats.password,The password to connect to the NATS server
 quarkus.messaging.nats.nats.token,The token to connect to the NATS server
 quarkus.messaging.nats.nats.credential-path,The path to the credentials file to connect to the NATS server
 quarkus.messaging.nats.nats.ssl-enabled,Whether to enable SSL/TLS secure connections to the NATS server
-quarkus.messaging.nats.nats.max-reconnects,The maximum number of reconnect attempts
 quarkus.messaging.nats.nats.connection-timeout,The connection timeout in milliseconds
 quarkus.messaging.nats.nats.error-listener,The classname for the error listener
 quarkus.messaging.nats.nats.buffer-size,The size in bytes to make buffers for connections
