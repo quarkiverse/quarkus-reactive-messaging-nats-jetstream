@@ -45,13 +45,13 @@ public class MessagePushPublisherProcessor implements MessagePublisherProcessor 
                 .onFailure().invoke(throwable -> {
                     if (!isConsumerAlreadyInUse(throwable)) {
                         logger.errorf(throwable, "Failed to publish messages: %s", throwable.getMessage());
-                        status.set(new Status(false, throwable.getMessage(), ConnectionEvent.CommunicationFailed));
+                        jetStreamClient.fireEvent(ConnectionEvent.CommunicationFailed, throwable.getMessage());
                     }
                 })
                 .onFailure().retry().withBackOff(configuration.retryBackoff()).indefinitely()
-                .onTermination().invoke(this::close)
-                .onCancellation().invoke(this::close)
-                .onCompletion().invoke(this::close);
+                .onTermination().invoke(this::shutDown)
+                .onCancellation().invoke(this::shutDown)
+                .onCompletion().invoke(this::shutDown);
     }
 
     @Override
@@ -93,9 +93,6 @@ public class MessagePushPublisherProcessor implements MessagePublisherProcessor 
                 emitter.fail(e);
             }
         })
-                .onTermination().invoke(() -> shutDown())
-                .onCompletion().invoke(() -> shutDown())
-                .onCancellation().invoke(() -> shutDown())
                 .emitOn(runnable -> connection.context().runOnContext(runnable))
                 .map(message -> messageFactory.create(
                         message,

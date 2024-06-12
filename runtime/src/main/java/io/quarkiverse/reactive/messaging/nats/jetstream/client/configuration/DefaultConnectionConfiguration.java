@@ -41,11 +41,6 @@ class DefaultConnectionConfiguration implements ConnectionConfiguration {
     }
 
     @Override
-    public Optional<Integer> getMaxReconnects() {
-        return configuration.maxReconnects();
-    }
-
-    @Override
     public boolean sslEnabled() {
         return configuration.sslEnabled();
     }

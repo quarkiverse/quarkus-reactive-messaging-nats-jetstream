@@ -85,15 +85,13 @@ public class MessagePullPublisherProcessor implements MessagePublisherProcessor 
         Class<?> payloadType = configuration.payloadType().orElse(null);
         ExecutorService pullExecutor = Executors.newSingleThreadExecutor(JetstreamWorkerThread::new);
         jetStreamReader = new JetStreamReader(configuration);
-        jetStreamClient.addListener(jetStreamReader);
         return Multi.createBy().repeating()
-                .supplier(() -> jetStreamReader.nextMessage(
-                        () -> jetStreamClient.getConnection()))
+                .supplier(() -> jetStreamReader.nextMessage(connection))
                 .until(message -> {
                     if (jetStreamReader.isActive()) {
                         return false;
                     } else {
-                        this.status.set(new Status(false, "Reader become inactive", ConnectionEvent.CommunicationFailed));
+                        jetStreamClient.fireEvent(ConnectionEvent.CommunicationFailed, "Reader become inactive");
                         return true;
                     }
                 })
@@ -102,8 +100,9 @@ public class MessagePullPublisherProcessor implements MessagePublisherProcessor 
                 .onCompletion().invoke(() -> shutDown(pullExecutor))
                 .onCancellation().invoke(() -> shutDown(pullExecutor))
                 .emitOn(runnable -> connection.context().runOnContext(runnable))
-                .flatMap(message -> createMulti(message, traceEnabled, payloadType, connection.context()));
-
+                .flatMap(message -> createMulti(message.orElse(null), traceEnabled, payloadType, connection.context()))
+                .onFailure()
+                .invoke(throwable -> jetStreamClient.fireEvent(ConnectionEvent.CommunicationFailed, throwable.getMessage()));
     }
 
     private Multi<org.eclipse.microprofile.reactive.messaging.Message<?>> createMulti(io.nats.client.Message message,
