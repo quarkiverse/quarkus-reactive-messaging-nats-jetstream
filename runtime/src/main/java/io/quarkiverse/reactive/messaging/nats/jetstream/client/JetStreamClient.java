@@ -46,10 +46,6 @@ public class JetStreamClient implements AutoCloseable {
                 .onItem().invoke(this.connection::set);
     }
 
-    public Optional<Connection> getConnection() {
-        return Optional.ofNullable(connection.get());
-    }
-
     public Optional<Vertx> getVertx() {
         return Optional.ofNullable(vertx);
     }
@@ -62,11 +58,9 @@ public class JetStreamClient implements AutoCloseable {
         });
     }
 
-    private void fireEvent(ConnectionEvent event, Connection connection, String message) {
-        if (!(ConnectionEvent.Connected.equals(event) || ConnectionEvent.Closed.equals(event))) {
-            logger.warnf("Fire event: %s with message: %s", event, message);
-        }
-        listeners.get().forEach(listener -> listener.onEvent(event, connection, message));
+    public void fireEvent(ConnectionEvent event, String message) {
+        logger.infof("Connection event: %s with message: %s", event, message);
+        listeners.get().forEach(listener -> listener.onEvent(event, message));
     }
 
     private Uni<Connection> connect() {
@@ -77,7 +71,7 @@ public class JetStreamClient implements AutoCloseable {
         return Uni.createFrom().item(Unchecked.supplier(() -> {
             try {
                 final var options = createConnectionOptions(configuration, new InternalConnectionListener());
-                return new Connection(Nats.connectReconnectOnConnect(options), context);
+                return new Connection(Nats.connect(options), context);
             } catch (NoSuchAlgorithmException | IOException | InterruptedException e) {
                 throw new RuntimeException(e);
             }
@@ -88,7 +82,7 @@ public class JetStreamClient implements AutoCloseable {
         return Uni.createFrom().item(Unchecked.supplier(() -> {
             try {
                 final var options = createConnectionOptions(configuration, new InternalConnectionListener());
-                return new Connection(Nats.connectReconnectOnConnect(options), null);
+                return new Connection(Nats.connect(options), null);
             } catch (NoSuchAlgorithmException | IOException | InterruptedException e) {
                 throw new RuntimeException(e);
             }
@@ -114,7 +108,7 @@ public class JetStreamClient implements AutoCloseable {
         optionsBuilder.errorListener(getErrorListener(configuration));
         configuration.getUsername()
                 .ifPresent(username -> optionsBuilder.userInfo(username, configuration.getPassword().orElse("")));
-        configuration.getToken().ifPresent(optionsBuilder::token);
+        configuration.getToken().map(String::toCharArray).ifPresent(optionsBuilder::token);
         configuration.getCredentialPath().ifPresent(optionsBuilder::credentialPath);
         configuration.getKeystorePath().ifPresent(optionsBuilder::keystorePath);
         configuration.getKeystorePassword().map(String::toCharArray).ifPresent(optionsBuilder::keystorePassword);
@@ -143,32 +137,16 @@ public class JetStreamClient implements AutoCloseable {
     }
 
     private class InternalConnectionListener implements io.nats.client.ConnectionListener {
+
         @Override
         public void connectionEvent(io.nats.client.Connection connection, Events type) {
             switch (type) {
-                case CONNECTED:
-                    fireEvent(ConnectionEvent.Connected, getConnection().orElse(null), "Connection established");
-                    break;
-                case DISCONNECTED:
-                    fireEvent(ConnectionEvent.Disconnected, getConnection().orElse(null), "Connection disconnected");
-                    break;
-                case CLOSED:
-                    fireEvent(ConnectionEvent.Closed, getConnection().orElse(null), "Connection closed");
-                    break;
-                case RECONNECTED:
-                    fireEvent(ConnectionEvent.Reconnected, getConnection().orElse(null), "Connection restored");
-                    break;
-                case RESUBSCRIBED:
-                    fireEvent(ConnectionEvent.Resubscribed, getConnection().orElse(null), "Resubscribed");
-                    break;
-                case DISCOVERED_SERVERS:
-                    fireEvent(ConnectionEvent.DiscoveredServers, getConnection().orElse(null), "Discovered servers");
-                    break;
-                case LAME_DUCK:
-                    fireEvent(ConnectionEvent.LameDuck, getConnection().orElse(null), "Lame duck");
-                    break;
-                default:
-                    throw new RuntimeException(String.format("Unknown event type: %s", type));
+                case CONNECTED -> fireEvent(ConnectionEvent.Connected, "Connection established");
+                case RECONNECTED -> fireEvent(ConnectionEvent.Reconnected, "Connection reestablished to server");
+                case CLOSED -> fireEvent(ConnectionEvent.Closed, "Connection closed");
+                case DISCONNECTED -> fireEvent(ConnectionEvent.Disconnected, "Connection disconnected");
+                case RESUBSCRIBED -> fireEvent(ConnectionEvent.Reconnected, "Connection reestablished to server");
+                case LAME_DUCK -> fireEvent(ConnectionEvent.CommunicationFailed, "Lame duck mode");
             }
         }
     }

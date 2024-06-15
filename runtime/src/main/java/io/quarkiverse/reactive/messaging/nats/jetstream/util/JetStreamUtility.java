@@ -151,7 +151,7 @@ public class JetStreamUtility {
     }
 
     private <T> Optional<io.nats.client.Message> nextMessage(RequestReplyConfiguration<T> configuration,
-            NatsJetStreamPullSubscription subscription) throws Exception {
+            NatsJetStreamPullSubscription subscription) {
         return subscription.fetch(1, configuration.maxRequestExpires().orElse(Duration.ZERO)).stream().findAny();
     }
 

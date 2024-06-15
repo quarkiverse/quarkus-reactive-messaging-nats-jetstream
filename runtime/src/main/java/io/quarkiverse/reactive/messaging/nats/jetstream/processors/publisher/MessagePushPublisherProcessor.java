@@ -45,13 +45,13 @@ public class MessagePushPublisherProcessor implements MessagePublisherProcessor 
                 .onFailure().invoke(throwable -> {
                     if (!isConsumerAlreadyInUse(throwable)) {
                         logger.errorf(throwable, "Failed to publish messages: %s", throwable.getMessage());
-                        status.set(new Status(false, throwable.getMessage(), ConnectionEvent.CommunicationFailed));
+                        jetStreamClient.fireEvent(ConnectionEvent.CommunicationFailed, throwable.getMessage());
                     }
                 })
                 .onFailure().retry().withBackOff(configuration.retryBackoff()).indefinitely()
-                .onTermination().invoke(this::close)
-                .onCancellation().invoke(this::close)
-                .onCompletion().invoke(this::close);
+                .onTermination().invoke(this::shutDown)
+                .onCancellation().invoke(this::shutDown)
+                .onCompletion().invoke(this::shutDown);
     }
 
     @Override
@@ -93,9 +93,6 @@ public class MessagePushPublisherProcessor implements MessagePublisherProcessor 
                 emitter.fail(e);
             }
         })
-                .onTermination().invoke(() -> shutDown())
-                .onCompletion().invoke(() -> shutDown())
-                .onCancellation().invoke(() -> shutDown())
                 .emitOn(runnable -> connection.context().runOnContext(runnable))
                 .map(message -> messageFactory.create(
                         message,
@@ -108,14 +105,12 @@ public class MessagePushPublisherProcessor implements MessagePublisherProcessor 
     }
 
     @Override
-    public void onEvent(ConnectionEvent event, Connection connection, String message) {
+    public void onEvent(ConnectionEvent event, String message) {
         switch (event) {
             case Connected -> this.status.set(new Status(true, message, event));
             case Closed -> this.status.set(new Status(false, message, event));
-            case Reconnected -> this.status.set(new Status(false, message, event)); // Lost connection to server, the subscription is dead
-            case DiscoveredServers -> this.status.set(new Status(true, message, event));
-            case Resubscribed -> this.status.set(new Status(true, message, event));
-            case LameDuck -> this.status.set(new Status(false, message, event));
+            case Disconnected -> this.status.set(new Status(false, message, event));
+            case Reconnected -> this.status.set(new Status(true, message, event));
             case CommunicationFailed -> this.status.set(new Status(false, message, event));
         }
     }

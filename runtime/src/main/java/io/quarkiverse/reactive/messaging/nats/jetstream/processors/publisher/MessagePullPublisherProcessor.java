@@ -70,14 +70,12 @@ public class MessagePullPublisherProcessor implements MessagePublisherProcessor 
     }
 
     @Override
-    public void onEvent(ConnectionEvent event, Connection connection, String message) {
+    public void onEvent(ConnectionEvent event, String message) {
         switch (event) {
             case Connected -> this.status.set(new Status(true, message, event));
             case Closed -> this.status.set(new Status(false, message, event));
-            case Reconnected -> this.status.set(new Status(false, message, event));
-            case DiscoveredServers -> this.status.set(new Status(true, message, event));
-            case Resubscribed -> this.status.set(new Status(true, message, event));
-            case LameDuck -> this.status.set(new Status(false, message, event));
+            case Disconnected -> this.status.set(new Status(false, message, event));
+            case Reconnected -> this.status.set(new Status(true, message, event));
             case CommunicationFailed -> this.status.set(new Status(false, message, event));
         }
     }
@@ -86,15 +84,14 @@ public class MessagePullPublisherProcessor implements MessagePublisherProcessor 
         boolean traceEnabled = configuration.traceEnabled();
         Class<?> payloadType = configuration.payloadType().orElse(null);
         ExecutorService pullExecutor = Executors.newSingleThreadExecutor(JetstreamWorkerThread::new);
-        jetStreamReader = new JetStreamReader(connection, configuration);
-        jetStreamClient.addListener(jetStreamReader);
+        jetStreamReader = new JetStreamReader(configuration);
         return Multi.createBy().repeating()
-                .supplier(() -> jetStreamReader.nextMessage())
+                .supplier(() -> jetStreamReader.nextMessage(connection))
                 .until(message -> {
                     if (jetStreamReader.isActive()) {
                         return false;
                     } else {
-                        this.status.set(new Status(false, "Reader become inactive", ConnectionEvent.CommunicationFailed));
+                        jetStreamClient.fireEvent(ConnectionEvent.CommunicationFailed, "Reader become inactive");
                         return true;
                     }
                 })
@@ -103,8 +100,9 @@ public class MessagePullPublisherProcessor implements MessagePublisherProcessor 
                 .onCompletion().invoke(() -> shutDown(pullExecutor))
                 .onCancellation().invoke(() -> shutDown(pullExecutor))
                 .emitOn(runnable -> connection.context().runOnContext(runnable))
-                .flatMap(message -> createMulti(message, traceEnabled, payloadType, connection.context()));
-
+                .flatMap(message -> createMulti(message.orElse(null), traceEnabled, payloadType, connection.context()))
+                .onFailure()
+                .invoke(throwable -> jetStreamClient.fireEvent(ConnectionEvent.CommunicationFailed, throwable.getMessage()));
     }
 
     private Multi<org.eclipse.microprofile.reactive.messaging.Message<?>> createMulti(io.nats.client.Message message,

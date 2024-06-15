@@ -13,12 +13,12 @@ public class DefaultErrorListener implements ErrorListener {
 
     @Override
     public void errorOccurred(io.nats.client.Connection conn, String error) {
-        logger.warnf("Error occurred: %s", error);
+        logger.errorf("Error occurred: %s", error);
     }
 
     @Override
     public void exceptionOccurred(io.nats.client.Connection conn, Exception exp) {
-        logger.warnf("Caught exception connecting to %s with message: %s", conn.getServers(), exp.getMessage());
+        logger.errorf("Caught exception connecting to %s with message: %s", conn.getServers(), exp.getMessage());
     }
 
     @Override
@@ -28,21 +28,21 @@ public class DefaultErrorListener implements ErrorListener {
 
     @Override
     public void messageDiscarded(io.nats.client.Connection conn, Message msg) {
-        logger.warnf("Message with id = %s discarded", msg.getSID());
+        logger.debugf("Message with id = %s discarded", msg.getSID());
     }
 
     @Override
     public void unhandledStatus(io.nats.client.Connection conn, JetStreamSubscription sub, Status status) {
-        logger.warnf("Unhandled status: %s", status);
+        logger.debugf("Unhandled status: %s", status);
     }
 
     @Override
     public void pullStatusWarning(io.nats.client.Connection conn, JetStreamSubscription sub, Status status) {
-        logger.warnf("Pull status warning with status: %s", status);
+        logger.debugf("Pull status warning with status: %s", status);
     }
 
     @Override
     public void pullStatusError(io.nats.client.Connection conn, JetStreamSubscription sub, Status status) {
-        logger.errorf("Pull status error with status: %s", status);
+        logger.debugf("Pull status error with status: %s", status);
     }
 }

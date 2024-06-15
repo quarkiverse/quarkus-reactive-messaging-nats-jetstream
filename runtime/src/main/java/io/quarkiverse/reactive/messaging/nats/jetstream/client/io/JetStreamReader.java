@@ -7,107 +7,115 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.jboss.logging.Logger;
 
-import io.nats.client.JetStreamApiException;
-import io.nats.client.JetStreamSubscription;
-import io.nats.client.Message;
+import io.nats.client.*;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.Connection;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.ConnectionEvent;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.ConnectionListener;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.JetStreamReaderConsumerConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.PullSubscribeOptionsFactory;
 
-public class JetStreamReader implements AutoCloseable, ConnectionListener {
+public class JetStreamReader implements AutoCloseable {
     private final static Logger logger = Logger.getLogger(JetStreamReader.class);
 
     private final JetStreamReaderConsumerConfiguration configuration;
-    private final AtomicReference<Connection> connection;
-    private final AtomicReference<Subscription> subscription;
+    private final AtomicReference<JetStreamSubscription> subscription;
 
-    public JetStreamReader(Connection connection, JetStreamReaderConsumerConfiguration configuration) {
+    public JetStreamReader(JetStreamReaderConsumerConfiguration configuration) {
         this.configuration = configuration;
-        this.connection = new AtomicReference<>(connection);
-
-        final var subscription = getSubscription(connection);
-        final var reader = getReader(subscription);
-        this.subscription = new AtomicReference<>(new Subscription(subscription, reader));
+        this.subscription = new AtomicReference<>();
     }
 
-    public Message nextMessage() {
+    public Optional<Message> nextMessage(Connection connection) {
         if (isActive()) {
-            try {
-                return getReader().nextMessage(configuration.maxRequestExpires().orElse(Duration.ZERO));
-            } catch (IllegalStateException e) {
-                logger.debugf(e, "The subscription become inactive for stream: %s and subject: %s",
-                        configuration.stream(), configuration.subject());
-            } catch (InterruptedException e) {
-                logger.debugf(e, "The reader was interrupted for stream: %s and subject: %s",
-                        configuration.stream(), configuration.subject());
-            } catch (Throwable throwable) {
-                logger.warnf(throwable, "Error reading next message from stream: %s and subject: %s",
-                        configuration.stream(), configuration.subject());
-            }
+            return getReader(connection).flatMap(this::nextMessage);
         }
-        return null;
+        return Optional.empty();
     }
 
     public boolean isActive() {
-        return getConnection().map(Connection::isConnected).orElse(false) && getSubscription().isActive();
+        return getSubscription().map(io.nats.client.Subscription::isActive).orElse(true);
+    }
+
+    private Optional<Message> nextMessage(io.nats.client.JetStreamReader reader) {
+        try {
+            return Optional.ofNullable(reader.nextMessage(configuration.maxRequestExpires().orElse(Duration.ZERO)));
+        } catch (JetStreamStatusException e) {
+            logger.debugf(e, e.getMessage());
+            return Optional.empty();
+        } catch (IllegalStateException e) {
+            logger.debugf(e, "The subscription become inactive for stream: %s and subject: %s",
+                    configuration.stream(), configuration.subject());
+            return Optional.empty();
+        } catch (InterruptedException e) {
+            logger.debugf(e, "The reader was interrupted for stream: %s and subject: %s",
+                    configuration.stream(), configuration.subject());
+            return Optional.empty();
+        } catch (Throwable throwable) {
+            logger.warnf(throwable, "Error reading next message from stream: %s and subject: %s",
+                    configuration.stream(), configuration.subject());
+            return Optional.empty();
+        }
     }
 
     @Override
     public void close() {
+        getSubscription().ifPresent(this::close);
+    }
+
+    public void close(Subscription subscription) {
         try {
-            if (getSubscription().isActive()) {
-                getSubscription().drain(Duration.ofMillis(1000));
+            if (subscription.isActive()) {
+                subscription.drain(Duration.ofMillis(1000));
             }
         } catch (InterruptedException | IllegalStateException e) {
             logger.warnf("Interrupted while draining subscription");
         }
         try {
-            if (getSubscription().isActive()) {
-                getSubscription().unsubscribe();
+            if (subscription.isActive()) {
+                subscription.unsubscribe();
             }
         } catch (IllegalStateException e) {
             logger.warnf("Failed to unsubscribe subscription");
         }
+        this.subscription.set(null);
     }
 
-    @Override
-    public void onEvent(ConnectionEvent event, Connection connection, String message) {
-        this.connection.set(connection);
-        if (ConnectionEvent.Reconnected.equals(event)) {
-            final var subscription = getSubscription(connection);
-            final var reader = getReader(subscription);
-            this.subscription.set(new Subscription(subscription, reader));
+    private Optional<JetStreamSubscription> getSubscription() {
+        return Optional.ofNullable(subscription.get());
+    }
+
+    private synchronized Optional<io.nats.client.JetStreamReader> getReader(Connection connection) {
+        if (connection.isConnected()) {
+            final var reader = getSubscription().map(this::getReader);
+            if (reader.isEmpty()) {
+                return createSubscription(connection).map(this::getReader);
+            }
+            return reader;
+        } else {
+            return Optional.empty();
         }
-    }
-
-    private Optional<Connection> getConnection() {
-        return Optional.ofNullable(connection.get());
-    }
-
-    private io.nats.client.JetStreamReader getReader() {
-        return subscription.get().reader();
     }
 
     private io.nats.client.JetStreamReader getReader(JetStreamSubscription subscription) {
         return subscription.reader(configuration.maxRequestBatch(), configuration.rePullAt());
     }
 
-    private JetStreamSubscription getSubscription(Connection connection) {
+    private Optional<JetStreamSubscription> createSubscription(Connection connection) {
         try {
             final var jetStream = connection.jetStream();
             final var optionsFactory = new PullSubscribeOptionsFactory();
-            return jetStream.subscribe(configuration.subject(), optionsFactory.create(configuration));
-        } catch (IOException | JetStreamApiException e) {
-            throw new JetStreamReaderException(String.format("Failed to get subscription with message: %s", e.getMessage()), e);
+            return Optional.ofNullable(this.subscription.updateAndGet(s -> {
+                try {
+                    return jetStream.subscribe(configuration.subject(), optionsFactory.create(configuration));
+                } catch (JetStreamApiException e) {
+                    logger.warnf(e, "Failed to subscribe with message: %s", e.getMessage());
+                    return null;
+                } catch (IOException e) {
+                    logger.debugf(e, "Failed to subscribe with message: %s", e.getMessage());
+                    return null;
+                }
+            }));
+        } catch (IOException e) {
+            logger.debugf(e, "Failed to get JetStream context with message: %s", e.getMessage());
+            return Optional.empty();
         }
-    }
-
-    private JetStreamSubscription getSubscription() {
-        return subscription.get().subscription();
-    }
-
-    private record Subscription(JetStreamSubscription subscription, io.nats.client.JetStreamReader reader) {
     }
 }
