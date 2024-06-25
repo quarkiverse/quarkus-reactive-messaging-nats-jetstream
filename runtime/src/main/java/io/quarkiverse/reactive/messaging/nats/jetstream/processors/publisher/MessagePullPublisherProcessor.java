@@ -87,9 +87,7 @@ public class MessagePullPublisherProcessor implements MessagePublisherProcessor 
                 .until(message -> !jetStreamReader.isActive())
                 .runSubscriptionOn(pullExecutor)
                 .emitOn(runnable -> connection.context().runOnContext(runnable))
-                .flatMap(message -> createMulti(message.orElse(null), traceEnabled, payloadType, connection.context()))
-                .onFailure()
-                .invoke(throwable -> jetStreamClient.fireEvent(ConnectionEvent.CommunicationFailed, throwable.getMessage()));
+                .flatMap(message -> createMulti(message.orElse(null), traceEnabled, payloadType, connection.context()));
     }
 
     private Multi<org.eclipse.microprofile.reactive.messaging.Message<?>> createMulti(io.nats.client.Message message,
