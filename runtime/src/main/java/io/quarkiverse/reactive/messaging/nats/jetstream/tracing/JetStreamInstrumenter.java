@@ -4,8 +4,10 @@ import static io.opentelemetry.instrumentation.api.instrumenter.messaging.Messag
 import static io.opentelemetry.instrumentation.api.instrumenter.messaging.MessagingAttributesExtractor.create;
 
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Instance;
+import jakarta.inject.Inject;
 
-import io.opentelemetry.api.GlobalOpenTelemetry;
+import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.instrumentation.api.instrumenter.Instrumenter;
 import io.opentelemetry.instrumentation.api.instrumenter.InstrumenterBuilder;
 import io.opentelemetry.instrumentation.api.instrumenter.messaging.MessageOperation;
@@ -15,13 +17,19 @@ import io.opentelemetry.instrumentation.api.instrumenter.messaging.MessagingSpan
 
 @ApplicationScoped
 public class JetStreamInstrumenter {
+    private final Instance<OpenTelemetry> openTelemetryInstance;
+
+    @Inject
+    public JetStreamInstrumenter(Instance<OpenTelemetry> openTelemetryInstance) {
+        this.openTelemetryInstance = openTelemetryInstance;
+    }
 
     public Instrumenter<JetStreamTrace, Void> publisher() {
         final var attributesExtractor = new JetStreamTraceAttributesExtractor();
         MessagingAttributesGetter<JetStreamTrace, Void> messagingAttributesGetter = attributesExtractor
                 .getMessagingAttributesGetter();
 
-        InstrumenterBuilder<JetStreamTrace, Void> builder = Instrumenter.builder(GlobalOpenTelemetry.get(),
+        InstrumenterBuilder<JetStreamTrace, Void> builder = Instrumenter.builder(openTelemetryInstance.get(),
                 "io.smallrye.reactive.messaging.jetstream",
                 MessagingSpanNameExtractor.create(messagingAttributesGetter, MessageOperation.PUBLISH));
 
@@ -34,7 +42,7 @@ public class JetStreamInstrumenter {
         final var attributesExtractor = new JetStreamTraceAttributesExtractor();
         MessagingAttributesGetter<JetStreamTrace, Void> messagingAttributesGetter = attributesExtractor
                 .getMessagingAttributesGetter();
-        InstrumenterBuilder<JetStreamTrace, Void> builder = Instrumenter.builder(GlobalOpenTelemetry.get(),
+        InstrumenterBuilder<JetStreamTrace, Void> builder = Instrumenter.builder(openTelemetryInstance.get(),
                 "io.smallrye.reactive.messaging.jetstream",
                 MessagingSpanNameExtractor.create(messagingAttributesGetter, RECEIVE));
 

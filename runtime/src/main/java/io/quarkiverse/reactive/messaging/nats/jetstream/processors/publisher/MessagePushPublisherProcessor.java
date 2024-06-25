@@ -48,10 +48,7 @@ public class MessagePushPublisherProcessor implements MessagePublisherProcessor 
                         jetStreamClient.fireEvent(ConnectionEvent.CommunicationFailed, throwable.getMessage());
                     }
                 })
-                .onFailure().retry().withBackOff(configuration.retryBackoff()).indefinitely()
-                .onTermination().invoke(this::shutDown)
-                .onCancellation().invoke(this::shutDown)
-                .onCompletion().invoke(this::shutDown);
+                .onFailure().retry().withBackOff(configuration.retryBackoff()).indefinitely();
     }
 
     @Override
@@ -61,6 +58,7 @@ public class MessagePushPublisherProcessor implements MessagePublisherProcessor 
 
     @Override
     public void close() {
+        shutDown();
         jetStreamClient.close();
     }
 
@@ -130,6 +128,5 @@ public class MessagePushPublisherProcessor implements MessagePublisherProcessor 
         } catch (Exception e) {
             logger.errorf(e, "Failed to shutdown pull executor");
         }
-        close();
     }
 }
