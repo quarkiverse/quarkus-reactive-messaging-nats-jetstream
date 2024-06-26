@@ -1,5 +1,13 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.tracing;
 
+import static io.opentelemetry.instrumentation.api.instrumenter.messaging.MessageOperation.RECEIVE;
+import static io.opentelemetry.instrumentation.api.instrumenter.messaging.MessagingAttributesExtractor.create;
+import static io.smallrye.reactive.messaging.tracing.TracingUtils.getOpenTelemetry;
+
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Instance;
+import jakarta.inject.Inject;
+
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.instrumentation.api.instrumenter.Instrumenter;
 import io.opentelemetry.instrumentation.api.instrumenter.InstrumenterBuilder;
@@ -7,13 +15,6 @@ import io.opentelemetry.instrumentation.api.instrumenter.messaging.MessageOperat
 import io.opentelemetry.instrumentation.api.instrumenter.messaging.MessagingAttributesExtractor;
 import io.opentelemetry.instrumentation.api.instrumenter.messaging.MessagingAttributesGetter;
 import io.opentelemetry.instrumentation.api.instrumenter.messaging.MessagingSpanNameExtractor;
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.inject.Instance;
-import jakarta.inject.Inject;
-
-import static io.opentelemetry.instrumentation.api.instrumenter.messaging.MessageOperation.RECEIVE;
-import static io.opentelemetry.instrumentation.api.instrumenter.messaging.MessagingAttributesExtractor.create;
-import static io.smallrye.reactive.messaging.tracing.TracingUtils.getOpenTelemetry;
 
 @ApplicationScoped
 public class JetStreamInstrumenter {
