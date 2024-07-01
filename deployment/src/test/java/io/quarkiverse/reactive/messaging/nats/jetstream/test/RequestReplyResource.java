@@ -45,6 +45,16 @@ public class RequestReplyResource {
     }
 
     @GET
+    @Path("/streams/{stream}/consumers")
+    public List<String> getConsumers(@PathParam("stream") String stream) {
+        try (JetStreamClient client = jetStreamUtility.getJetStreamClient()) {
+            try (Connection connection = jetStreamUtility.getConnection(client, Duration.ofSeconds(1))) {
+                return jetStreamUtility.getConsumerNames(connection, stream);
+            }
+        }
+    }
+
+    @GET
     @Path("/streams/{stream}/subjects")
     public List<String> getSubjects(@PathParam("stream") String stream) {
         try (JetStreamClient client = jetStreamUtility.getJetStreamClient()) {
