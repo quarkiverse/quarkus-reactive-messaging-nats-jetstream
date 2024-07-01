@@ -3,7 +3,7 @@ package io.quarkiverse.reactive.messaging.nats.jetstream.util;
 import java.time.Duration;
 import java.util.Optional;
 
-public interface ConsumerConfiguration {
+public interface ConsumerConfiguration<T> {
 
     String name();
 
@@ -12,6 +12,8 @@ public interface ConsumerConfiguration {
     String subject();
 
     Optional<Duration> ackTimeout();
+
+    Optional<Class<T>> getPayloadType();
 
     boolean traceEnabled();
 }
