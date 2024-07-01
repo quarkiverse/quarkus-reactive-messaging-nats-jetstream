@@ -86,7 +86,7 @@ public class RequestReplyResource {
     public Data consumeData(@PathParam("subject") String subject) {
         try (JetStreamClient client = jetStreamUtility.getJetStreamClient()) {
             try (Connection connection = jetStreamUtility.getConnection(client, Duration.ofSeconds(1))) {
-                return jetStreamUtility.nextMessage(connection, Data.class, getConsumerConfiguration(streamName, subject))
+                return jetStreamUtility.nextMessage(connection, getConsumerConfiguration(streamName, subject))
                         .map(message -> {
                             message.ack();
                             return message.getPayload();
@@ -96,7 +96,7 @@ public class RequestReplyResource {
         }
     }
 
-    private ConsumerConfiguration getConsumerConfiguration(String streamName, String subject) {
+    private ConsumerConfiguration<Data> getConsumerConfiguration(String streamName, String subject) {
         return new ConsumerConfiguration() {
             @Override
             public String stream() {
@@ -120,6 +120,11 @@ public class RequestReplyResource {
 
             @Override
             public Optional<Duration> ackTimeout() {
+                return Optional.empty();
+            }
+
+            @Override
+            public Optional<Class> getPayloadType() {
                 return Optional.empty();
             }
         };

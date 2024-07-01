@@ -80,13 +80,12 @@ public class JetStreamUtility {
     }
 
     public <T> Optional<Message<T>> nextMessage(Connection connection,
-            Class<T> payloadType,
-            ConsumerConfiguration configuration) {
+            ConsumerConfiguration<T> configuration) {
 
-        return nextMessage(connection, configuration).map(message -> messageFactory.create(
+        return nextNatsMessage(connection, configuration).map(message -> messageFactory.create(
                 message,
                 configuration.traceEnabled(),
-                payloadType,
+                configuration.getPayloadType().orElse(null),
                 connection.context(),
                 new ExponentialBackoff(false, Duration.ZERO),
                 configuration.ackTimeout().orElseGet(() -> Duration.ofSeconds(10))));
@@ -121,7 +120,7 @@ public class JetStreamUtility {
         return getStreams(connection).stream().flatMap(streamName -> purgeStream(connection, streamName).stream()).toList();
     }
 
-    private Optional<io.nats.client.Message> nextMessage(
+    private Optional<io.nats.client.Message> nextNatsMessage(
             Connection connection,
             ConsumerConfiguration configuration) {
         try {
