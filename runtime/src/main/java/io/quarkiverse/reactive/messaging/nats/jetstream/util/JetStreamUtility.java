@@ -13,6 +13,7 @@ import org.jboss.logging.Logger;
 
 import io.nats.client.FetchConsumeOptions;
 import io.nats.client.JetStreamApiException;
+import io.nats.client.api.DeliverPolicy;
 import io.nats.client.api.StreamInfo;
 import io.nats.client.api.StreamInfoOptions;
 import io.quarkiverse.reactive.messaging.nats.NatsConfiguration;
@@ -65,14 +66,19 @@ public class JetStreamUtility {
         return jetStreamPublisher.publish(connection, configuration, message);
     }
 
-    public void addOrUpdateConsumer(Connection connection,
-            ConsumerConfiguration configuration) {
+    public <T> void addOrUpdateConsumer(Connection connection,
+            ConsumerConfiguration<T> configuration) {
         try {
             final var jsm = connection.jetStreamManagement();
             final var cc = io.nats.client.api.ConsumerConfiguration.builder()
                     .name(configuration.name())
                     .filterSubject(configuration.subject())
+                    .deliverPolicy(configuration.deliverPolicy().orElse(DeliverPolicy.All))
+                    .startSequence(configuration.startSequence().orElse(0L))
+                    .maxAckPending(configuration.maxAckPending().orElse(1))
+                    .startTime(configuration.startTime().orElse(null))
                     .build();
+
             jsm.addOrUpdateConsumer(configuration.stream(), cc);
         } catch (IOException | JetStreamApiException e) {
             throw new ConsumerException(e);
