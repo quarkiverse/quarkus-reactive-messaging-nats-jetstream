@@ -1,6 +1,7 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.test;
 
 import java.time.Duration;
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -12,6 +13,7 @@ import jakarta.ws.rs.*;
 import org.eclipse.microprofile.reactive.messaging.Message;
 import org.eclipse.microprofile.reactive.messaging.Metadata;
 
+import io.nats.client.api.DeliverPolicy;
 import io.quarkiverse.reactive.messaging.nats.jetstream.JetStreamOutgoingMessageMetadata;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.Connection;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.JetStreamClient;
@@ -125,6 +127,26 @@ public class RequestReplyResource {
 
             @Override
             public Optional<Class> getPayloadType() {
+                return Optional.empty();
+            }
+
+            @Override
+            public Optional<DeliverPolicy> deliverPolicy() {
+                return Optional.empty();
+            }
+
+            @Override
+            public Optional<Long> startSequence() {
+                return Optional.empty();
+            }
+
+            @Override
+            public Optional<ZonedDateTime> startTime() {
+                return Optional.empty();
+            }
+
+            @Override
+            public Optional<Integer> maxAckPending() {
                 return Optional.empty();
             }
         };
