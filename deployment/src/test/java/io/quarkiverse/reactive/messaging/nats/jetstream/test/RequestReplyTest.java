@@ -61,6 +61,13 @@ public class RequestReplyTest {
                 .then().statusCode(200).extract().as(String[].class);
         assertThat(subjects).contains("events.>");
 
+        final var consumers = given()
+                .filters(new RequestLoggingFilter(), new ResponseLoggingFilter())
+                .pathParam("stream", "request-reply")
+                .get("/request-reply/streams/{stream}/consumers")
+                .then().statusCode(200).extract().as(String[].class);
+        assertThat(consumers).contains(subject);
+
         final var result = given()
                 .filters(new RequestLoggingFilter(), new ResponseLoggingFilter())
                 .pathParam("subject", subject)

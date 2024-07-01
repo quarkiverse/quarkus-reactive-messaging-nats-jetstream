@@ -105,6 +105,15 @@ public class JetStreamUtility {
                 .getSubjects()).orElseGet(List::of);
     }
 
+    public List<String> getConsumerNames(Connection connection, String streamName) {
+        try {
+            final var jsm = connection.jetStreamManagement();
+            return jsm.getConsumerNames(streamName);
+        } catch (IOException | JetStreamApiException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     public Optional<PurgeResult> purgeStream(Connection connection, String streamName) {
         try {
             final var jsm = connection.jetStreamManagement();
