@@ -7,7 +7,6 @@ import java.util.stream.Collectors;
 import io.nats.client.api.RetentionPolicy;
 import io.nats.client.api.StorageType;
 import io.quarkiverse.reactive.messaging.nats.jetstream.JetStreamBuildConfiguration;
-import io.quarkiverse.reactive.messaging.nats.jetstream.util.RequestReplyConfiguration;
 
 public interface JetStreamSetupConfiguration {
     String stream();
@@ -28,10 +27,5 @@ public interface JetStreamSetupConfiguration {
                 StorageType.valueOf(configuration.storageType()),
                 RetentionPolicy.valueOf(configuration.retentionPolicy())))
                 .collect(Collectors.toUnmodifiableList());
-    }
-
-    static <T> JetStreamSetupConfiguration of(RequestReplyConfiguration<T> configuration) {
-        return new DefaultJetStreamSetupConfiguration(configuration.stream(), Set.of(configuration.subject()),
-                configuration.replicas().orElse(1), configuration.storageType(), configuration.retentionPolicy());
     }
 }

@@ -13,6 +13,8 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
+import io.restassured.filter.log.RequestLoggingFilter;
+import io.restassured.filter.log.ResponseLoggingFilter;
 import io.restassured.parsing.Parser;
 
 public class RequestReplyTest {
@@ -36,32 +38,37 @@ public class RequestReplyTest {
     public void requestReply() {
         final var id = "b41b2f79-118b-47c0-ba14-ae1a55ebf1e1";
         final var data = "N6cXzMdfaf";
+        final var subject = "a65583a4-7c17-4caf-855d-de5a55aaeb6d";
 
         given()
-                .pathParam("id", id).pathParam("data", data)
-                .post("/request-reply/{id}/{data}")
+                .filters(new RequestLoggingFilter(), new ResponseLoggingFilter())
+                .pathParam("subject", subject)
+                .pathParam("id", id)
+                .pathParam("data", data)
+                .post("/request-reply/subjects/{subject}/{id}/{data}")
                 .then().statusCode(204);
 
         final var streams = given()
+                .filters(new RequestLoggingFilter(), new ResponseLoggingFilter())
                 .get("/request-reply/streams")
                 .then().statusCode(200).extract().as(String[].class);
         assertThat(streams).contains("request-reply");
 
+        final var subjects = given()
+                .filters(new RequestLoggingFilter(), new ResponseLoggingFilter())
+                .pathParam("stream", "request-reply")
+                .get("/request-reply/streams/{stream}/subjects")
+                .then().statusCode(200).extract().as(String[].class);
+        assertThat(subjects).contains("events.>");
+
         final var result = given()
-                .get("/request-reply")
+                .filters(new RequestLoggingFilter(), new ResponseLoggingFilter())
+                .pathParam("subject", subject)
+                .get("/request-reply/subjects/{subject}")
                 .then().statusCode(200).extract().as(Data.class);
 
         assertThat(result).isNotNull();
         assertThat(result.getResourceId()).isEqualTo(id);
         assertThat(result.getData()).isEqualTo(data);
-
-        final var streamInfo = given()
-                .pathParam("stream", "request-reply")
-                .get("/request-reply/stream-info/{stream}")
-                .then().statusCode(200).extract().as(StreamInfo.class);
-
-        assertThat(streamInfo).isNotNull();
-        assertThat(streamInfo.name()).isEqualTo("request-reply");
     }
-
 }
