@@ -27,4 +27,6 @@ public interface ConsumerConfiguration<T> {
     Optional<Integer> maxAckPending();
 
     boolean traceEnabled();
+
+    Optional<String> durable();
 }

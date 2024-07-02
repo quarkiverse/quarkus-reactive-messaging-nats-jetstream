@@ -77,6 +77,7 @@ public class JetStreamUtility {
                     .startSequence(configuration.startSequence().orElse(0L))
                     .maxAckPending(configuration.maxAckPending().orElse(1))
                     .startTime(configuration.startTime().orElse(null))
+                    .durable(configuration.durable().orElse(null))
                     .build();
 
             jsm.addOrUpdateConsumer(configuration.stream(), cc);
