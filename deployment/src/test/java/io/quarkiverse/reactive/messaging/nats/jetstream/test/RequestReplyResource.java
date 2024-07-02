@@ -159,6 +159,11 @@ public class RequestReplyResource {
             public Optional<Integer> maxAckPending() {
                 return Optional.empty();
             }
+
+            @Override
+            public Optional<String> durable() {
+                return Optional.of(subject);
+            }
         };
     }
 }
