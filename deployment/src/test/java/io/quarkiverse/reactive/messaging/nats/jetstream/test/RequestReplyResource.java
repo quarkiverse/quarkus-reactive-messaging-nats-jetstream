@@ -3,6 +3,7 @@ package io.quarkiverse.reactive.messaging.nats.jetstream.test;
 import java.time.Duration;
 import java.time.ZonedDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -14,10 +15,12 @@ import org.eclipse.microprofile.reactive.messaging.Message;
 import org.eclipse.microprofile.reactive.messaging.Metadata;
 
 import io.nats.client.api.DeliverPolicy;
+import io.nats.client.api.ReplayPolicy;
 import io.quarkiverse.reactive.messaging.nats.jetstream.JetStreamOutgoingMessageMetadata;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.Connection;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.JetStreamClient;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.JetStreamPublishConfiguration;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.io.JetStreamConsumerType;
 import io.quarkiverse.reactive.messaging.nats.jetstream.util.ConsumerConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.util.JetStreamUtility;
 
@@ -121,8 +124,8 @@ public class RequestReplyResource {
             }
 
             @Override
-            public String name() {
-                return subject;
+            public Optional<String> name() {
+                return Optional.of(subject);
             }
 
             @Override
@@ -146,7 +149,7 @@ public class RequestReplyResource {
             }
 
             @Override
-            public Optional<Long> startSequence() {
+            public Optional<Long> startSeq() {
                 return Optional.empty();
             }
 
@@ -163,6 +166,66 @@ public class RequestReplyResource {
             @Override
             public Optional<String> durable() {
                 return Optional.of(subject);
+            }
+
+            @Override
+            public JetStreamConsumerType type() {
+                return JetStreamConsumerType.Fetch;
+            }
+
+            @Override
+            public List<String> filterSubjects() {
+                return List.of();
+            }
+
+            @Override
+            public Optional<Duration> ackWait() {
+                return Optional.empty();
+            }
+
+            @Override
+            public Optional<String> description() {
+                return Optional.empty();
+            }
+
+            @Override
+            public Optional<Duration> inactiveThreshold() {
+                return Optional.empty();
+            }
+
+            @Override
+            public Optional<Integer> maxDeliver() {
+                return Optional.empty();
+            }
+
+            @Override
+            public Optional<ReplayPolicy> replayPolicy() {
+                return Optional.empty();
+            }
+
+            @Override
+            public Optional<Integer> replicas() {
+                return Optional.empty();
+            }
+
+            @Override
+            public Optional<Boolean> memoryStorage() {
+                return Optional.empty();
+            }
+
+            @Override
+            public Optional<String> sampleFrequency() {
+                return Optional.empty();
+            }
+
+            @Override
+            public Map<String, String> metadata() {
+                return Map.of();
+            }
+
+            @Override
+            public List<Duration> backoff() {
+                return List.of();
             }
         };
     }
