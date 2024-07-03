@@ -1,32 +1,16 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.util;
 
 import java.time.Duration;
-import java.time.ZonedDateTime;
 import java.util.Optional;
 
-import io.nats.client.api.DeliverPolicy;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.JetStreamConsumerConfiguration;
 
-public interface ConsumerConfiguration<T> {
-
-    String name();
-
-    String stream();
-
-    String subject();
+public interface ConsumerConfiguration<T> extends JetStreamConsumerConfiguration {
 
     Optional<Duration> ackTimeout();
 
     Optional<Class<T>> getPayloadType();
 
-    Optional<DeliverPolicy> deliverPolicy();
-
-    Optional<Long> startSequence();
-
-    Optional<ZonedDateTime> startTime();
-
-    Optional<Integer> maxAckPending();
-
     boolean traceEnabled();
 
-    Optional<String> durable();
 }

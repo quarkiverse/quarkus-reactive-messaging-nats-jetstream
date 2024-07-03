@@ -13,7 +13,6 @@ import org.jboss.logging.Logger;
 
 import io.nats.client.FetchConsumeOptions;
 import io.nats.client.JetStreamApiException;
-import io.nats.client.api.DeliverPolicy;
 import io.nats.client.api.StreamInfo;
 import io.nats.client.api.StreamInfoOptions;
 import io.quarkiverse.reactive.messaging.nats.NatsConfiguration;
@@ -22,6 +21,7 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.client.Connection;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.JetStreamClient;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ConnectionConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.JetStreamPublishConfiguration;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.JetstreamConsumerConfigurtationFactory;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.io.JetStreamPublisher;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.io.MessageFactory;
 import io.quarkiverse.reactive.messaging.nats.jetstream.mapper.PayloadMapper;
@@ -70,17 +70,9 @@ public class JetStreamUtility {
             ConsumerConfiguration<T> configuration) {
         try {
             final var jsm = connection.jetStreamManagement();
-            final var cc = io.nats.client.api.ConsumerConfiguration.builder()
-                    .name(configuration.name())
-                    .filterSubject(configuration.subject())
-                    .deliverPolicy(configuration.deliverPolicy().orElse(DeliverPolicy.All))
-                    .startSequence(configuration.startSequence().orElse(0L))
-                    .maxAckPending(configuration.maxAckPending().orElse(1))
-                    .startTime(configuration.startTime().orElse(null))
-                    .durable(configuration.durable().orElse(null))
-                    .build();
-
-            jsm.addOrUpdateConsumer(configuration.stream(), cc);
+            final var factory = new JetstreamConsumerConfigurtationFactory();
+            final var consumerConfiguration = factory.create(configuration);
+            jsm.addOrUpdateConsumer(configuration.stream(), consumerConfiguration);
         } catch (IOException | JetStreamApiException e) {
             throw new ConsumerException(e);
         }
@@ -141,7 +133,8 @@ public class JetStreamUtility {
             ConsumerConfiguration configuration) {
         try {
             final var streamContext = connection.getStreamContext(configuration.stream());
-            final var consumerContext = streamContext.getConsumerContext(configuration.name());
+            final var consumerContext = streamContext.getConsumerContext(JetstreamConsumerConfigurtationFactory
+                    .getName(configuration).orElseThrow(() -> new IllegalArgumentException("Name or durable not configured")));
 
             try (final var fetchConsumer = consumerContext.fetch(
                     FetchConsumeOptions.builder().maxMessages(1).noWait().build())) {

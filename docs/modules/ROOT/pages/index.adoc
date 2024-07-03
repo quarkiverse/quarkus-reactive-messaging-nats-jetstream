@@ -118,6 +118,7 @@ mp.messaging.outgoing.[channel-name].trace-enabled,Enable traces for subscriber
 .Publisher processor attributes
 [format="csv",cols="2"]
 |======
+mp.messaging.incoming.[channel-name].name,The name of the NATS consumer
 mp.messaging.incoming.[channel-name].stream,The stream to publish messages from
 mp.messaging.incoming.[channel-name].subject,The subject to publish messages from
 mp.messaging.incoming.[channel-name].trace-enabled,Enable traces for publisher
