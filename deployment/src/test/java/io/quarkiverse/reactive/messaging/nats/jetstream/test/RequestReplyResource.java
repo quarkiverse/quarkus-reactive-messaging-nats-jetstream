@@ -112,7 +112,7 @@ public class RequestReplyResource {
     }
 
     private ConsumerConfiguration<Data> getConsumerConfiguration(String streamName, String subject) {
-        return new ConsumerConfiguration() {
+        return new ConsumerConfiguration<Data>() {
             @Override
             public String stream() {
                 return streamName;
@@ -139,7 +139,7 @@ public class RequestReplyResource {
             }
 
             @Override
-            public Optional<Class> getPayloadType() {
+            public Optional<Class<Data>> getPayloadType() {
                 return Optional.empty();
             }
 

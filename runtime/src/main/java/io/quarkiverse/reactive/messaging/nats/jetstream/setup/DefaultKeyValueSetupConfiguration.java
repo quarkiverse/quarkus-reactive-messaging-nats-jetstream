@@ -8,7 +8,7 @@ import lombok.Builder;
 
 @Builder
 public record DefaultKeyValueSetupConfiguration(
-        String name,
+        String bucketName,
         Optional<String> description,
         StorageType storageType,
         Optional<Long> maxBucketSize,

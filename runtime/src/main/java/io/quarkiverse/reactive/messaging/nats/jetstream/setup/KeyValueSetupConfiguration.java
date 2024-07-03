@@ -10,9 +10,9 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.JetStreamBuildConfigurat
 public interface KeyValueSetupConfiguration {
 
     /**
-     * Name of Key-Value store
+     * Bucket Name of Key-Value store
      */
-    String name();
+    String bucketName();
 
     /**
      * Description of Key-Value store
@@ -56,7 +56,7 @@ public interface KeyValueSetupConfiguration {
 
     static List<? extends KeyValueSetupConfiguration> of(JetStreamBuildConfiguration configuration) {
         return configuration.keyValueStores().stream().map(store -> DefaultKeyValueSetupConfiguration.builder()
-                .name(store.name())
+                .bucketName(store.bucketName())
                 .description(store.description())
                 .storageType(StorageType.valueOf(store.storageType()))
                 .maxBucketSize(store.maxBucketSize())

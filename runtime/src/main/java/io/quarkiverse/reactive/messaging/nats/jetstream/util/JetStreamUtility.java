@@ -25,7 +25,6 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.Jet
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.io.JetStreamPublisher;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.io.MessageFactory;
 import io.quarkiverse.reactive.messaging.nats.jetstream.mapper.PayloadMapper;
-import io.quarkiverse.reactive.messaging.nats.jetstream.setup.JetStreamSetup;
 import io.quarkiverse.reactive.messaging.nats.jetstream.tracing.JetStreamInstrumenter;
 import io.smallrye.reactive.messaging.providers.connectors.ExecutionHolder;
 
@@ -38,7 +37,6 @@ public class JetStreamUtility {
     private final PayloadMapper payloadMapper;
     private final JetStreamInstrumenter jetStreamInstrumenter;
     private final MessageFactory messageFactory;
-    private final JetStreamSetup jetStreamSetup;
 
     @Inject
     public JetStreamUtility(NatsConfiguration natsConfiguration, ExecutionHolder executionHolder, PayloadMapper payloadMapper,
@@ -48,7 +46,6 @@ public class JetStreamUtility {
         this.payloadMapper = payloadMapper;
         this.jetStreamInstrumenter = jetStreamInstrumenter;
         this.messageFactory = messageFactory;
-        this.jetStreamSetup = new JetStreamSetup();
     }
 
     public JetStreamClient getJetStreamClient() {

@@ -67,7 +67,7 @@ public class PayloadMapper {
         return decode(message.getData(), payLoadType);
     }
 
-    private <T> T decode(byte[] data, Class<T> type) {
+    public <T> T decode(byte[] data, Class<T> type) {
         try {
             return objectMapper.readValue(data, type);
         } catch (IOException e) {

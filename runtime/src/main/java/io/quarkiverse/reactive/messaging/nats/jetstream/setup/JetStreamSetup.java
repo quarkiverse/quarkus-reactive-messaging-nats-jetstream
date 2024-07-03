@@ -102,7 +102,7 @@ public class JetStreamSetup {
     private void addOrUpdateKeyValueStore(Connection connection, KeyValueSetupConfiguration keyValueSetupConfiguration) {
         try {
             final var kvm = connection.keyValueManagement();
-            if (kvm.getBucketNames().contains(keyValueSetupConfiguration.name())) {
+            if (kvm.getBucketNames().contains(keyValueSetupConfiguration.bucketName())) {
                 kvm.update(createKeyValueConfiguration(keyValueSetupConfiguration));
             } else {
                 kvm.create(createKeyValueConfiguration(keyValueSetupConfiguration));
@@ -113,16 +113,16 @@ public class JetStreamSetup {
     }
 
     private KeyValueConfiguration createKeyValueConfiguration(KeyValueSetupConfiguration keyValueSetupConfiguration) {
-        return KeyValueConfiguration.builder()
-                .name(keyValueSetupConfiguration.name())
-                .description(keyValueSetupConfiguration.description().orElse(null))
-                .storageType(keyValueSetupConfiguration.storageType())
-                .maxBucketSize(keyValueSetupConfiguration.maxBucketSize().orElse(null))
-                .maxHistoryPerKey(keyValueSetupConfiguration.maxHistoryPerKey().orElse(null))
-                .maxValueSize(keyValueSetupConfiguration.maxValueSize().orElse(null))
-                .ttl(keyValueSetupConfiguration.ttl().orElse(null))
-                .replicas(keyValueSetupConfiguration.replicas().orElse(null))
-                .compression(keyValueSetupConfiguration.compressed())
-                .build();
+        var builder = KeyValueConfiguration.builder();
+        builder = builder.name(keyValueSetupConfiguration.bucketName());
+        builder = keyValueSetupConfiguration.description().map(builder::description).orElse(builder);
+        builder = builder.storageType(keyValueSetupConfiguration.storageType());
+        builder = keyValueSetupConfiguration.maxBucketSize().map(builder::maxBucketSize).orElse(builder);
+        builder = keyValueSetupConfiguration.maxHistoryPerKey().map(builder::maxHistoryPerKey).orElse(builder);
+        builder = keyValueSetupConfiguration.maxValueSize().map(builder::maxValueSize).orElse(builder);
+        builder = keyValueSetupConfiguration.ttl().map(builder::ttl).orElse(builder);
+        builder = keyValueSetupConfiguration.replicas().map(builder::replicas).orElse(builder);
+        builder = builder.compression(keyValueSetupConfiguration.compressed());
+        return builder.build();
     }
 }

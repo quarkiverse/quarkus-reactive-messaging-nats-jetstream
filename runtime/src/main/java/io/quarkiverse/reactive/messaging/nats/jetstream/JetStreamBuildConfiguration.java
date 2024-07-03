@@ -52,7 +52,7 @@ public interface JetStreamBuildConfiguration {
         /**
          * Name of Key-Value store
          */
-        String name();
+        String bucketName();
 
         /**
          * Description of Key-Value store
