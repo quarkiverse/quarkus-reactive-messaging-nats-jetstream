@@ -11,23 +11,21 @@ import jakarta.inject.Inject;
 import org.eclipse.microprofile.reactive.messaging.Message;
 import org.jboss.logging.Logger;
 
+import io.nats.client.FetchConsumeOptions;
 import io.nats.client.JetStreamApiException;
-import io.nats.client.api.ConsumerInfo;
 import io.nats.client.api.StreamInfo;
 import io.nats.client.api.StreamInfoOptions;
-import io.nats.client.impl.NatsJetStreamPullSubscription;
 import io.quarkiverse.reactive.messaging.nats.NatsConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.ExponentialBackoff;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.Connection;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.JetStreamClient;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ConnectionConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.JetStreamPublishConfiguration;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.PullSubscribeOptionsFactory;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.JetstreamConsumerConfigurtationFactory;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.io.JetStreamPublisher;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.io.MessageFactory;
 import io.quarkiverse.reactive.messaging.nats.jetstream.mapper.PayloadMapper;
 import io.quarkiverse.reactive.messaging.nats.jetstream.setup.JetStreamSetup;
-import io.quarkiverse.reactive.messaging.nats.jetstream.setup.JetStreamSetupConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.tracing.JetStreamInstrumenter;
 import io.smallrye.reactive.messaging.providers.connectors.ExecutionHolder;
 
@@ -40,6 +38,7 @@ public class JetStreamUtility {
     private final PayloadMapper payloadMapper;
     private final JetStreamInstrumenter jetStreamInstrumenter;
     private final MessageFactory messageFactory;
+    private final JetStreamSetup jetStreamSetup;
 
     @Inject
     public JetStreamUtility(NatsConfiguration natsConfiguration, ExecutionHolder executionHolder, PayloadMapper payloadMapper,
@@ -49,6 +48,7 @@ public class JetStreamUtility {
         this.payloadMapper = payloadMapper;
         this.jetStreamInstrumenter = jetStreamInstrumenter;
         this.messageFactory = messageFactory;
+        this.jetStreamSetup = new JetStreamSetup();
     }
 
     public JetStreamClient getJetStreamClient() {
@@ -59,37 +59,35 @@ public class JetStreamUtility {
         return jetStreamClient.getOrEstablishConnection().await().atMost(connectionTimeout);
     }
 
-    public <T> Message<T> publish(Connection connection, Message<T> message, RequestReplyConfiguration<T> configuration) {
-        final var setup = new JetStreamSetup();
-        setup.addOrUpdateStream(connection, JetStreamSetupConfiguration.of(configuration))
-                .ifPresent(setupResult -> logger.debugf("Setup result: %s", setupResult));
+    public <T> Message<T> publish(Connection connection,
+            Message<T> message,
+            JetStreamPublishConfiguration configuration) {
         final var jetStreamPublisher = getJetStreamPublisher();
-        return jetStreamPublisher.publish(connection, new JetStreamPublishConfiguration() {
-            @Override
-            public boolean traceEnabled() {
-                return configuration.traceEnabled();
-            }
-
-            @Override
-            public String stream() {
-                return configuration.stream();
-            }
-
-            @Override
-            public String subject() {
-                return configuration.subject();
-            }
-        }, message);
+        return jetStreamPublisher.publish(connection, configuration, message);
     }
 
-    public <T> Optional<Message<T>> nextMessage(Connection connection, RequestReplyConfiguration<T> configuration) {
-        return nextMessage(configuration, connection).map(message -> messageFactory.create(
+    public <T> void addOrUpdateConsumer(Connection connection,
+            ConsumerConfiguration<T> configuration) {
+        try {
+            final var jsm = connection.jetStreamManagement();
+            final var factory = new JetstreamConsumerConfigurtationFactory();
+            final var consumerConfiguration = factory.create(configuration);
+            jsm.addOrUpdateConsumer(configuration.stream(), consumerConfiguration);
+        } catch (IOException | JetStreamApiException e) {
+            throw new ConsumerException(e);
+        }
+    }
+
+    public <T> Optional<Message<T>> nextMessage(Connection connection,
+            ConsumerConfiguration<T> configuration) {
+
+        return nextNatsMessage(connection, configuration).map(message -> messageFactory.create(
                 message,
                 configuration.traceEnabled(),
-                configuration.payloadType().orElse(null),
+                configuration.getPayloadType().orElse(null),
                 connection.context(),
                 new ExponentialBackoff(false, Duration.ZERO),
-                configuration.ackTimeout()));
+                configuration.ackTimeout().orElseGet(() -> Duration.ofSeconds(10))));
     }
 
     public List<String> getStreams(Connection connection) {
@@ -101,13 +99,17 @@ public class JetStreamUtility {
         }
     }
 
-    public Optional<StreamInfo> getStreamInfo(Connection connection, String streamName) {
+    public List<String> getSubjects(Connection connection, String streamName) {
+        return getStreamInfo(connection, streamName).map(streamInfo -> streamInfo.getConfiguration()
+                .getSubjects()).orElseGet(List::of);
+    }
+
+    public List<String> getConsumerNames(Connection connection, String streamName) {
         try {
             final var jsm = connection.jetStreamManagement();
-            return Optional.of(jsm.getStreamInfo(streamName, StreamInfoOptions.allSubjects()));
+            return jsm.getConsumerNames(streamName);
         } catch (IOException | JetStreamApiException e) {
-            logger.debugf(e, "Unable to read stream %s with message: %s", streamName, e.getMessage());
-            return Optional.empty();
+            throw new RuntimeException(e);
         }
     }
 
@@ -126,23 +128,19 @@ public class JetStreamUtility {
         return getStreams(connection).stream().flatMap(streamName -> purgeStream(connection, streamName).stream()).toList();
     }
 
-    private <T> Optional<io.nats.client.Message> nextMessage(
-            RequestReplyConfiguration<T> configuration,
-            Connection connection) {
+    private Optional<io.nats.client.Message> nextNatsMessage(
+            Connection connection,
+            ConsumerConfiguration configuration) {
         try {
-            final var optionsFactory = new PullSubscribeOptionsFactory();
-            final var consumerConfiguration = optionsFactory
-                    .create(configuration);
+            final var streamContext = connection.getStreamContext(configuration.stream());
+            final var consumerContext = streamContext.getConsumerContext(JetstreamConsumerConfigurtationFactory
+                    .getName(configuration).orElseThrow(() -> new IllegalArgumentException("Name or durable not configured")));
 
-            final var jetStream = connection.jetStream();
-            NatsJetStreamPullSubscription subscription = (NatsJetStreamPullSubscription) jetStream
-                    .subscribe(configuration.subject(), consumerConfiguration);
-            connection.flush(Duration.ofSeconds(1));
-
-            ConsumerInfo ci = subscription.getConsumerInfo();
-            logger.infof("Server consumer is named -> %s", ci.getName());
-
-            return nextMessage(configuration, subscription);
+            try (final var fetchConsumer = consumerContext.fetch(
+                    FetchConsumeOptions.builder().maxMessages(1).noWait().build())) {
+                final var message = fetchConsumer.nextMessage();
+                return Optional.ofNullable(message);
+            }
         } catch (Exception e) {
             logger.errorf(e, "Failed to fetch message from stream: %s and subject: %s",
                     configuration.stream(), configuration.subject());
@@ -150,12 +148,18 @@ public class JetStreamUtility {
         }
     }
 
-    private <T> Optional<io.nats.client.Message> nextMessage(RequestReplyConfiguration<T> configuration,
-            NatsJetStreamPullSubscription subscription) {
-        return subscription.fetch(1, configuration.maxRequestExpires().orElse(Duration.ZERO)).stream().findAny();
-    }
-
     private JetStreamPublisher getJetStreamPublisher() {
         return new JetStreamPublisher(payloadMapper, jetStreamInstrumenter);
     }
+
+    private Optional<StreamInfo> getStreamInfo(Connection connection, String streamName) {
+        try {
+            final var jsm = connection.jetStreamManagement();
+            return Optional.of(jsm.getStreamInfo(streamName, StreamInfoOptions.allSubjects()));
+        } catch (IOException | JetStreamApiException e) {
+            logger.debugf(e, "Unable to read stream %s with message: %s", streamName, e.getMessage());
+            return Optional.empty();
+        }
+    }
+
 }

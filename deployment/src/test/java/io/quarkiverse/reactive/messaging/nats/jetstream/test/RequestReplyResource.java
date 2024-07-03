@@ -14,54 +14,118 @@ import jakarta.ws.rs.*;
 import org.eclipse.microprofile.reactive.messaging.Message;
 import org.eclipse.microprofile.reactive.messaging.Metadata;
 
-import io.nats.client.api.*;
+import io.nats.client.api.DeliverPolicy;
+import io.nats.client.api.ReplayPolicy;
 import io.quarkiverse.reactive.messaging.nats.jetstream.JetStreamOutgoingMessageMetadata;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.Connection;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.JetStreamClient;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.JetStreamPublishConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.io.JetStreamConsumerType;
+import io.quarkiverse.reactive.messaging.nats.jetstream.util.ConsumerConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.util.JetStreamUtility;
-import io.quarkiverse.reactive.messaging.nats.jetstream.util.RequestReplyConfiguration;
 
 @Path("/request-reply")
 @Produces("application/json")
 @RequestScoped
 public class RequestReplyResource {
-    private final RequestReplyConfiguration<Data> configuration;
     private final JetStreamUtility jetStreamUtility;
+    private final String streamName;
 
     @Inject
     public RequestReplyResource(JetStreamUtility jetStreamUtility) {
         this.jetStreamUtility = jetStreamUtility;
-        this.configuration = new RequestReplyConfiguration<>() {
+        this.streamName = "request-reply";
+    }
 
+    @GET
+    @Path("/streams")
+    public List<String> getStreams() {
+        try (JetStreamClient client = jetStreamUtility.getJetStreamClient()) {
+            try (Connection connection = jetStreamUtility.getConnection(client, Duration.ofSeconds(1))) {
+                return jetStreamUtility.getStreams(connection);
+            }
+        }
+    }
+
+    @GET
+    @Path("/streams/{stream}/consumers")
+    public List<String> getConsumers(@PathParam("stream") String stream) {
+        try (JetStreamClient client = jetStreamUtility.getJetStreamClient()) {
+            try (Connection connection = jetStreamUtility.getConnection(client, Duration.ofSeconds(1))) {
+                return jetStreamUtility.getConsumerNames(connection, stream);
+            }
+        }
+    }
+
+    @GET
+    @Path("/streams/{stream}/subjects")
+    public List<String> getSubjects(@PathParam("stream") String stream) {
+        try (JetStreamClient client = jetStreamUtility.getJetStreamClient()) {
+            try (Connection connection = jetStreamUtility.getConnection(client, Duration.ofSeconds(1))) {
+                return jetStreamUtility.getSubjects(connection, stream);
+            }
+        }
+    }
+
+    @POST
+    @Path("/subjects/{subject}/{id}/{data}")
+    public void produceData(@PathParam("subject") String subject, @PathParam("id") String id, @PathParam("data") String data) {
+        try (JetStreamClient client = jetStreamUtility.getJetStreamClient()) {
+            try (Connection connection = jetStreamUtility.getConnection(client, Duration.ofSeconds(1))) {
+                final var messageId = UUID.randomUUID().toString();
+                final var newMessage = Message.of(new Data(data, id, messageId),
+                        Metadata.of(new JetStreamOutgoingMessageMetadata(messageId)));
+                jetStreamUtility.addOrUpdateConsumer(connection, getConsumerConfiguration(streamName, subject));
+                jetStreamUtility.publish(connection, newMessage, new JetStreamPublishConfiguration() {
+                    @Override
+                    public boolean traceEnabled() {
+                        return true;
+                    }
+
+                    @Override
+                    public String stream() {
+                        return streamName;
+                    }
+
+                    @Override
+                    public String subject() {
+                        return "events." + subject;
+                    }
+                });
+            }
+        }
+    }
+
+    @GET
+    @Path("/subjects/{subject}")
+    public Data consumeData(@PathParam("subject") String subject) {
+        try (JetStreamClient client = jetStreamUtility.getJetStreamClient()) {
+            try (Connection connection = jetStreamUtility.getConnection(client, Duration.ofSeconds(1))) {
+                return jetStreamUtility.nextMessage(connection, getConsumerConfiguration(streamName, subject))
+                        .map(message -> {
+                            message.ack();
+                            return message.getPayload();
+                        })
+                        .orElseThrow(NotFoundException::new);
+            }
+        }
+    }
+
+    private ConsumerConfiguration<Data> getConsumerConfiguration(String streamName, String subject) {
+        return new ConsumerConfiguration() {
             @Override
             public String stream() {
-                return "request-reply";
+                return streamName;
             }
 
             @Override
             public String subject() {
-                return "requests";
+                return "events." + subject;
             }
 
             @Override
-            public Optional<Integer> replicas() {
-                return Optional.of(1);
-            }
-
-            @Override
-            public StorageType storageType() {
-                return StorageType.File;
-            }
-
-            @Override
-            public RetentionPolicy retentionPolicy() {
-                return RetentionPolicy.WorkQueue;
-            }
-
-            @Override
-            public Optional<Class<Data>> payloadType() {
-                return Optional.of(Data.class);
+            public Optional<String> name() {
+                return Optional.of(subject);
             }
 
             @Override
@@ -70,32 +134,12 @@ public class RequestReplyResource {
             }
 
             @Override
-            public Duration connectionTimeout() {
-                return Duration.ofSeconds(10);
-            }
-
-            @Override
-            public Optional<Integer> maxWaiting() {
+            public Optional<Duration> ackTimeout() {
                 return Optional.empty();
             }
 
             @Override
-            public Optional<Duration> maxRequestExpires() {
-                return Optional.of(Duration.ofSeconds(20));
-            }
-
-            @Override
-            public JetStreamConsumerType type() {
-                return JetStreamConsumerType.Pull;
-            }
-
-            @Override
-            public List<String> filterSubjects() {
-                return List.of();
-            }
-
-            @Override
-            public Optional<Duration> ackWait() {
+            public Optional<Class> getPayloadType() {
                 return Optional.empty();
             }
 
@@ -115,6 +159,31 @@ public class RequestReplyResource {
             }
 
             @Override
+            public Optional<Integer> maxAckPending() {
+                return Optional.empty();
+            }
+
+            @Override
+            public Optional<String> durable() {
+                return Optional.of(subject);
+            }
+
+            @Override
+            public JetStreamConsumerType type() {
+                return JetStreamConsumerType.Fetch;
+            }
+
+            @Override
+            public List<String> filterSubjects() {
+                return List.of();
+            }
+
+            @Override
+            public Optional<Duration> ackWait() {
+                return Optional.empty();
+            }
+
+            @Override
             public Optional<String> description() {
                 return Optional.empty();
             }
@@ -125,12 +194,17 @@ public class RequestReplyResource {
             }
 
             @Override
-            public Optional<Integer> maxAckPending() {
+            public Optional<Integer> maxDeliver() {
                 return Optional.empty();
             }
 
             @Override
             public Optional<ReplayPolicy> replayPolicy() {
+                return Optional.empty();
+            }
+
+            @Override
+            public Optional<Integer> replicas() {
                 return Optional.empty();
             }
 
@@ -153,70 +227,6 @@ public class RequestReplyResource {
             public List<Duration> backoff() {
                 return List.of();
             }
-
-            @Override
-            public Optional<Integer> maxDeliver() {
-                return Optional.of(1);
-            }
-
-            @Override
-            public Optional<String> durable() {
-                return Optional.of("test-request-reply");
-            }
-
-            @Override
-            public Duration ackTimeout() {
-                return Duration.ofSeconds(3);
-            }
         };
-    }
-
-    @GET
-    @Path("/streams")
-    public List<String> getStream() {
-        try (JetStreamClient client = jetStreamUtility.getJetStreamClient()) {
-            try (Connection connection = jetStreamUtility.getConnection(client, Duration.ofSeconds(1))) {
-                return jetStreamUtility.getStreams(connection);
-            }
-        }
-    }
-
-    @GET
-    @Path("/stream-info/{stream}")
-    public StreamInfo getStream(@PathParam("stream") String stream) {
-        try (JetStreamClient client = jetStreamUtility.getJetStreamClient()) {
-            try (Connection connection = jetStreamUtility.getConnection(client, Duration.ofSeconds(1))) {
-                return jetStreamUtility.getStreamInfo(connection, stream)
-                        .map(info -> new StreamInfo(info.getConfiguration().getName(), info.getConfiguration().getSubjects()))
-                        .orElseThrow(NotFoundException::new);
-            }
-        }
-    }
-
-    @POST
-    @Path("/{id}/{data}")
-    public void produceData(@PathParam("id") String id, @PathParam("data") String data) {
-        try (JetStreamClient client = jetStreamUtility.getJetStreamClient()) {
-            try (Connection connection = jetStreamUtility.getConnection(client, Duration.ofSeconds(1))) {
-                final var messageId = UUID.randomUUID().toString();
-                final var newMessage = Message.of(new Data(data, id, messageId),
-                        Metadata.of(new JetStreamOutgoingMessageMetadata(messageId)));
-                jetStreamUtility.publish(connection, newMessage, configuration);
-            }
-        }
-    }
-
-    @GET
-    public Data consumeData() {
-        try (JetStreamClient client = jetStreamUtility.getJetStreamClient()) {
-            try (Connection connection = jetStreamUtility.getConnection(client, Duration.ofSeconds(1))) {
-                return jetStreamUtility.nextMessage(connection, configuration)
-                        .map(message -> {
-                            message.ack();
-                            return message.getPayload();
-                        })
-                        .orElse(new Data());
-            }
-        }
     }
 }

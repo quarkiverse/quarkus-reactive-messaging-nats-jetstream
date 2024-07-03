@@ -28,6 +28,11 @@ public class MessagePublisherProcessorTest {
         final var options = factory.create(new MessagePushPublisherConfiguration<>() {
 
             @Override
+            public Optional<String> name() {
+                return Optional.empty();
+            }
+
+            @Override
             public Optional<Boolean> ordered() {
                 return Optional.empty();
             }

@@ -63,10 +63,7 @@ public class MessagePullPublisherProcessor implements MessagePublisherProcessor 
                         status.set(new Status(false, throwable.getMessage(), ConnectionEvent.CommunicationFailed));
                     }
                 })
-                .onFailure().retry().withBackOff(configuration.retryBackoff()).indefinitely()
-                .onTermination().invoke(this::close)
-                .onCancellation().invoke(this::close)
-                .onCompletion().invoke(this::close);
+                .onFailure().retry().withBackOff(configuration.retryBackoff()).indefinitely();
     }
 
     @Override
@@ -87,22 +84,10 @@ public class MessagePullPublisherProcessor implements MessagePublisherProcessor 
         jetStreamReader = new JetStreamReader(configuration);
         return Multi.createBy().repeating()
                 .supplier(() -> jetStreamReader.nextMessage(connection))
-                .until(message -> {
-                    if (jetStreamReader.isActive()) {
-                        return false;
-                    } else {
-                        jetStreamClient.fireEvent(ConnectionEvent.CommunicationFailed, "Reader become inactive");
-                        return true;
-                    }
-                })
+                .until(message -> !jetStreamReader.isActive())
                 .runSubscriptionOn(pullExecutor)
-                .onTermination().invoke(() -> shutDown(pullExecutor))
-                .onCompletion().invoke(() -> shutDown(pullExecutor))
-                .onCancellation().invoke(() -> shutDown(pullExecutor))
                 .emitOn(runnable -> connection.context().runOnContext(runnable))
-                .flatMap(message -> createMulti(message.orElse(null), traceEnabled, payloadType, connection.context()))
-                .onFailure()
-                .invoke(throwable -> jetStreamClient.fireEvent(ConnectionEvent.CommunicationFailed, throwable.getMessage()));
+                .flatMap(message -> createMulti(message.orElse(null), traceEnabled, payloadType, connection.context()));
     }
 
     private Multi<org.eclipse.microprofile.reactive.messaging.Message<?>> createMulti(io.nats.client.Message message,
@@ -115,14 +100,5 @@ public class MessagePullPublisherProcessor implements MessagePublisherProcessor 
                             configuration.exponentialBackoff(), configuration.exponentialBackoffMaxDuration()),
                             configuration.ackTimeout()));
         }
-    }
-
-    private void shutDown(ExecutorService pullExecutor) {
-        try {
-            pullExecutor.shutdownNow();
-        } catch (Exception e) {
-            logger.errorf(e, "Failed to shutdown pull executor");
-        }
-        close();
     }
 }

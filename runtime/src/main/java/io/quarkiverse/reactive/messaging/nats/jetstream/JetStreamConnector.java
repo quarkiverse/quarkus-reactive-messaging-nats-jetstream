@@ -45,6 +45,7 @@ import io.vertx.mutiny.core.Vertx;
 @ConnectorAttribute(name = "trace-enabled", description = "Enable traces for publisher or subscriber", direction = INCOMING_AND_OUTGOING, type = "Boolean", defaultValue = "true")
 
 // Publish common processor attributes
+@ConnectorAttribute(name = "name", description = "The name of the NATS consumer", direction = INCOMING, type = "String")
 @ConnectorAttribute(name = "publisher-type", description = "The publisher type (Pull, Push)", direction = INCOMING, type = "String", defaultValue = "Pull")
 @ConnectorAttribute(name = "payload-type", description = "The payload type", direction = INCOMING, type = "String")
 @ConnectorAttribute(name = "durable", description = "Sets the durable name for the consumer", direction = INCOMING, type = "String")

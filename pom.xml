@@ -8,7 +8,7 @@
     </parent>
     <groupId>io.quarkiverse.reactivemessaging.nats-jetstream</groupId>
     <artifactId>quarkus-reactive-messsaging-nats-jetstream-parent</artifactId>
-    <version>1.8.0-SNAPSHOT</version>
+    <version>1.9.0-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>Quarkus Reactive Messsaging Nats Jetstream - Parent</name>
     <modules>
@@ -27,9 +27,9 @@
         <maven.compiler.release>17</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <quarkus.version>3.11.2</quarkus.version>
+        <quarkus.version>3.12.0</quarkus.version>
 
-        <jnats.version>2.19.0</jnats.version>
+        <jnats.version>2.19.1</jnats.version>
         <eddsa.version>0.3.0</eddsa.version>
         <smallrye-connector-attribute-processor.version>4.21.0</smallrye-connector-attribute-processor.version>
         <smallrye-reactive-messaging-otel.version>4.21.0</smallrye-reactive-messaging-otel.version>

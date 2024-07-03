@@ -2,10 +2,7 @@ package io.quarkiverse.reactive.messaging.nats.jetstream.processors.publisher;
 
 import java.time.Duration;
 import java.time.ZonedDateTime;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 import io.nats.client.api.DeliverPolicy;
 import io.nats.client.api.ReplayPolicy;
@@ -18,6 +15,11 @@ public abstract class AbstractMessagePublisherConfiguration<T> implements Messag
 
     public AbstractMessagePublisherConfiguration(final JetStreamConnectorIncomingConfiguration configuration) {
         this.configuration = configuration;
+    }
+
+    @Override
+    public Optional<String> name() {
+        return configuration.getName();
     }
 
     @Override

@@ -39,11 +39,9 @@ public class MessageSubscriberProcessor implements MessageProcessor, ConnectionL
                 .call(this::getOrEstablishConnection)
                 .onItem()
                 .transformToUniAndConcatenate(this::publish)
-                .onCompletion().invoke(this::close)
-                .onTermination().invoke(this::close)
-                .onCancellation().invoke(this::close)
                 .onFailure()
                 .invoke(throwable -> jetStreamClient.fireEvent(ConnectionEvent.CommunicationFailed, throwable.getMessage())));
+
     }
 
     @Override

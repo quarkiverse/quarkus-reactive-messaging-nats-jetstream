@@ -12,6 +12,8 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.client.io.JetStreamConsu
 
 public interface JetStreamConsumerConfiguration {
 
+    Optional<String> name();
+
     JetStreamConsumerType type();
 
     String stream();
