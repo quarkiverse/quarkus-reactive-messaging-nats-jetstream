@@ -8,6 +8,7 @@ import org.jboss.logging.Logger;
 
 import io.nats.client.JetStreamApiException;
 import io.nats.client.JetStreamManagement;
+import io.nats.client.api.KeyValueConfiguration;
 import io.nats.client.api.StreamConfiguration;
 import io.nats.client.api.StreamInfo;
 import io.nats.client.api.StreamInfoOptions;
@@ -21,9 +22,11 @@ public class JetStreamSetup {
             JetStreamBuildConfiguration jetStreamConfiguration) {
         try {
             if (jetStreamConfiguration.autoConfigure()) {
-                final var setupConfigurations = JetStreamSetupConfiguration.of(jetStreamConfiguration);
-                setupConfigurations
+                JetStreamSetupConfiguration.of(jetStreamConfiguration)
                         .forEach(setupConfiguration -> addOrUpdateStream(connection, setupConfiguration));
+                KeyValueSetupConfiguration.of(jetStreamConfiguration)
+                        .forEach(
+                                keyValueSetupConfiguration -> addOrUpdateKeyValueStore(connection, keyValueSetupConfiguration));
             }
         } catch (Exception e) {
             // Either not allowed or stream already configured by another instance
@@ -94,5 +97,32 @@ public class JetStreamSetup {
         } catch (IOException | JetStreamApiException e) {
             return Optional.empty();
         }
+    }
+
+    private void addOrUpdateKeyValueStore(Connection connection, KeyValueSetupConfiguration keyValueSetupConfiguration) {
+        try {
+            final var kvm = connection.keyValueManagement();
+            if (kvm.getBucketNames().contains(keyValueSetupConfiguration.name())) {
+                kvm.update(createKeyValueConfiguration(keyValueSetupConfiguration));
+            } else {
+                kvm.create(createKeyValueConfiguration(keyValueSetupConfiguration));
+            }
+        } catch (IOException | JetStreamApiException e) {
+            throw new JetStreamSetupException(String.format("Unable to manage Key Value Store: %s", e.getMessage()), e);
+        }
+    }
+
+    private KeyValueConfiguration createKeyValueConfiguration(KeyValueSetupConfiguration keyValueSetupConfiguration) {
+        return KeyValueConfiguration.builder()
+                .name(keyValueSetupConfiguration.name())
+                .description(keyValueSetupConfiguration.description().orElse(null))
+                .storageType(keyValueSetupConfiguration.storageType())
+                .maxBucketSize(keyValueSetupConfiguration.maxBucketSize().orElse(null))
+                .maxHistoryPerKey(keyValueSetupConfiguration.maxHistoryPerKey().orElse(null))
+                .maxValueSize(keyValueSetupConfiguration.maxValueSize().orElse(null))
+                .ttl(keyValueSetupConfiguration.ttl().orElse(null))
+                .replicas(keyValueSetupConfiguration.replicas().orElse(null))
+                .compression(keyValueSetupConfiguration.compressed())
+                .build();
     }
 }

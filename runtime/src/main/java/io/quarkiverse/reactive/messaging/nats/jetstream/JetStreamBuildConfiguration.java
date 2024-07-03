@@ -1,13 +1,13 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream;
 
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithDefault;
-
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
 
 @ConfigMapping(prefix = "quarkus.messaging.nats.jet-stream")
 @ConfigRoot(phase = ConfigPhase.BUILD_AND_RUN_TIME_FIXED)
@@ -73,7 +73,7 @@ public interface JetStreamBuildConfiguration {
         /**
          * The maximum number of history for any one key. Includes the current value.
          */
-        Optional<Long> maxHistoryPerKey();
+        Optional<Integer> maxHistoryPerKey();
 
         /**
          * The maximum size for an individual value in the bucket.

@@ -40,6 +40,11 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
             <groupId>io.smallrye.reactive</groupId>
             <artifactId>smallrye-reactive-messaging-otel</artifactId>
         </dependency>
@@ -80,6 +85,11 @@
                 <configuration>
                     <annotationProcessorPaths>
                         <path>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                            <version>${lombok.version}</version>
+                        </path>
+                        <path>
                             <groupId>io.smallrye.reactive</groupId>
                             <artifactId>smallrye-connector-attribute-processor</artifactId>
                             <version>${smallrye-connector-attribute-processor.version}</version>
@@ -94,6 +104,7 @@
                             <artifactId>quarkus-extension-processor</artifactId>
                             <version>${quarkus.version}</version>
                         </path>
+
                     </annotationProcessorPaths>
                 </configuration>
             </plugin>

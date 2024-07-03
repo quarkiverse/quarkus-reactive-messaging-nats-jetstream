@@ -1,11 +1,11 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.setup;
 
+import java.time.Duration;
+import java.util.List;
+import java.util.Optional;
+
 import io.nats.client.api.StorageType;
 import io.quarkiverse.reactive.messaging.nats.jetstream.JetStreamBuildConfiguration;
-import io.smallrye.config.WithDefault;
-
-import java.time.Duration;
-import java.util.Optional;
 
 public interface KeyValueSetupConfiguration {
 
@@ -32,7 +32,7 @@ public interface KeyValueSetupConfiguration {
     /**
      * The maximum number of history for any one key. Includes the current value.
      */
-    Optional<Long> maxHistoryPerKey();
+    Optional<Integer> maxHistoryPerKey();
 
     /**
      * The maximum size for an individual value in the bucket.
@@ -54,8 +54,18 @@ public interface KeyValueSetupConfiguration {
      */
     Boolean compressed();
 
-    static KeyValueSetupConfiguration of(JetStreamBuildConfiguration configuration) {
-
+    static List<? extends KeyValueSetupConfiguration> of(JetStreamBuildConfiguration configuration) {
+        return configuration.keyValueStores().stream().map(store -> DefaultKeyValueSetupConfiguration.builder()
+                .name(store.name())
+                .description(store.description())
+                .storageType(StorageType.valueOf(store.storageType()))
+                .maxBucketSize(store.maxBucketSize())
+                .maxHistoryPerKey(store.maxHistoryPerKey())
+                .maxValueSize(store.maxValueSize())
+                .ttl(store.ttl().map(Duration::parse))
+                .replicas(store.replicas())
+                .compressed(store.compressed())
+                .build()).toList();
     }
 
 }
