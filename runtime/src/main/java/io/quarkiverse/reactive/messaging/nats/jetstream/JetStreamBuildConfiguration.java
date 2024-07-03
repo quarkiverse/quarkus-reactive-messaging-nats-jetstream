@@ -1,6 +1,7 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 import io.quarkus.runtime.annotations.ConfigPhase;
@@ -39,10 +40,62 @@ public interface JetStreamBuildConfiguration {
 
     /**
      * If auto-configure is true the streams are created on Nats server.
-     *
-     * The setup process also reads the application configuration to setup configured streams from channel configuration.
      */
     List<Stream> streams();
+
+    /**
+     * If auto-configure is true the key-value stores are created on Nats server.
+     */
+    List<KeyValueStore> keyValueStores();
+
+    interface KeyValueStore {
+        /**
+         * Name of Key-Value store
+         */
+        String bucketName();
+
+        /**
+         * Description of Key-Value store
+         */
+        Optional<String> description();
+
+        /**
+         * The storage type (File or Memory).
+         */
+        @WithDefault("File")
+        String storageType();
+
+        /**
+         * The maximum number of bytes for this bucket
+         */
+        Optional<Long> maxBucketSize();
+
+        /**
+         * The maximum number of history for any one key. Includes the current value.
+         */
+        Optional<Integer> maxHistoryPerKey();
+
+        /**
+         * The maximum size for an individual value in the bucket.
+         */
+        Optional<Long> maxValueSize();
+
+        /**
+         * The maximum age for a value in this bucket
+         */
+        Optional<String> ttl();
+
+        /**
+         * The number of replicas for this bucket
+         */
+        Optional<Integer> replicas();
+
+        /**
+         * Sets whether to use compression
+         */
+        @WithDefault("true")
+        Boolean compressed();
+    }
 
     interface Stream {
 

@@ -38,6 +38,14 @@ public class Connection implements AutoCloseable {
         return connection.jetStreamManagement();
     }
 
+    public KeyValueManagement keyValueManagement() throws IOException {
+        return connection.keyValueManagement();
+    }
+
+    public KeyValue keyValue(String bucketName) throws IOException {
+        return connection.keyValue(bucketName);
+    }
+
     public Dispatcher createDispatcher() {
         return connection.createDispatcher();
     }
