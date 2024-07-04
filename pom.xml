@@ -35,7 +35,7 @@
         <smallrye-reactive-messaging-otel.version>4.21.0</smallrye-reactive-messaging-otel.version>
         <microprofile-config-api.version>3.1</microprofile-config-api.version>
         <assertj-core.version>3.26.0</assertj-core.version>
-        <lombok.version>1.18.32</lombok.version>
+        <lombok.version>1.18.34</lombok.version>
     </properties>
     <dependencyManagement>
         <dependencies>
