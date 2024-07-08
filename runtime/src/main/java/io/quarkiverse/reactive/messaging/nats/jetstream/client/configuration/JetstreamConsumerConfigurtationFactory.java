@@ -1,7 +1,6 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration;
 
 import java.time.Duration;
-import java.util.Optional;
 
 import io.nats.client.api.AckPolicy;
 import io.nats.client.api.ConsumerConfiguration;
@@ -15,7 +14,7 @@ public class JetstreamConsumerConfigurtationFactory {
         if (!configuration.filterSubjects().isEmpty()) {
             builder = builder.filterSubjects(configuration.filterSubjects());
         }
-        builder = getName(configuration).map(builder::name).orElse(builder);
+        builder = configuration.name().map(builder::name).orElse(builder);
         builder = builder.ackPolicy(AckPolicy.Explicit);
         builder = configuration.ackWait().map(builder::ackWait).orElse(builder);
         builder = configuration.deliverPolicy().map(builder::deliverPolicy).orElse(builder.deliverPolicy(DeliverPolicy.All));
@@ -47,13 +46,5 @@ public class JetstreamConsumerConfigurtationFactory {
         }
 
         return builder.build();
-    }
-
-    public static Optional<String> getName(final JetStreamConsumerConfiguration configuration) {
-        if (configuration.durable().isPresent()) {
-            return configuration.durable(); // Name must match durable if both are supplied
-        } else {
-            return configuration.name();
-        }
     }
 }
