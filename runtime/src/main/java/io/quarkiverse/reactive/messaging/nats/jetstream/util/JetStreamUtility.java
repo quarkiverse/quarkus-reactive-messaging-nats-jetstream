@@ -5,16 +5,16 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 
-import io.nats.client.ConsumerContext;
-import io.nats.client.api.ConsumerInfo;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
 import org.eclipse.microprofile.reactive.messaging.Message;
 import org.jboss.logging.Logger;
 
+import io.nats.client.ConsumerContext;
 import io.nats.client.FetchConsumeOptions;
 import io.nats.client.JetStreamApiException;
+import io.nats.client.api.ConsumerInfo;
 import io.nats.client.api.StreamInfo;
 import io.nats.client.api.StreamInfoOptions;
 import io.quarkiverse.reactive.messaging.nats.NatsConfiguration;
@@ -42,7 +42,7 @@ public class JetStreamUtility {
 
     @Inject
     public JetStreamUtility(NatsConfiguration natsConfiguration, ExecutionHolder executionHolder, PayloadMapper payloadMapper,
-                            JetStreamInstrumenter jetStreamInstrumenter, MessageFactory messageFactory) {
+            JetStreamInstrumenter jetStreamInstrumenter, MessageFactory messageFactory) {
         this.natsConfiguration = natsConfiguration;
         this.executionHolder = executionHolder;
         this.payloadMapper = payloadMapper;
@@ -59,8 +59,8 @@ public class JetStreamUtility {
     }
 
     public <T> Message<T> publish(Connection connection,
-                                  Message<T> message,
-                                  JetStreamPublishConfiguration configuration) {
+            Message<T> message,
+            JetStreamPublishConfiguration configuration) {
         final var jetStreamPublisher = getJetStreamPublisher();
         return jetStreamPublisher.publish(connection, configuration, message);
     }
@@ -84,7 +84,7 @@ public class JetStreamUtility {
     }
 
     public <T> ConsumerContext addOrUpdateConsumer(Connection connection,
-                                                   ConsumerConfiguration<T> configuration) {
+            ConsumerConfiguration<T> configuration) {
         try {
             final var factory = new JetstreamConsumerConfigurtationFactory();
             final var consumerConfiguration = factory.create(configuration);
@@ -98,15 +98,18 @@ public class JetStreamUtility {
     }
 
     public <T> Optional<Message<T>> nextMessage(Connection connection,
-                                                ConsumerConfiguration<T> configuration) {
+            ConsumerConfiguration<T> configuration) {
         return nextMessage(connection,
-                getConsumerContext(connection, configuration.stream(), configuration.name().orElseThrow(() -> new IllegalArgumentException("Consumer name is not configured"))), configuration);
+                getConsumerContext(connection, configuration.stream(),
+                        configuration.name()
+                                .orElseThrow(() -> new IllegalArgumentException("Consumer name is not configured"))),
+                configuration);
 
     }
 
     public <T> Optional<Message<T>> nextMessage(Connection connection,
-                                                ConsumerContext consumerContext,
-                                                ConsumerConfiguration<T> configuration) {
+            ConsumerContext consumerContext,
+            ConsumerConfiguration<T> configuration) {
         return nextMessage(connection, consumerContext).map(message -> messageFactory.create(
                 message,
                 configuration.traceEnabled(),
