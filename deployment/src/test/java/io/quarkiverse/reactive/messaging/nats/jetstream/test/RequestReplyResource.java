@@ -101,7 +101,8 @@ public class RequestReplyResource {
     public Data consumeData(@PathParam("subject") String subject) {
         try (JetStreamClient client = jetStreamUtility.getJetStreamClient()) {
             try (Connection connection = jetStreamUtility.getConnection(client, Duration.ofSeconds(1))) {
-                return jetStreamUtility.nextMessage(connection, getConsumerConfiguration(streamName, subject))
+                final var consumerConfiguration = getConsumerConfiguration(streamName, subject);
+                return jetStreamUtility.nextMessage(connection, consumerConfiguration)
                         .map(message -> {
                             message.ack();
                             return message.getPayload();

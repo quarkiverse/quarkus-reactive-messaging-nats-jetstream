@@ -5,6 +5,8 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 
+import io.nats.client.ConsumerContext;
+import io.nats.client.api.ConsumerInfo;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
@@ -40,7 +42,7 @@ public class JetStreamUtility {
 
     @Inject
     public JetStreamUtility(NatsConfiguration natsConfiguration, ExecutionHolder executionHolder, PayloadMapper payloadMapper,
-            JetStreamInstrumenter jetStreamInstrumenter, MessageFactory messageFactory) {
+                            JetStreamInstrumenter jetStreamInstrumenter, MessageFactory messageFactory) {
         this.natsConfiguration = natsConfiguration;
         this.executionHolder = executionHolder;
         this.payloadMapper = payloadMapper;
@@ -57,28 +59,55 @@ public class JetStreamUtility {
     }
 
     public <T> Message<T> publish(Connection connection,
-            Message<T> message,
-            JetStreamPublishConfiguration configuration) {
+                                  Message<T> message,
+                                  JetStreamPublishConfiguration configuration) {
         final var jetStreamPublisher = getJetStreamPublisher();
         return jetStreamPublisher.publish(connection, configuration, message);
     }
 
-    public <T> void addOrUpdateConsumer(Connection connection,
-            ConsumerConfiguration<T> configuration) {
+    public ConsumerInfo getConsumerInfo(Connection connection, String stream, String consumerName) {
         try {
             final var jsm = connection.jetStreamManagement();
+            return jsm.getConsumerInfo(stream, consumerName);
+        } catch (IOException | JetStreamApiException e) {
+            throw new ConsumerException(e);
+        }
+    }
+
+    private ConsumerContext getConsumerContext(Connection connection, String stream, String consumerName) {
+        try {
+            final var streamContext = connection.getStreamContext(stream);
+            return streamContext.getConsumerContext(consumerName);
+        } catch (IOException | JetStreamApiException e) {
+            throw new ConsumerException(e);
+        }
+    }
+
+    public <T> ConsumerContext addOrUpdateConsumer(Connection connection,
+                                                   ConsumerConfiguration<T> configuration) {
+        try {
             final var factory = new JetstreamConsumerConfigurtationFactory();
             final var consumerConfiguration = factory.create(configuration);
-            jsm.addOrUpdateConsumer(configuration.stream(), consumerConfiguration);
+            final var streamContext = connection.getStreamContext(configuration.stream());
+            final var consumerContext = streamContext.createOrUpdateConsumer(consumerConfiguration);
+            connection.flush(Duration.ZERO);
+            return consumerContext;
         } catch (IOException | JetStreamApiException e) {
             throw new ConsumerException(e);
         }
     }
 
     public <T> Optional<Message<T>> nextMessage(Connection connection,
-            ConsumerConfiguration<T> configuration) {
+                                                ConsumerConfiguration<T> configuration) {
+        return nextMessage(connection,
+                getConsumerContext(connection, configuration.stream(), configuration.name().orElseThrow(() -> new IllegalArgumentException("Consumer name is not configured"))), configuration);
 
-        return nextNatsMessage(connection, configuration).map(message -> messageFactory.create(
+    }
+
+    public <T> Optional<Message<T>> nextMessage(Connection connection,
+                                                ConsumerContext consumerContext,
+                                                ConsumerConfiguration<T> configuration) {
+        return nextMessage(connection, consumerContext).map(message -> messageFactory.create(
                 message,
                 configuration.traceEnabled(),
                 configuration.getPayloadType().orElse(null),
@@ -125,22 +154,15 @@ public class JetStreamUtility {
         return getStreams(connection).stream().flatMap(streamName -> purgeStream(connection, streamName).stream()).toList();
     }
 
-    private Optional<io.nats.client.Message> nextNatsMessage(
-            Connection connection,
-            ConsumerConfiguration configuration) {
+    private Optional<io.nats.client.Message> nextMessage(Connection connection, ConsumerContext consumerContext) {
         try {
-            final var streamContext = connection.getStreamContext(configuration.stream());
-            final var consumerContext = streamContext.getConsumerContext(JetstreamConsumerConfigurtationFactory
-                    .getName(configuration).orElseThrow(() -> new IllegalArgumentException("Name or durable not configured")));
-
             try (final var fetchConsumer = consumerContext.fetch(
                     FetchConsumeOptions.builder().maxMessages(1).noWait().build())) {
                 final var message = fetchConsumer.nextMessage();
                 return Optional.ofNullable(message);
             }
         } catch (Exception e) {
-            logger.errorf(e, "Failed to fetch message from stream: %s and subject: %s",
-                    configuration.stream(), configuration.subject());
+            logger.errorf(e, "Failed to fetch message: %s", e.getMessage());
             return Optional.empty();
         }
     }
