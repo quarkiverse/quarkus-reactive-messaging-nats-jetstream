@@ -66,9 +66,9 @@ public class JetStreamPublisher {
             final var options = createPublishOptions(messageId, configuration.stream());
             final var ack = jetStream.publish(subject, toJetStreamHeaders(headers), payload, options);
 
-            //if (logger.isDebugEnabled()) {
-            logger.infof("Published message: %s", ack);
-            //}
+            if (logger.isDebugEnabled()) {
+                logger.debugf("Published message: %s", ack);
+            }
 
             // flush all outgoing messages
             connection.flush(Duration.ZERO);
