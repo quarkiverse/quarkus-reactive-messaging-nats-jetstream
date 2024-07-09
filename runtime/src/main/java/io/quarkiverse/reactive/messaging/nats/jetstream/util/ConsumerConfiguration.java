@@ -13,4 +13,6 @@ public interface ConsumerConfiguration<T> extends JetStreamConsumerConfiguration
 
     boolean traceEnabled();
 
+    Optional<Duration> fetchTimeout();
+
 }

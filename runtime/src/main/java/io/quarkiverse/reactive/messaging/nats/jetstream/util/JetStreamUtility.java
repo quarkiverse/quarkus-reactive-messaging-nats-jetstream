@@ -13,6 +13,7 @@ import org.jboss.logging.Logger;
 
 import io.nats.client.ConsumerContext;
 import io.nats.client.FetchConsumeOptions;
+import io.nats.client.FetchConsumer;
 import io.nats.client.JetStreamApiException;
 import io.nats.client.api.ConsumerInfo;
 import io.nats.client.api.StreamInfo;
@@ -110,7 +111,7 @@ public class JetStreamUtility {
     public <T> Optional<Message<T>> nextMessage(Connection connection,
             ConsumerContext consumerContext,
             ConsumerConfiguration<T> configuration) {
-        return nextMessage(connection, consumerContext).map(message -> messageFactory.create(
+        return nextMessage(consumerContext, configuration.fetchTimeout().orElse(null)).map(message -> messageFactory.create(
                 message,
                 configuration.traceEnabled(),
                 configuration.getPayloadType().orElse(null),
@@ -157,16 +158,24 @@ public class JetStreamUtility {
         return getStreams(connection).stream().flatMap(streamName -> purgeStream(connection, streamName).stream()).toList();
     }
 
-    private Optional<io.nats.client.Message> nextMessage(Connection connection, ConsumerContext consumerContext) {
+    private Optional<io.nats.client.Message> nextMessage(ConsumerContext consumerContext, Duration timeout) {
         try {
-            try (final var fetchConsumer = consumerContext.fetch(
-                    FetchConsumeOptions.builder().maxMessages(1).noWait().build())) {
+            try (final var fetchConsumer = fetchConsumer(consumerContext, timeout)) {
                 final var message = fetchConsumer.nextMessage();
                 return Optional.ofNullable(message);
             }
         } catch (Exception e) {
             logger.errorf(e, "Failed to fetch message: %s", e.getMessage());
             return Optional.empty();
+        }
+    }
+
+    private FetchConsumer fetchConsumer(ConsumerContext consumerContext, Duration timeout)
+            throws IOException, JetStreamApiException {
+        if (timeout == null) {
+            return consumerContext.fetch(FetchConsumeOptions.builder().maxMessages(1).noWait().build());
+        } else {
+            return consumerContext.fetch(FetchConsumeOptions.builder().maxMessages(1).expiresIn(timeout.toMillis()).build());
         }
     }
 

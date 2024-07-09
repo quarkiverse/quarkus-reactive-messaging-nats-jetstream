@@ -234,6 +234,11 @@ public class RequestReplyResource {
             public List<Duration> backoff() {
                 return List.of();
             }
+
+            @Override
+            public Optional<Duration> fetchTimeout() {
+                return Optional.of(Duration.ofSeconds(5));
+            }
         };
     }
 }
