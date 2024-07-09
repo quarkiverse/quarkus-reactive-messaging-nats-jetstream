@@ -6,19 +6,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import io.nats.client.api.AckPolicy;
 import io.nats.client.api.DeliverPolicy;
 import io.nats.client.api.ReplayPolicy;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.io.JetStreamConsumerType;
 
 public interface JetStreamConsumerConfiguration {
 
-    Optional<String> name();
-
     JetStreamConsumerType type();
 
-    String stream();
+    Optional<String> name();
 
-    String subject();
+    String stream();
 
     Optional<String> durable();
 
@@ -28,7 +27,7 @@ public interface JetStreamConsumerConfiguration {
 
     Optional<DeliverPolicy> deliverPolicy();
 
-    Optional<Long> startSeq();
+    Optional<Long> startSequence();
 
     Optional<ZonedDateTime> startTime();
 
@@ -51,4 +50,9 @@ public interface JetStreamConsumerConfiguration {
     Map<String, String> metadata();
 
     List<Duration> backoff();
+
+    Optional<AckPolicy> ackPolicy();
+
+    Optional<ZonedDateTime> pauseUntil();
+
 }

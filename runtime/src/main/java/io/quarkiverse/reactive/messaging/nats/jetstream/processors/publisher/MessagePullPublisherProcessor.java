@@ -81,9 +81,9 @@ public class MessagePullPublisherProcessor implements MessagePublisherProcessor 
         boolean traceEnabled = configuration.traceEnabled();
         Class<?> payloadType = configuration.payloadType().orElse(null);
         ExecutorService pullExecutor = Executors.newSingleThreadExecutor(JetstreamWorkerThread::new);
-        jetStreamReader = new JetStreamReader(configuration);
+        jetStreamReader = JetStreamReader.of(connection, configuration);
         return Multi.createBy().repeating()
-                .supplier(() -> jetStreamReader.nextMessage(connection))
+                .supplier(() -> jetStreamReader.nextMessage())
                 .until(message -> !jetStreamReader.isActive())
                 .runSubscriptionOn(pullExecutor)
                 .emitOn(runnable -> connection.context().runOnContext(runnable))

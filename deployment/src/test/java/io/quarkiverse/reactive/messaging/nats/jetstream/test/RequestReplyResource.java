@@ -14,6 +14,7 @@ import jakarta.ws.rs.*;
 import org.eclipse.microprofile.reactive.messaging.Message;
 import org.eclipse.microprofile.reactive.messaging.Metadata;
 
+import io.nats.client.api.AckPolicy;
 import io.nats.client.api.DeliverPolicy;
 import io.nats.client.api.ReplayPolicy;
 import io.quarkiverse.reactive.messaging.nats.jetstream.JetStreamOutgoingMessageMetadata;
@@ -113,15 +114,25 @@ public class RequestReplyResource {
     }
 
     private ConsumerConfiguration<Data> getConsumerConfiguration(String streamName, String subject) {
-        return new ConsumerConfiguration<Data>() {
+        return new ConsumerConfiguration<>() {
             @Override
             public String stream() {
                 return streamName;
             }
 
             @Override
-            public String subject() {
-                return "events." + subject;
+            public Optional<Long> startSequence() {
+                return Optional.empty();
+            }
+
+            @Override
+            public Optional<AckPolicy> ackPolicy() {
+                return Optional.empty();
+            }
+
+            @Override
+            public Optional<ZonedDateTime> pauseUntil() {
+                return Optional.empty();
             }
 
             @Override
@@ -150,11 +161,6 @@ public class RequestReplyResource {
             }
 
             @Override
-            public Optional<Long> startSeq() {
-                return Optional.empty();
-            }
-
-            @Override
             public Optional<ZonedDateTime> startTime() {
                 return Optional.empty();
             }
@@ -176,7 +182,7 @@ public class RequestReplyResource {
 
             @Override
             public List<String> filterSubjects() {
-                return List.of();
+                return List.of("events." + subject);
             }
 
             @Override

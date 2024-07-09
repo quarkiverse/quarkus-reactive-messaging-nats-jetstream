@@ -70,10 +70,10 @@ public class MessagePushPublisherProcessor implements MessagePublisherProcessor 
     private Multi<org.eclipse.microprofile.reactive.messaging.Message<?>> publisher(Connection connection) {
         boolean traceEnabled = configuration.traceEnabled();
         Class<?> payloadType = configuration.payloadType().orElse(null);
+        final var subject = configuration.subject();
         return Multi.createFrom().<io.nats.client.Message> emitter(emitter -> {
             try {
                 final var jetStream = connection.jetStream();
-                final var subject = configuration.subject();
                 dispatcher = connection.createDispatcher();
                 final var pushOptions = optionsFactory.create(configuration);
                 subscription = jetStream.subscribe(
@@ -85,8 +85,8 @@ public class MessagePushPublisherProcessor implements MessagePublisherProcessor 
                 logger.errorf(
                         e,
                         "Failed subscribing to stream: %s, subject: %s with message: %s",
-                        configuration.stream(),
-                        configuration.subject(),
+                        configuration.consumerConfiguration().stream(),
+                        subject,
                         e.getMessage());
                 emitter.fail(e);
             }

@@ -9,6 +9,27 @@ import io.nats.client.api.DeliverPolicy;
 public class JetstreamConsumerConfigurtationFactory {
 
     public ConsumerConfiguration create(final JetStreamConsumerConfiguration configuration) {
+        return builder(configuration).build();
+    }
+
+    public ConsumerConfiguration create(final JetStreamPullConsumerConfiguration configuration) {
+        var builder = builder(configuration.consumerConfiguration());
+        builder = configuration.maxWaiting().map(builder::maxPullWaiting).orElse(builder);
+        builder = configuration.maxRequestExpires().map(builder::maxExpires).orElse(builder);
+        return builder.build();
+    }
+
+    public ConsumerConfiguration create(final JetStreamPushConsumerConfiguration configuration) {
+        var builder = builder(configuration.consumerConfiguration());
+        builder = configuration.flowControl().map(builder::flowControl).orElse(builder);
+        builder = configuration.idleHeartbeat().map(builder::idleHeartbeat).orElse(builder);
+        builder = configuration.rateLimit().map(builder::rateLimit).orElse(builder);
+        builder = configuration.headersOnly().map(builder::headersOnly).orElse(builder);
+        builder = configuration.deliverGroup().map(builder::deliverGroup).orElse(builder);
+        return builder.build();
+    }
+
+    private ConsumerConfiguration.Builder builder(final JetStreamConsumerConfiguration configuration) {
         var builder = ConsumerConfiguration.builder();
         builder = configuration.durable().map(builder::durable).orElse(builder);
         if (!configuration.filterSubjects().isEmpty()) {
@@ -18,7 +39,7 @@ public class JetstreamConsumerConfigurtationFactory {
         builder = builder.ackPolicy(AckPolicy.Explicit);
         builder = configuration.ackWait().map(builder::ackWait).orElse(builder);
         builder = configuration.deliverPolicy().map(builder::deliverPolicy).orElse(builder.deliverPolicy(DeliverPolicy.All));
-        builder = configuration.startSeq().map(builder::startSequence).orElse(builder);
+        builder = configuration.startSequence().map(builder::startSequence).orElse(builder);
         builder = configuration.startTime().map(builder::startTime).orElse(builder);
         builder = configuration.description().map(builder::description).orElse(builder);
         builder = configuration.inactiveThreshold().map(builder::inactiveThreshold).orElse(builder);
@@ -34,17 +55,8 @@ public class JetstreamConsumerConfigurtationFactory {
         if (!configuration.backoff().isEmpty()) {
             builder = builder.backoff(configuration.backoff().toArray(new Duration[0]));
         }
-        if (configuration instanceof JetStreamPullConsumerConfiguration pullConsumerConfiguration) {
-            builder = pullConsumerConfiguration.maxWaiting().map(builder::maxPullWaiting).orElse(builder);
-            builder = pullConsumerConfiguration.maxRequestExpires().map(builder::maxExpires).orElse(builder);
-        }
-        if (configuration instanceof JetStreamPushConsumerConfiguration pushConsumerConfiguration) {
-            builder = pushConsumerConfiguration.flowControl().map(builder::flowControl).orElse(builder);
-            builder = pushConsumerConfiguration.idleHeartbeat().map(builder::idleHeartbeat).orElse(builder);
-            builder = pushConsumerConfiguration.rateLimit().map(builder::rateLimit).orElse(builder);
-            builder = pushConsumerConfiguration.headersOnly().map(builder::headersOnly).orElse(builder);
-        }
-
-        return builder.build();
+        builder = configuration.ackPolicy().map(builder::ackPolicy).orElse(builder);
+        builder = configuration.pauseUntil().map(builder::pauseUntil).orElse(builder);
+        return builder;
     }
 }

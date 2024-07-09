@@ -10,8 +10,10 @@ import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
 
+import io.nats.client.api.AckPolicy;
 import io.nats.client.api.DeliverPolicy;
 import io.nats.client.api.ReplayPolicy;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.JetStreamConsumerConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.PushSubscribeOptionsFactory;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.io.JetStreamConsumerType;
 
@@ -28,18 +30,8 @@ public class MessagePublisherProcessorTest {
         final var options = factory.create(new MessagePushPublisherConfiguration<>() {
 
             @Override
-            public Optional<String> name() {
-                return Optional.empty();
-            }
-
-            @Override
             public Optional<Boolean> ordered() {
                 return Optional.empty();
-            }
-
-            @Override
-            public Optional<String> deliverGroup() {
-                return Optional.of(deleiverGroup);
             }
 
             @Override
@@ -64,6 +56,16 @@ public class MessagePublisherProcessorTest {
 
             @Override
             public String channel() {
+                return "test";
+            }
+
+            @Override
+            public Optional<String> deliverSubject() {
+                return Optional.empty();
+            }
+
+            @Override
+            public String subject() {
                 return "test";
             }
 
@@ -93,103 +95,123 @@ public class MessagePublisherProcessorTest {
             }
 
             @Override
-            public JetStreamConsumerType type() {
-                return JetStreamConsumerType.Push;
-            }
-
-            @Override
-            public String stream() {
-                return "test";
-            }
-
-            @Override
-            public String subject() {
-                return "test";
-            }
-
-            @Override
-            public Optional<String> durable() {
-                return Optional.of(durable);
-            }
-
-            @Override
-            public List<String> filterSubjects() {
-                return List.of();
-            }
-
-            @Override
-            public Optional<Duration> ackWait() {
-                return Optional.empty();
-            }
-
-            @Override
-            public Optional<DeliverPolicy> deliverPolicy() {
-                return Optional.empty();
-            }
-
-            @Override
-            public Optional<Long> startSeq() {
-                return Optional.empty();
-            }
-
-            @Override
-            public Optional<ZonedDateTime> startTime() {
-                return Optional.empty();
-            }
-
-            @Override
-            public Optional<String> description() {
-                return Optional.empty();
-            }
-
-            @Override
-            public Optional<Duration> inactiveThreshold() {
-                return Optional.empty();
-            }
-
-            @Override
-            public Optional<Integer> maxAckPending() {
-                return Optional.empty();
-            }
-
-            @Override
-            public Optional<Integer> maxDeliver() {
-                return Optional.of(maxDeliever);
-            }
-
-            @Override
-            public Optional<ReplayPolicy> replayPolicy() {
-                return Optional.empty();
-            }
-
-            @Override
-            public Optional<Integer> replicas() {
-                return Optional.empty();
-            }
-
-            @Override
-            public Optional<Boolean> memoryStorage() {
-                return Optional.empty();
-            }
-
-            @Override
-            public Optional<String> sampleFrequency() {
-                return Optional.empty();
-            }
-
-            @Override
-            public Map<String, String> metadata() {
-                return Map.of();
-            }
-
-            @Override
-            public List<Duration> backoff() {
-                return backoff;
-            }
-
-            @Override
             public Duration ackTimeout() {
                 return Duration.ofSeconds(3);
+            }
+
+            @Override
+            public Optional<String> deliverGroup() {
+                return Optional.of(deleiverGroup);
+            }
+
+            @Override
+            public JetStreamConsumerConfiguration consumerConfiguration() {
+                return new JetStreamConsumerConfiguration() {
+                    @Override
+                    public JetStreamConsumerType type() {
+                        return JetStreamConsumerType.Push;
+                    }
+
+                    @Override
+                    public Optional<String> name() {
+                        return Optional.empty();
+                    }
+
+                    @Override
+                    public String stream() {
+                        return "test";
+                    }
+
+                    @Override
+                    public Optional<String> durable() {
+                        return Optional.of(durable);
+                    }
+
+                    @Override
+                    public Optional<Long> startSequence() {
+                        return Optional.empty();
+                    }
+
+                    @Override
+                    public List<Duration> backoff() {
+                        return backoff;
+                    }
+
+                    @Override
+                    public Optional<AckPolicy> ackPolicy() {
+                        return Optional.empty();
+                    }
+
+                    @Override
+                    public Optional<ZonedDateTime> pauseUntil() {
+                        return Optional.empty();
+                    }
+
+                    @Override
+                    public List<String> filterSubjects() {
+                        return List.of();
+                    }
+
+                    @Override
+                    public Optional<Duration> ackWait() {
+                        return Optional.empty();
+                    }
+
+                    @Override
+                    public Optional<DeliverPolicy> deliverPolicy() {
+                        return Optional.empty();
+                    }
+
+                    @Override
+                    public Optional<ZonedDateTime> startTime() {
+                        return Optional.empty();
+                    }
+
+                    @Override
+                    public Optional<String> description() {
+                        return Optional.empty();
+                    }
+
+                    @Override
+                    public Optional<Duration> inactiveThreshold() {
+                        return Optional.empty();
+                    }
+
+                    @Override
+                    public Optional<Integer> maxAckPending() {
+                        return Optional.empty();
+                    }
+
+                    @Override
+                    public Optional<Integer> maxDeliver() {
+                        return Optional.of(maxDeliever);
+                    }
+
+                    @Override
+                    public Optional<ReplayPolicy> replayPolicy() {
+                        return Optional.empty();
+                    }
+
+                    @Override
+                    public Optional<Integer> replicas() {
+                        return Optional.empty();
+                    }
+
+                    @Override
+                    public Optional<Boolean> memoryStorage() {
+                        return Optional.empty();
+                    }
+
+                    @Override
+                    public Optional<String> sampleFrequency() {
+                        return Optional.empty();
+                    }
+
+                    @Override
+                    public Map<String, String> metadata() {
+                        return Map.of();
+                    }
+                };
             }
         });
 

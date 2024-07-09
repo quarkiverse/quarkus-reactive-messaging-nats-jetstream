@@ -3,11 +3,13 @@ package io.quarkiverse.reactive.messaging.nats.jetstream.client.io;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.jboss.logging.Logger;
 
-import io.nats.client.*;
+import io.nats.client.JetStreamApiException;
+import io.nats.client.JetStreamStatusException;
+import io.nats.client.JetStreamSubscription;
+import io.nats.client.Message;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.Connection;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.JetStreamReaderConsumerConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.PullSubscribeOptionsFactory;
@@ -16,25 +18,34 @@ public class JetStreamReader implements AutoCloseable {
     private final static Logger logger = Logger.getLogger(JetStreamReader.class);
 
     private final JetStreamReaderConsumerConfiguration configuration;
-    private final AtomicReference<JetStreamSubscription> subscription;
+    private final io.nats.client.JetStreamReader reader;
+    private final JetStreamSubscription subscription;
 
-    public JetStreamReader(JetStreamReaderConsumerConfiguration configuration) {
+    private JetStreamReader(JetStreamReaderConsumerConfiguration configuration, JetStreamSubscription subscription,
+            io.nats.client.JetStreamReader reader) {
         this.configuration = configuration;
-        this.subscription = new AtomicReference<>();
+        this.subscription = subscription;
+        this.reader = reader;
     }
 
-    public Optional<Message> nextMessage(Connection connection) {
-        if (isActive()) {
-            return getReader(connection).flatMap(this::nextMessage);
+    public static JetStreamReader of(Connection connection, JetStreamReaderConsumerConfiguration configuration) {
+        try {
+            final var jetStream = connection.jetStream();
+            final var optionsFactory = new PullSubscribeOptionsFactory();
+            final var subscription = jetStream.subscribe(configuration.subject(),
+                    optionsFactory.create(configuration));
+            final var reader = subscription.reader(configuration.maxRequestBatch(), configuration.rePullAt());
+            return new JetStreamReader(configuration, subscription, reader);
+        } catch (IOException | JetStreamApiException e) {
+            throw new JetStreamReaderException(e);
         }
-        return Optional.empty();
     }
 
     public boolean isActive() {
-        return getSubscription().map(io.nats.client.Subscription::isActive).orElse(true);
+        return subscription.isActive();
     }
 
-    private Optional<Message> nextMessage(io.nats.client.JetStreamReader reader) {
+    public Optional<Message> nextMessage() {
         try {
             return Optional.ofNullable(reader.nextMessage(configuration.maxRequestExpires().orElse(Duration.ZERO)));
         } catch (JetStreamStatusException e) {
@@ -42,25 +53,26 @@ public class JetStreamReader implements AutoCloseable {
             return Optional.empty();
         } catch (IllegalStateException e) {
             logger.debugf(e, "The subscription become inactive for stream: %s and subject: %s",
-                    configuration.stream(), configuration.subject());
+                    configuration.consumerConfiguration().stream(), configuration.subject());
             return Optional.empty();
         } catch (InterruptedException e) {
             logger.debugf(e, "The reader was interrupted for stream: %s and subject: %s",
-                    configuration.stream(), configuration.subject());
+                    configuration.consumerConfiguration().stream(), configuration.subject());
             return Optional.empty();
         } catch (Throwable throwable) {
             logger.warnf(throwable, "Error reading next message from stream: %s and subject: %s",
-                    configuration.stream(), configuration.subject());
+                    configuration.consumerConfiguration().stream(), configuration.subject());
             return Optional.empty();
         }
     }
 
     @Override
     public void close() {
-        getSubscription().ifPresent(this::close);
-    }
-
-    public void close(Subscription subscription) {
+        try {
+            reader.stop();
+        } catch (Exception e) {
+            logger.warnf("Failed to stop reader with message %s", e.getMessage());
+        }
         try {
             if (subscription.isActive()) {
                 subscription.drain(Duration.ofMillis(1000));
@@ -73,49 +85,7 @@ public class JetStreamReader implements AutoCloseable {
                 subscription.unsubscribe();
             }
         } catch (IllegalStateException e) {
-            logger.warnf("Failed to unsubscribe subscription");
-        }
-        this.subscription.set(null);
-    }
-
-    private Optional<JetStreamSubscription> getSubscription() {
-        return Optional.ofNullable(subscription.get());
-    }
-
-    private synchronized Optional<io.nats.client.JetStreamReader> getReader(Connection connection) {
-        if (connection.isConnected()) {
-            final var reader = getSubscription().map(this::getReader);
-            if (reader.isEmpty()) {
-                return createSubscription(connection).map(this::getReader);
-            }
-            return reader;
-        } else {
-            return Optional.empty();
-        }
-    }
-
-    private io.nats.client.JetStreamReader getReader(JetStreamSubscription subscription) {
-        return subscription.reader(configuration.maxRequestBatch(), configuration.rePullAt());
-    }
-
-    private Optional<JetStreamSubscription> createSubscription(Connection connection) {
-        try {
-            final var jetStream = connection.jetStream();
-            final var optionsFactory = new PullSubscribeOptionsFactory();
-            return Optional.ofNullable(this.subscription.updateAndGet(s -> {
-                try {
-                    return jetStream.subscribe(configuration.subject(), optionsFactory.create(configuration));
-                } catch (JetStreamApiException e) {
-                    logger.warnf(e, "Failed to subscribe with message: %s", e.getMessage());
-                    return null;
-                } catch (IOException e) {
-                    logger.debugf(e, "Failed to subscribe with message: %s", e.getMessage());
-                    return null;
-                }
-            }));
-        } catch (IOException e) {
-            logger.debugf(e, "Failed to get JetStream context with message: %s", e.getMessage());
-            return Optional.empty();
+            logger.warnf("Failed to unsubscribe subscription with message %s", e.getMessage());
         }
     }
 }

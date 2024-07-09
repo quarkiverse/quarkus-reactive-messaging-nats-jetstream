@@ -3,11 +3,9 @@ package io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration;
 import java.time.Duration;
 import java.util.Optional;
 
-public interface JetStreamPushConsumerConfiguration extends JetStreamConsumerConfiguration {
+public interface JetStreamPushConsumerConfiguration {
 
     Optional<Boolean> ordered();
-
-    Optional<String> deliverGroup();
 
     Optional<Duration> flowControl();
 
@@ -16,4 +14,10 @@ public interface JetStreamPushConsumerConfiguration extends JetStreamConsumerCon
     Optional<Long> rateLimit();
 
     Optional<Boolean> headersOnly();
+
+    Optional<String> deliverGroup();
+
+    Optional<String> deliverSubject();
+
+    JetStreamConsumerConfiguration consumerConfiguration();
 }
