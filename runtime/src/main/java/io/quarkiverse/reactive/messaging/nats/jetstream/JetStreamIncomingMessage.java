@@ -32,7 +32,7 @@ public class JetStreamIncomingMessage<T> implements JetStreamMessage<T> {
             ExponentialBackoff exponentialBackoff,
             Duration ackTimeout) {
         this.message = message;
-        this.incomingMetadata = JetStreamIncomingMessageMetadata.create(message);
+        this.incomingMetadata = JetStreamIncomingMessageMetadata.of(message);
         this.exponentialBackoff = exponentialBackoff;
         this.metadata = captureContextMetadata(incomingMetadata);
         this.payload = payload;

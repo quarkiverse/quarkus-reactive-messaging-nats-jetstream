@@ -42,7 +42,7 @@ public class SubtopicsResource {
         final var headers = new HashMap<String, List<String>>();
         headers.put("RESOURCE_ID", List.of(data));
         final var message = Message.of(data,
-                Metadata.of(new JetStreamOutgoingMessageMetadata(id, headers, subtopic)));
+                Metadata.of(JetStreamOutgoingMessageMetadata.of(id, headers, subtopic)));
         emitter.send(message);
         return message;
     }

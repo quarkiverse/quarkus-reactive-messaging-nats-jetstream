@@ -41,7 +41,7 @@ public class DataResource {
         return Uni.createFrom().item(() -> {
             final var headers = new HashMap<String, List<String>>();
             headers.put("RESOURCE_ID", List.of(data));
-            final var message = Message.of(data, Metadata.of(new JetStreamOutgoingMessageMetadata(id, headers, null)));
+            final var message = Message.of(data, Metadata.of(JetStreamOutgoingMessageMetadata.of(id, headers, null)));
             emitter.send(message);
             return message;
         });

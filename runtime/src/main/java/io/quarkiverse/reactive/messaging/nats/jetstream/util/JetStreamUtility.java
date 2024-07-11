@@ -154,6 +154,29 @@ public class JetStreamUtility {
         }
     }
 
+    /**
+     * Deletes a message, overwriting the message data with garbage
+     * This can be considered an expensive (time-consuming) operation, but is more secure.
+     *
+     * @param connection connection to NATS
+     * @param stream name of the stream
+     * @param sequence the sequence number of the message
+     * @param erase whether to erase the message (overwriting with garbage) or only mark it as erased.
+     * @throws DeleteException when message is not deleted
+     */
+    public void deleteMessage(Connection connection, String stream, long sequence, boolean erase) {
+        try {
+            final var jsm = connection.jetStreamManagement();
+            if (!jsm.deleteMessage(stream, sequence, erase)) {
+                throw new DeleteException(
+                        String.format("Unable to delete message in stream %s with sequence %d", stream, sequence));
+            }
+        } catch (IOException | JetStreamApiException e) {
+            throw new DeleteException(String.format("Unable to delete message in stream %s with sequence %d: %s", stream,
+                    sequence, e.getMessage()), e);
+        }
+    }
+
     public List<PurgeResult> purgeAllStreams(Connection connection) {
         return getStreams(connection).stream().flatMap(streamName -> purgeStream(connection, streamName).stream()).toList();
     }
