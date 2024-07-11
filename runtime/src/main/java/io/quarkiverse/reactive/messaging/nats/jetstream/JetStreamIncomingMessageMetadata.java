@@ -2,62 +2,57 @@ package io.quarkiverse.reactive.messaging.nats.jetstream;
 
 import static io.nats.client.support.NatsJetStreamConstants.MSG_ID_HDR;
 
+import java.time.ZonedDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
 import io.nats.client.Message;
+import io.nats.client.api.MessageInfo;
 import io.nats.client.impl.Headers;
 import io.smallrye.common.constraint.NotNull;
+import lombok.Builder;
 
-public class JetStreamIncomingMessageMetadata {
-    private final String stream;
-    private final String subject;
-    private final String messageId;
-    private final Map<String, List<String>> headers;
-    private final long deliveredCount;
+@Builder
+public record JetStreamIncomingMessageMetadata(String stream,
+        String subject,
+        String messageId,
+        Map<String, List<String>> headers,
+        Long deliveredCount,
+        String consumer,
+        Long streamSequence,
+        Long consumerSequence,
+        ZonedDateTime timestamp) {
 
-    public JetStreamIncomingMessageMetadata(final String stream,
-            final String subject,
-            final String messageId,
-            final Map<String, List<String>> headers,
-            final long deliveredCount) {
-        this.stream = stream;
-        this.subject = subject;
-        this.messageId = messageId;
-        this.headers = headers;
-        this.deliveredCount = deliveredCount;
-    }
-
-    public String stream() {
-        return stream;
-    }
-
-    public String subject() {
-        return subject;
-    }
-
-    public String messageId() {
-        return messageId;
-    }
-
-    public Map<String, List<String>> headers() {
-        return headers;
-    }
-
-    public long deliveredCount() {
-        return deliveredCount;
-    }
-
-    public static JetStreamIncomingMessageMetadata create(@NotNull Message message) {
+    public static JetStreamIncomingMessageMetadata of(@NotNull Message message) {
         final var headers = Optional.ofNullable(message.getHeaders());
-        return new JetStreamIncomingMessageMetadata(
-                message.metaData().getStream(),
-                message.getSubject(),
-                headers.map(h -> h.getFirst(MSG_ID_HDR)).orElse(null),
-                headers.map(JetStreamIncomingMessageMetadata::headers).orElseGet(HashMap::new),
-                message.metaData().deliveredCount());
+        return JetStreamIncomingMessageMetadata.builder()
+                .stream(message.metaData().getStream())
+                .subject(message.getSubject())
+                .messageId(headers.map(h -> h.getFirst(MSG_ID_HDR)).orElse(null))
+                .headers(headers.map(JetStreamIncomingMessageMetadata::headers).orElseGet(HashMap::new))
+                .deliveredCount(message.metaData().deliveredCount())
+                .consumer(message.metaData().getConsumer())
+                .streamSequence(message.metaData().streamSequence())
+                .consumerSequence(message.metaData().consumerSequence())
+                .timestamp(message.metaData().timestamp())
+                .build();
+    }
+
+    public static JetStreamIncomingMessageMetadata of(MessageInfo message) {
+        final var headers = Optional.ofNullable(message.getHeaders());
+        return JetStreamIncomingMessageMetadata.builder()
+                .stream(message.getStream())
+                .subject(message.getSubject())
+                .messageId(headers.map(h -> h.getFirst(MSG_ID_HDR)).orElse(null))
+                .headers(headers.map(JetStreamIncomingMessageMetadata::headers).orElseGet(HashMap::new))
+                .deliveredCount(null)
+                .consumer(null)
+                .streamSequence(message.getSeq())
+                .consumerSequence(null)
+                .timestamp(message.getTime())
+                .build();
     }
 
     public static Map<String, List<String>> headers(Headers messageHeaders) {

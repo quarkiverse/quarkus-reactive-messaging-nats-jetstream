@@ -1,13 +1,10 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.administration;
 
-import static io.nats.client.support.NatsJetStreamConstants.MSG_ID_HDR;
 import static io.quarkiverse.reactive.messaging.nats.jetstream.mapper.HeaderMapper.toMessageHeaders;
 import static io.smallrye.reactive.messaging.providers.locals.ContextAwareMessage.captureContextMetadata;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
@@ -30,7 +27,7 @@ public class JetStreamMessage<T> implements io.quarkiverse.reactive.messaging.na
 
     public JetStreamMessage(final MessageInfo message, final T payload) {
         this.message = message;
-        this.incomingMetadata = create(message);
+        this.incomingMetadata = JetStreamIncomingMessageMetadata.of(message);
         this.metadata = captureContextMetadata(incomingMetadata);
         this.payload = payload;
     }
@@ -112,13 +109,4 @@ public class JetStreamMessage<T> implements io.quarkiverse.reactive.messaging.na
                 '}';
     }
 
-    private JetStreamIncomingMessageMetadata create(MessageInfo message) {
-        final var headers = Optional.ofNullable(message.getHeaders());
-        return new JetStreamIncomingMessageMetadata(
-                message.getStream(),
-                message.getSubject(),
-                headers.map(h -> h.getFirst(MSG_ID_HDR)).orElse(null),
-                headers.map(JetStreamIncomingMessageMetadata::headers).orElseGet(HashMap::new),
-                0);
-    }
 }

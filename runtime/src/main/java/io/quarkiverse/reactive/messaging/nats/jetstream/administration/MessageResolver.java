@@ -42,7 +42,7 @@ public class MessageResolver {
                 });
     }
 
-    private <T> Uni<Message<T>> resolve(Connection connection, String streamName, long sequence) {
+    public <T> Uni<Message<T>> resolve(Connection connection, String streamName, long sequence) {
         return Uni.createFrom().emitter(emitter -> {
             try {
                 final var jetStream = connection.jetStream();

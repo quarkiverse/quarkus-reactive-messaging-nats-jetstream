@@ -75,7 +75,7 @@ public class RequestReplyResource {
             try (Connection connection = jetStreamUtility.getConnection(client, Duration.ofSeconds(1))) {
                 final var messageId = UUID.randomUUID().toString();
                 final var newMessage = Message.of(new Data(data, id, messageId),
-                        Metadata.of(new JetStreamOutgoingMessageMetadata(messageId)));
+                        Metadata.of(JetStreamOutgoingMessageMetadata.of(messageId)));
                 jetStreamUtility.addOrUpdateConsumer(connection, getConsumerConfiguration(streamName, subject));
                 jetStreamUtility.publish(connection, newMessage, new JetStreamPublishConfiguration() {
                     @Override

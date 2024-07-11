@@ -5,37 +5,34 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-public class JetStreamOutgoingMessageMetadata {
-    private final String messageId;
-    private final Map<String, List<String>> headers;
-    private final String subtopic;
+import lombok.Builder;
 
-    public JetStreamOutgoingMessageMetadata(final String messageId,
+@Builder
+public record JetStreamOutgoingMessageMetadata(String messageId, Map<String, List<String>> headers,
+        Optional<String> subtopic) {
+
+    public static JetStreamOutgoingMessageMetadata of(final String messageId,
             final Map<String, List<String>> headers,
             final String subtopic) {
-        this.messageId = messageId;
-        this.headers = headers != null ? headers : Collections.emptyMap();
-        this.subtopic = subtopic;
+        return JetStreamOutgoingMessageMetadata.builder()
+                .messageId(messageId)
+                .headers(headers != null ? headers : Collections.emptyMap())
+                .subtopic(Optional.ofNullable(subtopic)).build();
     }
 
-    public JetStreamOutgoingMessageMetadata(final String messageId,
+    public static JetStreamOutgoingMessageMetadata of(final String messageId,
             final Map<String, List<String>> headers) {
-        this(messageId, headers, null);
+        return JetStreamOutgoingMessageMetadata.builder()
+                .messageId(messageId)
+                .headers(headers != null ? headers : Collections.emptyMap())
+                .subtopic(Optional.empty()).build();
     }
 
-    public JetStreamOutgoingMessageMetadata(final String messageId) {
-        this(messageId, Collections.emptyMap(), null);
+    public static JetStreamOutgoingMessageMetadata of(final String messageId) {
+        return JetStreamOutgoingMessageMetadata.builder()
+                .messageId(messageId)
+                .headers(Collections.emptyMap())
+                .subtopic(Optional.empty()).build();
     }
 
-    public String messageId() {
-        return messageId;
-    }
-
-    public Map<String, List<String>> headers() {
-        return headers;
-    }
-
-    public Optional<String> subtopic() {
-        return Optional.ofNullable(subtopic);
-    }
 }
