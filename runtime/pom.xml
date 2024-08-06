@@ -26,6 +26,11 @@
             <artifactId>quarkus-opentelemetry</artifactId>
         </dependency>
         <dependency>
+            <groupId>io.opentelemetry.instrumentation</groupId>
+            <artifactId>opentelemetry-instrumentation-api-semconv</artifactId>
+            <version>${opentelemetry-instrumentation-api-semconv.version}</version>
+        </dependency>
+        <dependency>
             <groupId>io.nats</groupId>
             <artifactId>jnats</artifactId>
         </dependency>
