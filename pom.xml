@@ -63,6 +63,11 @@
                 <version>${smallrye-reactive-messaging-otel.version}</version>
             </dependency>
             <dependency>
+                <groupId>io.opentelemetry.instrumentation</groupId>
+                <artifactId>opentelemetry-instrumentation-api-semconv</artifactId>
+                <version>${opentelemetry-instrumentation-api-semconv.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>org.projectlombok</groupId>
                 <artifactId>lombok</artifactId>
                 <version>${lombok.version}</version>
