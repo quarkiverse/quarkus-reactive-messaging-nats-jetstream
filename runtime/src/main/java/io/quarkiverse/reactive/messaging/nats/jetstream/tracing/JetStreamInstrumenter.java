@@ -32,9 +32,9 @@ public class JetStreamInstrumenter {
 
         InstrumenterBuilder<JetStreamTrace, Void> builder = Instrumenter.builder(getOpenTelemetry(openTelemetryInstance),
                 "io.smallrye.reactive.messaging.jetstream",
-                MessagingSpanNameExtractor.create(messagingAttributesGetter, MessageOperation.PUBLISH));
+                MessagingSpanNameExtractor.create(messagingAttributesGetter, MessageOperation.SEND));
 
-        return builder.addAttributesExtractor(create(messagingAttributesGetter, MessageOperation.PUBLISH))
+        return builder.addAttributesExtractor(create(messagingAttributesGetter, MessageOperation.SEND))
                 .addAttributesExtractor(attributesExtractor)
                 .buildProducerInstrumenter(JetStreamTraceTextMapSetter.INSTANCE);
     }

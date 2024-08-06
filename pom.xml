@@ -27,7 +27,7 @@
         <maven.compiler.release>17</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <quarkus.version>3.12.2</quarkus.version>
+        <quarkus.version>3.13.0</quarkus.version>
 
         <jnats.version>2.20.0</jnats.version>
         <eddsa.version>0.3.0</eddsa.version>
@@ -36,6 +36,7 @@
         <microprofile-config-api.version>3.1</microprofile-config-api.version>
         <assertj-core.version>3.26.3</assertj-core.version>
         <lombok.version>1.18.34</lombok.version>
+        <opentelemetry-instrumentation-api-semconv.version>1.25.0-alpha</opentelemetry-instrumentation-api-semconv.version>
     </properties>
     <dependencyManagement>
         <dependencies>

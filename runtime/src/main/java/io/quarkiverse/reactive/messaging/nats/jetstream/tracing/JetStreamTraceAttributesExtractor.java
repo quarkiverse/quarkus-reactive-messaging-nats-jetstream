@@ -32,6 +32,12 @@ public class JetStreamTraceAttributesExtractor implements AttributesExtractor<Je
 
     private final static class JetStreamMessagingAttributesGetter implements MessagingAttributesGetter<JetStreamTrace, Void> {
 
+        @javax.annotation.Nullable
+        @Override
+        public String getDestinationKind(JetStreamTrace jetStreamTrace) {
+            return null;
+        }
+
         @Override
         public String getSystem(JetStreamTrace trace) {
             return "jetstream";
