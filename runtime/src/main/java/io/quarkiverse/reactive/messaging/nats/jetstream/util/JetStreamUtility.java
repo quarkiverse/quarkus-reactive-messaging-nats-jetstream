@@ -181,6 +181,10 @@ public class JetStreamUtility {
         return getStreams(connection).stream().flatMap(streamName -> purgeStream(connection, streamName).stream()).toList();
     }
 
+    public Optional<StreamState> getStreamState(Connection connection, String streamName) {
+        return getStreamInfo(connection, streamName).map(streamInfo -> StreamState.of(streamInfo.getStreamState()));
+    }
+
     private Optional<io.nats.client.Message> nextMessage(ConsumerContext consumerContext, Duration timeout) {
         try {
             try (final var fetchConsumer = fetchConsumer(consumerContext, timeout)) {

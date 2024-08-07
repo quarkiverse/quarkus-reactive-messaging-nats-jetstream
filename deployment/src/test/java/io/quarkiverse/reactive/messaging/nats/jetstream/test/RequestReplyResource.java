@@ -24,6 +24,7 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.Jet
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.io.JetStreamConsumerType;
 import io.quarkiverse.reactive.messaging.nats.jetstream.util.ConsumerConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.util.JetStreamUtility;
+import io.quarkiverse.reactive.messaging.nats.jetstream.util.StreamState;
 
 @Path("/request-reply")
 @Produces("application/json")
@@ -64,6 +65,16 @@ public class RequestReplyResource {
         try (JetStreamClient client = jetStreamUtility.getJetStreamClient()) {
             try (Connection connection = jetStreamUtility.getConnection(client, Duration.ofSeconds(1))) {
                 return jetStreamUtility.getSubjects(connection, stream);
+            }
+        }
+    }
+
+    @GET
+    @Path("/streams/{stream}/state")
+    public StreamState getStreamState(@PathParam("stream") String stream) {
+        try (JetStreamClient client = jetStreamUtility.getJetStreamClient()) {
+            try (Connection connection = jetStreamUtility.getConnection(client, Duration.ofSeconds(1))) {
+                return jetStreamUtility.getStreamState(connection, stream).orElseThrow(NotFoundException::new);
             }
         }
     }
