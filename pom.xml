@@ -29,7 +29,7 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <quarkus.version>3.13.2</quarkus.version>
 
-        <jnats.version>2.20.0</jnats.version>
+        <jnats.version>2.20.1</jnats.version>
         <eddsa.version>0.3.0</eddsa.version>
         <smallrye-connector-attribute-processor.version>4.23.0</smallrye-connector-attribute-processor.version>
         <smallrye-reactive-messaging-otel.version>4.23.0</smallrye-reactive-messaging-otel.version>
