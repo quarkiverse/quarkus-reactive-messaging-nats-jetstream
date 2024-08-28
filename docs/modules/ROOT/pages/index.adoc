@@ -1,4 +1,4 @@
-= Quarkus Reactive Messsaging Nats Jetstream
+= Quarkus Reactive messaging Nats Jetstream
 
 include::./includes/attributes.adoc[]
 
@@ -9,7 +9,7 @@ The extension implements a new connector type **quarkus-jetstream** in https://s
 
 == Installation
 
-If you want to use this extension, you need to add the `io.quarkiverse.reactivemessaging.nats-jetstream:quarkus-reactive-messsaging-nats-jetstream` extension first to your build file.
+If you want to use this extension, you need to add the `io.quarkiverse.reactivemessaging.nats-jetstream:quarkus-reactive-messaging-nats-jetstream` extension first to your build file.
 
 For instance, with Maven, add the following dependency to your POM file:
 
@@ -17,7 +17,7 @@ For instance, with Maven, add the following dependency to your POM file:
 ----
 <dependency>
     <groupId>io.quarkiverse.reactivemessaging.nats-jetstream</groupId>
-    <artifactId>quarkus-reactive-messsaging-nats-jetstream</artifactId>
+    <artifactId>quarkus-reactive-messaging-nats-jetstream</artifactId>
     <version>{project-version}</version>
 </dependency>
 ----
