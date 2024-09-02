@@ -3,11 +3,11 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>io.quarkiverse.reactivemessaging.nats-jetstream</groupId>
-        <artifactId>quarkus-reactive-messsaging-nats-jetstream-parent</artifactId>
+        <artifactId>quarkus-messaging-nats-jetstream-parent</artifactId>
         <version>1.12.0-SNAPSHOT</version>
     </parent>
-    <artifactId>quarkus-reactive-messsaging-nats-jetstream-deployment</artifactId>
-    <name>Quarkus Reactive Messsaging Nats Jetstream - Deployment</name>
+    <artifactId>quarkus-messaging-nats-jetstream-deployment</artifactId>
+    <name>Quarkus Messaging Nats Jetstream - Deployment</name>
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -27,7 +27,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkiverse.reactivemessaging.nats-jetstream</groupId>
-            <artifactId>quarkus-reactive-messsaging-nats-jetstream</artifactId>
+            <artifactId>quarkus-messaging-nats-jetstream</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>

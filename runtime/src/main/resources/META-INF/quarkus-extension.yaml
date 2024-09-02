@@ -1,9 +1,9 @@
-name: Reactive Messsaging Nats Jetstream
+name: Reactive Messaging Nats Jetstream
 description: Easily integrate to nats.io JetStream.
 metadata:
   keywords:
-    - reactive-messsaging-nats-jetstream
-  guide: https://docs.quarkiverse.io/quarkus-reactive-messsaging-nats-jetstream/dev/
+    - reactive-messaging-nats-jetstream
+  guide: https://docs.quarkiverse.io/quarkus-reactive-messaging-nats-jetstream/dev/
   categories:
     - "messaging"
   status: "preview"
