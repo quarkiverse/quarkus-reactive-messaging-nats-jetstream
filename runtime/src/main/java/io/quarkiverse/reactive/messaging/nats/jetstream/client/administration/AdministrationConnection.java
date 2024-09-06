@@ -1,42 +1,31 @@
-package io.quarkiverse.reactive.messaging.nats.jetstream.client.vertx;
+package io.quarkiverse.reactive.messaging.nats.jetstream.client.administration;
 
 import java.io.IOException;
-import java.time.Duration;
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 
 import org.jboss.logging.Logger;
 
-import io.nats.client.Connection;
 import io.nats.client.JetStreamApiException;
 import io.nats.client.JetStreamManagement;
 import io.nats.client.api.*;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.AbstractConnection;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.AdministrationException;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.ConnectionListener;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.administration.*;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.administration.StreamState;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ConnectionConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.KeyValueSetupConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.SetupConfiguration;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.delegates.ConnectionDelegate;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.unchecked.Unchecked;
 
-public class AdministrationConnection
+public class AdministrationConnection extends AbstractConnection
         implements io.quarkiverse.reactive.messaging.nats.jetstream.client.AdministrationConnection {
     private final static Logger logger = Logger.getLogger(AdministrationConnection.class);
 
-    private final io.nats.client.Connection connection;
-    private final List<ConnectionListener> listeners;
-    private final ConnectionDelegate connectionDelegate;
-
     public AdministrationConnection(ConnectionConfiguration connectionConfiguration,
             ConnectionListener connectionListener) {
-        this.connectionDelegate = new ConnectionDelegate();
-        this.connection = connectionDelegate.connect(this, connectionConfiguration);
-        this.listeners = new ArrayList<>(List.of(connectionListener));
+        super(connectionConfiguration, connectionListener);
     }
 
     @Override
@@ -97,7 +86,7 @@ public class AdministrationConnection
 
     @Override
     public Uni<Void> deleteMessage(String stream, long sequence, boolean erase) {
-        return Uni.createFrom().<Void> item(Unchecked.supplier(() -> {
+        return Uni.createFrom().item(Unchecked.supplier(() -> {
             try {
                 final var jsm = connection.jetStreamManagement();
                 if (!jsm.deleteMessage(stream, sequence, erase)) {
@@ -124,31 +113,6 @@ public class AdministrationConnection
     public Uni<List<PurgeResult>> purgeAllStreams() {
         return getStreams()
                 .onItem().transformToUni(this::purgeAllStreams);
-    }
-
-    @Override
-    public boolean isConnected() {
-        return connectionDelegate.isConnected(this::connection);
-    }
-
-    @Override
-    public Uni<Void> flush(Duration duration) {
-        return connectionDelegate.flush(this::connection, duration);
-    }
-
-    @Override
-    public List<ConnectionListener> listeners() {
-        return listeners;
-    }
-
-    @Override
-    public void addListener(ConnectionListener listener) {
-        listeners.add(listener);
-    }
-
-    @Override
-    public void close() throws Exception {
-        connectionDelegate.close(this::connection);
     }
 
     @Override
@@ -189,10 +153,6 @@ public class AdministrationConnection
         return getStreamInfo(jsm, setupConfiguration.stream())
                 .onItem().transformToUni(streamInfo -> updateStream(jsm, streamInfo, setupConfiguration))
                 .onFailure().recoverWithUni(failure -> createStream(jsm, setupConfiguration));
-    }
-
-    private Connection connection() {
-        return connection;
     }
 
     private Optional<StreamInfo> getStreamInfo(String streamName) {

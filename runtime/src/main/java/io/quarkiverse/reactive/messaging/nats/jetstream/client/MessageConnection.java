@@ -10,9 +10,10 @@ public interface MessageConnection extends Connection {
 
     <T> Uni<Message<T>> publish(final Message<T> message, final PublishConfiguration configuration);
 
-    <T> Uni<Message<T>> nextMessage(FetchConsumerConfiguration<T> configuration);
+    <T> Uni<Message<T>> publish(final Message<T> message, final PublishConfiguration publishConfiguration,
+            FetchConsumerConfiguration<T> consumerConfiguration);
 
-    <T> Uni<Void> addOrUpdateConsumer(FetchConsumerConfiguration<T> configuration);
+    <T> Uni<Message<T>> nextMessage(FetchConsumerConfiguration<T> configuration);
 
     <T> Uni<T> getKeyValue(String bucketName, String key, Class<T> valueType);
 

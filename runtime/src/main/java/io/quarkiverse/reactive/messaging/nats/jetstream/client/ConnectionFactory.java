@@ -60,7 +60,7 @@ public class ConnectionFactory {
             ConnectionListener connectionListener) {
         return Uni.createFrom()
                 .item(Unchecked.supplier(
-                        () -> new io.quarkiverse.reactive.messaging.nats.jetstream.client.vertx.AdministrationConnection(
+                        () -> new io.quarkiverse.reactive.messaging.nats.jetstream.client.administration.AdministrationConnection(
                                 connectionConfiguration,
                                 connectionListener)));
     }

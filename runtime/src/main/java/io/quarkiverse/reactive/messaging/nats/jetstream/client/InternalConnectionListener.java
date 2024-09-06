@@ -1,12 +1,9 @@
-package io.quarkiverse.reactive.messaging.nats.jetstream.client.delegates;
+package io.quarkiverse.reactive.messaging.nats.jetstream.client;
 
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.Connection;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.ConnectionEvent;
-
-public class InternalConnectionListener implements io.nats.client.ConnectionListener {
+class InternalConnectionListener implements io.nats.client.ConnectionListener {
     private final Connection connection;
 
-    public InternalConnectionListener(final Connection connection) {
+    InternalConnectionListener(final Connection connection) {
         this.connection = connection;
     }
 

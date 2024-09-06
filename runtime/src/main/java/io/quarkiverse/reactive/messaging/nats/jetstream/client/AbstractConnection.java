@@ -1,40 +1,44 @@
-package io.quarkiverse.reactive.messaging.nats.jetstream.client.delegates;
+package io.quarkiverse.reactive.messaging.nats.jetstream.client;
 
 import static io.nats.client.Connection.Status.CONNECTED;
 
 import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.TimeoutException;
-import java.util.function.Supplier;
 
 import org.jboss.logging.Logger;
 
 import io.nats.client.ErrorListener;
 import io.nats.client.Nats;
 import io.nats.client.Options;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.Connection;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.ConnectionException;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ConnectionConfiguration;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.unchecked.Unchecked;
 
-public class ConnectionDelegate {
-    private final static Logger logger = Logger.getLogger(ConnectionDelegate.class);
+public abstract class AbstractConnection implements Connection {
+    private final static Logger logger = Logger.getLogger(AbstractConnection.class);
 
-    public io.nats.client.Connection connect(Connection connection, ConnectionConfiguration configuration)
-            throws ConnectionException {
-        try {
-            final var options = createConnectionOptions(configuration, new InternalConnectionListener(connection));
-            return Nats.connect(options);
-        } catch (Throwable failure) {
-            throw new ConnectionException(failure);
-        }
+    protected final io.nats.client.Connection connection;
+    private final List<ConnectionListener> listeners;
+
+    public AbstractConnection(ConnectionConfiguration connectionConfiguration,
+            ConnectionListener connectionListener) {
+        this.connection = connect(connectionConfiguration);
+        this.listeners = new ArrayList<>(List.of(connectionListener));
     }
 
-    public Uni<Void> flush(Supplier<io.nats.client.Connection> connection, Duration duration) {
+    @Override
+    public boolean isConnected() {
+        return CONNECTED.equals(connection.getStatus());
+    }
+
+    @Override
+    public Uni<Void> flush(Duration duration) {
         return Uni.createFrom().item(Unchecked.supplier(() -> {
             try {
-                connection.get().flush(duration);
+                connection.flush(duration);
                 return null;
             } catch (TimeoutException | InterruptedException e) {
                 throw new ConnectionException(e);
@@ -42,16 +46,32 @@ public class ConnectionDelegate {
         }));
     }
 
-    public void close(Supplier<io.nats.client.Connection> connection) {
+    @Override
+    public List<ConnectionListener> listeners() {
+        return listeners;
+    }
+
+    @Override
+    public void addListener(ConnectionListener listener) {
+        listeners.add(listener);
+    }
+
+    @Override
+    public void close() throws Exception {
         try {
-            connection.get().close();
+            connection.close();
         } catch (Throwable throwable) {
-            logger.warnf(throwable, "Could not close connection: %s", throwable.getMessage());
+            logger.warnf(throwable, "Error closing connection: %s", throwable.getMessage());
         }
     }
 
-    public boolean isConnected(Supplier<io.nats.client.Connection> connection) {
-        return CONNECTED.equals(connection.get().getStatus());
+    private io.nats.client.Connection connect(ConnectionConfiguration configuration) throws ConnectionException {
+        try {
+            final var options = createConnectionOptions(configuration, new InternalConnectionListener(this));
+            return Nats.connect(options);
+        } catch (Throwable failure) {
+            throw new ConnectionException(failure);
+        }
     }
 
     private Options createConnectionOptions(ConnectionConfiguration configuration,

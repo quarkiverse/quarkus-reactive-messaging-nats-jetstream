@@ -1,8 +1,6 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client.vertx;
 
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -17,29 +15,21 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.client.ConnectionExcepti
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.ConnectionListener;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.JetstreamWorkerThread;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.MessageSubscribeConnection;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.*;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.delegates.ConnectionDelegate;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.delegates.MessageDelegate;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ConnectionConfiguration;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.PullSubscribeOptionsFactory;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ReaderConsumerConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.MessageFactory;
 import io.quarkiverse.reactive.messaging.nats.jetstream.tracing.JetStreamInstrumenter;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.core.Context;
 
-public class ReaderMessageSubscribeConnection<K> implements MessageSubscribeConnection {
+public class ReaderMessageSubscribeConnection<K> extends MessageConnection implements MessageSubscribeConnection {
     private final static Logger logger = Logger.getLogger(ReaderMessageSubscribeConnection.class);
-
-    private final io.nats.client.Connection connection;
-    private final List<ConnectionListener> listeners;
-    private final MessageFactory messageFactory;
-    private final Context context;
-    private final ConnectionDelegate connectionDelegate;
-    private final MessageDelegate messageDelegate;
 
     private final ReaderConsumerConfiguration<K> consumerConfiguration;
     private final io.nats.client.JetStreamReader reader;
     private final JetStreamSubscription subscription;
-    private final JetStreamInstrumenter instrumenter;
 
     public ReaderMessageSubscribeConnection(ConnectionConfiguration connectionConfiguration,
             ConnectionListener connectionListener,
@@ -47,14 +37,8 @@ public class ReaderMessageSubscribeConnection<K> implements MessageSubscribeConn
             JetStreamInstrumenter instrumenter,
             ReaderConsumerConfiguration<K> consumerConfiguration,
             MessageFactory messageFactory) throws ConnectionException {
-        this.connectionDelegate = new ConnectionDelegate();
-        this.messageDelegate = new MessageDelegate();
-        this.connection = connectionDelegate.connect(this, connectionConfiguration);
-        this.listeners = new ArrayList<>(List.of(connectionListener));
-        this.messageFactory = messageFactory;
-        this.context = context;
+        super(connectionConfiguration, connectionListener, messageFactory, context, instrumenter);
         this.consumerConfiguration = consumerConfiguration;
-        this.instrumenter = instrumenter;
         try {
             final var jetStream = connection.jetStream();
             final var optionsFactory = new PullSubscribeOptionsFactory();
@@ -62,44 +46,8 @@ public class ReaderMessageSubscribeConnection<K> implements MessageSubscribeConn
                     optionsFactory.create(consumerConfiguration));
             this.reader = subscription.reader(consumerConfiguration.maxRequestBatch(), consumerConfiguration.rePullAt());
         } catch (Throwable failure) {
-            close();
             throw new ReaderException(failure);
         }
-    }
-
-    @Override
-    public <T> Uni<Message<T>> publish(Message<T> message, PublishConfiguration configuration) {
-        return messageDelegate.publish(connection, messageFactory, context, instrumenter, message, configuration);
-    }
-
-    @Override
-    public <T> Uni<Message<T>> nextMessage(FetchConsumerConfiguration<T> configuration) {
-        return messageDelegate.nextMessage(connection, context, messageFactory, configuration);
-    }
-
-    @Override
-    public <T> Uni<Void> addOrUpdateConsumer(FetchConsumerConfiguration<T> configuration) {
-        return messageDelegate.addOrUpdateConsumer(connection, context, configuration);
-    }
-
-    @Override
-    public <T> Uni<T> getKeyValue(String bucketName, String key, Class<T> valueType) {
-        return messageDelegate.getKeyValue(connection, context, messageFactory, bucketName, key, valueType);
-    }
-
-    @Override
-    public <T> Uni<Void> putKeyValue(String bucketName, String key, T value) {
-        return messageDelegate.putKeyValue(connection, context, messageFactory, bucketName, key, value);
-    }
-
-    @Override
-    public Uni<Void> deleteKeyValue(String bucketName, String key) {
-        return messageDelegate.deleteKeyValue(connection, context, bucketName, key);
-    }
-
-    @Override
-    public <T> Uni<Message<T>> resolve(String streamName, long sequence) {
-        return messageDelegate.resolve(connection, context, messageFactory, streamName, sequence);
     }
 
     @Override
@@ -116,28 +64,13 @@ public class ReaderMessageSubscribeConnection<K> implements MessageSubscribeConn
     }
 
     @Override
-    public boolean isConnected() {
-        return connectionDelegate.isConnected(this::connection);
-    }
-
-    @Override
     public Uni<Void> flush(Duration duration) {
-        return connectionDelegate.flush(this::connection, duration)
+        return super.flush(duration)
                 .emitOn(context::runOnContext);
     }
 
     @Override
-    public List<ConnectionListener> listeners() {
-        return listeners;
-    }
-
-    @Override
-    public void addListener(ConnectionListener listener) {
-        listeners.add(listener);
-    }
-
-    @Override
-    public void close() {
+    public void close() throws Exception {
         try {
             reader.stop();
         } catch (Throwable e) {
@@ -157,7 +90,7 @@ public class ReaderMessageSubscribeConnection<K> implements MessageSubscribeConn
         } catch (Throwable e) {
             logger.warnf("Failed to unsubscribe subscription with message %s", e.getMessage());
         }
-        connectionDelegate.close(this::connection);
+        super.close();
     }
 
     private Optional<io.nats.client.Message> nextMessage() {
@@ -192,9 +125,5 @@ public class ReaderMessageSubscribeConnection<K> implements MessageSubscribeConn
                             consumerConfiguration.consumerConfiguration().exponentialBackoffMaxDuration()),
                             consumerConfiguration.consumerConfiguration().ackTimeout()));
         }
-    }
-
-    private io.nats.client.Connection connection() {
-        return connection;
     }
 }

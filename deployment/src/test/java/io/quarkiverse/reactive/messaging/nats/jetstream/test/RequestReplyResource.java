@@ -136,26 +136,24 @@ public class RequestReplyResource {
     }
 
     private Uni<Void> produceData(MessageConnection connection, String subject, String id, String data, String messageId) {
-        return connection.addOrUpdateConsumer(getConsumerConfiguration(streamName, subject))
-                .onItem()
-                .transformToUni(v -> connection.publish(
-                        Message.of(new Data(data, id, messageId), Metadata.of(JetStreamOutgoingMessageMetadata.of(messageId))),
-                        new PublishConfiguration() {
-                            @Override
-                            public boolean traceEnabled() {
-                                return true;
-                            }
+        return connection.publish(
+                Message.of(new Data(data, id, messageId), Metadata.of(JetStreamOutgoingMessageMetadata.of(messageId))),
+                new PublishConfiguration() {
+                    @Override
+                    public boolean traceEnabled() {
+                        return true;
+                    }
 
-                            @Override
-                            public String stream() {
-                                return streamName;
-                            }
+                    @Override
+                    public String stream() {
+                        return streamName;
+                    }
 
-                            @Override
-                            public String subject() {
-                                return "events." + subject;
-                            }
-                        }))
+                    @Override
+                    public String subject() {
+                        return "events." + subject;
+                    }
+                }, getConsumerConfiguration(streamName, subject))
                 .onItem().transformToUni(m -> Uni.createFrom().voidItem());
     }
 

@@ -1,4 +1,4 @@
-package io.quarkiverse.reactive.messaging.nats.jetstream.client.delegates;
+package io.quarkiverse.reactive.messaging.nats.jetstream.client;
 
 import org.jboss.logging.Logger;
 
