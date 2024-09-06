@@ -6,8 +6,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReference;
 
+import jakarta.annotation.Priority;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.BeforeDestroyed;
 import jakarta.enterprise.context.RequestScoped;
+import jakarta.enterprise.event.Observes;
+import jakarta.enterprise.event.Reception;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 
@@ -17,115 +23,153 @@ import org.eclipse.microprofile.reactive.messaging.Metadata;
 import io.nats.client.api.AckPolicy;
 import io.nats.client.api.DeliverPolicy;
 import io.nats.client.api.ReplayPolicy;
+import io.quarkiverse.reactive.messaging.nats.NatsConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.JetStreamOutgoingMessageMetadata;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.AdministrationConnection;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.Connection;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.JetStreamClient;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.JetStreamPublishConfiguration;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.io.JetStreamConsumerType;
-import io.quarkiverse.reactive.messaging.nats.jetstream.util.ConsumerConfiguration;
-import io.quarkiverse.reactive.messaging.nats.jetstream.util.JetStreamUtility;
-import io.quarkiverse.reactive.messaging.nats.jetstream.util.StreamState;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.ConnectionFactory;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.MessageConnection;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.administration.StreamState;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ConnectionConfiguration;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ConsumerType;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.FetchConsumerConfiguration;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.PublishConfiguration;
+import io.smallrye.mutiny.Uni;
 
 @Path("/request-reply")
 @Produces("application/json")
 @RequestScoped
 public class RequestReplyResource {
-    private final JetStreamUtility jetStreamUtility;
+    private final ConnectionFactory connectionFactory;
+    private final NatsConfiguration natsConfiguration;
     private final String streamName;
+    private final AtomicReference<AdministrationConnection> administrationConnection;
+    private final AtomicReference<MessageConnection> messageConnection;
 
     @Inject
-    public RequestReplyResource(JetStreamUtility jetStreamUtility) {
-        this.jetStreamUtility = jetStreamUtility;
+    public RequestReplyResource(ConnectionFactory connectionFactory,
+            NatsConfiguration natsConfiguration) {
+        this.connectionFactory = connectionFactory;
+        this.natsConfiguration = natsConfiguration;
         this.streamName = "request-reply";
+        this.administrationConnection = new AtomicReference<>();
+        this.messageConnection = new AtomicReference<>();
     }
 
     @GET
     @Path("/streams")
-    public List<String> getStreams() {
-        try (JetStreamClient client = jetStreamUtility.getJetStreamClient()) {
-            try (Connection connection = jetStreamUtility.getConnection(client, Duration.ofSeconds(1))) {
-                return jetStreamUtility.getStreams(connection);
-            }
-        }
+    public Uni<List<String>> getStreams() {
+        return getOrEstablishAdministrationConnection().onItem().transformToUni(AdministrationConnection::getStreams);
     }
 
     @GET
     @Path("/streams/{stream}/consumers")
-    public List<String> getConsumers(@PathParam("stream") String stream) {
-        try (JetStreamClient client = jetStreamUtility.getJetStreamClient()) {
-            try (Connection connection = jetStreamUtility.getConnection(client, Duration.ofSeconds(1))) {
-                return jetStreamUtility.getConsumerNames(connection, stream);
-            }
-        }
+    public Uni<List<String>> getConsumers(@PathParam("stream") String stream) {
+        return getOrEstablishAdministrationConnection().onItem()
+                .transformToUni(connection -> connection.getConsumerNames(stream));
     }
 
     @GET
     @Path("/streams/{stream}/subjects")
-    public List<String> getSubjects(@PathParam("stream") String stream) {
-        try (JetStreamClient client = jetStreamUtility.getJetStreamClient()) {
-            try (Connection connection = jetStreamUtility.getConnection(client, Duration.ofSeconds(1))) {
-                return jetStreamUtility.getSubjects(connection, stream);
-            }
-        }
+    public Uni<List<String>> getSubjects(@PathParam("stream") String stream) {
+        return getOrEstablishAdministrationConnection().onItem().transformToUni(connection -> connection.getSubjects(stream));
     }
 
     @GET
     @Path("/streams/{stream}/state")
-    public StreamState getStreamState(@PathParam("stream") String stream) {
-        try (JetStreamClient client = jetStreamUtility.getJetStreamClient()) {
-            try (Connection connection = jetStreamUtility.getConnection(client, Duration.ofSeconds(1))) {
-                return jetStreamUtility.getStreamState(connection, stream).orElseThrow(NotFoundException::new);
-            }
-        }
+    public Uni<StreamState> getStreamState(@PathParam("stream") String stream) {
+        return getOrEstablishAdministrationConnection().onItem()
+                .transformToUni(connection -> connection.getStreamState(stream));
     }
 
     @POST
     @Path("/subjects/{subject}/{id}/{data}")
-    public void produceData(@PathParam("subject") String subject, @PathParam("id") String id, @PathParam("data") String data) {
-        try (JetStreamClient client = jetStreamUtility.getJetStreamClient()) {
-            try (Connection connection = jetStreamUtility.getConnection(client, Duration.ofSeconds(1))) {
-                final var messageId = UUID.randomUUID().toString();
-                final var newMessage = Message.of(new Data(data, id, messageId),
-                        Metadata.of(JetStreamOutgoingMessageMetadata.of(messageId)));
-                jetStreamUtility.addOrUpdateConsumer(connection, getConsumerConfiguration(streamName, subject));
-                jetStreamUtility.publish(connection, newMessage, new JetStreamPublishConfiguration() {
-                    @Override
-                    public boolean traceEnabled() {
-                        return true;
-                    }
-
-                    @Override
-                    public String stream() {
-                        return streamName;
-                    }
-
-                    @Override
-                    public String subject() {
-                        return "events." + subject;
-                    }
-                });
-            }
-        }
+    public Uni<Void> produceData(@PathParam("subject") String subject, @PathParam("id") String id,
+            @PathParam("data") String data) {
+        return getOrEstablishMessageConnection()
+                .onItem()
+                .transformToUni(connection -> produceData(connection, subject, id, data, UUID.randomUUID().toString()));
     }
 
     @GET
     @Path("/subjects/{subject}")
-    public Data consumeData(@PathParam("subject") String subject) {
-        try (JetStreamClient client = jetStreamUtility.getJetStreamClient()) {
-            try (Connection connection = jetStreamUtility.getConnection(client, Duration.ofSeconds(1))) {
-                final var consumerConfiguration = getConsumerConfiguration(streamName, subject);
-                return jetStreamUtility.nextMessage(connection, consumerConfiguration)
-                        .map(message -> {
-                            message.ack();
-                            return message.getPayload();
-                        })
-                        .orElseThrow(NotFoundException::new);
+    public Uni<Data> consumeData(@PathParam("subject") String subject) {
+        return getOrEstablishMessageConnection().onItem().transformToUni(connection -> consumeData(connection, subject));
+    }
+
+    public void terminate(
+            @Observes(notifyObserver = Reception.IF_EXISTS) @Priority(50) @BeforeDestroyed(ApplicationScoped.class) Object ignored) {
+        try {
+            if (administrationConnection.get() != null) {
+                administrationConnection.get().close();
             }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        try {
+            if (messageConnection.get() != null) {
+                messageConnection.get().close();
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
     }
 
-    private ConsumerConfiguration<Data> getConsumerConfiguration(String streamName, String subject) {
-        return new ConsumerConfiguration<>() {
+    private Uni<AdministrationConnection> getOrEstablishAdministrationConnection() {
+        return Uni.createFrom().item(() -> Optional.ofNullable(administrationConnection.get())
+                .filter(Connection::isConnected)
+                .orElse(null))
+                .onItem().ifNull().switchTo(() -> connectionFactory
+                        .administration(ConnectionConfiguration.of(natsConfiguration), (event, message) -> {
+                        }))
+                .onItem().invoke(this.administrationConnection::set);
+    }
+
+    private Uni<MessageConnection> getOrEstablishMessageConnection() {
+        return Uni.createFrom().item(() -> Optional.ofNullable(messageConnection.get())
+                .filter(Connection::isConnected)
+                .orElse(null))
+                .onItem().ifNull()
+                .switchTo(() -> connectionFactory.message(ConnectionConfiguration.of(natsConfiguration), (event, message) -> {
+                }))
+                .onItem().invoke(this.messageConnection::set);
+    }
+
+    private Uni<Void> produceData(MessageConnection connection, String subject, String id, String data, String messageId) {
+        return connection.addOrUpdateConsumer(getConsumerConfiguration(streamName, subject))
+                .onItem()
+                .transformToUni(v -> connection.publish(
+                        Message.of(new Data(data, id, messageId), Metadata.of(JetStreamOutgoingMessageMetadata.of(messageId))),
+                        new PublishConfiguration() {
+                            @Override
+                            public boolean traceEnabled() {
+                                return true;
+                            }
+
+                            @Override
+                            public String stream() {
+                                return streamName;
+                            }
+
+                            @Override
+                            public String subject() {
+                                return "events." + subject;
+                            }
+                        }))
+                .onItem().transformToUni(m -> Uni.createFrom().voidItem());
+    }
+
+    public Uni<Data> consumeData(MessageConnection connection, String subject) {
+        return connection.nextMessage(getConsumerConfiguration(streamName, subject))
+                .map(message -> {
+                    message.ack();
+                    return message.getPayload();
+                })
+                .onFailure().recoverWithUni(Uni.createFrom().failure(NotFoundException::new));
+    }
+
+    private FetchConsumerConfiguration<Data> getConsumerConfiguration(String streamName, String subject) {
+        return new FetchConsumerConfiguration<>() {
             @Override
             public String stream() {
                 return streamName;
@@ -157,13 +201,23 @@ public class RequestReplyResource {
             }
 
             @Override
-            public Optional<Duration> ackTimeout() {
+            public Optional<Class<Data>> payloadType() {
                 return Optional.empty();
             }
 
             @Override
-            public Optional<Class<Data>> getPayloadType() {
-                return Optional.empty();
+            public boolean exponentialBackoff() {
+                return false;
+            }
+
+            @Override
+            public Duration exponentialBackoffMaxDuration() {
+                return null;
+            }
+
+            @Override
+            public Duration ackTimeout() {
+                return Duration.ofSeconds(30);
             }
 
             @Override
@@ -187,8 +241,8 @@ public class RequestReplyResource {
             }
 
             @Override
-            public JetStreamConsumerType type() {
-                return JetStreamConsumerType.Fetch;
+            public ConsumerType type() {
+                return ConsumerType.Fetch;
             }
 
             @Override

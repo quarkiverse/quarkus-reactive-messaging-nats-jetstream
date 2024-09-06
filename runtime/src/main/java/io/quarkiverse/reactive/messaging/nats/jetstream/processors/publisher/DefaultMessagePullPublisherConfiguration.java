@@ -11,9 +11,9 @@ import io.nats.client.api.AckPolicy;
 import io.nats.client.api.DeliverPolicy;
 import io.nats.client.api.ReplayPolicy;
 import io.quarkiverse.reactive.messaging.nats.jetstream.JetStreamConnectorIncomingConfiguration;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.JetStreamConsumerConfiguration;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.io.JetStreamConsumerType;
-import io.quarkiverse.reactive.messaging.nats.jetstream.mapper.PayloadMapper;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ConsumerConfiguration;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ConsumerType;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.MessageFactory;
 
 public class DefaultMessagePullPublisherConfiguration<T> implements MessagePullPublisherConfiguration<T> {
     private final JetStreamConnectorIncomingConfiguration configuration;
@@ -28,35 +28,8 @@ public class DefaultMessagePullPublisherConfiguration<T> implements MessagePullP
     }
 
     @Override
-    public Optional<Class<T>> payloadType() {
-        return configuration.getPayloadType().map(PayloadMapper::loadClass);
-    }
-
-    @Override
     public Duration retryBackoff() {
         return Duration.ofMillis(configuration.getRetryBackoff());
-    }
-
-    @Override
-    public boolean exponentialBackoff() {
-        return configuration.getExponentialBackoff() != null ? configuration.getExponentialBackoff() : false;
-    }
-
-    @Override
-    public Duration exponentialBackoffMaxDuration() {
-        return configuration.getExponentialBackoffMaxDuration() != null
-                ? Duration.parse(configuration.getExponentialBackoffMaxDuration())
-                : null;
-    }
-
-    @Override
-    public boolean traceEnabled() {
-        return configuration.getTraceEnabled();
-    }
-
-    @Override
-    public Duration ackTimeout() {
-        return Duration.parse(configuration.getAckTimeout());
     }
 
     @Override
@@ -85,16 +58,16 @@ public class DefaultMessagePullPublisherConfiguration<T> implements MessagePullP
     }
 
     @Override
-    public JetStreamConsumerConfiguration consumerConfiguration() {
-        return new JetStreamConsumerConfiguration() {
+    public ConsumerConfiguration<T> consumerConfiguration() {
+        return new ConsumerConfiguration<>() {
             @Override
             public Optional<String> name() {
                 return configuration.getName();
             }
 
             @Override
-            public JetStreamConsumerType type() {
-                return JetStreamConsumerType.Pull;
+            public ConsumerType type() {
+                return ConsumerType.Pull;
             }
 
             @Override
@@ -195,6 +168,33 @@ public class DefaultMessagePullPublisherConfiguration<T> implements MessagePullP
             @Override
             public Optional<ZonedDateTime> pauseUntil() {
                 return Optional.empty();
+            }
+
+            @Override
+            public Optional<Class<T>> payloadType() {
+                return configuration.getPayloadType().map(MessageFactory::loadClass);
+            }
+
+            @Override
+            public boolean exponentialBackoff() {
+                return configuration.getExponentialBackoff() != null ? configuration.getExponentialBackoff() : false;
+            }
+
+            @Override
+            public Duration exponentialBackoffMaxDuration() {
+                return configuration.getExponentialBackoffMaxDuration() != null
+                        ? Duration.parse(configuration.getExponentialBackoffMaxDuration())
+                        : null;
+            }
+
+            @Override
+            public boolean traceEnabled() {
+                return configuration.getTraceEnabled();
+            }
+
+            @Override
+            public Duration ackTimeout() {
+                return Duration.parse(configuration.getAckTimeout());
             }
 
             private List<Duration> getBackOff(List<String> backoff) {

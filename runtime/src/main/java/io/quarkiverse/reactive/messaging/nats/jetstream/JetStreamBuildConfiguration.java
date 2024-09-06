@@ -78,7 +78,7 @@ public interface JetStreamBuildConfiguration {
         /**
          * The maximum size for an individual value in the bucket.
          */
-        Optional<Long> maxValueSize();
+        Optional<Integer> maxValueSize();
 
         /**
          * The maximum age for a value in this bucket

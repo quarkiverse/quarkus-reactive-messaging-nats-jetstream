@@ -13,9 +13,9 @@ import org.junit.jupiter.api.Test;
 import io.nats.client.api.AckPolicy;
 import io.nats.client.api.DeliverPolicy;
 import io.nats.client.api.ReplayPolicy;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.JetStreamConsumerConfiguration;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ConsumerConfiguration;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ConsumerType;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.PushSubscribeOptionsFactory;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.io.JetStreamConsumerType;
 
 public class MessagePublisherProcessorTest {
 
@@ -70,33 +70,8 @@ public class MessagePublisherProcessorTest {
             }
 
             @Override
-            public Optional<Class<Object>> payloadType() {
-                return Optional.empty();
-            }
-
-            @Override
             public Duration retryBackoff() {
                 return null;
-            }
-
-            @Override
-            public boolean exponentialBackoff() {
-                return false;
-            }
-
-            @Override
-            public Duration exponentialBackoffMaxDuration() {
-                return null;
-            }
-
-            @Override
-            public boolean traceEnabled() {
-                return false;
-            }
-
-            @Override
-            public Duration ackTimeout() {
-                return Duration.ofSeconds(3);
             }
 
             @Override
@@ -105,11 +80,11 @@ public class MessagePublisherProcessorTest {
             }
 
             @Override
-            public JetStreamConsumerConfiguration consumerConfiguration() {
-                return new JetStreamConsumerConfiguration() {
+            public ConsumerConfiguration<Object> consumerConfiguration() {
+                return new ConsumerConfiguration<>() {
                     @Override
-                    public JetStreamConsumerType type() {
-                        return JetStreamConsumerType.Push;
+                    public ConsumerType type() {
+                        return ConsumerType.Push;
                     }
 
                     @Override
@@ -210,6 +185,31 @@ public class MessagePublisherProcessorTest {
                     @Override
                     public Map<String, String> metadata() {
                         return Map.of();
+                    }
+
+                    @Override
+                    public Optional<Class<Object>> payloadType() {
+                        return Optional.empty();
+                    }
+
+                    @Override
+                    public boolean exponentialBackoff() {
+                        return false;
+                    }
+
+                    @Override
+                    public Duration exponentialBackoffMaxDuration() {
+                        return null;
+                    }
+
+                    @Override
+                    public boolean traceEnabled() {
+                        return false;
+                    }
+
+                    @Override
+                    public Duration ackTimeout() {
+                        return Duration.ofSeconds(3);
                     }
                 };
             }

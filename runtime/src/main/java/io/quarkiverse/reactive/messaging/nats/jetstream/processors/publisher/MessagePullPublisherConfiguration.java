@@ -1,13 +1,13 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.processors.publisher;
 
 import io.quarkiverse.reactive.messaging.nats.jetstream.JetStreamConnectorIncomingConfiguration;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.JetStreamReaderConsumerConfiguration;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ReaderConsumerConfiguration;
 
 public interface MessagePullPublisherConfiguration<T>
-        extends MessagePublisherConfiguration<T>, JetStreamReaderConsumerConfiguration {
+        extends MessagePublisherConfiguration, ReaderConsumerConfiguration<T> {
 
     static <T> MessagePullPublisherConfiguration<T> of(JetStreamConnectorIncomingConfiguration configuration) {
-        return new DefaultMessagePullPublisherConfiguration<T>(configuration);
+        return new DefaultMessagePullPublisherConfiguration<>(configuration);
     }
 
 }

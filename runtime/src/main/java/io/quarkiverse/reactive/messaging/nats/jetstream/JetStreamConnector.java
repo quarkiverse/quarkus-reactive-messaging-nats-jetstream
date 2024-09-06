@@ -21,9 +21,8 @@ import org.eclipse.microprofile.reactive.messaging.spi.Connector;
 import io.quarkiverse.reactive.messaging.nats.NatsConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.*;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ConnectionConfiguration;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.io.JetStreamConsumerType;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.io.JetStreamPublisher;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.io.MessageFactory;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ConsumerType;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.MessageFactory;
 import io.quarkiverse.reactive.messaging.nats.jetstream.processors.MessageProcessor;
 import io.quarkiverse.reactive.messaging.nats.jetstream.processors.publisher.*;
 import io.quarkiverse.reactive.messaging.nats.jetstream.processors.subscriber.MessageSubscriberConfiguration;
@@ -84,41 +83,38 @@ public class JetStreamConnector implements InboundConnector, OutboundConnector, 
     private final List<MessageProcessor> processors;
     private final ExecutionHolder executionHolder;
     private final NatsConfiguration natsConfiguration;
-    private final JetStreamPublisher jetStreamPublisher;
+    private final ConnectionFactory connectionFactory;
     private final MessageFactory messageFactory;
 
     @Inject
     public JetStreamConnector(
             ExecutionHolder executionHolder,
             NatsConfiguration natsConfiguration,
-            JetStreamPublisher jetStreamPublisher,
+            ConnectionFactory connectionFactory,
             MessageFactory messageFactory) {
         this.processors = new CopyOnWriteArrayList<>();
         this.executionHolder = executionHolder;
         this.natsConfiguration = natsConfiguration;
-        this.jetStreamPublisher = jetStreamPublisher;
         this.messageFactory = messageFactory;
+        this.connectionFactory = connectionFactory;
     }
 
     @Override
     public Flow.Publisher<? extends Message<?>> getPublisher(Config config) {
         final var configuration = new JetStreamConnectorIncomingConfiguration(config);
-        final var client = new JetStreamClient(ConnectionConfiguration.of(natsConfiguration), getVertx());
-        final var processor = createMessagePublisherProcessor(client, configuration);
+        final var processor = createMessagePublisherProcessor(configuration);
         processors.add(processor);
-        client.addListener(processor);
         return processor.publisher();
     }
 
     @Override
     public Flow.Subscriber<? extends Message<?>> getSubscriber(Config config) {
+        final var connectionConfiguration = ConnectionConfiguration.of(natsConfiguration);
         final var configuration = new JetStreamConnectorIncomingConfiguration(config);
-        final var client = new JetStreamClient(ConnectionConfiguration.of(natsConfiguration), getVertx());
         final var processor = new MessageSubscriberProcessor(
-                client,
-                MessageSubscriberConfiguration.of(configuration),
-                jetStreamPublisher);
-        client.addListener(processor);
+                connectionConfiguration,
+                connectionFactory,
+                MessageSubscriberConfiguration.of(configuration));
         processors.add(processor);
         return processor.subscriber();
     }
@@ -151,17 +147,17 @@ public class JetStreamConnector implements InboundConnector, OutboundConnector, 
         return executionHolder.vertx();
     }
 
-    private MessagePublisherProcessor createMessagePublisherProcessor(JetStreamClient client,
-            JetStreamConnectorIncomingConfiguration configuration) {
-        final var type = JetStreamConsumerType.valueOf(configuration.getPublisherType());
-        if (JetStreamConsumerType.Pull.equals(type)) {
-            return new MessagePullPublisherProcessor(client,
-                    MessagePullPublisherConfiguration.of(configuration),
-                    messageFactory);
+    private MessagePublisherProcessor createMessagePublisherProcessor(JetStreamConnectorIncomingConfiguration configuration) {
+        final var connectionConfiguration = ConnectionConfiguration.of(natsConfiguration);
+        final var type = ConsumerType.valueOf(configuration.getPublisherType());
+        if (ConsumerType.Pull.equals(type)) {
+            return new MessagePullPublisherProcessor(connectionFactory,
+                    connectionConfiguration,
+                    MessagePullPublisherConfiguration.of(configuration));
         } else {
-            return new MessagePushPublisherProcessor(client,
-                    MessagePushPublisherConfiguration.of(configuration),
-                    messageFactory);
+            return new MessagePushPublisherProcessor(connectionFactory,
+                    connectionConfiguration,
+                    MessagePushPublisherConfiguration.of(configuration));
         }
     }
 }

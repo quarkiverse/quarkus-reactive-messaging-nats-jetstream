@@ -3,24 +3,40 @@ package io.quarkiverse.reactive.messaging.nats.jetstream.test;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
+import jakarta.annotation.Priority;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.BeforeDestroyed;
+import jakarta.enterprise.event.Observes;
+import jakarta.enterprise.event.Reception;
 import jakarta.inject.Inject;
 
 import org.eclipse.microprofile.reactive.messaging.Incoming;
 import org.eclipse.microprofile.reactive.messaging.Message;
 import org.jboss.logging.Logger;
 
-import io.quarkiverse.reactive.messaging.nats.jetstream.administration.MessageResolver;
+import io.quarkiverse.reactive.messaging.nats.NatsConfiguration;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.Connection;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.ConnectionFactory;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.MessageConnection;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ConnectionConfiguration;
 import io.smallrye.mutiny.Uni;
 
 @ApplicationScoped
 public class DeadLetterConsumingBean {
     private final static Logger logger = Logger.getLogger(DeadLetterConsumingBean.class);
 
-    private final AtomicReference<Data> lastData = new AtomicReference<>();
+    private final AtomicReference<Data> lastData;
+    private final AtomicReference<MessageConnection> connection;
+    private final NatsConfiguration natsConfiguration;
+    private final ConnectionFactory connectionFactory;
 
     @Inject
-    MessageResolver resolver;
+    public DeadLetterConsumingBean(NatsConfiguration natsConfiguration, ConnectionFactory connectionFactory) {
+        this.connection = new AtomicReference<>();
+        this.natsConfiguration = natsConfiguration;
+        this.connectionFactory = connectionFactory;
+        this.lastData = new AtomicReference<>();
+    }
 
     public Optional<Data> getLast() {
         return Optional.ofNullable(lastData.get());
@@ -40,10 +56,36 @@ public class DeadLetterConsumingBean {
     @Incoming("dead-letter-consumer")
     public Uni<Void> deadLetter(Message<Advisory> message) {
         logger.infof("Received dead letter on dead-letter-consumer channel: %s", message);
+        return getOrEstablishConnection().onItem().transformToUni(connection -> deadLetter(connection, message));
+    }
+
+    public void terminate(
+            @Observes(notifyObserver = Reception.IF_EXISTS) @Priority(50) @BeforeDestroyed(ApplicationScoped.class) Object ignored) {
+        try {
+            if (connection.get() != null) {
+                connection.get().close();
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public Uni<Void> deadLetter(MessageConnection connection, Message<Advisory> message) {
+        logger.infof("Received dead letter on dead-letter-consumer channel: %s", message);
         final var advisory = message.getPayload();
-        return resolver.<Data> resolve(advisory.getStream(), advisory.getStream_seq())
+        return connection.<Data> resolve(advisory.getStream(), advisory.getStream_seq())
                 .onItem().invoke(dataMessage -> lastData.set(dataMessage.getPayload()))
                 .onItem().transformToUni(m -> Uni.createFrom().completionStage(message.ack()))
                 .onFailure().recoverWithUni(throwable -> Uni.createFrom().completionStage(message.nack(throwable)));
+    }
+
+    private Uni<MessageConnection> getOrEstablishConnection() {
+        return Uni.createFrom().item(() -> Optional.ofNullable(connection.get())
+                .filter(Connection::isConnected)
+                .orElse(null))
+                .onItem().ifNull()
+                .switchTo(() -> connectionFactory.message(ConnectionConfiguration.of(natsConfiguration), (event, message) -> {
+                }))
+                .onItem().invoke(this.connection::set);
     }
 }

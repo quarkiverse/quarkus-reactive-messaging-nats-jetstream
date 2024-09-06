@@ -1,12 +1,11 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration;
 
-import static io.quarkiverse.reactive.messaging.nats.jetstream.mapper.PayloadMapper.loadClass;
-
 import java.lang.reflect.InvocationTargetException;
 import java.util.Optional;
 
 import io.nats.client.ErrorListener;
 import io.quarkiverse.reactive.messaging.nats.NatsConfiguration;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.MessageFactory;
 
 class DefaultConnectionConfiguration implements ConnectionConfiguration {
     private final NatsConfiguration configuration;
@@ -87,7 +86,7 @@ class DefaultConnectionConfiguration implements ConnectionConfiguration {
 
     private ErrorListener getInstanceOfErrorListener(String className) {
         try {
-            var clazz = loadClass(className);
+            var clazz = MessageFactory.loadClass(className);
             var constructor = clazz.getConstructor();
             return (ErrorListener) constructor.newInstance();
         } catch (NoSuchMethodException | InstantiationException | IllegalAccessException

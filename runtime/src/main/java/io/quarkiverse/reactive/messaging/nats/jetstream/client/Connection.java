@@ -1,81 +1,21 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client;
 
-import static io.nats.client.Connection.Status.CONNECTED;
-
-import java.io.IOException;
 import java.time.Duration;
-import java.util.concurrent.TimeoutException;
+import java.util.List;
 
-import org.jboss.logging.Logger;
+import io.smallrye.mutiny.Uni;
 
-import io.nats.client.*;
-import io.vertx.mutiny.core.Context;
+public interface Connection extends AutoCloseable {
 
-public class Connection implements AutoCloseable {
-    private final static Logger logger = Logger.getLogger(Connection.class);
+    boolean isConnected();
 
-    private final io.nats.client.Connection connection;
-    private final Context context;
+    Uni<Void> flush(Duration duration);
 
-    public Connection(final io.nats.client.Connection connection, final Context context) {
-        this.connection = connection;
-        this.context = context;
-    }
+    List<ConnectionListener> listeners();
 
-    public io.nats.client.Connection connection() {
-        return connection;
-    }
+    void addListener(ConnectionListener listener);
 
-    public Context context() {
-        return context;
-    }
-
-    public JetStream jetStream() throws IOException {
-        return connection.jetStream();
-    }
-
-    public JetStreamManagement jetStreamManagement() throws IOException {
-        return connection.jetStreamManagement();
-    }
-
-    public KeyValueManagement keyValueManagement() throws IOException {
-        return connection.keyValueManagement();
-    }
-
-    public KeyValue keyValue(String bucketName) throws IOException {
-        return connection.keyValue(bucketName);
-    }
-
-    public Dispatcher createDispatcher() {
-        return connection.createDispatcher();
-    }
-
-    public io.nats.client.Connection.Status getStatus() {
-        return connection.getStatus();
-    }
-
-    public boolean isConnected() {
-        return CONNECTED.equals(getStatus());
-    }
-
-    public StreamContext getStreamContext(String stream) throws IOException, JetStreamApiException {
-        return connection.getStreamContext(stream);
-    }
-
-    public void flush(Duration duration) {
-        try {
-            connection.flush(duration);
-        } catch (TimeoutException | InterruptedException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    @Override
-    public void close() {
-        try {
-            connection.close();
-        } catch (Throwable throwable) {
-            logger.warnf(throwable, "Could not close connection: %s", throwable.getMessage());
-        }
+    default void fireEvent(ConnectionEvent event, String message) {
+        listeners().forEach(listener -> listener.onEvent(event, message));
     }
 }
