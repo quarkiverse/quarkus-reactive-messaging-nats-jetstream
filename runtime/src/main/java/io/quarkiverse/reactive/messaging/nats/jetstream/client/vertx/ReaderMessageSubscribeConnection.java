@@ -15,6 +15,7 @@ import io.nats.client.JetStreamSubscription;
 import io.quarkiverse.reactive.messaging.nats.jetstream.ExponentialBackoff;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.ConnectionException;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.ConnectionListener;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.JetstreamWorkerThread;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.MessageSubscribeConnection;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.*;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.delegates.ConnectionDelegate;

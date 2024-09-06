@@ -6,6 +6,8 @@ import static io.smallrye.reactive.messaging.tracing.TracingUtils.traceOutgoing;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import org.eclipse.microprofile.reactive.messaging.Message;
 import org.jboss.logging.Logger;
@@ -86,8 +88,10 @@ public class MessageDelegate {
             final Context context,
             final MessageFactory messageFactory,
             final FetchConsumerConfiguration<T> configuration) {
+        ExecutorService executor = Executors.newSingleThreadExecutor(JetstreamWorkerThread::new);
         return getConsumerContext(connection, context, configuration.stream(),
                 configuration.name().orElseThrow(() -> new IllegalArgumentException("Consumer name is not configured")))
+                .runSubscriptionOn(executor)
                 .onItem()
                 .transformToUni(consumerContext -> nextMessage(context, messageFactory, consumerContext, configuration));
     }

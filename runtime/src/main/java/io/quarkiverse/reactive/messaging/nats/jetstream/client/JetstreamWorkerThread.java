@@ -1,12 +1,12 @@
-package io.quarkiverse.reactive.messaging.nats.jetstream.client.vertx;
+package io.quarkiverse.reactive.messaging.nats.jetstream.client;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-class JetstreamWorkerThread extends Thread {
+public class JetstreamWorkerThread extends Thread {
 
     private static final AtomicInteger threadCount = new AtomicInteger(0);
 
-    JetstreamWorkerThread(Runnable task) {
+    public JetstreamWorkerThread(Runnable task) {
         super(task, "nats-jetstream-worker-" + threadCount.incrementAndGet());
     }
 }
