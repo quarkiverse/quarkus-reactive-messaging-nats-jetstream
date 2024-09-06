@@ -33,8 +33,7 @@ public class DataResource {
     @POST
     @Path("/{id}/{data}")
     public Uni<Void> produceData(@PathParam("id") String id, @PathParam("data") String data) {
-        return emitData(id, data)
-                .onItem().transformToUni(message -> Uni.createFrom().completionStage(message.ack()));
+        return emitData(id, data).onItem().transformToUni(m -> Uni.createFrom().voidItem());
     }
 
     private Uni<Message<String>> emitData(String id, String data) {

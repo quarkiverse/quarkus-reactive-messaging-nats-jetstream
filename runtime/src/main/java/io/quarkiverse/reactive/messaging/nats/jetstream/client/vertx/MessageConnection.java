@@ -14,6 +14,7 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.Pub
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.delegates.ConnectionDelegate;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.delegates.MessageDelegate;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.MessageFactory;
+import io.quarkiverse.reactive.messaging.nats.jetstream.tracing.JetStreamInstrumenter;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.core.Context;
 
@@ -24,22 +25,25 @@ public class MessageConnection implements io.quarkiverse.reactive.messaging.nats
     private final MessageDelegate messageDelegate;
     private final MessageFactory messageFactory;
     private final Context context;
+    private final JetStreamInstrumenter instrumenter;
 
     public MessageConnection(ConnectionConfiguration connectionConfiguration,
             ConnectionListener connectionListener,
             MessageFactory messageFactory,
-            Context context) {
+            Context context,
+            JetStreamInstrumenter instrumenter) {
         this.connectionDelegate = new ConnectionDelegate();
         this.messageDelegate = new MessageDelegate();
         this.connection = connectionDelegate.connect(this, connectionConfiguration);
         this.listeners = new ArrayList<>(List.of(connectionListener));
         this.messageFactory = messageFactory;
         this.context = context;
+        this.instrumenter = instrumenter;
     }
 
     @Override
     public <T> Uni<Message<T>> publish(Message<T> message, PublishConfiguration configuration) {
-        return messageDelegate.publish(connection, messageFactory, context, message, configuration);
+        return messageDelegate.publish(connection, messageFactory, context, instrumenter, message, configuration);
     }
 
     @Override

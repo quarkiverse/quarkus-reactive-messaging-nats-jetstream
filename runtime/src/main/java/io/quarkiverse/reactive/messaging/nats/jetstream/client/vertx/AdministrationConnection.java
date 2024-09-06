@@ -188,7 +188,6 @@ public class AdministrationConnection
             SetupConfiguration setupConfiguration) {
         return getStreamInfo(jsm, setupConfiguration.stream())
                 .onItem().transformToUni(streamInfo -> updateStream(jsm, streamInfo, setupConfiguration))
-                .onFailure().invoke(failure -> logger.warn(failure.getMessage(), failure))
                 .onFailure().recoverWithUni(failure -> createStream(jsm, setupConfiguration));
     }
 

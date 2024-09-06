@@ -16,10 +16,4 @@ public class HeaderMapper {
         return result;
     }
 
-    public static Headers toJetStreamHeaders(Map<String, List<String>> headers) {
-        final var result = new Headers();
-        headers.forEach(result::add);
-        return result;
-    }
-
 }

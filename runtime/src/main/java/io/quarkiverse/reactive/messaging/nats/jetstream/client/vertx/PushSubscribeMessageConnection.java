@@ -18,6 +18,7 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.*;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.delegates.ConnectionDelegate;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.delegates.MessageDelegate;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.MessageFactory;
+import io.quarkiverse.reactive.messaging.nats.jetstream.tracing.JetStreamInstrumenter;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.core.Context;
@@ -31,6 +32,7 @@ public class PushSubscribeMessageConnection<K> implements MessageSubscribeConnec
     private final Context context;
     private final ConnectionDelegate connectionDelegate;
     private final MessageDelegate messageDelegate;
+    private final JetStreamInstrumenter instrumenter;
 
     private final PushConsumerConfiguration<K> consumerConfiguration;
     private final PushSubscribeOptionsFactory optionsFactory;
@@ -40,6 +42,7 @@ public class PushSubscribeMessageConnection<K> implements MessageSubscribeConnec
     public PushSubscribeMessageConnection(ConnectionConfiguration connectionConfiguration,
             ConnectionListener connectionListener,
             Context context,
+            JetStreamInstrumenter instrumenter,
             PushConsumerConfiguration<K> consumerConfiguration,
             MessageFactory messageFactory,
             PushSubscribeOptionsFactory optionsFactory) throws ConnectionException {
@@ -49,13 +52,14 @@ public class PushSubscribeMessageConnection<K> implements MessageSubscribeConnec
         this.listeners = new ArrayList<>(List.of(connectionListener));
         this.messageFactory = messageFactory;
         this.context = context;
+        this.instrumenter = instrumenter;
         this.consumerConfiguration = consumerConfiguration;
         this.optionsFactory = optionsFactory;
     }
 
     @Override
     public <T> Uni<Message<T>> publish(Message<T> message, PublishConfiguration configuration) {
-        return messageDelegate.publish(connection, messageFactory, context, message, configuration);
+        return messageDelegate.publish(connection, messageFactory, context, instrumenter, message, configuration);
     }
 
     @Override

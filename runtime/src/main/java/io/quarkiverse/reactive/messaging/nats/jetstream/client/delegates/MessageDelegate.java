@@ -1,22 +1,27 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client.delegates;
 
-import static io.quarkiverse.reactive.messaging.nats.jetstream.mapper.HeaderMapper.toJetStreamHeaders;
+import static io.quarkiverse.reactive.messaging.nats.jetstream.client.message.MessageFactory.MESSAGE_TYPE_HEADER;
+import static io.smallrye.reactive.messaging.tracing.TracingUtils.traceOutgoing;
 
 import java.io.IOException;
 import java.time.Duration;
-import java.util.Optional;
+import java.util.*;
 
 import org.eclipse.microprofile.reactive.messaging.Message;
 import org.jboss.logging.Logger;
 
 import io.nats.client.*;
+import io.nats.client.impl.Headers;
 import io.quarkiverse.reactive.messaging.nats.jetstream.ExponentialBackoff;
+import io.quarkiverse.reactive.messaging.nats.jetstream.JetStreamOutgoingMessageMetadata;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.*;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.administration.JetStreamSetupException;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ConsumerConfigurtationFactory;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.FetchConsumerConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.PublishConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.MessageFactory;
+import io.quarkiverse.reactive.messaging.nats.jetstream.tracing.JetStreamInstrumenter;
+import io.quarkiverse.reactive.messaging.nats.jetstream.tracing.JetStreamTrace;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.unchecked.Unchecked;
 import io.vertx.mutiny.core.Context;
@@ -27,22 +32,37 @@ public class MessageDelegate {
     public <T> Uni<Message<T>> publish(final io.nats.client.Connection connection,
             final MessageFactory messageFactory,
             final Context context,
+            final JetStreamInstrumenter instrumenter,
             final Message<T> message,
             final PublishConfiguration configuration) {
         return Uni.createFrom().item(Unchecked.supplier(() -> {
             try {
-                final var payload = messageFactory.create(
-                        message,
-                        configuration.traceEnabled(),
-                        configuration.stream(),
-                        configuration.subject());
+                final var metadata = message.getMetadata(JetStreamOutgoingMessageMetadata.class);
+                final var messageId = metadata.map(JetStreamOutgoingMessageMetadata::messageId)
+                        .orElseGet(() -> UUID.randomUUID().toString());
+                final var payload = messageFactory.toByteArray(message.getPayload());
+                final var subject = metadata.flatMap(JetStreamOutgoingMessageMetadata::subtopic)
+                        .map(subtopic -> configuration.subject() + "." + subtopic).orElseGet(configuration::subject);
+                final var headers = new HashMap<String, List<String>>();
+                metadata.ifPresent(m -> headers.putAll(m.headers()));
+                if (message.getPayload() != null) {
+                    headers.putIfAbsent(MESSAGE_TYPE_HEADER, List.of(message.getPayload().getClass().getTypeName()));
+                }
+
+                if (configuration.traceEnabled()) {
+                    // Create a new span for the outbound message and record updated tracing information in
+                    // the headers; this has to be done before we build the properties below
+                    traceOutgoing(instrumenter.publisher(), message,
+                            new JetStreamTrace(configuration.stream(), subject, messageId, headers,
+                                    new String(payload)));
+                }
 
                 final var jetStream = connection.jetStream();
-                final var options = createPublishOptions(payload.messageId(), payload.stream());
+                final var options = createPublishOptions(messageId, configuration.stream());
                 final var ack = jetStream.publish(
-                        payload.subject(),
-                        toJetStreamHeaders(payload.headers()),
-                        payload.content(),
+                        subject,
+                        toJetStreamHeaders(headers),
+                        payload,
                         options);
 
                 if (logger.isDebugEnabled()) {
@@ -234,6 +254,12 @@ public class MessageDelegate {
                         context,
                         new ExponentialBackoff(false, Duration.ZERO),
                         configuration.ackTimeout()));
+    }
+
+    private Headers toJetStreamHeaders(Map<String, List<String>> headers) {
+        final var result = new Headers();
+        headers.forEach(result::add);
+        return result;
     }
 
 }
