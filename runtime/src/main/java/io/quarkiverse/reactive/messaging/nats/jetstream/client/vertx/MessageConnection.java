@@ -26,6 +26,7 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.Pub
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.MessageFactory;
 import io.quarkiverse.reactive.messaging.nats.jetstream.tracing.JetStreamInstrumenter;
 import io.quarkiverse.reactive.messaging.nats.jetstream.tracing.JetStreamTrace;
+import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.unchecked.Unchecked;
 import io.vertx.mutiny.core.Context;
@@ -114,6 +115,14 @@ public class MessageConnection extends AbstractConnection
                 .runSubscriptionOn(executor)
                 .onItem()
                 .transformToUni(consumerContext -> nextMessage(consumerContext, configuration));
+    }
+
+    @Override
+    public <T> Multi<Message<T>> nextMessages(FetchConsumerConfiguration<T> configuration) {
+        return getConsumerContext(connection, context, configuration.stream(),
+                configuration.name().orElseThrow(() -> new IllegalArgumentException("Consumer name is not configured")))
+                .onItem().transformToMulti(consumerContext -> nextMessages(consumerContext, configuration))
+                .emitOn(context::runOnContext);
     }
 
     @Override
@@ -267,5 +276,32 @@ public class MessageConnection extends AbstractConnection
             }
         }))
                 .emitOn(context::runOnContext);
+    }
+
+    private <T> Multi<Message<T>> nextMessages(final ConsumerContext consumerContext,
+            FetchConsumerConfiguration<T> configuration) {
+        ExecutorService executor = Executors.newSingleThreadExecutor(JetstreamWorkerThread::new);
+        return Multi.createFrom().<Message<T>> emitter(emitter -> {
+            try {
+                try (final var fetchConsumer = fetchConsumer(consumerContext, configuration.fetchTimeout().orElse(null))) {
+                    var message = fetchConsumer.nextMessage();
+                    while (message != null) {
+                        emitter.emit(messageFactory.create(
+                                message,
+                                configuration.traceEnabled(),
+                                configuration.payloadType().orElse(null),
+                                context,
+                                new ExponentialBackoff(false, Duration.ZERO),
+                                configuration.ackTimeout()));
+                        message = fetchConsumer.nextMessage();
+                    }
+                    emitter.complete();
+                }
+            } catch (Throwable failure) {
+                emitter.fail(new FetchException(failure));
+            }
+        })
+                .emitOn(context::runOnContext)
+                .runSubscriptionOn(executor);
     }
 }
