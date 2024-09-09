@@ -6,13 +6,9 @@ import io.nats.client.Options;
 import io.quarkiverse.reactive.messaging.nats.jetstream.JetStreamBuildConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.JetStreamConnector;
 import io.quarkiverse.reactive.messaging.nats.jetstream.JetStreamRecorder;
-import io.quarkiverse.reactive.messaging.nats.jetstream.administration.MessageResolver;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.io.JetStreamPublisher;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.io.MessageFactory;
-import io.quarkiverse.reactive.messaging.nats.jetstream.mapper.PayloadMapper;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.ConnectionFactory;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.MessageFactory;
 import io.quarkiverse.reactive.messaging.nats.jetstream.tracing.JetStreamInstrumenter;
-import io.quarkiverse.reactive.messaging.nats.jetstream.util.JetStreamUtility;
-import io.quarkiverse.reactive.messaging.nats.jetstream.util.KeyValueStore;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -52,14 +48,10 @@ class ReactiveMesssagingNatsJetstreamProcessor {
     @BuildStep
     void createNatsConnector(BuildProducer<AdditionalBeanBuildItem> buildProducer) {
         buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(JetStreamConnector.class));
-        buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(MessageResolver.class));
-        buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(PayloadMapper.class));
         buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(JetStreamInstrumenter.class));
         buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(ExecutionHolder.class));
-        buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(JetStreamPublisher.class));
+        buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(ConnectionFactory.class));
         buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(MessageFactory.class));
-        buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(JetStreamUtility.class));
-        buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(KeyValueStore.class));
     }
 
     @BuildStep

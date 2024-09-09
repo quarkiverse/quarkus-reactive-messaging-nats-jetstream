@@ -3,13 +3,13 @@ package io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration;
 import io.nats.client.PullSubscribeOptions;
 
 public class PullSubscribeOptionsFactory {
-    private final JetstreamConsumerConfigurtationFactory consumerConfigurationFactory;
+    private final ConsumerConfigurtationFactory consumerConfigurationFactory;
 
     public PullSubscribeOptionsFactory() {
-        this.consumerConfigurationFactory = new JetstreamConsumerConfigurtationFactory();
+        this.consumerConfigurationFactory = new ConsumerConfigurtationFactory();
     }
 
-    public PullSubscribeOptions create(final JetStreamPullConsumerConfiguration configuration) {
+    public <T> PullSubscribeOptions create(final PullConsumerConfiguration<T> configuration) {
         var builder = PullSubscribeOptions.builder();
         configuration.consumerConfiguration().durable().map(builder::durable).orElse(builder);
         builder = builder.stream(configuration.consumerConfiguration().stream());

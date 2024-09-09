@@ -1,51 +1,53 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.processors.publisher;
 
-import java.time.Duration;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.eclipse.microprofile.reactive.messaging.Message;
 import org.jboss.logging.Logger;
 
-import io.nats.client.Dispatcher;
-import io.nats.client.JetStreamSubscription;
-import io.quarkiverse.reactive.messaging.nats.jetstream.ExponentialBackoff;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.Connection;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.ConnectionEvent;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.JetStreamClient;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.ConnectionFactory;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.MessageSubscribeConnection;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ConnectionConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.PushSubscribeOptionsFactory;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.io.MessageFactory;
 import io.quarkiverse.reactive.messaging.nats.jetstream.processors.Status;
 import io.smallrye.mutiny.Multi;
+import io.smallrye.mutiny.Uni;
 
 public class MessagePushPublisherProcessor implements MessagePublisherProcessor {
     private final static Logger logger = Logger.getLogger(MessagePushPublisherProcessor.class);
 
     private final MessagePushPublisherConfiguration<?> configuration;
-    private final JetStreamClient jetStreamClient;
+    private final ConnectionFactory connectionFactory;
     private final AtomicReference<Status> status;
     private final PushSubscribeOptionsFactory optionsFactory;
-    private final MessageFactory messageFactory;
+    private final AtomicReference<MessageSubscribeConnection> connection;
+    private final ConnectionConfiguration connectionConfiguration;
 
-    private volatile JetStreamSubscription subscription;
-    private volatile Dispatcher dispatcher;
-
-    public MessagePushPublisherProcessor(final JetStreamClient jetStreamClient,
-            final MessagePushPublisherConfiguration<?> configuration,
-            final MessageFactory messageFactory) {
+    public MessagePushPublisherProcessor(final ConnectionFactory connectionFactory,
+            final ConnectionConfiguration connectionConfiguration,
+            final MessagePushPublisherConfiguration<?> configuration) {
+        this.connectionConfiguration = connectionConfiguration;
         this.configuration = configuration;
-        this.jetStreamClient = jetStreamClient;
-        this.messageFactory = messageFactory;
+        this.connectionFactory = connectionFactory;
         this.status = new AtomicReference<>(new Status(false, "Not connected", ConnectionEvent.Closed));
         this.optionsFactory = new PushSubscribeOptionsFactory();
+        this.connection = new AtomicReference<>();
     }
 
     @Override
-    public Multi<org.eclipse.microprofile.reactive.messaging.Message<?>> publisher() {
-        return jetStreamClient.getOrEstablishConnection()
-                .onItem().transformToMulti(this::publisher)
+    public Multi<Message<?>> publisher() {
+        return getOrEstablishConnection()
+                .onItem().transformToMulti(MessageSubscribeConnection::subscribe)
                 .onFailure().invoke(throwable -> {
                     if (!isConsumerAlreadyInUse(throwable)) {
                         logger.errorf(throwable, "Failed to publish messages: %s", throwable.getMessage());
-                        jetStreamClient.fireEvent(ConnectionEvent.CommunicationFailed, throwable.getMessage());
+                        final var connection = this.connection.get();
+                        if (connection != null) {
+                            connection.fireEvent(ConnectionEvent.CommunicationFailed, throwable.getMessage());
+                        }
                     }
                 })
                 .onFailure().retry().withBackOff(configuration.retryBackoff()).indefinitely();
@@ -58,48 +60,19 @@ public class MessagePushPublisherProcessor implements MessagePublisherProcessor 
 
     @Override
     public void close() {
-        shutDown();
-        jetStreamClient.close();
+        try {
+            final var connection = this.connection.get();
+            if (connection != null) {
+                connection.close();
+            }
+        } catch (Throwable failure) {
+            logger.warnf(failure, "Failed to close connection", failure);
+        }
     }
 
     @Override
     public String getChannel() {
         return configuration.channel();
-    }
-
-    private Multi<org.eclipse.microprofile.reactive.messaging.Message<?>> publisher(Connection connection) {
-        boolean traceEnabled = configuration.traceEnabled();
-        Class<?> payloadType = configuration.payloadType().orElse(null);
-        final var subject = configuration.subject();
-        return Multi.createFrom().<io.nats.client.Message> emitter(emitter -> {
-            try {
-                final var jetStream = connection.jetStream();
-                dispatcher = connection.createDispatcher();
-                final var pushOptions = optionsFactory.create(configuration);
-                subscription = jetStream.subscribe(
-                        subject, dispatcher,
-                        emitter::emit,
-                        false,
-                        pushOptions);
-            } catch (Throwable e) {
-                logger.errorf(
-                        e,
-                        "Failed subscribing to stream: %s, subject: %s with message: %s",
-                        configuration.consumerConfiguration().stream(),
-                        subject,
-                        e.getMessage());
-                emitter.fail(e);
-            }
-        })
-                .emitOn(runnable -> connection.context().runOnContext(runnable))
-                .map(message -> messageFactory.create(
-                        message,
-                        traceEnabled,
-                        payloadType, connection.context(),
-                        new ExponentialBackoff(
-                                configuration.exponentialBackoff(),
-                                configuration.exponentialBackoffMaxDuration()),
-                        configuration.ackTimeout()));
     }
 
     @Override
@@ -113,20 +86,12 @@ public class MessagePushPublisherProcessor implements MessagePublisherProcessor 
         }
     }
 
-    private void shutDown() {
-        try {
-            if (subscription.isActive()) {
-                subscription.drain(Duration.ofMillis(1000));
-            }
-        } catch (InterruptedException | IllegalStateException e) {
-            logger.warnf("Interrupted while draining subscription");
-        }
-        try {
-            if (subscription != null && dispatcher != null && dispatcher.isActive()) {
-                dispatcher.unsubscribe(subscription);
-            }
-        } catch (Exception e) {
-            logger.errorf(e, "Failed to shutdown pull executor");
-        }
+    private Uni<? extends MessageSubscribeConnection> getOrEstablishConnection() {
+        return Uni.createFrom().item(() -> Optional.ofNullable(connection.get())
+                .filter(Connection::isConnected)
+                .orElse(null))
+                .onItem().ifNull()
+                .switchTo(() -> connectionFactory.subscribe(connectionConfiguration, this, configuration, optionsFactory))
+                .onItem().invoke(this.connection::set);
     }
 }
