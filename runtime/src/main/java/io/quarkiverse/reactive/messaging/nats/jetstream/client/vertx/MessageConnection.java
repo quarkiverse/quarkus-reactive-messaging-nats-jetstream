@@ -6,8 +6,6 @@ import static io.smallrye.reactive.messaging.tracing.TracingUtils.traceOutgoing;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.*;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 import org.eclipse.microprofile.reactive.messaging.Message;
 import org.jboss.logging.Logger;
@@ -109,18 +107,14 @@ public class MessageConnection extends AbstractConnection
 
     @Override
     public <T> Uni<Message<T>> nextMessage(FetchConsumerConfiguration<T> configuration) {
-        ExecutorService executor = Executors.newSingleThreadExecutor(JetstreamWorkerThread::new);
-        return getConsumerContext(connection, context, configuration.stream(),
-                configuration.name().orElseThrow(() -> new IllegalArgumentException("Consumer name is not configured")))
-                .runSubscriptionOn(executor)
+        return getConsumerContext(configuration)
                 .onItem()
                 .transformToUni(consumerContext -> nextMessage(consumerContext, configuration));
     }
 
     @Override
     public <T> Multi<Message<T>> nextMessages(FetchConsumerConfiguration<T> configuration) {
-        return getConsumerContext(connection, context, configuration.stream(),
-                configuration.name().orElseThrow(() -> new IllegalArgumentException("Consumer name is not configured")))
+        return getConsumerContext(configuration)
                 .onItem().transformToMulti(consumerContext -> nextMessages(consumerContext, configuration))
                 .emitOn(context::runOnContext);
     }
@@ -209,19 +203,33 @@ public class MessageConnection extends AbstractConnection
                 .onItem().transformToUni(v -> Uni.createFrom().item(message));
     }
 
-    private Uni<ConsumerContext> getConsumerContext(final io.nats.client.Connection connection,
-            final Context context,
-            final String stream,
-            final String consumerName) {
+    private <T> Uni<ConsumerContext> getConsumerContext(final FetchConsumerConfiguration<T> configuration) {
         return Uni.createFrom().item(Unchecked.supplier(() -> {
             try {
-                final var streamContext = connection.getStreamContext(stream);
-                return streamContext.getConsumerContext(consumerName);
-            } catch (IOException | JetStreamApiException e) {
+                final var streamContext = connection.getStreamContext(configuration.stream());
+                return streamContext.getConsumerContext(configuration.name()
+                        .orElseThrow(() -> new IllegalArgumentException("Consumer name is not configured")));
+            } catch (JetStreamApiException e) {
+                if (e.getApiErrorCode() == 10014) { // consumer not found
+                    throw new ConsumerNotFoundException(configuration.stream(), configuration.name().orElse(null));
+                } else {
+                    throw new FetchException(e);
+                }
+            } catch (IOException e) {
                 throw new FetchException(e);
             }
         }))
+                .onFailure().recoverWithUni(failure -> handleConsumerContextFailure(configuration, failure))
                 .emitOn(context::runOnContext);
+    }
+
+    private <T> Uni<ConsumerContext> handleConsumerContextFailure(final FetchConsumerConfiguration<T> configuration,
+            Throwable failure) {
+        if (failure instanceof ConsumerNotFoundException) {
+            return addOrUpdateConsumer(configuration);
+        } else {
+            return Uni.createFrom().failure(failure);
+        }
     }
 
     private Uni<io.nats.client.Message> nextMessage(final ConsumerContext consumerContext,
@@ -262,15 +270,15 @@ public class MessageConnection extends AbstractConnection
         return result;
     }
 
-    private <T> Uni<Void> addOrUpdateConsumer(FetchConsumerConfiguration<T> configuration) {
-        return Uni.createFrom().<Void> item(Unchecked.supplier(() -> {
+    private <T> Uni<ConsumerContext> addOrUpdateConsumer(FetchConsumerConfiguration<T> configuration) {
+        return Uni.createFrom().item(Unchecked.supplier(() -> {
             try {
                 final var factory = new ConsumerConfigurtationFactory();
                 final var consumerConfiguration = factory.create(configuration);
                 final var streamContext = connection.getStreamContext(configuration.stream());
-                streamContext.createOrUpdateConsumer(consumerConfiguration);
+                final var consumerContext = streamContext.createOrUpdateConsumer(consumerConfiguration);
                 connection.flush(Duration.ZERO);
-                return null;
+                return consumerContext;
             } catch (IOException | JetStreamApiException e) {
                 throw new FetchException(e);
             }
@@ -280,7 +288,6 @@ public class MessageConnection extends AbstractConnection
 
     private <T> Multi<Message<T>> nextMessages(final ConsumerContext consumerContext,
             FetchConsumerConfiguration<T> configuration) {
-        ExecutorService executor = Executors.newSingleThreadExecutor(JetstreamWorkerThread::new);
         return Multi.createFrom().<Message<T>> emitter(emitter -> {
             try {
                 try (final var fetchConsumer = fetchConsumer(consumerContext, configuration.fetchTimeout().orElse(null))) {
@@ -301,7 +308,6 @@ public class MessageConnection extends AbstractConnection
                 emitter.fail(new FetchException(failure));
             }
         })
-                .emitOn(context::runOnContext)
-                .runSubscriptionOn(executor);
+                .emitOn(context::runOnContext);
     }
 }
