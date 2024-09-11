@@ -58,11 +58,9 @@ public class ConnectionFactory {
 
     public Uni<? extends AdministrationConnection> administration(ConnectionConfiguration connectionConfiguration,
             ConnectionListener connectionListener) {
-        return Uni.createFrom()
-                .item(Unchecked.supplier(
-                        () -> new io.quarkiverse.reactive.messaging.nats.jetstream.client.administration.AdministrationConnection(
-                                connectionConfiguration,
-                                connectionListener)));
+        return getContext()
+                .onFailure().invoke(failure -> logger.warn(failure.getMessage(), failure))
+                .onItem().transformToUni(context -> administration(connectionConfiguration, connectionListener, context));
     }
 
     public Uni<? extends MessageConnection> message(ConnectionConfiguration connectionConfiguration,
@@ -107,6 +105,17 @@ public class ConnectionFactory {
                         .supplier(() -> new io.quarkiverse.reactive.messaging.nats.jetstream.client.vertx.MessageConnection(
                                 connectionConfiguration,
                                 connectionListener, messageFactory, context, instrumenter)))
+                .emitOn(context::runOnContext);
+    }
+
+    private Uni<? extends AdministrationConnection> administration(ConnectionConfiguration connectionConfiguration,
+            ConnectionListener connectionListener, Context context) {
+        return Uni.createFrom()
+                .item(Unchecked
+                        .supplier(
+                                () -> new io.quarkiverse.reactive.messaging.nats.jetstream.client.vertx.AdministrationConnection(
+                                        connectionConfiguration,
+                                        connectionListener, context)))
                 .emitOn(context::runOnContext);
     }
 }
