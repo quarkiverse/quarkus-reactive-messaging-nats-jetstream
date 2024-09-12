@@ -1,7 +1,10 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.graal;
 
 import java.io.ByteArrayOutputStream;
-import java.security.*;
+import java.security.InvalidKeyException;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.security.PublicKey;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.X509EncodedKeySpec;
 

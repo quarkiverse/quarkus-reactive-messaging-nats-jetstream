@@ -19,10 +19,9 @@ import org.eclipse.microprofile.reactive.messaging.Message;
 import org.eclipse.microprofile.reactive.messaging.spi.Connector;
 
 import io.quarkiverse.reactive.messaging.nats.NatsConfiguration;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.*;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.ConnectionFactory;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ConnectionConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ConsumerType;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.MessageFactory;
 import io.quarkiverse.reactive.messaging.nats.jetstream.processors.MessageProcessor;
 import io.quarkiverse.reactive.messaging.nats.jetstream.processors.publisher.*;
 import io.quarkiverse.reactive.messaging.nats.jetstream.processors.subscriber.MessageSubscriberConfiguration;
@@ -32,8 +31,6 @@ import io.smallrye.reactive.messaging.connector.InboundConnector;
 import io.smallrye.reactive.messaging.connector.OutboundConnector;
 import io.smallrye.reactive.messaging.health.HealthReport;
 import io.smallrye.reactive.messaging.health.HealthReporter;
-import io.smallrye.reactive.messaging.providers.connectors.ExecutionHolder;
-import io.vertx.mutiny.core.Vertx;
 
 @ApplicationScoped
 @Connector(JetStreamConnector.CONNECTOR_NAME)
@@ -81,21 +78,15 @@ public class JetStreamConnector implements InboundConnector, OutboundConnector, 
     public static final String CONNECTOR_NAME = "quarkus-jetstream";
 
     private final List<MessageProcessor> processors;
-    private final ExecutionHolder executionHolder;
     private final NatsConfiguration natsConfiguration;
     private final ConnectionFactory connectionFactory;
-    private final MessageFactory messageFactory;
 
     @Inject
     public JetStreamConnector(
-            ExecutionHolder executionHolder,
             NatsConfiguration natsConfiguration,
-            ConnectionFactory connectionFactory,
-            MessageFactory messageFactory) {
+            ConnectionFactory connectionFactory) {
         this.processors = new CopyOnWriteArrayList<>();
-        this.executionHolder = executionHolder;
         this.natsConfiguration = natsConfiguration;
-        this.messageFactory = messageFactory;
         this.connectionFactory = connectionFactory;
     }
 
@@ -141,10 +132,6 @@ public class JetStreamConnector implements InboundConnector, OutboundConnector, 
     public void terminate(
             @Observes(notifyObserver = Reception.IF_EXISTS) @Priority(50) @BeforeDestroyed(ApplicationScoped.class) Object ignored) {
         this.processors.forEach(MessageProcessor::close);
-    }
-
-    public Vertx getVertx() {
-        return executionHolder.vertx();
     }
 
     private MessagePublisherProcessor createMessagePublisherProcessor(JetStreamConnectorIncomingConfiguration configuration) {
