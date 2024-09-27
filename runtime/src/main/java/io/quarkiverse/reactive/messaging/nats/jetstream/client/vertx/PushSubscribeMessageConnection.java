@@ -15,6 +15,7 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.Con
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.PushConsumerConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.PushSubscribeOptionsFactory;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.MessageFactory;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.PayloadMapper;
 import io.quarkiverse.reactive.messaging.nats.jetstream.tracing.JetStreamInstrumenter;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
@@ -34,8 +35,9 @@ public class PushSubscribeMessageConnection<K> extends MessageConnection impleme
             JetStreamInstrumenter instrumenter,
             PushConsumerConfiguration<K> consumerConfiguration,
             MessageFactory messageFactory,
+            PayloadMapper payloadMapper,
             PushSubscribeOptionsFactory optionsFactory) throws ConnectionException {
-        super(connectionConfiguration, connectionListener, messageFactory, context, instrumenter);
+        super(connectionConfiguration, connectionListener, messageFactory, context, instrumenter, payloadMapper);
         this.consumerConfiguration = consumerConfiguration;
         this.optionsFactory = optionsFactory;
     }

@@ -5,7 +5,7 @@ import java.util.Optional;
 
 import io.nats.client.ErrorListener;
 import io.quarkiverse.reactive.messaging.nats.NatsConfiguration;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.MessageFactory;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.PayloadMapper;
 
 class DefaultConnectionConfiguration implements ConnectionConfiguration {
     private final NatsConfiguration configuration;
@@ -86,7 +86,7 @@ class DefaultConnectionConfiguration implements ConnectionConfiguration {
 
     private ErrorListener getInstanceOfErrorListener(String className) {
         try {
-            var clazz = MessageFactory.loadClass(className);
+            var clazz = PayloadMapper.loadClass(className);
             var constructor = clazz.getConstructor();
             return (ErrorListener) constructor.newInstance();
         } catch (NoSuchMethodException | InstantiationException | IllegalAccessException

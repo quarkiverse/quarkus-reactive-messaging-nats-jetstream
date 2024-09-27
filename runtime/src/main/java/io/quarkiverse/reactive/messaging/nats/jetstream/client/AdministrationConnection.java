@@ -1,19 +1,15 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client;
 
-import java.util.List;
-
-import io.nats.client.api.ConsumerInfo;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.administration.DeleteException;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.administration.PurgeResult;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.administration.SetupResult;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.administration.StreamState;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.administration.*;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.KeyValueSetupConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.SetupConfiguration;
 import io.smallrye.mutiny.Uni;
 
+import java.util.List;
+
 public interface AdministrationConnection extends Connection {
 
-    Uni<ConsumerInfo> getConsumerInfo(String stream, String consumerName);
+    Uni<Consumer> getConsumer(String stream, String consumerName);
 
     Uni<List<String>> getStreams();
 
@@ -38,7 +34,7 @@ public interface AdministrationConnection extends Connection {
 
     Uni<List<PurgeResult>> purgeAllStreams();
 
-    Uni<SetupResult> addOrUpdateStream(SetupConfiguration setupConfiguration);
+    Uni<Stream> addOrUpdateStream(SetupConfiguration setupConfiguration);
 
     Uni<Void> addOrUpdateKeyValueStore(KeyValueSetupConfiguration keyValueSetupConfiguration);
 }

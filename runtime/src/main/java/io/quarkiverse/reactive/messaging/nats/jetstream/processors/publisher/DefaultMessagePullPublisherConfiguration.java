@@ -13,7 +13,7 @@ import io.nats.client.api.ReplayPolicy;
 import io.quarkiverse.reactive.messaging.nats.jetstream.JetStreamConnectorIncomingConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ConsumerConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ConsumerType;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.MessageFactory;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.PayloadMapper;
 
 public class DefaultMessagePullPublisherConfiguration<T> implements MessagePullPublisherConfiguration<T> {
     private final JetStreamConnectorIncomingConfiguration configuration;
@@ -172,7 +172,7 @@ public class DefaultMessagePullPublisherConfiguration<T> implements MessagePullP
 
             @Override
             public Optional<Class<T>> payloadType() {
-                return configuration.getPayloadType().map(MessageFactory::loadClass);
+                return configuration.getPayloadType().map(PayloadMapper::loadClass);
             }
 
             @Override

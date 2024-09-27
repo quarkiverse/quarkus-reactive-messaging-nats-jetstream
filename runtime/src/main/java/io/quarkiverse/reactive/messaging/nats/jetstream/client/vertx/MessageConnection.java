@@ -22,6 +22,7 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.Con
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.FetchConsumerConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.PublishConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.MessageFactory;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.PayloadMapper;
 import io.quarkiverse.reactive.messaging.nats.jetstream.tracing.JetStreamInstrumenter;
 import io.quarkiverse.reactive.messaging.nats.jetstream.tracing.JetStreamTrace;
 import io.smallrye.mutiny.Multi;
@@ -36,16 +37,19 @@ public class MessageConnection extends AbstractConnection
     protected final MessageFactory messageFactory;
     protected final Context context;
     protected final JetStreamInstrumenter instrumenter;
+    protected final PayloadMapper payloadMapper;
 
     public MessageConnection(ConnectionConfiguration connectionConfiguration,
             ConnectionListener connectionListener,
             MessageFactory messageFactory,
             Context context,
-            JetStreamInstrumenter instrumenter) {
+            JetStreamInstrumenter instrumenter,
+            PayloadMapper payloadMapper) {
         super(connectionConfiguration, connectionListener);
         this.messageFactory = messageFactory;
         this.context = context;
         this.instrumenter = instrumenter;
+        this.payloadMapper = payloadMapper;
     }
 
     @Override
@@ -55,7 +59,7 @@ public class MessageConnection extends AbstractConnection
                 final var metadata = message.getMetadata(JetStreamOutgoingMessageMetadata.class);
                 final var messageId = metadata.map(JetStreamOutgoingMessageMetadata::messageId)
                         .orElseGet(() -> UUID.randomUUID().toString());
-                final var payload = messageFactory.toByteArray(message.getPayload());
+                final var payload = payloadMapper.toByteArray(message.getPayload());
                 final var subject = metadata.flatMap(JetStreamOutgoingMessageMetadata::subtopic)
                         .map(subtopic -> configuration.subject() + "." + subtopic).orElseGet(configuration::subject);
                 final var headers = new HashMap<String, List<String>>();
@@ -124,7 +128,7 @@ public class MessageConnection extends AbstractConnection
         return Uni.createFrom().item(Unchecked.supplier(() -> {
             try {
                 KeyValue keyValue = connection.keyValue(bucketName);
-                return Optional.ofNullable(keyValue.get(key)).map(value -> messageFactory.decode(value.getValue(), valueType))
+                return Optional.ofNullable(keyValue.get(key)).map(value -> payloadMapper.decode(value.getValue(), valueType))
                         .orElse(null);
             } catch (IOException | JetStreamApiException e) {
                 throw new KeyValueException(e);
@@ -138,7 +142,7 @@ public class MessageConnection extends AbstractConnection
         return Uni.createFrom().<Void> item(Unchecked.supplier(() -> {
             try {
                 KeyValue keyValue = connection.keyValue(bucketName);
-                keyValue.put(key, messageFactory.toByteArray(value));
+                keyValue.put(key, payloadMapper.toByteArray(value));
                 return null;
             } catch (IOException | JetStreamApiException e) {
                 throw new KeyValueException(e);
@@ -168,7 +172,7 @@ public class MessageConnection extends AbstractConnection
                 final var jetStream = connection.jetStream();
                 final var streamContext = jetStream.getStreamContext(streamName);
                 final var messageInfo = streamContext.getMessage(sequence);
-                emitter.complete(new JetStreamMessage<>(messageInfo, messageFactory.<T> toPayload(messageInfo).orElse(null)));
+                emitter.complete(new JetStreamMessage<>(messageInfo, payloadMapper.<T> toPayload(messageInfo).orElse(null)));
             } catch (IOException | JetStreamApiException e) {
                 emitter.fail(e);
             }
@@ -245,8 +249,7 @@ public class MessageConnection extends AbstractConnection
                     }
                 }
             } catch (Throwable failure) {
-                logger.errorf(failure, "Failed to fetch message: %s", failure.getMessage());
-                throw new FetchException(failure);
+                throw new MessageNotFoundException(failure);
             }
         }))
                 .emitOn(context::runOnContext);

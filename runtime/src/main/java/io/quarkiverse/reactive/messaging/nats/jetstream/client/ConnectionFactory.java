@@ -12,6 +12,7 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.Pus
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.PushSubscribeOptionsFactory;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ReaderConsumerConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.MessageFactory;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.PayloadMapper;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.vertx.PushSubscribeMessageConnection;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.vertx.ReaderMessageSubscribeConnection;
 import io.quarkiverse.reactive.messaging.nats.jetstream.tracing.JetStreamInstrumenter;
@@ -27,14 +28,17 @@ public class ConnectionFactory {
     private final ExecutionHolder executionHolder;
     private final MessageFactory messageFactory;
     private final JetStreamInstrumenter instrumenter;
+    private final PayloadMapper payloadMapper;
 
     @Inject
     public ConnectionFactory(ExecutionHolder executionHolder,
             MessageFactory messageFactory,
-            JetStreamInstrumenter instrumenter) {
+            JetStreamInstrumenter instrumenter,
+            PayloadMapper payloadMapper) {
         this.executionHolder = executionHolder;
         this.messageFactory = messageFactory;
         this.instrumenter = instrumenter;
+        this.payloadMapper = payloadMapper;
     }
 
     public <T> Uni<? extends MessageSubscribeConnection> subscribe(ConnectionConfiguration connectionConfiguration,
@@ -79,7 +83,7 @@ public class ConnectionFactory {
             ReaderConsumerConfiguration<T> consumerConfiguration,
             Context context) {
         return Uni.createFrom().item(Unchecked.supplier(() -> new ReaderMessageSubscribeConnection<>(connectionConfiguration,
-                connectionListener, context, instrumenter, consumerConfiguration, messageFactory)))
+                connectionListener, context, instrumenter, consumerConfiguration, messageFactory, payloadMapper)))
                 .emitOn(context::runOnContext);
     }
 
@@ -89,7 +93,8 @@ public class ConnectionFactory {
             PushSubscribeOptionsFactory optionsFactory,
             Context context) {
         return Uni.createFrom().item(Unchecked.supplier(() -> new PushSubscribeMessageConnection<>(connectionConfiguration,
-                connectionListener, context, instrumenter, consumerConfiguration, messageFactory, optionsFactory)))
+                connectionListener, context, instrumenter, consumerConfiguration, messageFactory, payloadMapper,
+                optionsFactory)))
                 .emitOn(context::runOnContext);
     }
 
@@ -104,7 +109,7 @@ public class ConnectionFactory {
                 .item(Unchecked
                         .supplier(() -> new io.quarkiverse.reactive.messaging.nats.jetstream.client.vertx.MessageConnection(
                                 connectionConfiguration,
-                                connectionListener, messageFactory, context, instrumenter)))
+                                connectionListener, messageFactory, context, instrumenter, payloadMapper)))
                 .emitOn(context::runOnContext);
     }
 

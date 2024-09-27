@@ -19,6 +19,7 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.Con
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.PullSubscribeOptionsFactory;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ReaderConsumerConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.MessageFactory;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.PayloadMapper;
 import io.quarkiverse.reactive.messaging.nats.jetstream.tracing.JetStreamInstrumenter;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
@@ -36,8 +37,9 @@ public class ReaderMessageSubscribeConnection<K> extends MessageConnection imple
             Context context,
             JetStreamInstrumenter instrumenter,
             ReaderConsumerConfiguration<K> consumerConfiguration,
-            MessageFactory messageFactory) throws ConnectionException {
-        super(connectionConfiguration, connectionListener, messageFactory, context, instrumenter);
+            MessageFactory messageFactory,
+            PayloadMapper payloadMapper) throws ConnectionException {
+        super(connectionConfiguration, connectionListener, messageFactory, context, instrumenter, payloadMapper);
         this.consumerConfiguration = consumerConfiguration;
         try {
             final var jetStream = connection.jetStream();
