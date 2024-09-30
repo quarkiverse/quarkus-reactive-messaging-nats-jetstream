@@ -234,21 +234,21 @@ public class MessageConnection extends AbstractConnection
 
     private Uni<io.nats.client.Message> nextMessage(final ConsumerContext consumerContext,
             final Duration timeout) {
-        return Uni.createFrom().item(Unchecked.supplier(() -> {
+        return Uni.createFrom().<io.nats.client.Message> emitter(emitter -> {
             try {
                 try (final var fetchConsumer = fetchConsumer(consumerContext, timeout)) {
                     final var message = fetchConsumer.nextMessage();
                     if (message != null) {
-                        return message;
+                        emitter.complete(message);
                     } else {
-                        throw new MessageNotFoundException();
+                        emitter.fail(new MessageNotFoundException());
                     }
                 }
             } catch (Throwable failure) {
                 logger.errorf(failure, "Failed to fetch message: %s", failure.getMessage());
-                throw new FetchException(failure);
+                emitter.fail(new FetchException(failure));
             }
-        }))
+        })
                 .emitOn(context::runOnContext);
     }
 
