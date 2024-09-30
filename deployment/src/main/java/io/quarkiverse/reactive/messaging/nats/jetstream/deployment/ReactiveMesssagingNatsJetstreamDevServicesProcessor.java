@@ -138,7 +138,7 @@ public class ReactiveMesssagingNatsJetstreamDevServicesProcessor {
             return null;
         }
 
-        if (!dockerStatusBuildItem.isDockerAvailable()) {
+        if (!dockerStatusBuildItem.isContainerRuntimeAvailable()) {
             logger.warn("Docker isn't working, please configure the NATS JetStream broker location.");
             return null;
         }
