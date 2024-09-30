@@ -28,7 +28,7 @@ public class MessagePullPublisherProcessor implements MessagePublisherProcessor 
             final MessagePullPublisherConfiguration<?> configuration) {
         this.configuration = configuration;
         this.connectionFactory = connectionFactory;
-        this.status = new AtomicReference<>(new Status(false, "Not connected", ConnectionEvent.Closed));
+        this.status = new AtomicReference<>(new Status(true, "Not connected", ConnectionEvent.Closed));
         this.connection = new AtomicReference<>();
         this.connectionConfiguration = connectionConfiguration;
     }
