@@ -1,4 +1,0 @@
-ignore:
-  - dependency-name: "io.opentelemetry.instrumentation:opentelemetry-instrumentation-api-semconv"
-  - dependency-name: "io.smallrye.reactive:smallrye-reactive-messaging-otel"
-  - dependency-name: "io.smallrye.reactive:smallrye-connector-attribute-processor"
