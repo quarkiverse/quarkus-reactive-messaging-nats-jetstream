@@ -32,7 +32,7 @@ public class MessagePushPublisherProcessor implements MessagePublisherProcessor 
         this.connectionConfiguration = connectionConfiguration;
         this.configuration = configuration;
         this.connectionFactory = connectionFactory;
-        this.status = new AtomicReference<>(new Status(false, "Not connected", ConnectionEvent.Closed));
+        this.status = new AtomicReference<>(new Status(true, "Not connected", ConnectionEvent.Closed));
         this.optionsFactory = new PushSubscribeOptionsFactory();
         this.connection = new AtomicReference<>();
     }
