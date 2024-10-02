@@ -11,7 +11,6 @@ import java.util.concurrent.TimeoutException;
 
 import org.eclipse.microprofile.reactive.messaging.Message;
 import org.jboss.logging.Logger;
-import org.mapstruct.factory.Mappers;
 
 import io.nats.client.*;
 import io.nats.client.api.ConsumerInfo;
@@ -54,12 +53,14 @@ public class DefaultConnection implements Connection {
             final Context context,
             final MessageMapper messageMapper,
             final PayloadMapper payloadMapper,
+            final ConsumerMapper consumerMapper,
+            final StreamStateMapper streamStateMapper,
             final JetStreamInstrumenter instrumenter) throws ConnectionException {
         this.connection = connect(configuration);
         this.listeners = new ArrayList<>(List.of(connectionListener));
         this.context = context;
-        this.streamStateMapper = Mappers.getMapper(StreamStateMapper.class);
-        this.consumerMapper = Mappers.getMapper(ConsumerMapper.class);
+        this.streamStateMapper = streamStateMapper;
+        this.consumerMapper = consumerMapper;
         this.messageMapper = messageMapper;
         this.payloadMapper = payloadMapper;
         this.instrumenter = instrumenter;

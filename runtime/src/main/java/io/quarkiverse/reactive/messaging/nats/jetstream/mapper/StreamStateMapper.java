@@ -4,10 +4,8 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.StreamState;
-import io.quarkus.runtime.annotations.RegisterForReflection;
 
-@Mapper
-@RegisterForReflection(targets = StreamStateMapperImpl.class)
+@Mapper(componentModel = "cdi")
 public interface StreamStateMapper {
 
     @Mapping(source = "msgCount", target = "messages")

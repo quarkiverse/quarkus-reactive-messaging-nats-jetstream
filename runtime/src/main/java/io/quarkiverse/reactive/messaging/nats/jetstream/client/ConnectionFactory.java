@@ -8,8 +8,10 @@ import jakarta.inject.Inject;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ConnectionConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.PushConsumerConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ReaderConsumerConfiguration;
+import io.quarkiverse.reactive.messaging.nats.jetstream.mapper.ConsumerMapper;
 import io.quarkiverse.reactive.messaging.nats.jetstream.mapper.MessageMapper;
 import io.quarkiverse.reactive.messaging.nats.jetstream.mapper.PayloadMapper;
+import io.quarkiverse.reactive.messaging.nats.jetstream.mapper.StreamStateMapper;
 import io.quarkiverse.reactive.messaging.nats.jetstream.tracing.JetStreamInstrumenter;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.unchecked.Unchecked;
@@ -23,16 +25,22 @@ public class ConnectionFactory {
     private final MessageMapper messageMapper;
     private final JetStreamInstrumenter instrumenter;
     private final PayloadMapper payloadMapper;
+    private final ConsumerMapper consumerMapper;
+    private final StreamStateMapper streamStateMapper;
 
     @Inject
     public ConnectionFactory(ExecutionHolder executionHolder,
             MessageMapper messageMapper,
             JetStreamInstrumenter instrumenter,
-            PayloadMapper payloadMapper) {
+            PayloadMapper payloadMapper,
+            ConsumerMapper consumerMapper,
+            StreamStateMapper streamStateMapper) {
         this.executionHolder = executionHolder;
         this.messageMapper = messageMapper;
         this.instrumenter = instrumenter;
         this.payloadMapper = payloadMapper;
+        this.consumerMapper = consumerMapper;
+        this.streamStateMapper = streamStateMapper;
     }
 
     public <T> Uni<? extends SubscribeConnection> create(ConnectionConfiguration connectionConfiguration,
@@ -42,7 +50,7 @@ public class ConnectionFactory {
                 .onItem()
                 .transformToUni(context -> Uni.createFrom()
                         .item(Unchecked.supplier(() -> new DefaultConnection(connectionConfiguration, connectionListener,
-                                context, messageMapper, payloadMapper, instrumenter))))
+                                context, messageMapper, payloadMapper, consumerMapper, streamStateMapper, instrumenter))))
                 .onItem().transformToUni(connection -> Uni.createFrom()
                         .item(Unchecked.supplier(() -> new ReaderSubscribeConnection<>(connection, consumerConfiguration))));
     }
@@ -55,7 +63,7 @@ public class ConnectionFactory {
                 .onItem()
                 .transformToUni(context -> Uni.createFrom()
                         .item(Unchecked.supplier(() -> new DefaultConnection(connectionConfiguration, connectionListener,
-                                context, messageMapper, payloadMapper, instrumenter))))
+                                context, messageMapper, payloadMapper, consumerMapper, streamStateMapper, instrumenter))))
                 .onItem().transformToUni(connection -> Uni.createFrom()
                         .item(Unchecked.supplier(() -> new PushSubscribeConnection<>(connection, consumerConfiguration))));
     }
@@ -65,7 +73,8 @@ public class ConnectionFactory {
         return getContext()
                 .onItem().transformToUni(
                         context -> Uni.createFrom().item(Unchecked.supplier(() -> new DefaultConnection(connectionConfiguration,
-                                connectionListener, context, messageMapper, payloadMapper, instrumenter))));
+                                connectionListener, context, messageMapper, payloadMapper, consumerMapper, streamStateMapper,
+                                instrumenter))));
 
     }
 
