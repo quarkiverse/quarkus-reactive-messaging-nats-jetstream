@@ -1,10 +1,10 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.mapper;
 
-import io.quarkus.runtime.annotations.RegisterForReflection;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.StreamState;
+import io.quarkus.runtime.annotations.RegisterForReflection;
 
 @Mapper
 @RegisterForReflection(targets = StreamStateMapperImpl.class)
