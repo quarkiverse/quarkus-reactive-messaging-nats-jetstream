@@ -17,7 +17,6 @@ import org.jboss.logging.Logger;
 import io.quarkiverse.reactive.messaging.nats.NatsConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.Connection;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.ConnectionFactory;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.MessageConnection;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ConnectionConfiguration;
 import io.smallrye.mutiny.Uni;
 
@@ -26,7 +25,7 @@ public class DeadLetterConsumingBean {
     private final static Logger logger = Logger.getLogger(DeadLetterConsumingBean.class);
 
     private final AtomicReference<Data> lastData;
-    private final AtomicReference<MessageConnection> connection;
+    private final AtomicReference<Connection> connection;
     private final NatsConfiguration natsConfiguration;
     private final ConnectionFactory connectionFactory;
 
@@ -70,7 +69,7 @@ public class DeadLetterConsumingBean {
         }
     }
 
-    public Uni<Void> deadLetter(MessageConnection connection, Message<Advisory> message) {
+    public Uni<Void> deadLetter(Connection connection, Message<Advisory> message) {
         logger.infof("Received dead letter on dead-letter-consumer channel: %s", message);
         final var advisory = message.getPayload();
         return connection.<Data> resolve(advisory.getStream(), advisory.getStream_seq())
@@ -79,12 +78,12 @@ public class DeadLetterConsumingBean {
                 .onFailure().recoverWithUni(throwable -> Uni.createFrom().completionStage(message.nack(throwable)));
     }
 
-    private Uni<MessageConnection> getOrEstablishConnection() {
+    private Uni<Connection> getOrEstablishConnection() {
         return Uni.createFrom().item(() -> Optional.ofNullable(connection.get())
                 .filter(Connection::isConnected)
                 .orElse(null))
                 .onItem().ifNull()
-                .switchTo(() -> connectionFactory.message(ConnectionConfiguration.of(natsConfiguration), (event, message) -> {
+                .switchTo(() -> connectionFactory.create(ConnectionConfiguration.of(natsConfiguration), (event, message) -> {
                 }))
                 .onItem().invoke(this.connection::set);
     }

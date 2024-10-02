@@ -4,7 +4,7 @@ import org.eclipse.microprofile.reactive.messaging.Message;
 
 import io.smallrye.mutiny.Multi;
 
-public interface MessageSubscribeConnection extends MessageConnection {
+public interface SubscribeConnection extends Connection {
 
     Multi<Message<?>> subscribe();
 

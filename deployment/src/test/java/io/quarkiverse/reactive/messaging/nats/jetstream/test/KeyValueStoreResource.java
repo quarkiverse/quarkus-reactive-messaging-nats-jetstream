@@ -15,7 +15,6 @@ import jakarta.ws.rs.*;
 import io.quarkiverse.reactive.messaging.nats.NatsConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.Connection;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.ConnectionFactory;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.MessageConnection;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ConnectionConfiguration;
 import io.smallrye.mutiny.Uni;
 
@@ -25,7 +24,7 @@ import io.smallrye.mutiny.Uni;
 public class KeyValueStoreResource {
     private final ConnectionFactory connectionFactory;
     private final NatsConfiguration natsConfiguration;
-    private final AtomicReference<MessageConnection> connection;
+    private final AtomicReference<Connection> connection;
 
     @Inject
     public KeyValueStoreResource(ConnectionFactory connectionFactory, NatsConfiguration natsConfiguration) {
@@ -66,25 +65,26 @@ public class KeyValueStoreResource {
         }
     }
 
-    private Uni<Data> getValue(MessageConnection connection, String key) {
+    private Uni<Data> getValue(Connection connection, String key) {
         return connection.getKeyValue("test", key, Data.class)
-                .onItem().ifNull().failWith(new NotFoundException());
+                .onItem().ifNull().failWith(new NotFoundException())
+                .onFailure().transform(failure -> new NotFoundException(failure.getMessage()));
     }
 
-    public Uni<Void> putValue(MessageConnection keyValueConnection, String key, Data data) {
+    public Uni<Void> putValue(Connection keyValueConnection, String key, Data data) {
         return keyValueConnection.putKeyValue("test", key, data);
     }
 
-    public Uni<Void> deleteValue(MessageConnection connection, String key) {
+    public Uni<Void> deleteValue(Connection connection, String key) {
         return connection.deleteKeyValue("test", key);
     }
 
-    private Uni<MessageConnection> getOrEstablishConnection() {
+    private Uni<Connection> getOrEstablishConnection() {
         return Uni.createFrom().item(() -> Optional.ofNullable(connection.get())
                 .filter(Connection::isConnected)
                 .orElse(null))
                 .onItem().ifNull()
-                .switchTo(() -> connectionFactory.message(ConnectionConfiguration.of(natsConfiguration), (event, message) -> {
+                .switchTo(() -> connectionFactory.create(ConnectionConfiguration.of(natsConfiguration), (event, message) -> {
                 }))
                 .onItem().invoke(this.connection::set);
     }

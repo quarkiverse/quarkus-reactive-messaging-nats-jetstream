@@ -12,8 +12,6 @@ import io.nats.client.api.ReplayPolicy;
 
 public interface ConsumerConfiguration<T> {
 
-    ConsumerType type();
-
     Optional<String> name();
 
     String stream();
@@ -34,9 +32,9 @@ public interface ConsumerConfiguration<T> {
 
     Optional<Duration> inactiveThreshold();
 
-    Optional<Integer> maxAckPending();
+    Optional<Long> maxAckPending();
 
-    Optional<Integer> maxDeliver();
+    Optional<Long> maxDeliver();
 
     Optional<ReplayPolicy> replayPolicy();
 

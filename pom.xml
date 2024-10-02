@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>io.quarkiverse</groupId>
@@ -18,10 +19,11 @@
     </modules>
     <scm>
         <connection>scm:git:git@github.com:quarkiverse/quarkus-reactive-messaging-nats-jetstream.git</connection>
-        <developerConnection>scm:git:git@github.com:quarkiverse/quarkus-reactive-messaging-nats-jetstream.git</developerConnection>
+        <developerConnection>scm:git:git@github.com:quarkiverse/quarkus-reactive-messaging-nats-jetstream.git
+        </developerConnection>
         <url>https://github.com/quarkiverse/quarkus-reactive-messaging-nats-jetstream</url>
-      <tag>HEAD</tag>
-  </scm>
+        <tag>HEAD</tag>
+    </scm>
     <properties>
         <compiler-plugin.version>3.13.0</compiler-plugin.version>
         <maven.compiler.release>17</maven.compiler.release>
@@ -36,7 +38,9 @@
         <microprofile-config-api.version>3.1</microprofile-config-api.version>
         <assertj-core.version>3.26.3</assertj-core.version>
         <lombok.version>1.18.34</lombok.version>
-        <opentelemetry-instrumentation-api-semconv.version>1.26.0-alpha</opentelemetry-instrumentation-api-semconv.version>
+        <opentelemetry-instrumentation-api-semconv.version>1.26.0-alpha
+        </opentelemetry-instrumentation-api-semconv.version>
+        <org.mapstruct.version>1.6.2</org.mapstruct.version>
     </properties>
     <dependencyManagement>
         <dependencies>
@@ -71,6 +75,11 @@
                 <groupId>org.projectlombok</groupId>
                 <artifactId>lombok</artifactId>
                 <version>${lombok.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.mapstruct</groupId>
+                <artifactId>mapstruct</artifactId>
+                <version>${org.mapstruct.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.assertj</groupId>

@@ -21,7 +21,7 @@ public class MessageSubscriberProcessor implements MessageProcessor, ConnectionL
     private final MessageSubscriberConfiguration configuration;
     private final ConnectionFactory connectionFactory;
     private final AtomicReference<Status> status;
-    private final AtomicReference<MessageConnection> connection;
+    private final AtomicReference<Connection> connection;
 
     public MessageSubscriberProcessor(
             final ConnectionConfiguration connectionConfiguration,
@@ -82,11 +82,11 @@ public class MessageSubscriberProcessor implements MessageProcessor, ConnectionL
                 .onItem().transformToUni(connection -> connection.publish(message, configuration));
     }
 
-    private Uni<? extends MessageConnection> getOrEstablishConnection() {
+    private Uni<? extends Connection> getOrEstablishConnection() {
         return Uni.createFrom().item(() -> Optional.ofNullable(connection.get())
                 .filter(Connection::isConnected)
                 .orElse(null))
-                .onItem().ifNull().switchTo(() -> connectionFactory.message(connectionConfiguration, this))
+                .onItem().ifNull().switchTo(() -> connectionFactory.create(connectionConfiguration, this))
                 .onItem().invoke(this.connection::set);
     }
 }

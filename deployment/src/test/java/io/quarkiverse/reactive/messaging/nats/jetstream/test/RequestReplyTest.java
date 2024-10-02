@@ -11,8 +11,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.administration.StreamState;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.administration.SubjectState;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.StreamState;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.SubjectState;
 import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
 import io.restassured.filter.log.RequestLoggingFilter;
@@ -77,7 +77,7 @@ public class RequestReplyTest {
                 .then().statusCode(200).extract().as(StreamState.class);
 
         assertThat(streamState).isNotNull();
-        assertThat(streamState.subjects().stream().map(SubjectState::name)).contains("events." + subject);
+        assertThat(streamState.subjectStates().stream().map(SubjectState::name)).contains("events." + subject);
 
         final var result = given()
                 .filters(new RequestLoggingFilter(), new ResponseLoggingFilter())

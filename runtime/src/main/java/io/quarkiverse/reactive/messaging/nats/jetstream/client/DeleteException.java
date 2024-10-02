@@ -1,4 +1,4 @@
-package io.quarkiverse.reactive.messaging.nats.jetstream.client.administration;
+package io.quarkiverse.reactive.messaging.nats.jetstream.client;
 
 public class DeleteException extends RuntimeException {
 
