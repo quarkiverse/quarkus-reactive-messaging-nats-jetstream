@@ -49,7 +49,7 @@ public class DefaultConnection implements Connection {
     private final PayloadMapper payloadMapper;
     private final JetStreamInstrumenter instrumenter;
 
-    public DefaultConnection(final ConnectionConfiguration configuration,
+    DefaultConnection(final ConnectionConfiguration configuration,
             final ConnectionListener connectionListener,
             final Context context,
             final MessageMapper messageMapper,
@@ -94,7 +94,7 @@ public class DefaultConnection implements Connection {
     }
 
     @Override
-    public void close() throws Exception {
+    public void close() {
         try {
             connection.close();
         } catch (Throwable throwable) {

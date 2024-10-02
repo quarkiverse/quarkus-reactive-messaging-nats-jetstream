@@ -28,7 +28,7 @@ public class ReaderSubscribeConnection<K> implements SubscribeConnection {
     private final io.nats.client.JetStreamReader reader;
     private final JetStreamSubscription subscription;
 
-    public ReaderSubscribeConnection(DefaultConnection delegate,
+    ReaderSubscribeConnection(DefaultConnection delegate,
             ReaderConsumerConfiguration<K> consumerConfiguration) throws ConnectionException {
         this.delegate = delegate;
         this.consumerConfiguration = consumerConfiguration;

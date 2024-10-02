@@ -5,5 +5,5 @@ public enum ConnectionEvent {
     Connected,
     Closed,
     Reconnected,
-    CommunicationFailed;
+    CommunicationFailed
 }
