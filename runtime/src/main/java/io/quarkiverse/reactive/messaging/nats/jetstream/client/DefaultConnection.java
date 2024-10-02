@@ -1,7 +1,7 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client;
 
 import static io.nats.client.Connection.Status.CONNECTED;
-import static io.quarkiverse.reactive.messaging.nats.jetstream.mapper.MessageMapper.MESSAGE_TYPE_HEADER;
+import static io.quarkiverse.reactive.messaging.nats.jetstream.mapper.DefaultMessageMapper.MESSAGE_TYPE_HEADER;
 import static io.smallrye.reactive.messaging.tracing.TracingUtils.traceOutgoing;
 
 import java.io.IOException;

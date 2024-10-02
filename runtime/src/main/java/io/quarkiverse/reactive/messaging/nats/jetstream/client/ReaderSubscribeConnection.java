@@ -202,13 +202,14 @@ public class ReaderSubscribeConnection<K> implements SubscribeConnection {
         }
     }
 
+    @SuppressWarnings("unchecked")
     private Multi<org.eclipse.microprofile.reactive.messaging.Message<K>> createMulti(io.nats.client.Message message,
             boolean tracingEnabled, Class<?> payloadType, Context context) {
         if (message == null || message.getData() == null) {
             return Multi.createFrom().empty();
         } else {
             return Multi.createFrom()
-                    .item(() -> delegate.messageMapper().of(message, tracingEnabled, payloadType, context,
+                    .item(() -> delegate.messageMapper().of(message, tracingEnabled, (Class<K>) payloadType, context,
                             new ExponentialBackoff(
                                     consumerConfiguration.consumerConfiguration().exponentialBackoff(),
                                     consumerConfiguration.consumerConfiguration().exponentialBackoffMaxDuration()),

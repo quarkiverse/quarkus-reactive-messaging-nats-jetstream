@@ -12,7 +12,7 @@ import io.nats.client.api.DeliverPolicy;
 import io.nats.client.api.ReplayPolicy;
 import io.quarkiverse.reactive.messaging.nats.jetstream.JetStreamConnectorIncomingConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ConsumerConfiguration;
-import io.quarkiverse.reactive.messaging.nats.jetstream.mapper.PayloadMapper;
+import io.quarkiverse.reactive.messaging.nats.jetstream.mapper.DefaultPayloadMapper;
 
 public class DefaultMessagePushPublisherConfiguration<T> implements MessagePushPublisherConfiguration<T> {
     private final JetStreamConnectorIncomingConfiguration configuration;
@@ -181,7 +181,7 @@ public class DefaultMessagePushPublisherConfiguration<T> implements MessagePushP
 
             @Override
             public Optional<Class<T>> payloadType() {
-                return configuration.getPayloadType().map(PayloadMapper::loadClass);
+                return configuration.getPayloadType().map(DefaultPayloadMapper::loadClass);
             }
 
             @Override

@@ -8,8 +8,8 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.JetStreamConnector;
 import io.quarkiverse.reactive.messaging.nats.jetstream.JetStreamRecorder;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.ConnectionFactory;
 import io.quarkiverse.reactive.messaging.nats.jetstream.mapper.ConsumerMapperImpl;
-import io.quarkiverse.reactive.messaging.nats.jetstream.mapper.MessageMapper;
-import io.quarkiverse.reactive.messaging.nats.jetstream.mapper.PayloadMapper;
+import io.quarkiverse.reactive.messaging.nats.jetstream.mapper.DefaultMessageMapper;
+import io.quarkiverse.reactive.messaging.nats.jetstream.mapper.DefaultPayloadMapper;
 import io.quarkiverse.reactive.messaging.nats.jetstream.mapper.StreamStateMapperImpl;
 import io.quarkiverse.reactive.messaging.nats.jetstream.tracing.JetStreamInstrumenter;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
@@ -54,8 +54,8 @@ class ReactiveMesssagingNatsJetstreamProcessor {
         buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(JetStreamInstrumenter.class));
         buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(ExecutionHolder.class));
         buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(ConnectionFactory.class));
-        buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(PayloadMapper.class));
-        buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(MessageMapper.class));
+        buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(DefaultPayloadMapper.class));
+        buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(DefaultMessageMapper.class));
         buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(ConsumerMapperImpl.class));
         buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(StreamStateMapperImpl.class));
     }
