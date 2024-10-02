@@ -12,8 +12,7 @@ import io.nats.client.api.DeliverPolicy;
 import io.nats.client.api.ReplayPolicy;
 import io.quarkiverse.reactive.messaging.nats.jetstream.JetStreamConnectorIncomingConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ConsumerConfiguration;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ConsumerType;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.PayloadMapper;
+import io.quarkiverse.reactive.messaging.nats.jetstream.mapper.PayloadMapper;
 
 public class DefaultMessagePullPublisherConfiguration<T> implements MessagePullPublisherConfiguration<T> {
     private final JetStreamConnectorIncomingConfiguration configuration;
@@ -66,11 +65,6 @@ public class DefaultMessagePullPublisherConfiguration<T> implements MessagePullP
             }
 
             @Override
-            public ConsumerType type() {
-                return ConsumerType.Pull;
-            }
-
-            @Override
             public String stream() {
                 return configuration.getStream().orElseThrow(() -> new IllegalStateException("No stream configured"));
             }
@@ -112,12 +106,12 @@ public class DefaultMessagePullPublisherConfiguration<T> implements MessagePullP
             }
 
             @Override
-            public Optional<Integer> maxAckPending() {
+            public Optional<Long> maxAckPending() {
                 return configuration.getMaxAckPending();
             }
 
             @Override
-            public Optional<Integer> maxDeliver() {
+            public Optional<Long> maxDeliver() {
                 return configuration.getMaxDeliver();
             }
 

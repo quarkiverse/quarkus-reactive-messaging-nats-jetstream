@@ -1,4 +1,4 @@
-package io.quarkiverse.reactive.messaging.nats.jetstream.client.message;
+package io.quarkiverse.reactive.messaging.nats.jetstream.mapper;
 
 import static io.smallrye.reactive.messaging.tracing.TracingUtils.traceIncoming;
 
@@ -16,7 +16,7 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.tracing.JetStreamTrace;
 import io.vertx.mutiny.core.Context;
 
 @ApplicationScoped
-public class MessageFactory {
+public class MessageMapper {
 
     public static final String MESSAGE_TYPE_HEADER = "message.type";
 
@@ -24,14 +24,14 @@ public class MessageFactory {
     private final JetStreamInstrumenter instrumenter;
 
     @Inject
-    public MessageFactory(PayloadMapper payloadMapper,
+    public MessageMapper(PayloadMapper payloadMapper,
             JetStreamInstrumenter instrumenter) {
         this.payloadMapper = payloadMapper;
         this.instrumenter = instrumenter;
     }
 
     @SuppressWarnings("unchecked")
-    public <T> org.eclipse.microprofile.reactive.messaging.Message<T> create(io.nats.client.Message message,
+    public <T> org.eclipse.microprofile.reactive.messaging.Message<T> of(io.nats.client.Message message,
             boolean tracingEnabled,
             Class<?> payloadType,
             Context context,
@@ -39,10 +39,10 @@ public class MessageFactory {
             Duration ackTimeout) {
         try {
             final var incomingMessage = payloadType != null
-                    ? new JetStreamIncomingMessage<>(message, payloadMapper.toPayload(message, payloadType), context,
+                    ? new JetStreamIncomingMessage<>(message, payloadMapper.of(message, payloadType), context,
                             exponentialBackoff, ackTimeout)
                     : new JetStreamIncomingMessage<>(message,
-                            payloadMapper.toPayload(message).orElseGet(() -> message.getData()),
+                            payloadMapper.of(message).orElseGet(() -> message.getData()),
                             context,
                             exponentialBackoff, ackTimeout);
             if (tracingEnabled) {

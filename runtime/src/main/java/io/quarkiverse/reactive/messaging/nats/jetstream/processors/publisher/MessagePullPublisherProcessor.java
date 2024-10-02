@@ -8,7 +8,7 @@ import org.jboss.logging.Logger;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.Connection;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.ConnectionEvent;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.ConnectionFactory;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.MessageSubscribeConnection;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.SubscribeConnection;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ConnectionConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.processors.Status;
 import io.smallrye.mutiny.Multi;
@@ -20,7 +20,7 @@ public class MessagePullPublisherProcessor implements MessagePublisherProcessor 
     private final MessagePullPublisherConfiguration<?> configuration;
     private final ConnectionFactory connectionFactory;
     private final AtomicReference<Status> status;
-    private final AtomicReference<MessageSubscribeConnection> connection;
+    private final AtomicReference<SubscribeConnection> connection;
     private final ConnectionConfiguration connectionConfiguration;
 
     public MessagePullPublisherProcessor(final ConnectionFactory connectionFactory,
@@ -58,7 +58,7 @@ public class MessagePullPublisherProcessor implements MessagePublisherProcessor 
     @Override
     public Multi<org.eclipse.microprofile.reactive.messaging.Message<?>> publisher() {
         return getOrEstablishConnection()
-                .onItem().transformToMulti(MessageSubscribeConnection::subscribe)
+                .onItem().transformToMulti(SubscribeConnection::subscribe)
                 .onFailure().invoke(throwable -> {
                     if (!isConsumerAlreadyInUse(throwable)) {
                         logger.errorf(throwable, "Failed to publish messages: %s", throwable.getMessage());
@@ -79,11 +79,11 @@ public class MessagePullPublisherProcessor implements MessagePublisherProcessor 
         }
     }
 
-    private Uni<MessageSubscribeConnection> getOrEstablishConnection() {
+    private Uni<SubscribeConnection> getOrEstablishConnection() {
         return Uni.createFrom().item(() -> Optional.ofNullable(connection.get())
                 .filter(Connection::isConnected)
                 .orElse(null))
-                .onItem().ifNull().switchTo(() -> connectionFactory.subscribe(connectionConfiguration, this, configuration))
+                .onItem().ifNull().switchTo(() -> connectionFactory.create(connectionConfiguration, this, configuration))
                 .onItem().invoke(this.connection::set);
     }
 }

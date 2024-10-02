@@ -5,16 +5,11 @@ import java.util.Optional;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
-import org.jboss.logging.Logger;
-
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ConnectionConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.PushConsumerConfiguration;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.PushSubscribeOptionsFactory;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ReaderConsumerConfiguration;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.MessageFactory;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.PayloadMapper;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.vertx.PushSubscribeMessageConnection;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.vertx.ReaderMessageSubscribeConnection;
+import io.quarkiverse.reactive.messaging.nats.jetstream.mapper.MessageMapper;
+import io.quarkiverse.reactive.messaging.nats.jetstream.mapper.PayloadMapper;
 import io.quarkiverse.reactive.messaging.nats.jetstream.tracing.JetStreamInstrumenter;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.unchecked.Unchecked;
@@ -24,103 +19,62 @@ import io.vertx.mutiny.core.Vertx;
 
 @ApplicationScoped
 public class ConnectionFactory {
-    private static final Logger logger = Logger.getLogger(ConnectionFactory.class);
     private final ExecutionHolder executionHolder;
-    private final MessageFactory messageFactory;
+    private final MessageMapper messageMapper;
     private final JetStreamInstrumenter instrumenter;
     private final PayloadMapper payloadMapper;
 
     @Inject
     public ConnectionFactory(ExecutionHolder executionHolder,
-            MessageFactory messageFactory,
+            MessageMapper messageMapper,
             JetStreamInstrumenter instrumenter,
             PayloadMapper payloadMapper) {
         this.executionHolder = executionHolder;
-        this.messageFactory = messageFactory;
+        this.messageMapper = messageMapper;
         this.instrumenter = instrumenter;
         this.payloadMapper = payloadMapper;
     }
 
-    public <T> Uni<? extends MessageSubscribeConnection> subscribe(ConnectionConfiguration connectionConfiguration,
+    public <T> Uni<? extends SubscribeConnection> create(ConnectionConfiguration connectionConfiguration,
             ConnectionListener connectionListener,
             ReaderConsumerConfiguration<T> consumerConfiguration) {
         return getContext()
-                .onFailure().invoke(failure -> logger.warn(failure.getMessage(), failure))
-                .onItem().transformToUni(
-                        context -> subscribe(connectionConfiguration, connectionListener, consumerConfiguration, context));
+                .onItem()
+                .transformToUni(context -> Uni.createFrom()
+                        .item(Unchecked.supplier(() -> new DefaultConnection(connectionConfiguration, connectionListener,
+                                context, messageMapper, payloadMapper, instrumenter))))
+                .onItem().transformToUni(connection -> Uni.createFrom()
+                        .item(Unchecked.supplier(() -> new ReaderSubscribeConnection<>(connection, consumerConfiguration))));
     }
 
-    public <T> Uni<? extends MessageSubscribeConnection> subscribe(ConnectionConfiguration connectionConfiguration,
+    public <T> Uni<? extends SubscribeConnection> create(ConnectionConfiguration connectionConfiguration,
             ConnectionListener connectionListener,
-            PushConsumerConfiguration<T> consumerConfiguration,
-            PushSubscribeOptionsFactory optionsFactory) {
+            PushConsumerConfiguration<T> consumerConfiguration) {
+
         return getContext()
-                .onFailure().invoke(failure -> logger.warn(failure.getMessage(), failure))
-                .onItem().transformToUni(context -> subscribe(connectionConfiguration, connectionListener,
-                        consumerConfiguration, optionsFactory, context));
+                .onItem()
+                .transformToUni(context -> Uni.createFrom()
+                        .item(Unchecked.supplier(() -> new DefaultConnection(connectionConfiguration, connectionListener,
+                                context, messageMapper, payloadMapper, instrumenter))))
+                .onItem().transformToUni(connection -> Uni.createFrom()
+                        .item(Unchecked.supplier(() -> new PushSubscribeConnection<>(connection, consumerConfiguration))));
     }
 
-    public Uni<? extends AdministrationConnection> administration(ConnectionConfiguration connectionConfiguration,
+    public Uni<? extends Connection> create(ConnectionConfiguration connectionConfiguration,
             ConnectionListener connectionListener) {
         return getContext()
-                .onFailure().invoke(failure -> logger.warn(failure.getMessage(), failure))
-                .onItem().transformToUni(context -> administration(connectionConfiguration, connectionListener, context));
-    }
+                .onItem().transformToUni(
+                        context -> Uni.createFrom().item(Unchecked.supplier(() -> new DefaultConnection(connectionConfiguration,
+                                connectionListener, context, messageMapper, payloadMapper, instrumenter))));
 
-    public Uni<? extends MessageConnection> message(ConnectionConfiguration connectionConfiguration,
-            ConnectionListener connectionListener) {
-        return getContext()
-                .onFailure().invoke(failure -> logger.warn(failure.getMessage(), failure))
-                .onItem().transformToUni(context -> message(connectionConfiguration, connectionListener, context));
     }
 
     private Optional<Vertx> getVertx() {
         return Optional.ofNullable(executionHolder.vertx());
     }
 
-    private <T> Uni<? extends MessageSubscribeConnection> subscribe(ConnectionConfiguration connectionConfiguration,
-            ConnectionListener connectionListener,
-            ReaderConsumerConfiguration<T> consumerConfiguration,
-            Context context) {
-        return Uni.createFrom().item(Unchecked.supplier(() -> new ReaderMessageSubscribeConnection<>(connectionConfiguration,
-                connectionListener, context, instrumenter, consumerConfiguration, messageFactory, payloadMapper)))
-                .emitOn(context::runOnContext);
-    }
-
-    private <T> Uni<? extends MessageSubscribeConnection> subscribe(ConnectionConfiguration connectionConfiguration,
-            ConnectionListener connectionListener,
-            PushConsumerConfiguration<T> consumerConfiguration,
-            PushSubscribeOptionsFactory optionsFactory,
-            Context context) {
-        return Uni.createFrom().item(Unchecked.supplier(() -> new PushSubscribeMessageConnection<>(connectionConfiguration,
-                connectionListener, context, instrumenter, consumerConfiguration, messageFactory, payloadMapper,
-                optionsFactory)))
-                .emitOn(context::runOnContext);
-    }
-
     private Uni<Context> getContext() {
         return Uni.createFrom().item(Unchecked.supplier(
                 () -> getVertx().map(Vertx::getOrCreateContext).orElseThrow(() -> new ContextException("No Vertx available"))));
-    }
-
-    private Uni<? extends MessageConnection> message(ConnectionConfiguration connectionConfiguration,
-            ConnectionListener connectionListener, Context context) {
-        return Uni.createFrom()
-                .item(Unchecked
-                        .supplier(() -> new io.quarkiverse.reactive.messaging.nats.jetstream.client.vertx.MessageConnection(
-                                connectionConfiguration,
-                                connectionListener, messageFactory, context, instrumenter, payloadMapper)))
-                .emitOn(context::runOnContext);
-    }
-
-    private Uni<? extends AdministrationConnection> administration(ConnectionConfiguration connectionConfiguration,
-            ConnectionListener connectionListener, Context context) {
-        return Uni.createFrom()
-                .item(Unchecked
-                        .supplier(
-                                () -> new io.quarkiverse.reactive.messaging.nats.jetstream.client.vertx.AdministrationConnection(
-                                        connectionConfiguration,
-                                        connectionListener, context)))
-                .emitOn(context::runOnContext);
     }
 }

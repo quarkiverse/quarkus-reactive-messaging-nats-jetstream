@@ -14,7 +14,6 @@ import io.nats.client.api.AckPolicy;
 import io.nats.client.api.DeliverPolicy;
 import io.nats.client.api.ReplayPolicy;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ConsumerConfiguration;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ConsumerType;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.PushSubscribeOptionsFactory;
 
 public class MessagePublisherProcessorTest {
@@ -24,7 +23,7 @@ public class MessagePublisherProcessorTest {
         final var durable = "durable";
         final var deleiverGroup = "deliver-group";
         final var backoff = List.of(Duration.parse("PT1S"));
-        final var maxDeliever = 3;
+        final var maxDeliever = 3L;
 
         final var factory = new PushSubscribeOptionsFactory();
         final var options = factory.create(new MessagePushPublisherConfiguration<>() {
@@ -82,10 +81,6 @@ public class MessagePublisherProcessorTest {
             @Override
             public ConsumerConfiguration<Object> consumerConfiguration() {
                 return new ConsumerConfiguration<>() {
-                    @Override
-                    public ConsumerType type() {
-                        return ConsumerType.Push;
-                    }
 
                     @Override
                     public Optional<String> name() {
@@ -153,12 +148,12 @@ public class MessagePublisherProcessorTest {
                     }
 
                     @Override
-                    public Optional<Integer> maxAckPending() {
+                    public Optional<Long> maxAckPending() {
                         return Optional.empty();
                     }
 
                     @Override
-                    public Optional<Integer> maxDeliver() {
+                    public Optional<Long> maxDeliver() {
                         return Optional.of(maxDeliever);
                     }
 

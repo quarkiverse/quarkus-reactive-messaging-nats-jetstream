@@ -5,7 +5,7 @@ import java.util.Optional;
 
 import io.nats.client.ErrorListener;
 import io.quarkiverse.reactive.messaging.nats.NatsConfiguration;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.PayloadMapper;
+import io.quarkiverse.reactive.messaging.nats.jetstream.mapper.PayloadMapper;
 
 class DefaultConnectionConfiguration implements ConnectionConfiguration {
     private final NatsConfiguration configuration;

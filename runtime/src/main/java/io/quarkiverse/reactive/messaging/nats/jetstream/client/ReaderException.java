@@ -1,4 +1,4 @@
-package io.quarkiverse.reactive.messaging.nats.jetstream.client.vertx;
+package io.quarkiverse.reactive.messaging.nats.jetstream.client;
 
 public class ReaderException extends RuntimeException {
 

@@ -17,7 +17,6 @@ import org.jboss.logging.Logger;
 import io.quarkiverse.reactive.messaging.nats.NatsConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.Connection;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.ConnectionFactory;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.MessageConnection;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ConnectionConfiguration;
 import io.smallrye.mutiny.Uni;
 
@@ -29,7 +28,7 @@ public class ExponentialBackoffConsumingBean {
     private final AtomicReference<List<Integer>> maxDeliveries;
     private final NatsConfiguration natsConfiguration;
     private final ConnectionFactory connectionFactory;
-    private final AtomicReference<MessageConnection> connection;
+    private final AtomicReference<Connection> connection;
 
     @Inject
     public ExponentialBackoffConsumingBean(NatsConfiguration natsConfiguration, ConnectionFactory connectionFactory) {
@@ -78,7 +77,7 @@ public class ExponentialBackoffConsumingBean {
         }
     }
 
-    private Uni<Void> maxDeliveries(MessageConnection connection, Message<Advisory> message) {
+    private Uni<Void> maxDeliveries(Connection connection, Message<Advisory> message) {
         final var advisory = message.getPayload();
         return connection.<Integer> resolve(advisory.getStream(), advisory.getStream_seq())
                 .onItem().invoke(msg -> {
@@ -89,12 +88,12 @@ public class ExponentialBackoffConsumingBean {
                 .replaceWithVoid();
     }
 
-    private Uni<MessageConnection> getOrEstablishConnection() {
+    private Uni<Connection> getOrEstablishConnection() {
         return Uni.createFrom().item(() -> Optional.ofNullable(connection.get())
                 .filter(Connection::isConnected)
                 .orElse(null))
                 .onItem().ifNull().switchTo(() -> connectionFactory
-                        .message(ConnectionConfiguration.of(natsConfiguration), (event, message) -> {
+                        .create(ConnectionConfiguration.of(natsConfiguration), (event, message) -> {
                         }))
                 .onItem().invoke(this.connection::set);
     }

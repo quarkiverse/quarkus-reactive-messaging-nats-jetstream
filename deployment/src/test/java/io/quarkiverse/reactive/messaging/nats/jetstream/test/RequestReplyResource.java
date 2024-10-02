@@ -25,13 +25,10 @@ import io.nats.client.api.DeliverPolicy;
 import io.nats.client.api.ReplayPolicy;
 import io.quarkiverse.reactive.messaging.nats.NatsConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.JetStreamOutgoingMessageMetadata;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.AdministrationConnection;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.Connection;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.ConnectionFactory;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.MessageConnection;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.administration.StreamState;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.StreamState;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ConnectionConfiguration;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ConsumerType;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.FetchConsumerConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.PublishConfiguration;
 import io.smallrye.mutiny.Uni;
@@ -43,8 +40,7 @@ public class RequestReplyResource {
     private final ConnectionFactory connectionFactory;
     private final NatsConfiguration natsConfiguration;
     private final String streamName;
-    private final AtomicReference<AdministrationConnection> administrationConnection;
-    private final AtomicReference<MessageConnection> messageConnection;
+    private final AtomicReference<Connection> messageConnection;
 
     @Inject
     public RequestReplyResource(ConnectionFactory connectionFactory,
@@ -52,33 +48,32 @@ public class RequestReplyResource {
         this.connectionFactory = connectionFactory;
         this.natsConfiguration = natsConfiguration;
         this.streamName = "request-reply";
-        this.administrationConnection = new AtomicReference<>();
         this.messageConnection = new AtomicReference<>();
     }
 
     @GET
     @Path("/streams")
     public Uni<List<String>> getStreams() {
-        return getOrEstablishAdministrationConnection().onItem().transformToUni(AdministrationConnection::getStreams);
+        return getOrEstablishMessageConnection().onItem().transformToUni(Connection::getStreams);
     }
 
     @GET
     @Path("/streams/{stream}/consumers")
     public Uni<List<String>> getConsumers(@PathParam("stream") String stream) {
-        return getOrEstablishAdministrationConnection().onItem()
+        return getOrEstablishMessageConnection().onItem()
                 .transformToUni(connection -> connection.getConsumerNames(stream));
     }
 
     @GET
     @Path("/streams/{stream}/subjects")
     public Uni<List<String>> getSubjects(@PathParam("stream") String stream) {
-        return getOrEstablishAdministrationConnection().onItem().transformToUni(connection -> connection.getSubjects(stream));
+        return getOrEstablishMessageConnection().onItem().transformToUni(connection -> connection.getSubjects(stream));
     }
 
     @GET
     @Path("/streams/{stream}/state")
     public Uni<StreamState> getStreamState(@PathParam("stream") String stream) {
-        return getOrEstablishAdministrationConnection().onItem()
+        return getOrEstablishMessageConnection().onItem()
                 .transformToUni(connection -> connection.getStreamState(stream));
     }
 
@@ -100,13 +95,6 @@ public class RequestReplyResource {
     public void terminate(
             @Observes(notifyObserver = Reception.IF_EXISTS) @Priority(50) @BeforeDestroyed(ApplicationScoped.class) Object ignored) {
         try {
-            if (administrationConnection.get() != null) {
-                administrationConnection.get().close();
-            }
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-        try {
             if (messageConnection.get() != null) {
                 messageConnection.get().close();
             }
@@ -115,27 +103,17 @@ public class RequestReplyResource {
         }
     }
 
-    private Uni<AdministrationConnection> getOrEstablishAdministrationConnection() {
-        return Uni.createFrom().item(() -> Optional.ofNullable(administrationConnection.get())
-                .filter(Connection::isConnected)
-                .orElse(null))
-                .onItem().ifNull().switchTo(() -> connectionFactory
-                        .administration(ConnectionConfiguration.of(natsConfiguration), (event, message) -> {
-                        }))
-                .onItem().invoke(this.administrationConnection::set);
-    }
-
-    private Uni<MessageConnection> getOrEstablishMessageConnection() {
+    private Uni<Connection> getOrEstablishMessageConnection() {
         return Uni.createFrom().item(() -> Optional.ofNullable(messageConnection.get())
                 .filter(Connection::isConnected)
                 .orElse(null))
                 .onItem().ifNull()
-                .switchTo(() -> connectionFactory.message(ConnectionConfiguration.of(natsConfiguration), (event, message) -> {
+                .switchTo(() -> connectionFactory.create(ConnectionConfiguration.of(natsConfiguration), (event, message) -> {
                 }))
                 .onItem().invoke(this.messageConnection::set);
     }
 
-    private Uni<Void> produceData(MessageConnection connection, String subject, String id, String data, String messageId) {
+    private Uni<Void> produceData(Connection connection, String subject, String id, String data, String messageId) {
         return connection.publish(
                 Message.of(new Data(data, id, messageId), Metadata.of(JetStreamOutgoingMessageMetadata.of(messageId))),
                 new PublishConfiguration() {
@@ -157,7 +135,7 @@ public class RequestReplyResource {
                 .onItem().transformToUni(m -> Uni.createFrom().voidItem());
     }
 
-    public Uni<Data> consumeData(MessageConnection connection, String subject) {
+    public Uni<Data> consumeData(Connection connection, String subject) {
         return connection.nextMessage(getConsumerConfiguration(streamName, subject))
                 .map(message -> {
                     message.ack();
@@ -229,18 +207,13 @@ public class RequestReplyResource {
             }
 
             @Override
-            public Optional<Integer> maxAckPending() {
+            public Optional<Long> maxAckPending() {
                 return Optional.empty();
             }
 
             @Override
             public Optional<String> durable() {
                 return Optional.of(subject);
-            }
-
-            @Override
-            public ConsumerType type() {
-                return ConsumerType.Fetch;
             }
 
             @Override
@@ -264,7 +237,7 @@ public class RequestReplyResource {
             }
 
             @Override
-            public Optional<Integer> maxDeliver() {
+            public Optional<Long> maxDeliver() {
                 return Optional.empty();
             }
 
