@@ -10,7 +10,7 @@ public interface PayloadMapper {
 
     <T> T of(byte[] data, Class<T> type);
 
-    <T> Optional<? super T> of(io.nats.client.Message message);
+    <T> Optional<T> of(io.nats.client.Message message);
 
     <T> Optional<T> of(MessageInfo message);
 

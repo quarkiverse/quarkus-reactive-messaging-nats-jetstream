@@ -53,12 +53,13 @@ public class DefaultPayloadMapper implements PayloadMapper {
         }
     }
 
+    @SuppressWarnings("unchecked")
     @Override
-    public <T> Optional<? super T> of(io.nats.client.Message message) {
+    public <T> Optional<T> of(io.nats.client.Message message) {
         return Optional.ofNullable(message).flatMap(m -> Optional.ofNullable(m.getHeaders()))
                 .flatMap(headers -> Optional.ofNullable(headers.getFirst(MESSAGE_TYPE_HEADER)))
                 .map(DefaultPayloadMapper::loadClass)
-                .map(type -> of(message.getData(), type));
+                .map(type -> (T) of(message.getData(), type));
     }
 
     @SuppressWarnings("unchecked")
