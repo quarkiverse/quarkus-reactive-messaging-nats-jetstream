@@ -1,13 +1,21 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.it;
 
+import java.time.Instant;
+
+import com.fasterxml.jackson.annotation.JsonView;
+
 import io.quarkus.runtime.annotations.RegisterForReflection;
 
 @RegisterForReflection
 public class Data {
+
     private String data;
     private String resourceId;
 
     private String messageId;
+
+    @JsonView(IncludeTimestamps.class)
+    private Instant creationTime;
 
     public Data(String data, String resourceId) {
         this(data, resourceId, null);
@@ -20,6 +28,13 @@ public class Data {
     }
 
     public Data() {
+    }
+
+    public Data(String data, String resourceId, String messageId, Instant creationTime) {
+        this.data = data;
+        this.resourceId = resourceId;
+        this.messageId = messageId;
+        this.creationTime = creationTime;
     }
 
     public String getData() {
@@ -44,5 +59,13 @@ public class Data {
 
     public void setMessageId(String messageId) {
         this.messageId = messageId;
+    }
+
+    public Instant getCreationTime() {
+        return creationTime;
+    }
+
+    public void setCreationTime(Instant creationTime) {
+        this.creationTime = creationTime;
     }
 }

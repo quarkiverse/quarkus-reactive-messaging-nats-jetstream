@@ -35,7 +35,7 @@ public class DataConsumingBean {
         message.getMetadata(JetStreamIncomingMessageMetadata.class)
                 .ifPresent(metadata -> lastData = Optional.of(
                         new Data(message.getPayload().getData(), metadata.headers().get("RESOURCE_ID").get(0),
-                                metadata.messageId())));
+                                metadata.messageId(), message.getPayload().getCreationTime())));
         message.ack();
     }
 }

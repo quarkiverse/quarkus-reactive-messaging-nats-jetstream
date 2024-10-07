@@ -28,6 +28,8 @@ import org.eclipse.microprofile.reactive.messaging.Emitter;
 import org.eclipse.microprofile.reactive.messaging.Message;
 import org.eclipse.microprofile.reactive.messaging.Metadata;
 
+import com.fasterxml.jackson.annotation.JsonView;
+
 import io.quarkiverse.reactive.messaging.nats.jetstream.JetStreamOutgoingMessageMetadata;
 import io.smallrye.mutiny.Uni;
 
@@ -44,6 +46,13 @@ public class DataResource {
     @GET
     @Path("/last")
     public Data getLast() {
+        return bean.getLast().orElseGet(Data::new);
+    }
+
+    @GET
+    @Path("/last-with-timestamp")
+    @JsonView(IncludeTimestamps.class)
+    public Data getLastWithTimestamp() {
         return bean.getLast().orElseGet(Data::new);
     }
 
