@@ -11,7 +11,7 @@ public class ConnectionOptionsFactory {
     public Options create(ConnectionConfiguration configuration,
             io.nats.client.ConnectionListener connectionListener)
             throws NoSuchAlgorithmException {
-        final var servers = configuration.getServers().split(",");
+        final var servers = configuration.servers().split(",");
         final var optionsBuilder = new Options.Builder();
         optionsBuilder.servers(servers);
         optionsBuilder.maxReconnects(0);
@@ -19,21 +19,21 @@ public class ConnectionOptionsFactory {
             optionsBuilder.connectionListener(connectionListener);
         }
         optionsBuilder.errorListener(getErrorListener(configuration));
-        configuration.getUsername()
-                .ifPresent(username -> optionsBuilder.userInfo(username, configuration.getPassword().orElse("")));
-        configuration.getToken().map(String::toCharArray).ifPresent(optionsBuilder::token);
-        configuration.getCredentialPath().ifPresent(optionsBuilder::credentialPath);
-        configuration.getKeystorePath().ifPresent(optionsBuilder::keystorePath);
-        configuration.getKeystorePassword().map(String::toCharArray).ifPresent(optionsBuilder::keystorePassword);
-        configuration.getTruststorePath().ifPresent(optionsBuilder::truststorePath);
-        configuration.getKeystorePassword().map(String::toCharArray).ifPresent(optionsBuilder::truststorePassword);
-        configuration.getBufferSize().ifPresent(optionsBuilder::bufferSize);
-        configuration.getConnectionTimeout()
+        configuration.username()
+                .ifPresent(username -> optionsBuilder.userInfo(username, configuration.password().orElse("")));
+        configuration.token().map(String::toCharArray).ifPresent(optionsBuilder::token);
+        configuration.credentialPath().ifPresent(optionsBuilder::credentialPath);
+        configuration.keystorePath().ifPresent(optionsBuilder::keystorePath);
+        configuration.keystorePassword().map(String::toCharArray).ifPresent(optionsBuilder::keystorePassword);
+        configuration.truststorePath().ifPresent(optionsBuilder::truststorePath);
+        configuration.truststorePassword().map(String::toCharArray).ifPresent(optionsBuilder::truststorePassword);
+        configuration.bufferSize().ifPresent(optionsBuilder::bufferSize);
+        configuration.connectionTimeout()
                 .ifPresent(connectionTimeout -> optionsBuilder.connectionTimeout(Duration.ofMillis(connectionTimeout)));
         if (configuration.sslEnabled()) {
             optionsBuilder.opentls();
         }
-        configuration.getTlsAlgorithm().ifPresent(optionsBuilder::tlsAlgorithm);
+        configuration.tlsAlgorithm().ifPresent(optionsBuilder::tlsAlgorithm);
         return optionsBuilder.build();
     }
 
@@ -43,7 +43,7 @@ public class ConnectionOptionsFactory {
     }
 
     private ErrorListener getErrorListener(ConnectionConfiguration configuration) {
-        return configuration.getErrorListener()
+        return configuration.errorListener()
                 .orElseGet(DefaultErrorListener::new);
     }
 

@@ -14,7 +14,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
-import io.restassured.filter.log.RequestLoggingFilter;
 import io.restassured.parsing.Parser;
 
 public class ReactiveMesssagingNatsJetstreamPushTest {
@@ -34,12 +33,6 @@ public class ReactiveMesssagingNatsJetstreamPushTest {
     @BeforeEach
     public void setup() {
         defaultParser = Parser.JSON;
-    }
-
-    @Test
-    public void health() {
-        given().filters(new RequestLoggingFilter(), new RequestLoggingFilter()).get("/q/health/ready").then().statusCode(200);
-        given().filters(new RequestLoggingFilter(), new RequestLoggingFilter()).get("/q/health/live").then().statusCode(200);
     }
 
     @Test

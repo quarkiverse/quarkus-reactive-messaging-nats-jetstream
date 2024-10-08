@@ -16,27 +16,27 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.*;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 
-public class PushSubscribeConnection<K> implements SubscribeConnection {
+public class PushSubscribeConnection<P> implements SubscribeConnection<P> {
     private static final Logger logger = Logger.getLogger(PushSubscribeConnection.class);
 
     private final DefaultConnection delegate;
-    private final PushConsumerConfiguration<K> consumerConfiguration;
+    private final PushConsumerConfiguration<P> consumerConfiguration;
     private final PushSubscribeOptionsFactory pushSubscribeOptionsFactory;
 
     private volatile JetStreamSubscription subscription;
     private volatile Dispatcher dispatcher;
 
     PushSubscribeConnection(DefaultConnection delegate,
-            PushConsumerConfiguration<K> consumerConfiguration) {
+            PushConsumerConfiguration<P> consumerConfiguration) {
         this.delegate = delegate;
         this.consumerConfiguration = consumerConfiguration;
         this.pushSubscribeOptionsFactory = new PushSubscribeOptionsFactory();
     }
 
     @Override
-    public Multi<Message<?>> subscribe() {
+    public Multi<Message<P>> subscribe() {
         boolean traceEnabled = consumerConfiguration.consumerConfiguration().traceEnabled();
-        Class<?> payloadType = consumerConfiguration.consumerConfiguration().payloadType().orElse(null);
+        Class<P> payloadType = consumerConfiguration.consumerConfiguration().payloadType().orElse(null);
         final var subject = consumerConfiguration.subject();
         return Multi.createFrom().<io.nats.client.Message> emitter(emitter -> {
             try {
@@ -172,20 +172,20 @@ public class PushSubscribeConnection<K> implements SubscribeConnection {
     }
 
     @Override
-    public void close() throws Exception {
+    public void close() {
         try {
             if (subscription.isActive()) {
                 subscription.drain(Duration.ofMillis(1000));
             }
-        } catch (InterruptedException | IllegalStateException e) {
-            logger.warnf("Interrupted while draining subscription");
+        } catch (Throwable failure) {
+            logger.warnf(failure, "Interrupted while draining subscription: %s", failure.getMessage());
         }
         try {
             if (subscription != null && dispatcher != null && dispatcher.isActive()) {
                 dispatcher.unsubscribe(subscription);
             }
-        } catch (Exception e) {
-            logger.errorf(e, "Failed to shutdown pull executor");
+        } catch (Throwable failure) {
+            logger.warnf(failure, "Failed to shutdown pull executor: %s", failure.getMessage());
         }
         delegate.close();
     }

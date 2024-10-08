@@ -13,7 +13,7 @@ import io.quarkus.test.QuarkusDevModeTest;
 public class ReactiveMesssagingNatsJetstreamDevModeTest {
 
     @RegisterExtension
-    static QuarkusDevModeTest devModeTest = new QuarkusDevModeTest()
+    final static QuarkusDevModeTest devModeTest = new QuarkusDevModeTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(ValueConsumingBean.class, ValueProducingBean.class, ValueResource.class,
                             TestSpanExporter.class, Data.class, DataResource.class, DataConsumingBean.class,

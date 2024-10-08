@@ -1,42 +1,45 @@
-package io.quarkiverse.reactive.messaging.nats.jetstream.it;
+package io.quarkiverse.reactive.messaging.nats.jetstream.test;
 
-import static io.restassured.RestAssured.get;
 import static io.restassured.RestAssured.given;
 import static org.awaitility.Awaitility.await;
 
 import java.util.concurrent.TimeUnit;
 
+import org.jboss.shrinkwrap.api.ShrinkWrap;
+import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.filter.log.RequestLoggingFilter;
 import io.restassured.filter.log.ResponseLoggingFilter;
 
-@QuarkusTest
-public class DataResourceTest {
+public class HealthTest {
+
+    @RegisterExtension
+    static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
+            () -> ShrinkWrap.create(JavaArchive.class)
+                    .addClasses(TestSpanExporter.class, Data.class, DataResource.class, DataConsumingBean.class))
+            .withConfigurationResource("application-health.properties");
 
     @Test
-    public void data() {
-        final var messageId = "8cb9fd88-08e9-422d-9f19-a3b4b3cc8cb7";
-        final var data = "N6cXzM";
-        final var resourceId = "56d5cc43-92dd-4df9-b385-1e412fd8fc8a";
-
-        given()
-                .header("Content-Type", "application/json")
-                .pathParam("messageId", messageId)
-                .body(new Data(data, resourceId))
-                .post("/data/{messageId}")
-                .then().statusCode(204);
-
-        await().atMost(1, TimeUnit.MINUTES).until(() -> {
-            final var dataValue = get("/data/last").as(Data.class);
-            return messageId.equals(dataValue.getMessageId()) && data.equals(dataValue.getData())
-                    && resourceId.equals(dataValue.getResourceId());
+    public void readiness() {
+        await().atMost(60, TimeUnit.SECONDS).pollInterval(5, TimeUnit.SECONDS).until(() -> {
+            try {
+                given()
+                        .filters(new RequestLoggingFilter(), new ResponseLoggingFilter())
+                        .when().get("/q/health/ready")
+                        .then()
+                        .statusCode(200);
+                return true;
+            } catch (AssertionError e) {
+                return false;
+            }
         });
     }
 
     @Test
-    public void healthLive() {
+    public void liveness() {
         await().atMost(60, TimeUnit.SECONDS).pollInterval(5, TimeUnit.SECONDS).until(() -> {
             try {
                 given()
@@ -51,19 +54,4 @@ public class DataResourceTest {
         });
     }
 
-    @Test
-    public void healthReady() {
-        await().atMost(60, TimeUnit.SECONDS).pollInterval(5, TimeUnit.SECONDS).until(() -> {
-            try {
-                given()
-                        .filters(new RequestLoggingFilter(), new ResponseLoggingFilter())
-                        .when().get("/q/health/ready")
-                        .then()
-                        .statusCode(200);
-                return true;
-            } catch (AssertionError e) {
-                return false;
-            }
-        });
-    }
 }

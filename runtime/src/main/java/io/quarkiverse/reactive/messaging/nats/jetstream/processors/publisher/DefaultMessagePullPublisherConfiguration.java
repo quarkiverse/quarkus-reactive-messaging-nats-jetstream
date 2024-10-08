@@ -2,7 +2,6 @@ package io.quarkiverse.reactive.messaging.nats.jetstream.processors.publisher;
 
 import java.time.Duration;
 import java.time.ZonedDateTime;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -13,6 +12,7 @@ import io.nats.client.api.ReplayPolicy;
 import io.quarkiverse.reactive.messaging.nats.jetstream.JetStreamConnectorIncomingConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ConsumerConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.mapper.DefaultPayloadMapper;
+import io.quarkus.runtime.configuration.DurationConverter;
 
 public class DefaultMessagePullPublisherConfiguration<T> implements MessagePullPublisherConfiguration<T> {
     private final JetStreamConnectorIncomingConfiguration configuration;
@@ -145,8 +145,8 @@ public class DefaultMessagePullPublisherConfiguration<T> implements MessagePullP
                 return configuration.getBackOff()
                         .map(backoff -> backoff.split(","))
                         .map(List::of)
-                        .map(this::getBackOff)
-                        .orElseGet(Collections::emptyList);
+                        .map(this::of)
+                        .orElseGet(List::of);
             }
 
             @Override
@@ -191,11 +191,12 @@ public class DefaultMessagePullPublisherConfiguration<T> implements MessagePullP
                 return Duration.parse(configuration.getAckTimeout());
             }
 
-            private List<Duration> getBackOff(List<String> backoff) {
-                if (backoff == null || backoff.isEmpty()) {
+            private List<Duration> of(List<String> values) {
+                final var converter = new DurationConverter();
+                if (values == null || values.isEmpty()) {
                     return List.of();
                 } else {
-                    return backoff.stream().map(Duration::parse).toList();
+                    return values.stream().map(converter::convert).toList();
                 }
             }
         };

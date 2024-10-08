@@ -1,6 +1,7 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration;
 
 import java.lang.reflect.InvocationTargetException;
+import java.time.Duration;
 import java.util.Optional;
 
 import io.nats.client.ErrorListener;
@@ -15,27 +16,27 @@ class DefaultConnectionConfiguration implements ConnectionConfiguration {
     }
 
     @Override
-    public String getServers() {
+    public String servers() {
         return configuration.servers();
     }
 
     @Override
-    public Optional<String> getPassword() {
+    public Optional<String> password() {
         return configuration.password();
     }
 
     @Override
-    public Optional<String> getUsername() {
+    public Optional<String> username() {
         return configuration.username();
     }
 
     @Override
-    public Optional<String> getToken() {
+    public Optional<String> token() {
         return configuration.token();
     }
 
     @Override
-    public Optional<String> getCredentialPath() {
+    public Optional<String> credentialPath() {
         return configuration.credentialPath();
     }
 
@@ -45,43 +46,53 @@ class DefaultConnectionConfiguration implements ConnectionConfiguration {
     }
 
     @Override
-    public Optional<Integer> getBufferSize() {
+    public Optional<Integer> bufferSize() {
         return configuration.bufferSize();
     }
 
     @Override
-    public Optional<ErrorListener> getErrorListener() {
+    public Optional<ErrorListener> errorListener() {
         return configuration.errorListener().map(this::getInstanceOfErrorListener);
     }
 
     @Override
-    public Optional<Long> getConnectionTimeout() {
+    public Optional<Long> connectionTimeout() {
         return configuration.connectionTimeout();
     }
 
     @Override
-    public Optional<String> getKeystorePath() {
+    public Optional<String> keystorePath() {
         return configuration.keystorePath();
     }
 
     @Override
-    public Optional<String> getKeystorePassword() {
+    public Optional<String> keystorePassword() {
         return configuration.keystorePassword();
     }
 
     @Override
-    public Optional<String> getTruststorePath() {
+    public Optional<String> truststorePath() {
         return configuration.truststorePath();
     }
 
     @Override
-    public Optional<String> getTruststorePassword() {
+    public Optional<String> truststorePassword() {
         return configuration.truststorePassword();
     }
 
     @Override
-    public Optional<String> getTlsAlgorithm() {
+    public Optional<String> tlsAlgorithm() {
         return configuration.tlsAlgorithm();
+    }
+
+    @Override
+    public Optional<Duration> connectionBackoff() {
+        return configuration.connectionBackoff();
+    }
+
+    @Override
+    public Optional<Long> connectionAttempts() {
+        return configuration.connectionAttempts();
     }
 
     private ErrorListener getInstanceOfErrorListener(String className) {
