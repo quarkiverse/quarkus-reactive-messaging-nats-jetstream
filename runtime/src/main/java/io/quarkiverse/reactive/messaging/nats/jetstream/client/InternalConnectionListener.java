@@ -11,12 +11,10 @@ class InternalConnectionListener implements io.nats.client.ConnectionListener {
     public void connectionEvent(io.nats.client.Connection connection, Events type) {
         switch (type) {
             case CONNECTED -> this.connection.fireEvent(ConnectionEvent.Connected, "Connection established");
-            case RECONNECTED ->
+            case RECONNECTED, RESUBSCRIBED ->
                 this.connection.fireEvent(ConnectionEvent.Reconnected, "Connection reestablished to server");
             case CLOSED -> this.connection.fireEvent(ConnectionEvent.Closed, "Connection closed");
             case DISCONNECTED -> this.connection.fireEvent(ConnectionEvent.Disconnected, "Connection disconnected");
-            case RESUBSCRIBED ->
-                this.connection.fireEvent(ConnectionEvent.Reconnected, "Connection reestablished to server");
             case LAME_DUCK -> this.connection.fireEvent(ConnectionEvent.CommunicationFailed, "Lame duck mode");
         }
     }

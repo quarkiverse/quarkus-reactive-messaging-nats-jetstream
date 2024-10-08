@@ -5,14 +5,14 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.client.SubscribeConnecti
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ConnectionConfiguration;
 import io.smallrye.mutiny.Uni;
 
-public class MessagePushPublisherProcessor extends MessagePublisherProcessor {
-    private final MessagePushPublisherConfiguration<?> configuration;
+public class MessagePushPublisherProcessor<T> extends MessagePublisherProcessor<T> {
+    private final MessagePushPublisherConfiguration<T> configuration;
     private final ConnectionFactory connectionFactory;
     private final ConnectionConfiguration connectionConfiguration;
 
     public MessagePushPublisherProcessor(final ConnectionFactory connectionFactory,
             final ConnectionConfiguration connectionConfiguration,
-            final MessagePushPublisherConfiguration<?> configuration) {
+            final MessagePushPublisherConfiguration<T> configuration) {
         this.connectionConfiguration = connectionConfiguration;
         this.connectionFactory = connectionFactory;
         this.configuration = configuration;
@@ -24,7 +24,7 @@ public class MessagePushPublisherProcessor extends MessagePublisherProcessor {
     }
 
     @Override
-    protected Uni<? extends SubscribeConnection> connect() {
+    protected Uni<? extends SubscribeConnection<T>> connect() {
         return connectionFactory.create(connectionConfiguration, this, configuration);
     }
 }

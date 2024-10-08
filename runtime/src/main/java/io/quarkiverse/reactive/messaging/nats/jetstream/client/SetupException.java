@@ -6,7 +6,4 @@ public class SetupException extends RuntimeException {
         super(message, cause);
     }
 
-    public SetupException(Throwable cause) {
-        super(cause);
-    }
 }

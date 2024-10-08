@@ -36,34 +36,20 @@ public class DataResourceTest {
     }
 
     @Test
-    public void healthLive() {
-        await().atMost(60, TimeUnit.SECONDS).pollInterval(5, TimeUnit.SECONDS).until(() -> {
-            try {
-                given()
-                        .filters(new RequestLoggingFilter(), new ResponseLoggingFilter())
-                        .when().get("/q/health/live")
-                        .then()
-                        .statusCode(200);
-                return true;
-            } catch (AssertionError e) {
-                return false;
-            }
-        });
+    public void readiness() {
+        given()
+                .filters(new RequestLoggingFilter(), new ResponseLoggingFilter())
+                .when().get("/q/health/ready")
+                .then()
+                .statusCode(200);
     }
 
     @Test
-    public void healthReady() {
-        await().atMost(60, TimeUnit.SECONDS).pollInterval(5, TimeUnit.SECONDS).until(() -> {
-            try {
-                given()
-                        .filters(new RequestLoggingFilter(), new ResponseLoggingFilter())
-                        .when().get("/q/health/ready")
-                        .then()
-                        .statusCode(200);
-                return true;
-            } catch (AssertionError e) {
-                return false;
-            }
-        });
+    public void liveness() {
+        given()
+                .filters(new RequestLoggingFilter(), new ResponseLoggingFilter())
+                .when().get("/q/health/live")
+                .then()
+                .statusCode(200);
     }
 }

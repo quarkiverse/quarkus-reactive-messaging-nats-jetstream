@@ -15,7 +15,10 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.ExponentialBackoff;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.Consumer;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.PurgeResult;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.StreamState;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.*;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.FetchConsumerConfiguration;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.PublishConfiguration;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.PullSubscribeOptionsFactory;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ReaderConsumerConfiguration;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.core.Context;
@@ -49,11 +52,12 @@ public class ReaderSubscribeConnection<P> implements SubscribeConnection<P> {
         Class<P> payloadType = consumerConfiguration.consumerConfiguration().payloadType().orElse(null);
         ExecutorService pullExecutor = Executors.newSingleThreadExecutor(JetstreamWorkerThread::new);
         return Multi.createBy().repeating()
-                .supplier(this::nextMessage)
-                .until(message -> !subscription.isActive())
+                .uni(this::readNextMessage)
+                .whilst(message -> isConnected() && subscription.isActive())
                 .runSubscriptionOn(pullExecutor)
                 .emitOn(runable -> delegate.context().runOnContext(runable))
-                .flatMap(message -> createMulti(message.orElse(null), traceEnabled, payloadType, delegate.context()));
+                .flatMap(message -> createMulti(message.orElse(null), traceEnabled, payloadType, delegate.context()))
+                .onCompletion().invoke(() -> fireEvent(ConnectionEvent.SubscriptionInactive, "Subscription became inactive"));
     }
 
     @Override
@@ -181,25 +185,25 @@ public class ReaderSubscribeConnection<P> implements SubscribeConnection<P> {
         delegate.close();
     }
 
-    private Optional<io.nats.client.Message> nextMessage() {
-        try {
-            return Optional.ofNullable(reader.nextMessage(consumerConfiguration.maxRequestExpires().orElse(Duration.ZERO)));
-        } catch (JetStreamStatusException e) {
-            logger.debugf(e, e.getMessage());
-            return Optional.empty();
-        } catch (IllegalStateException e) {
-            logger.debugf(e, "The subscription became inactive for stream: %s",
-                    consumerConfiguration.consumerConfiguration().stream());
-            return Optional.empty();
-        } catch (InterruptedException e) {
-            logger.debugf(e, "The reader was interrupted for stream: %s",
-                    consumerConfiguration.consumerConfiguration().stream());
-            return Optional.empty();
-        } catch (Throwable throwable) {
-            logger.warnf(throwable, "Error reading next message from stream: %s",
-                    consumerConfiguration.consumerConfiguration().stream());
-            return Optional.empty();
-        }
+    private Uni<Optional<io.nats.client.Message>> readNextMessage() {
+        return Uni.createFrom().emitter(emitter -> {
+            try {
+                emitter.complete(Optional
+                        .ofNullable(reader.nextMessage(consumerConfiguration.maxRequestExpires().orElse(Duration.ZERO))));
+            } catch (JetStreamStatusException e) {
+                emitter.fail(new ReaderException(e));
+            } catch (IllegalStateException e) {
+                logger.warnf("The subscription became inactive for stream: %s",
+                        consumerConfiguration.consumerConfiguration().stream());
+                emitter.complete(Optional.empty());
+            } catch (InterruptedException e) {
+                emitter.fail(new ReaderException(String.format("The reader was interrupted for stream: %s",
+                        consumerConfiguration.consumerConfiguration().stream()), e));
+            } catch (Throwable throwable) {
+                emitter.fail(new ReaderException(String.format("Error reading next message from stream: %s",
+                        consumerConfiguration.consumerConfiguration().stream()), throwable));
+            }
+        });
     }
 
     @SuppressWarnings("unchecked")

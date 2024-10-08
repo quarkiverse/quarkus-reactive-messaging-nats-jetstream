@@ -72,7 +72,7 @@ public class DeadLetterConsumingBean {
     public Uni<Void> deadLetter(Connection connection, Message<Advisory> message) {
         logger.infof("Received dead letter on dead-letter-consumer channel: %s", message);
         final var advisory = message.getPayload();
-        return connection.<Data> resolve(advisory.getStream(), advisory.getStream_seq())
+        return connection.<Data> resolve(advisory.stream(), advisory.stream_seq())
                 .onItem().invoke(dataMessage -> lastData.set(dataMessage.getPayload()))
                 .onItem().transformToUni(m -> Uni.createFrom().completionStage(message.ack()))
                 .onFailure().recoverWithUni(throwable -> Uni.createFrom().completionStage(message.nack(throwable)));

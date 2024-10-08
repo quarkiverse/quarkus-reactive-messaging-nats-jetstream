@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 import jakarta.inject.Inject;
 
@@ -48,7 +47,7 @@ public class ReactiveMesssagingNatsJetstreamPushTracingTest {
         assertThat(spans).isNotEmpty();
 
         List<SpanData> parentSpans = spans.stream().filter(spanData -> spanData.getParentSpanId().equals(SpanId.getInvalid()))
-                .collect(Collectors.toList());
+                .toList();
         assertEquals(1, parentSpans.size());
 
         for (var parentSpan : parentSpans) {

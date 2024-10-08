@@ -4,7 +4,6 @@ import java.time.Duration;
 import java.util.List;
 
 import org.eclipse.microprofile.reactive.messaging.Message;
-import org.jboss.logging.Logger;
 
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.Consumer;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.PurgeResult;
@@ -15,7 +14,6 @@ import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 
 public interface Connection extends AutoCloseable {
-    Logger logger = Logger.getLogger(Connection.class);
 
     boolean isConnected();
 
@@ -26,7 +24,6 @@ public interface Connection extends AutoCloseable {
     void addListener(ConnectionListener listener);
 
     default void fireEvent(ConnectionEvent event, String message) {
-        logger.infof("Event: %s, message: %s", event, message);
         listeners().forEach(listener -> listener.onEvent(event, message));
     }
 

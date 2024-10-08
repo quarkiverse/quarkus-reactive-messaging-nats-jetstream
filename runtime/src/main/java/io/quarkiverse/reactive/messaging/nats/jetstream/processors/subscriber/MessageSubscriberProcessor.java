@@ -7,13 +7,15 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.eclipse.microprofile.reactive.messaging.Message;
 import org.jboss.logging.Logger;
 
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.*;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.Connection;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.ConnectionEvent;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.ConnectionFactory;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.ConnectionListener;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ConnectionConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.processors.MessageProcessor;
 import io.quarkiverse.reactive.messaging.nats.jetstream.processors.Status;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
-import io.smallrye.mutiny.unchecked.Unchecked;
 import io.smallrye.reactive.messaging.providers.helpers.MultiUtils;
 
 public class MessageSubscriberProcessor implements MessageProcessor, ConnectionListener {
@@ -36,17 +38,17 @@ public class MessageSubscriberProcessor implements MessageProcessor, ConnectionL
         this.connection = new AtomicReference<>();
     }
 
-    public Flow.Subscriber<? extends Message<?>> subscriber() {
+    public <T> Flow.Subscriber<Message<T>> subscriber() {
         return MultiUtils.via(this::subscribe);
     }
 
-    private Multi<? extends Message<?>> subscribe(Multi<? extends Message<?>> subscription) {
+    private <T> Multi<Message<T>> subscribe(Multi<Message<T>> subscription) {
         return subscription.onItem().transformToUniAndConcatenate(this::publish);
     }
 
     @Override
     public String channel() {
-        return configuration.getChannel();
+        return configuration.channel();
     }
 
     @Override
@@ -60,40 +62,27 @@ public class MessageSubscriberProcessor implements MessageProcessor, ConnectionL
     }
 
     @Override
-    public void close() {
-        try {
-            final var connection = this.connection.getAndSet(null);
-            if (connection != null) {
-                connection.close();
-            }
-        } catch (Throwable failure) {
-            logger.warnf(failure, "Failed to close connection", failure);
-        }
+    public AtomicReference<? extends Connection> connection() {
+        return connection;
     }
 
     @Override
     public void onEvent(ConnectionEvent event, String message) {
+        logger.infof("Event: %s, message: %s, channel: %s", event, message, configuration.channel());
         this.status.set(Status.builder().healthy(true).message(message).event(event).build());
     }
 
     private <T> Uni<Message<T>> publish(final Message<T> message) {
         return getOrEstablishConnection()
                 .onItem().transformToUni(connection -> connection.publish(message, configuration))
-                .onItem().transformToUni(this::acknowledge)
-                .onFailure().recoverWithUni(failure -> recover(message, failure));
+                .onFailure()
+                .invoke(failure -> logger.errorf(failure, "Failed to publish with message: %s", failure.getMessage()))
+                .onFailure().recoverWithUni(() -> recover(message));
     }
 
-    private <T> Uni<Message<T>> recover(final Message<T> message, final Throwable failure) {
-        return notAcknowledge(message, failure)
-                .onItem().transformToUni(this::closeConnection)
-                .onFailure().recoverWithUni(() -> closeConnection(message));
-    }
-
-    private <T> Uni<Message<T>> closeConnection(final Message<T> message) {
-        return Uni.createFrom().item(Unchecked.supplier(() -> {
-            close();
-            return message;
-        }));
+    private <T> Uni<Message<T>> recover(final Message<T> message) {
+        return close()
+                .onItem().transformToUni(v -> publish(message));
     }
 
     private Uni<? extends Connection> getOrEstablishConnection() {
@@ -102,16 +91,5 @@ public class MessageSubscriberProcessor implements MessageProcessor, ConnectionL
                 .orElse(null))
                 .onItem().ifNull().switchTo(() -> connectionFactory.create(connectionConfiguration, this))
                 .onItem().invoke(this.connection::set);
-    }
-
-    private <T> Uni<Message<T>> acknowledge(final Message<T> message) {
-        return Uni.createFrom().completionStage(message.ack())
-                .onItem().transform(v -> message);
-    }
-
-    private <T> Uni<Message<T>> notAcknowledge(final Message<T> message, final Throwable throwable) {
-        return Uni.createFrom().completionStage(message.nack(throwable))
-                .onItem().invoke(() -> logger.warnf(throwable, "Message not published: %s", throwable.getMessage()))
-                .onItem().transformToUni(v -> Uni.createFrom().item(message));
     }
 }
