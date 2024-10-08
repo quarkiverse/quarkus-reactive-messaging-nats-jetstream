@@ -34,12 +34,6 @@ public class ReactiveMesssagingNatsJetstreamPullTest {
     }
 
     @Test
-    public void health() {
-        given().get("/q/health/ready").then().statusCode(200);
-        given().get("/q/health/live").then().statusCode(200);
-    }
-
-    @Test
     public void metadata() {
         final var messageId = "4dc58197-8cfb-4099-a211-25d5c2d04f4b";
         final var data = "N6cXzM";

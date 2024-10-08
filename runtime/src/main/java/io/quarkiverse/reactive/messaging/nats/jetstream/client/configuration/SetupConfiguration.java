@@ -23,9 +23,9 @@ public interface SetupConfiguration {
         return configuration.streams().stream().map(stream -> new DefaultSetupConfiguration(
                 stream.name(),
                 stream.subjects(),
-                configuration.replicas(),
-                StorageType.valueOf(configuration.storageType()),
-                RetentionPolicy.valueOf(configuration.retentionPolicy())))
+                stream.replicas(),
+                stream.storageType(),
+                stream.retentionPolicy()))
                 .collect(Collectors.toUnmodifiableList());
     }
 }

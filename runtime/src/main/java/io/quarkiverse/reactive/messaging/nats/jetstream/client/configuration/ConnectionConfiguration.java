@@ -1,5 +1,6 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration;
 
+import java.time.Duration;
 import java.util.Optional;
 
 import io.nats.client.ErrorListener;
@@ -7,33 +8,37 @@ import io.quarkiverse.reactive.messaging.nats.NatsConfiguration;
 
 public interface ConnectionConfiguration {
 
-    String getServers();
+    String servers();
 
-    Optional<String> getPassword();
+    Optional<String> password();
 
-    Optional<String> getUsername();
+    Optional<String> username();
 
-    Optional<String> getToken();
+    Optional<String> token();
 
     boolean sslEnabled();
 
-    Optional<Integer> getBufferSize();
+    Optional<Integer> bufferSize();
 
-    Optional<ErrorListener> getErrorListener();
+    Optional<ErrorListener> errorListener();
 
-    Optional<Long> getConnectionTimeout();
+    Optional<Long> connectionTimeout();
 
-    Optional<String> getCredentialPath();
+    Optional<String> credentialPath();
 
-    Optional<String> getKeystorePath();
+    Optional<String> keystorePath();
 
-    Optional<String> getKeystorePassword();
+    Optional<String> keystorePassword();
 
-    Optional<String> getTruststorePath();
+    Optional<String> truststorePath();
 
-    Optional<String> getTruststorePassword();
+    Optional<String> truststorePassword();
 
-    Optional<String> getTlsAlgorithm();
+    Optional<String> tlsAlgorithm();
+
+    Optional<Duration> connectionBackoff();
+
+    Optional<Long> connectionAttempts();
 
     static ConnectionConfiguration of(NatsConfiguration configuration) {
         return new DefaultConnectionConfiguration(configuration);

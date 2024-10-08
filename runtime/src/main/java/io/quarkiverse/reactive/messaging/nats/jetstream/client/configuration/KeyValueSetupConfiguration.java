@@ -58,7 +58,7 @@ public interface KeyValueSetupConfiguration {
         return configuration.keyValueStores().stream().map(store -> DefaultKeyValueSetupConfiguration.builder()
                 .bucketName(store.bucketName())
                 .description(store.description())
-                .storageType(StorageType.valueOf(store.storageType()))
+                .storageType(store.storageType())
                 .maxBucketSize(store.maxBucketSize())
                 .maxHistoryPerKey(store.maxHistoryPerKey())
                 .maxValueSize(store.maxValueSize())

@@ -1,9 +1,12 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client;
 
+import java.time.Duration;
 import java.util.Optional;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+
+import org.jboss.logging.Logger;
 
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ConnectionConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.PushConsumerConfiguration;
@@ -21,6 +24,11 @@ import io.vertx.mutiny.core.Vertx;
 
 @ApplicationScoped
 public class ConnectionFactory {
+    private final static Logger logger = Logger.getLogger(ConnectionFactory.class);
+
+    private final static Duration DEFAULT_CONNECTION_BACKOFF = Duration.ofMillis(500);
+    private final static Long DEFAULT_CONNECTION_ATTEMPTS = 10L;
+
     private final ExecutionHolder executionHolder;
     private final MessageMapper messageMapper;
     private final JetStreamInstrumenter instrumenter;
@@ -43,7 +51,7 @@ public class ConnectionFactory {
         this.streamStateMapper = streamStateMapper;
     }
 
-    public <T> Uni<? extends SubscribeConnection> create(ConnectionConfiguration connectionConfiguration,
+    public <T> Uni<? extends SubscribeConnection<T>> create(ConnectionConfiguration connectionConfiguration,
             ConnectionListener connectionListener,
             ReaderConsumerConfiguration<T> consumerConfiguration) {
         return getContext()
@@ -52,10 +60,15 @@ public class ConnectionFactory {
                         .item(Unchecked.supplier(() -> new DefaultConnection(connectionConfiguration, connectionListener,
                                 context, messageMapper, payloadMapper, consumerMapper, streamStateMapper, instrumenter))))
                 .onItem().transformToUni(connection -> Uni.createFrom()
-                        .item(Unchecked.supplier(() -> new ReaderSubscribeConnection<>(connection, consumerConfiguration))));
+                        .item(Unchecked.supplier(() -> new ReaderSubscribeConnection<>(connection, consumerConfiguration))))
+                .onFailure().invoke(failure -> logger.errorf(failure, "Failed connecting to NATS: %s", failure.getMessage()))
+                .onFailure()
+                .retry()
+                .withBackOff(connectionConfiguration.connectionBackoff().orElse(DEFAULT_CONNECTION_BACKOFF))
+                .atMost(connectionConfiguration.connectionAttempts().orElse(DEFAULT_CONNECTION_ATTEMPTS));
     }
 
-    public <T> Uni<? extends SubscribeConnection> create(ConnectionConfiguration connectionConfiguration,
+    public <T> Uni<? extends SubscribeConnection<T>> create(ConnectionConfiguration connectionConfiguration,
             ConnectionListener connectionListener,
             PushConsumerConfiguration<T> consumerConfiguration) {
 
@@ -65,7 +78,12 @@ public class ConnectionFactory {
                         .item(Unchecked.supplier(() -> new DefaultConnection(connectionConfiguration, connectionListener,
                                 context, messageMapper, payloadMapper, consumerMapper, streamStateMapper, instrumenter))))
                 .onItem().transformToUni(connection -> Uni.createFrom()
-                        .item(Unchecked.supplier(() -> new PushSubscribeConnection<>(connection, consumerConfiguration))));
+                        .item(Unchecked.supplier(() -> new PushSubscribeConnection<>(connection, consumerConfiguration))))
+                .onFailure().invoke(failure -> logger.errorf(failure, "Failed connecting to NATS: %s", failure.getMessage()))
+                .onFailure()
+                .retry()
+                .withBackOff(connectionConfiguration.connectionBackoff().orElse(DEFAULT_CONNECTION_BACKOFF))
+                .atMost(connectionConfiguration.connectionAttempts().orElse(DEFAULT_CONNECTION_ATTEMPTS));
     }
 
     public Uni<? extends Connection> create(ConnectionConfiguration connectionConfiguration,
@@ -74,8 +92,12 @@ public class ConnectionFactory {
                 .onItem().transformToUni(
                         context -> Uni.createFrom().item(Unchecked.supplier(() -> new DefaultConnection(connectionConfiguration,
                                 connectionListener, context, messageMapper, payloadMapper, consumerMapper, streamStateMapper,
-                                instrumenter))));
-
+                                instrumenter))))
+                .onFailure().invoke(failure -> logger.errorf(failure, "Failed connecting to NATS: %s", failure.getMessage()))
+                .onFailure()
+                .retry()
+                .withBackOff(connectionConfiguration.connectionBackoff().orElse(DEFAULT_CONNECTION_BACKOFF))
+                .atMost(connectionConfiguration.connectionAttempts().orElse(DEFAULT_CONNECTION_ATTEMPTS));
     }
 
     private Optional<Vertx> getVertx() {

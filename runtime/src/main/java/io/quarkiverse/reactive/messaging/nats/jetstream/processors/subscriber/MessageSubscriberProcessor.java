@@ -11,7 +11,9 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.client.*;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ConnectionConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.processors.MessageProcessor;
 import io.quarkiverse.reactive.messaging.nats.jetstream.processors.Status;
+import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.unchecked.Unchecked;
 import io.smallrye.reactive.messaging.providers.helpers.MultiUtils;
 
 public class MessageSubscriberProcessor implements MessageProcessor, ConnectionListener {
@@ -30,29 +32,37 @@ public class MessageSubscriberProcessor implements MessageProcessor, ConnectionL
         this.connectionConfiguration = connectionConfiguration;
         this.connectionFactory = connectionFactory;
         this.configuration = configuration;
-        this.status = new AtomicReference<>(new Status(true, "Connection closed", ConnectionEvent.Closed));
+        this.status = new AtomicReference<>(new Status(true, "Subscriber processor inactive", ConnectionEvent.Closed));
         this.connection = new AtomicReference<>();
     }
 
     public Flow.Subscriber<? extends Message<?>> subscriber() {
-        return MultiUtils.via(m -> m.onSubscription()
-                .call(this::getOrEstablishConnection)
-                .onItem()
-                .transformToUniAndConcatenate(this::publish)
-                .onFailure()
-                .invoke(throwable -> connection.get().fireEvent(ConnectionEvent.CommunicationFailed, throwable.getMessage())));
+        return MultiUtils.via(this::subscribe);
+    }
 
+    private Multi<? extends Message<?>> subscribe(Multi<? extends Message<?>> subscription) {
+        return subscription.onItem().transformToUniAndConcatenate(this::publish);
     }
 
     @Override
-    public Status getStatus() {
-        return this.status.get();
+    public String channel() {
+        return configuration.getChannel();
+    }
+
+    @Override
+    public Status readiness() {
+        return status.get();
+    }
+
+    @Override
+    public Status liveness() {
+        return status.get();
     }
 
     @Override
     public void close() {
         try {
-            final var connection = this.connection.get();
+            final var connection = this.connection.getAndSet(null);
             if (connection != null) {
                 connection.close();
             }
@@ -62,24 +72,28 @@ public class MessageSubscriberProcessor implements MessageProcessor, ConnectionL
     }
 
     @Override
-    public String getChannel() {
-        return configuration.getChannel();
-    }
-
-    @Override
     public void onEvent(ConnectionEvent event, String message) {
-        switch (event) {
-            case Connected -> this.status.set(new Status(true, message, event));
-            case Closed -> this.status.set(new Status(true, message, event));
-            case Disconnected -> this.status.set(new Status(false, message, event));
-            case Reconnected -> this.status.set(new Status(true, message, event));
-            case CommunicationFailed -> this.status.set(new Status(false, message, event));
-        }
+        this.status.set(Status.builder().healthy(true).message(message).event(event).build());
     }
 
-    private Uni<? extends Message<?>> publish(Message<?> message) {
+    private <T> Uni<Message<T>> publish(final Message<T> message) {
         return getOrEstablishConnection()
-                .onItem().transformToUni(connection -> connection.publish(message, configuration));
+                .onItem().transformToUni(connection -> connection.publish(message, configuration))
+                .onItem().transformToUni(this::acknowledge)
+                .onFailure().recoverWithUni(failure -> recover(message, failure));
+    }
+
+    private <T> Uni<Message<T>> recover(final Message<T> message, final Throwable failure) {
+        return notAcknowledge(message, failure)
+                .onItem().transformToUni(this::closeConnection)
+                .onFailure().recoverWithUni(() -> closeConnection(message));
+    }
+
+    private <T> Uni<Message<T>> closeConnection(final Message<T> message) {
+        return Uni.createFrom().item(Unchecked.supplier(() -> {
+            close();
+            return message;
+        }));
     }
 
     private Uni<? extends Connection> getOrEstablishConnection() {
@@ -88,5 +102,16 @@ public class MessageSubscriberProcessor implements MessageProcessor, ConnectionL
                 .orElse(null))
                 .onItem().ifNull().switchTo(() -> connectionFactory.create(connectionConfiguration, this))
                 .onItem().invoke(this.connection::set);
+    }
+
+    private <T> Uni<Message<T>> acknowledge(final Message<T> message) {
+        return Uni.createFrom().completionStage(message.ack())
+                .onItem().transform(v -> message);
+    }
+
+    private <T> Uni<Message<T>> notAcknowledge(final Message<T> message, final Throwable throwable) {
+        return Uni.createFrom().completionStage(message.nack(throwable))
+                .onItem().invoke(() -> logger.warnf(throwable, "Message not published: %s", throwable.getMessage()))
+                .onItem().transformToUni(v -> Uni.createFrom().item(message));
     }
 }

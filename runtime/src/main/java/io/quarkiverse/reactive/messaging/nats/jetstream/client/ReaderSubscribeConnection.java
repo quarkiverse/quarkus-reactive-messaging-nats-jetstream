@@ -20,16 +20,16 @@ import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.core.Context;
 
-public class ReaderSubscribeConnection<K> implements SubscribeConnection {
+public class ReaderSubscribeConnection<P> implements SubscribeConnection<P> {
     private final static Logger logger = Logger.getLogger(ReaderSubscribeConnection.class);
 
     private final DefaultConnection delegate;
-    private final ReaderConsumerConfiguration<K> consumerConfiguration;
+    private final ReaderConsumerConfiguration<P> consumerConfiguration;
     private final io.nats.client.JetStreamReader reader;
     private final JetStreamSubscription subscription;
 
     ReaderSubscribeConnection(DefaultConnection delegate,
-            ReaderConsumerConfiguration<K> consumerConfiguration) throws ConnectionException {
+            ReaderConsumerConfiguration<P> consumerConfiguration) throws ConnectionException {
         this.delegate = delegate;
         this.consumerConfiguration = consumerConfiguration;
         try {
@@ -44,9 +44,9 @@ public class ReaderSubscribeConnection<K> implements SubscribeConnection {
     }
 
     @Override
-    public Multi<Message<?>> subscribe() {
+    public Multi<Message<P>> subscribe() {
         boolean traceEnabled = consumerConfiguration.consumerConfiguration().traceEnabled();
-        Class<?> payloadType = consumerConfiguration.consumerConfiguration().payloadType().orElse(null);
+        Class<P> payloadType = consumerConfiguration.consumerConfiguration().payloadType().orElse(null);
         ExecutorService pullExecutor = Executors.newSingleThreadExecutor(JetstreamWorkerThread::new);
         return Multi.createBy().repeating()
                 .supplier(this::nextMessage)
@@ -158,7 +158,7 @@ public class ReaderSubscribeConnection<K> implements SubscribeConnection {
     }
 
     @Override
-    public void close() throws Exception {
+    public void close() {
         try {
             reader.stop();
         } catch (Throwable e) {
@@ -203,13 +203,13 @@ public class ReaderSubscribeConnection<K> implements SubscribeConnection {
     }
 
     @SuppressWarnings("unchecked")
-    private Multi<org.eclipse.microprofile.reactive.messaging.Message<K>> createMulti(io.nats.client.Message message,
-            boolean tracingEnabled, Class<?> payloadType, Context context) {
+    private Multi<org.eclipse.microprofile.reactive.messaging.Message<P>> createMulti(io.nats.client.Message message,
+            boolean tracingEnabled, Class<P> payloadType, Context context) {
         if (message == null || message.getData() == null) {
             return Multi.createFrom().empty();
         } else {
             return Multi.createFrom()
-                    .item(() -> delegate.messageMapper().of(message, tracingEnabled, (Class<K>) payloadType, context,
+                    .item(() -> delegate.messageMapper().of(message, tracingEnabled, payloadType, context,
                             new ExponentialBackoff(
                                     consumerConfiguration.consumerConfiguration().exponentialBackoff(),
                                     consumerConfiguration.consumerConfiguration().exponentialBackoffMaxDuration()),

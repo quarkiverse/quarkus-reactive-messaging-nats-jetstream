@@ -4,6 +4,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
+import io.nats.client.api.RetentionPolicy;
+import io.nats.client.api.StorageType;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.smallrye.config.ConfigMapping;
@@ -18,25 +20,6 @@ public interface JetStreamBuildConfiguration {
      */
     @WithDefault("true")
     Boolean autoConfigure();
-
-    /**
-     * The number of replicas a message must be stored. Default value is 1.
-     */
-    @WithDefault("1")
-    Integer replicas();
-
-    /**
-     * The storage type for stream data (File or Memory).
-     */
-    @WithDefault("File")
-    String storageType();
-
-    /**
-     * Declares the retention policy for the stream. @see
-     * <a href="https://docs.nats.io/jetstream/concepts/streams#retention-policies">Retention Policy</a>
-     */
-    @WithDefault("Interest")
-    String retentionPolicy();
 
     /**
      * If auto-configure is true the streams are created on Nats server.
@@ -63,7 +46,7 @@ public interface JetStreamBuildConfiguration {
          * The storage type (File or Memory).
          */
         @WithDefault("File")
-        String storageType();
+        StorageType storageType();
 
         /**
          * The maximum number of bytes for this bucket
@@ -108,5 +91,24 @@ public interface JetStreamBuildConfiguration {
          * Stream subjects
          */
         Set<String> subjects();
+
+        /**
+         * The number of replicas a message must be stored. Default value is 1.
+         */
+        @WithDefault("1")
+        Integer replicas();
+
+        /**
+         * The storage type for stream data (File or Memory).
+         */
+        @WithDefault("File")
+        StorageType storageType();
+
+        /**
+         * Declares the retention policy for the stream. @see
+         * <a href="https://docs.nats.io/jetstream/concepts/streams#retention-policies">Retention Policy</a>
+         */
+        @WithDefault("Interest")
+        RetentionPolicy retentionPolicy();
     }
 }

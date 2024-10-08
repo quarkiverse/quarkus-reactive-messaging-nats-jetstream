@@ -1,5 +1,6 @@
 package io.quarkiverse.reactive.messaging.nats;
 
+import java.time.Duration;
 import java.util.Optional;
 
 import io.nats.client.AuthHandler;
@@ -48,6 +49,16 @@ public interface NatsConfiguration {
      * The connection timeout in milliseconds
      */
     Optional<Long> connectionTimeout();
+
+    /**
+     * Back-off delay between to attempt to re-connect to NATS
+     */
+    Optional<Duration> connectionBackoff();
+
+    /**
+     * The maximum number of attempts to attempt to re-connect to NATS
+     */
+    Optional<Long> connectionAttempts();
 
     /**
      * The classname for the error listener
