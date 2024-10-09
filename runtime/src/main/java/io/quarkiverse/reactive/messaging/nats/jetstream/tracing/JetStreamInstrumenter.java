@@ -31,7 +31,7 @@ public class JetStreamInstrumenter {
                 .getMessagingAttributesGetter();
 
         InstrumenterBuilder<JetStreamTrace, Void> builder = Instrumenter.builder(getOpenTelemetry(openTelemetryInstance),
-                "io.smallrye.reactive.messaging.jetstream",
+                "io.quarkiverse.reactive.messaging.nats.jetstream",
                 MessagingSpanNameExtractor.create(messagingAttributesGetter, MessageOperation.SEND));
 
         return builder.addAttributesExtractor(create(messagingAttributesGetter, MessageOperation.SEND))
@@ -44,7 +44,7 @@ public class JetStreamInstrumenter {
         MessagingAttributesGetter<JetStreamTrace, Void> messagingAttributesGetter = attributesExtractor
                 .getMessagingAttributesGetter();
         InstrumenterBuilder<JetStreamTrace, Void> builder = Instrumenter.builder(getOpenTelemetry(openTelemetryInstance),
-                "io.smallrye.reactive.messaging.jetstream",
+                "io.quarkiverse.reactive.messaging.nats.jetstream",
                 MessagingSpanNameExtractor.create(messagingAttributesGetter, RECEIVE));
 
         return builder.addAttributesExtractor(attributesExtractor)
