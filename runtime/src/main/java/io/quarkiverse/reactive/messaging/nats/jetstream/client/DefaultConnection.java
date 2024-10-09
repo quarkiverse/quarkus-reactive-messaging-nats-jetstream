@@ -239,6 +239,8 @@ public class DefaultConnection implements Connection {
             }
         })
                 .emitOn(context::runOnContext)
+                .onItem().transformToUni(this::acknowledge)
+                .onFailure().recoverWithUni(failure -> notAcknowledge(message, failure))
                 .onFailure().transform(failure -> new PublishException(failure.getMessage(), failure));
     }
 
@@ -395,6 +397,17 @@ public class DefaultConnection implements Connection {
         } else {
             return consumerContext.fetch(FetchConsumeOptions.builder().maxMessages(1).expiresIn(timeout.toMillis()).build());
         }
+    }
+
+    private <T> Uni<Message<T>> acknowledge(final Message<T> message) {
+        return Uni.createFrom().completionStage(message.ack())
+                .onItem().transform(v -> message);
+    }
+
+    private <T> Uni<Message<T>> notAcknowledge(final Message<T> message, final Throwable throwable) {
+        return Uni.createFrom().completionStage(message.nack(throwable))
+                .onItem().invoke(() -> logger.warnf(throwable, "Message not acknowledged: %s", throwable.getMessage()))
+                .onItem().transformToUni(v -> Uni.createFrom().item(message));
     }
 
     private <T> Uni<ConsumerContext> getConsumerContext(final FetchConsumerConfiguration<T> configuration) {
