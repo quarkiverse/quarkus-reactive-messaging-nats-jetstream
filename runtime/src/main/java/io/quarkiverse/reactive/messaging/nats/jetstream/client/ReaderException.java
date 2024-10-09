@@ -5,4 +5,8 @@ public class ReaderException extends RuntimeException {
     public ReaderException(Throwable cause) {
         super(cause);
     }
+
+    public ReaderException(String message, Throwable cause) {
+        super(message, cause);
+    }
 }

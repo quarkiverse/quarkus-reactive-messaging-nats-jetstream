@@ -10,7 +10,7 @@ public class DefaultMessageSubscriberConfiguration implements MessageSubscriberC
     }
 
     @Override
-    public String getChannel() {
+    public String channel() {
         return configuration.getChannel();
     }
 

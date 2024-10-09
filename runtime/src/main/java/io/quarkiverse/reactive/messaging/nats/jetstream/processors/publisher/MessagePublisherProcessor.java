@@ -1,12 +1,10 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.processors.publisher;
 
-import java.io.IOException;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.jboss.logging.Logger;
 
-import io.nats.client.JetStreamApiException;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.*;
 import io.quarkiverse.reactive.messaging.nats.jetstream.processors.MessageProcessor;
 import io.quarkiverse.reactive.messaging.nats.jetstream.processors.Status;
@@ -15,8 +13,6 @@ import io.smallrye.mutiny.Uni;
 
 public abstract class MessagePublisherProcessor<T> implements MessageProcessor, ConnectionListener {
     private final static Logger logger = Logger.getLogger(MessagePublisherProcessor.class);
-
-    private final static int CONSUMER_ALREADY_IN_USE = 10013;
 
     private final AtomicReference<Status> readiness;
     private final AtomicReference<Status> liveness;
@@ -46,31 +42,27 @@ public abstract class MessagePublisherProcessor<T> implements MessageProcessor, 
     }
 
     @Override
-    public void close() {
-        try {
-            final var connection = this.connection.getAndSet(null);
-            if (connection != null) {
-                connection.close();
-            }
-        } catch (Throwable failure) {
-            logger.warnf(failure, "Failed to close connection", failure);
-        }
+    public AtomicReference<? extends Connection> connection() {
+        return connection;
     }
 
     public Multi<org.eclipse.microprofile.reactive.messaging.Message<T>> publisher() {
         return subscribe()
-                .onFailure().transform(this::transformFailure)
-                .onFailure().retry().withBackOff(configuration().retryBackoff()).indefinitely();
+                .onFailure()
+                .invoke(failure -> logger.errorf(failure, "Failed to subscribe with message: %s", failure.getMessage()))
+                .onFailure().recoverWithMulti(this::recover);
+
     }
 
     @Override
     public void onEvent(ConnectionEvent event, String message) {
+        logger.infof("Event: %s, message: %s, channel: %s", event, message, configuration().channel());
         switch (event) {
             case Connected -> {
                 this.readiness.set(Status.builder().event(event).message(message).healthy(true).build());
                 this.liveness.set(Status.builder().event(event).message(message).healthy(true).build());
             }
-            case Closed, CommunicationFailed, Disconnected ->
+            case Closed, CommunicationFailed, Disconnected, SubscriptionInactive ->
                 this.readiness.set(Status.builder().event(event).message(message).healthy(false).build());
             case Reconnected ->
                 this.readiness.set(Status.builder().event(event).message(message).healthy(true).build());
@@ -81,9 +73,14 @@ public abstract class MessagePublisherProcessor<T> implements MessageProcessor, 
 
     protected abstract Uni<? extends SubscribeConnection<T>> connect();
 
+    private Multi<org.eclipse.microprofile.reactive.messaging.Message<T>> recover(Throwable failure) {
+        return close().onItem().transformToMulti(v -> subscribe());
+    }
+
     private Multi<org.eclipse.microprofile.reactive.messaging.Message<T>> subscribe() {
         return getOrEstablishConnection()
-                .onItem().transformToMulti(SubscribeConnection::subscribe);
+                .onItem().transformToMulti(SubscribeConnection::subscribe)
+                .onSubscription().invoke(() -> logger.infof("Subscribed to channel %s", configuration().channel()));
     }
 
     private Uni<SubscribeConnection<T>> getOrEstablishConnection() {
@@ -92,26 +89,5 @@ public abstract class MessagePublisherProcessor<T> implements MessageProcessor, 
                 .orElse(null))
                 .onItem().ifNull().switchTo(this::connect)
                 .onItem().invoke(this.connection::set);
-    }
-
-    private SubscribeException transformFailure(final Throwable failure) {
-        if (isCommunicationFailure(failure) && !isConsumerAlreadyInUse(failure)) {
-            logger.errorf(failure, "Failed to publish messages: %s", failure.getMessage());
-            Optional.ofNullable(this.connection.get())
-                    .ifPresent(connection -> connection.fireEvent(ConnectionEvent.CommunicationFailed, failure.getMessage()));
-            close();
-        }
-        return new SubscribeException(failure);
-    }
-
-    private boolean isConsumerAlreadyInUse(Throwable throwable) {
-        if (throwable instanceof JetStreamApiException jetStreamApiException) {
-            return jetStreamApiException.getApiErrorCode() == CONSUMER_ALREADY_IN_USE;
-        }
-        return false;
-    }
-
-    private boolean isCommunicationFailure(Throwable failure) {
-        return failure instanceof JetStreamApiException || failure instanceof IOException;
     }
 }

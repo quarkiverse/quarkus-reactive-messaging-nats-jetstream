@@ -79,7 +79,7 @@ public class ExponentialBackoffConsumingBean {
 
     private Uni<Void> maxDeliveries(Connection connection, Message<Advisory> message) {
         final var advisory = message.getPayload();
-        return connection.<Integer> resolve(advisory.getStream(), advisory.getStream_seq())
+        return connection.<Integer> resolve(advisory.stream(), advisory.stream_seq())
                 .onItem().invoke(msg -> {
                     maxDeliveries.get().add(msg.getPayload());
                     message.ack();

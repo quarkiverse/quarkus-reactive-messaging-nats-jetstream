@@ -6,10 +6,6 @@ public class SystemException extends RuntimeException {
         super(cause);
     }
 
-    public SystemException(String message) {
-        super(message);
-    }
-
     public SystemException(String message, Throwable cause) {
         super(message, cause);
     }

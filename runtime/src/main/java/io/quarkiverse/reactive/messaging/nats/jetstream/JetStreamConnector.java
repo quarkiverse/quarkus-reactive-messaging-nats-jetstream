@@ -132,18 +132,19 @@ public class JetStreamConnector implements InboundConnector, OutboundConnector, 
 
     public void terminate(
             @Observes(notifyObserver = Reception.IF_EXISTS) @Priority(50) @BeforeDestroyed(ApplicationScoped.class) Object ignored) {
-        this.processors.forEach(MessageProcessor::close);
+        this.processors.forEach(processor -> processor.close().await().indefinitely());
     }
 
-    private MessagePublisherProcessor createMessagePublisherProcessor(JetStreamConnectorIncomingConfiguration configuration) {
+    private MessagePublisherProcessor<?> createMessagePublisherProcessor(
+            JetStreamConnectorIncomingConfiguration configuration) {
         final var connectionConfiguration = ConnectionConfiguration.of(natsConfiguration);
         final var type = ConsumerType.valueOf(configuration.getPublisherType());
         if (ConsumerType.Pull.equals(type)) {
-            return new MessagePullPublisherProcessor(connectionFactory,
+            return new MessagePullPublisherProcessor<>(connectionFactory,
                     connectionConfiguration,
                     MessagePullPublisherConfiguration.of(configuration));
         } else {
-            return new MessagePushPublisherProcessor(connectionFactory,
+            return new MessagePushPublisherProcessor<>(connectionFactory,
                     connectionConfiguration,
                     MessagePushPublisherConfiguration.of(configuration));
         }

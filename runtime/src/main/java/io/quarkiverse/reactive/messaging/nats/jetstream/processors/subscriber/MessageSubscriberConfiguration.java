@@ -5,7 +5,7 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.Pub
 
 public interface MessageSubscriberConfiguration extends PublishConfiguration {
 
-    String getChannel();
+    String channel();
 
     static MessageSubscriberConfiguration of(JetStreamConnectorIncomingConfiguration configuration) {
         return new DefaultMessageSubscriberConfiguration(configuration);

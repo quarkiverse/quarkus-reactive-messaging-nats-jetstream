@@ -64,6 +64,7 @@ public class DefaultConnection implements Connection {
         this.messageMapper = messageMapper;
         this.payloadMapper = payloadMapper;
         this.instrumenter = instrumenter;
+        fireEvent(ConnectionEvent.Connected, "Connection established");
     }
 
     @Override
