@@ -9,5 +9,4 @@ public interface MessagePushPublisherConfiguration<T>
     static <T> MessagePushPublisherConfiguration<T> of(JetStreamConnectorIncomingConfiguration configuration) {
         return new DefaultMessagePushPublisherConfiguration<T>(configuration);
     }
-
 }

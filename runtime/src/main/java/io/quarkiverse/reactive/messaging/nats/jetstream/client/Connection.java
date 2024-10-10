@@ -35,6 +35,8 @@ public interface Connection extends AutoCloseable {
 
     Uni<List<String>> getConsumerNames(String streamName);
 
+    Uni<Void> deleteConsumer(String streamName, String consumerName);
+
     Uni<PurgeResult> purgeStream(String streamName);
 
     /**

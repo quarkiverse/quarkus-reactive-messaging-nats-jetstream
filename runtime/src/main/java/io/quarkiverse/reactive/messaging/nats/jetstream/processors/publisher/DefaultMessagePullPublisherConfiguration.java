@@ -60,8 +60,14 @@ public class DefaultMessagePullPublisherConfiguration<T> implements MessagePullP
     public ConsumerConfiguration<T> consumerConfiguration() {
         return new ConsumerConfiguration<>() {
             @Override
-            public Optional<String> name() {
-                return configuration.getName();
+            public String name() {
+                return configuration.getName()
+                        .orElseGet(() -> durable().orElseGet(() -> String.format("%s-consumer", subject())
+                                .replace("*", "")
+                                .replace(".", "")
+                                .replace(">", "")
+                                .replace("\\", "")
+                                .replace("/", "")));
             }
 
             @Override

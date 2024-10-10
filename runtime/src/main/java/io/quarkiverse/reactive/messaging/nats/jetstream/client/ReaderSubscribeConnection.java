@@ -1,5 +1,6 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client;
 
+import java.io.IOException;
 import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
@@ -9,6 +10,8 @@ import java.util.concurrent.Executors;
 import org.eclipse.microprofile.reactive.messaging.Message;
 import org.jboss.logging.Logger;
 
+import io.nats.client.JetStream;
+import io.nats.client.JetStreamApiException;
 import io.nats.client.JetStreamStatusException;
 import io.nats.client.JetStreamSubscription;
 import io.quarkiverse.reactive.messaging.nats.jetstream.ExponentialBackoff;
@@ -38,8 +41,7 @@ public class ReaderSubscribeConnection<P> implements SubscribeConnection<P> {
         try {
             final var jetStream = delegate.connection().jetStream();
             final var optionsFactory = new PullSubscribeOptionsFactory();
-            this.subscription = jetStream.subscribe(consumerConfiguration.subject(),
-                    optionsFactory.create(consumerConfiguration));
+            this.subscription = createSubscription(jetStream, consumerConfiguration, optionsFactory);
             this.reader = subscription.reader(consumerConfiguration.maxRequestBatch(), consumerConfiguration.rePullAt());
         } catch (Throwable failure) {
             throw new ConnectionException(failure);
@@ -93,6 +95,11 @@ public class ReaderSubscribeConnection<P> implements SubscribeConnection<P> {
     @Override
     public Uni<List<String>> getConsumerNames(String streamName) {
         return delegate.getConsumerNames(streamName);
+    }
+
+    @Override
+    public Uni<Void> deleteConsumer(String streamName, String consumerName) {
+        return delegate.deleteConsumer(streamName, consumerName);
     }
 
     @Override
@@ -218,6 +225,24 @@ public class ReaderSubscribeConnection<P> implements SubscribeConnection<P> {
                                     consumerConfiguration.consumerConfiguration().exponentialBackoff(),
                                     consumerConfiguration.consumerConfiguration().exponentialBackoffMaxDuration()),
                             consumerConfiguration.consumerConfiguration().ackTimeout()));
+        }
+    }
+
+    /**
+     * Creates a subscription.
+     * If an IllegalArgumentException is thrown the consumer configuration is modified.
+     */
+    private JetStreamSubscription createSubscription(JetStream jetStream,
+            ReaderConsumerConfiguration<P> consumerConfiguration,
+            PullSubscribeOptionsFactory optionsFactory) throws IOException, JetStreamApiException {
+        try {
+            return jetStream.subscribe(consumerConfiguration.subject(),
+                    optionsFactory.create(consumerConfiguration));
+        } catch (IllegalArgumentException e) { // consumer is modified, Existing consumer cannot be modified
+            deleteConsumer(consumerConfiguration.consumerConfiguration().stream(),
+                    consumerConfiguration.consumerConfiguration().name()).await().indefinitely();
+            return jetStream.subscribe(consumerConfiguration.subject(),
+                    optionsFactory.create(consumerConfiguration));
         }
     }
 }

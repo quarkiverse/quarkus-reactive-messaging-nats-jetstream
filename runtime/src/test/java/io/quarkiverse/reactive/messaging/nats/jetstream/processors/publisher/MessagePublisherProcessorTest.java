@@ -83,8 +83,8 @@ public class MessagePublisherProcessorTest {
                 return new ConsumerConfiguration<>() {
 
                     @Override
-                    public Optional<String> name() {
-                        return Optional.empty();
+                    public String name() {
+                        return durable;
                     }
 
                     @Override

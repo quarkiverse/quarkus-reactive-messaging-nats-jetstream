@@ -75,8 +75,14 @@ public class DefaultMessagePushPublisherConfiguration<T> implements MessagePushP
     public ConsumerConfiguration<T> consumerConfiguration() {
         return new ConsumerConfiguration<>() {
             @Override
-            public Optional<String> name() {
-                return configuration.getName();
+            public String name() {
+                return configuration.getName()
+                        .orElseGet(() -> durable().orElseGet(() -> String.format("%s-consumer", subject())
+                                .replace("*", "")
+                                .replace(".", "")
+                                .replace(">", "")
+                                .replace("\\", "")
+                                .replace("/", "")));
             }
 
             @Override

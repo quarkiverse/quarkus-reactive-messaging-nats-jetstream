@@ -26,7 +26,7 @@ public record ConsumerConfiguration(DeliverPolicy deliverPolicy,
         Duration maxExpires,
         Duration inactiveThreshold,
         Long startSeq, // server side this is unsigned
-        Integer maxDeliver,
+        Long maxDeliver,
         Long rateLimit, // server side this is unsigned
         Integer maxAckPending,
         Integer maxPullWaiting,

@@ -96,6 +96,11 @@ public class PushSubscribeConnection<P> implements SubscribeConnection<P> {
     }
 
     @Override
+    public Uni<Void> deleteConsumer(String streamName, String consumerName) {
+        return delegate.deleteConsumer(streamName, consumerName);
+    }
+
+    @Override
     public Uni<List<String>> getStreams() {
         return delegate.getStreams();
     }

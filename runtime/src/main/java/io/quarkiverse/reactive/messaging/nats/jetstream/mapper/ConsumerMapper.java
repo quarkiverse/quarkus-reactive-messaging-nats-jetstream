@@ -13,6 +13,7 @@ public interface ConsumerMapper {
     @Mapping(source = "numWaiting", target = "waiting")
     @Mapping(source = "numAckPending", target = "acknowledgePending")
     @Mapping(source = "clusterInfo", target = "cluster")
+    @Mapping(source = "consumerConfiguration", target = "configuration")
     Consumer of(ConsumerInfo consumerInfo);
 
 }

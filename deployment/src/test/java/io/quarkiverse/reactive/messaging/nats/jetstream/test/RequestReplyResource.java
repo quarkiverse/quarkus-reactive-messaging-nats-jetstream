@@ -167,8 +167,8 @@ public class RequestReplyResource {
             }
 
             @Override
-            public Optional<String> name() {
-                return Optional.of(subject);
+            public String name() {
+                return subject;
             }
 
             @Override
