@@ -34,7 +34,7 @@ public class ConsumerConfigurtationFactory {
         if (!configuration.filterSubjects().isEmpty()) {
             builder = builder.filterSubjects(configuration.filterSubjects());
         }
-        builder = configuration.name().map(builder::name).orElse(builder);
+        builder = builder.name(configuration.name());
         builder = builder.ackPolicy(AckPolicy.Explicit);
         builder = configuration.ackWait().map(builder::ackWait).orElse(builder);
         builder = configuration.deliverPolicy().map(builder::deliverPolicy).orElse(builder.deliverPolicy(DeliverPolicy.All));

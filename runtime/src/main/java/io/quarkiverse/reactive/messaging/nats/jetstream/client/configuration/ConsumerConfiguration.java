@@ -12,7 +12,7 @@ import io.nats.client.api.ReplayPolicy;
 
 public interface ConsumerConfiguration<T> {
 
-    Optional<String> name();
+    String name();
 
     String stream();
 

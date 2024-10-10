@@ -119,6 +119,20 @@ public class DefaultConnection implements Connection {
     }
 
     @Override
+    public Uni<Void> deleteConsumer(String streamName, String consumerName) {
+        return getJetStreamManagement()
+                .onItem().transformToUni(jsm -> Uni.createFrom().<Void> emitter(emitter -> {
+                    try {
+                        jsm.deleteConsumer(streamName, consumerName);
+                        emitter.complete(null);
+                    } catch (Throwable failure) {
+                        emitter.fail(new SystemException(failure));
+                    }
+                }))
+                .emitOn(context::runOnContext);
+    }
+
+    @Override
     public Uni<List<String>> getStreams() {
         return getJetStreamManagement()
                 .onItem().transformToUni(jsm -> Uni.createFrom().item(Unchecked.supplier((jsm::getStreamNames))))
@@ -414,11 +428,10 @@ public class DefaultConnection implements Connection {
         return Uni.createFrom().item(Unchecked.supplier(() -> {
             try {
                 final var streamContext = connection.getStreamContext(configuration.stream());
-                return streamContext.getConsumerContext(configuration.name()
-                        .orElseThrow(() -> new IllegalArgumentException("Consumer name is not configured")));
+                return streamContext.getConsumerContext(configuration.name());
             } catch (JetStreamApiException e) {
                 if (e.getApiErrorCode() == 10014) { // consumer not found
-                    throw new ConsumerNotFoundException(configuration.stream(), configuration.name().orElse(null));
+                    throw new ConsumerNotFoundException(configuration.stream(), configuration.name());
                 } else {
                     throw new FetchException(e);
                 }
@@ -477,7 +490,7 @@ public class DefaultConnection implements Connection {
         return result;
     }
 
-    private <T> Uni<ConsumerContext> addOrUpdateConsumer(FetchConsumerConfiguration<T> configuration) {
+    private <T> Uni<ConsumerContext> addOrUpdateConsumer(ConsumerConfiguration<T> configuration) {
         return Uni.createFrom().item(Unchecked.supplier(() -> {
             try {
                 final var factory = new ConsumerConfigurtationFactory();
@@ -486,8 +499,8 @@ public class DefaultConnection implements Connection {
                 final var consumerContext = streamContext.createOrUpdateConsumer(consumerConfiguration);
                 connection.flush(Duration.ZERO);
                 return consumerContext;
-            } catch (IOException | JetStreamApiException e) {
-                throw new FetchException(e);
+            } catch (Throwable failure) {
+                throw new FetchException(failure);
             }
         }))
                 .emitOn(context::runOnContext);
