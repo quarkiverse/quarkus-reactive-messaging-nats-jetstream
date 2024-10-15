@@ -62,8 +62,15 @@ public class MessageSubscriberProcessor implements MessageProcessor, ConnectionL
     }
 
     @Override
-    public AtomicReference<? extends Connection> connection() {
-        return connection;
+    public void close() {
+        try {
+            final var connection = this.connection.getAndSet(null);
+            if (connection != null) {
+                connection.close();
+            }
+        } catch (Throwable failure) {
+            logger.warnf(failure, "Failed to close connection with message: %s", failure.getMessage());
+        }
     }
 
     @Override
@@ -81,7 +88,10 @@ public class MessageSubscriberProcessor implements MessageProcessor, ConnectionL
     }
 
     private <T> Uni<Message<T>> recover(final Message<T> message) {
-        return close()
+        return Uni.createFrom().<Void> item(() -> {
+            close();
+            return null;
+        })
                 .onItem().transformToUni(v -> publish(message));
     }
 

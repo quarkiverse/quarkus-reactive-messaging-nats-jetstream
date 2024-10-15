@@ -11,7 +11,7 @@ import org.eclipse.microprofile.reactive.messaging.Message;
 
 import io.quarkiverse.reactive.messaging.nats.jetstream.ExponentialBackoff;
 import io.quarkiverse.reactive.messaging.nats.jetstream.JetStreamIncomingMessage;
-import io.quarkiverse.reactive.messaging.nats.jetstream.tracing.JetStreamInstrumenter;
+import io.quarkiverse.reactive.messaging.nats.jetstream.tracing.JetStreamInstrument;
 import io.quarkiverse.reactive.messaging.nats.jetstream.tracing.JetStreamTrace;
 import io.quarkus.arc.DefaultBean;
 import io.vertx.mutiny.core.Context;
@@ -23,11 +23,11 @@ public class DefaultMessageMapper implements MessageMapper {
     public static final String MESSAGE_TYPE_HEADER = "message.type";
 
     private final PayloadMapper payloadMapper;
-    private final JetStreamInstrumenter instrumenter;
+    private final JetStreamInstrument instrumenter;
 
     @Inject
     public DefaultMessageMapper(PayloadMapper payloadMapper,
-            JetStreamInstrumenter instrumenter) {
+            JetStreamInstrument instrumenter) {
         this.payloadMapper = payloadMapper;
         this.instrumenter = instrumenter;
     }

@@ -9,6 +9,7 @@ import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.TimeoutException;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.eclipse.microprofile.reactive.messaging.Message;
 import org.jboss.logging.Logger;
 
@@ -29,7 +30,7 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.mapper.ConsumerMapper;
 import io.quarkiverse.reactive.messaging.nats.jetstream.mapper.MessageMapper;
 import io.quarkiverse.reactive.messaging.nats.jetstream.mapper.PayloadMapper;
 import io.quarkiverse.reactive.messaging.nats.jetstream.mapper.StreamStateMapper;
-import io.quarkiverse.reactive.messaging.nats.jetstream.tracing.JetStreamInstrumenter;
+import io.quarkiverse.reactive.messaging.nats.jetstream.tracing.JetStreamInstrument;
 import io.quarkiverse.reactive.messaging.nats.jetstream.tracing.JetStreamTrace;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
@@ -46,7 +47,7 @@ public class DefaultConnection implements Connection {
     private final ConsumerMapper consumerMapper;
     private final MessageMapper messageMapper;
     private final PayloadMapper payloadMapper;
-    private final JetStreamInstrumenter instrumenter;
+    private final JetStreamInstrument instrument;
 
     DefaultConnection(final ConnectionConfiguration configuration,
             final ConnectionListener connectionListener,
@@ -55,7 +56,7 @@ public class DefaultConnection implements Connection {
             final PayloadMapper payloadMapper,
             final ConsumerMapper consumerMapper,
             final StreamStateMapper streamStateMapper,
-            final JetStreamInstrumenter instrumenter) throws ConnectionException {
+            final JetStreamInstrument instrumenter) throws ConnectionException {
         this.connection = connect(configuration);
         this.listeners = new ArrayList<>(List.of(connectionListener));
         this.context = context;
@@ -63,7 +64,7 @@ public class DefaultConnection implements Connection {
         this.consumerMapper = consumerMapper;
         this.messageMapper = messageMapper;
         this.payloadMapper = payloadMapper;
-        this.instrumenter = instrumenter;
+        this.instrument = instrumenter;
         fireEvent(ConnectionEvent.Connected, "Connection established");
     }
 
@@ -96,7 +97,19 @@ public class DefaultConnection implements Connection {
     }
 
     @Override
+    public void removeListener(ConnectionListener listener) {
+        this.listeners.remove(listener);
+    }
+
+    @Override
     public void close() {
+        new ArrayList<>(listeners).forEach(listener -> {
+            try {
+                listener.close();
+            } catch (Throwable failure) {
+                logger.warnf(failure, "Error closing listener: %s", failure.getMessage());
+            }
+        });
         try {
             connection.close();
         } catch (Throwable throwable) {
@@ -226,7 +239,7 @@ public class DefaultConnection implements Connection {
                 if (configuration.traceEnabled()) {
                     // Create a new span for the outbound message and record updated tracing information in
                     // the headers; this has to be done before we build the properties below
-                    traceOutgoing(instrumenter.publisher(), message,
+                    traceOutgoing(instrument.publisher(), message,
                             new JetStreamTrace(configuration.stream(), subject, messageId, headers,
                                     new String(payload)));
                 }
@@ -338,16 +351,71 @@ public class DefaultConnection implements Connection {
                 .emitOn(context::runOnContext);
     }
 
-    io.nats.client.Connection connection() {
-        return connection;
+    @Override
+    public <T> Uni<Subscription<T>> subscribtion(PushConsumerConfiguration<T> configuration) {
+        return Uni.createFrom().item(() -> new PushSubscribtion<>(this, configuration, connection, messageMapper, context));
     }
 
-    Context context() {
-        return context;
+    @Override
+    public <T> Uni<Subscription<T>> subscribtion(ReaderConsumerConfiguration<T> configuration) {
+        return createSubscription(configuration)
+                .onItem().transformToUni(subscription -> createReader(configuration, subscription))
+                .onItem()
+                .transformToUni(pair -> Uni.createFrom()
+                        .<Subscription<T>> item(Unchecked.supplier(() -> new ReaderSubscribtion<>(this, configuration,
+                                pair.getLeft(), pair.getRight(), messageMapper, context))))
+                .onItem().invoke(this::addListener);
     }
 
-    MessageMapper messageMapper() {
-        return messageMapper;
+    @Override
+    public <T> void close(Subscription<T> subscription) {
+        try {
+            subscription.close();
+        } catch (Throwable failure) {
+            logger.warnf(failure, "Failed to close subscription: %s", failure.getMessage());
+        }
+        removeListener(subscription);
+    }
+
+    private <T> Uni<Pair<JetStreamSubscription, JetStreamReader>> createReader(ReaderConsumerConfiguration<T> configuration,
+            JetStreamSubscription subscription) {
+        return Uni.createFrom()
+                .item(Unchecked.supplier(() -> subscription.reader(configuration.maxRequestBatch(), configuration.rePullAt())))
+                .onItem().transform(reader -> Pair.of(subscription, reader));
+    }
+
+    /**
+     * Creates a subscription.
+     * If an IllegalArgumentException is thrown the consumer configuration is modified.
+     */
+    private <T> Uni<JetStreamSubscription> createSubscription(ReaderConsumerConfiguration<T> configuration) {
+        return Uni.createFrom().item(Unchecked.supplier(connection::jetStream))
+                .onItem().transformToUni(jetStream -> createSubscription(jetStream, configuration));
+    }
+
+    private <T> Uni<JetStreamSubscription> createSubscription(JetStream jetStream,
+            ReaderConsumerConfiguration<T> configuration) {
+        return subscribe(jetStream, configuration)
+                .onFailure().recoverWithUni(failure -> {
+                    if (failure instanceof IllegalArgumentException) {
+                        return deleteConsumer(configuration.consumerConfiguration().stream(),
+                                configuration.consumerConfiguration().name())
+                                .onItem().transformToUni(v -> subscribe(jetStream, configuration));
+                    } else {
+                        return Uni.createFrom().failure(failure);
+                    }
+                });
+    }
+
+    private <T> Uni<JetStreamSubscription> subscribe(JetStream jetStream, ReaderConsumerConfiguration<T> configuration) {
+        return Uni.createFrom().emitter(emitter -> {
+            try {
+                final var optionsFactory = new PullSubscribeOptionsFactory();
+                emitter.complete(jetStream.subscribe(configuration.subject(), optionsFactory.create(configuration)));
+            } catch (Throwable failure) {
+                emitter.fail(failure);
+            }
+        });
     }
 
     private Uni<StreamInfo> getStreamInfo(String streamName) {

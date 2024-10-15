@@ -17,11 +17,11 @@ import io.opentelemetry.instrumentation.api.instrumenter.messaging.MessagingAttr
 import io.opentelemetry.instrumentation.api.instrumenter.messaging.MessagingSpanNameExtractor;
 
 @ApplicationScoped
-public class JetStreamInstrumenter {
+public class JetStreamInstrument {
     private final Instance<OpenTelemetry> openTelemetryInstance;
 
     @Inject
-    public JetStreamInstrumenter(Instance<OpenTelemetry> openTelemetryInstance) {
+    public JetStreamInstrument(Instance<OpenTelemetry> openTelemetryInstance) {
         this.openTelemetryInstance = openTelemetryInstance;
     }
 

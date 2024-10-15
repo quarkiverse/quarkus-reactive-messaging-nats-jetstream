@@ -17,6 +17,7 @@ import org.jboss.logging.Logger;
 import io.quarkiverse.reactive.messaging.nats.NatsConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.Connection;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.ConnectionFactory;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.DefaultConnectionListener;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ConnectionConfiguration;
 import io.smallrye.mutiny.Uni;
 
@@ -83,8 +84,8 @@ public class DeadLetterConsumingBean {
                 .filter(Connection::isConnected)
                 .orElse(null))
                 .onItem().ifNull()
-                .switchTo(() -> connectionFactory.create(ConnectionConfiguration.of(natsConfiguration), (event, message) -> {
-                }))
+                .switchTo(() -> connectionFactory.create(ConnectionConfiguration.of(natsConfiguration),
+                        new DefaultConnectionListener()))
                 .onItem().invoke(this.connection::set);
     }
 }

@@ -8,8 +8,7 @@ import org.eclipse.microprofile.reactive.messaging.Message;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.Consumer;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.PurgeResult;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.StreamState;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.FetchConsumerConfiguration;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.PublishConfiguration;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.*;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 
@@ -22,6 +21,8 @@ public interface Connection extends AutoCloseable {
     List<ConnectionListener> listeners();
 
     void addListener(ConnectionListener listener);
+
+    void removeListener(ConnectionListener listener);
 
     default void fireEvent(ConnectionEvent event, String message) {
         listeners().forEach(listener -> listener.onEvent(event, message));
@@ -70,4 +71,10 @@ public interface Connection extends AutoCloseable {
     Uni<Void> deleteKeyValue(String bucketName, String key);
 
     <T> Uni<Message<T>> resolve(String streamName, long sequence);
+
+    <T> Uni<Subscription<T>> subscribtion(PushConsumerConfiguration<T> configuration);
+
+    <T> Uni<Subscription<T>> subscribtion(ReaderConsumerConfiguration<T> configuration);
+
+    <T> void close(Subscription<T> subscribtion);
 }
