@@ -17,6 +17,7 @@ import jakarta.inject.Inject;
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.reactive.messaging.Message;
 import org.eclipse.microprofile.reactive.messaging.spi.Connector;
+import org.jboss.logging.Logger;
 
 import io.quarkiverse.reactive.messaging.nats.NatsConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.ConnectionFactory;
@@ -77,6 +78,8 @@ import io.smallrye.reactive.messaging.health.HealthReporter;
 public class JetStreamConnector implements InboundConnector, OutboundConnector, HealthReporter {
     public static final String CONNECTOR_NAME = "quarkus-jetstream";
 
+    private final static Logger logger = Logger.getLogger(JetStreamConnector.class);
+
     private final List<MessageProcessor> processors;
     private final NatsConfiguration natsConfiguration;
     private final ConnectionFactory connectionFactory;
@@ -132,7 +135,14 @@ public class JetStreamConnector implements InboundConnector, OutboundConnector, 
 
     public void terminate(
             @Observes(notifyObserver = Reception.IF_EXISTS) @Priority(50) @BeforeDestroyed(ApplicationScoped.class) Object ignored) {
-        this.processors.forEach(processor -> processor.close().await().indefinitely());
+        this.processors.forEach(processor -> {
+            try {
+                processor.close();
+            } catch (Throwable failure) {
+                logger.warnf(failure, "Failed to close the processor: %s", failure.getMessage());
+            }
+        });
+        this.processors.clear();
     }
 
     private MessagePublisherProcessor<?> createMessagePublisherProcessor(

@@ -19,13 +19,14 @@ import io.nats.client.api.DeliverPolicy;
 import io.nats.client.api.ReplayPolicy;
 import io.quarkiverse.reactive.messaging.nats.NatsConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.ConnectionFactory;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.DefaultConnectionListener;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ConnectionConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ConsumerConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ReaderConsumerConfiguration;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class ReaderSubscribeConnectionTest {
-    private Logger logger = Logger.getLogger(ReaderSubscribeConnectionTest.class);
+    private final static Logger logger = Logger.getLogger(ReaderSubscribeConnectionTest.class);
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
@@ -42,30 +43,30 @@ public class ReaderSubscribeConnectionTest {
         var consumerConfiguration = createConsumerConfiguration(List.of(Duration.ofSeconds(10)), 2L);
 
         try (final var connection = connectionFactory.create(ConnectionConfiguration.of(natsConfiguration),
-                (event, message) -> {
-                },
-                consumerConfiguration).await().atMost(Duration.ofSeconds(30))) {
+                new DefaultConnectionListener()).await().atMost(Duration.ofSeconds(30))) {
             logger.info("Connected to NATS");
-            final var consumer = connection.getConsumer("reader-test", consumerConfiguration.consumerConfiguration().name())
-                    .await().atMost(Duration.ofSeconds(30));
-            assertThat(consumer).isNotNull();
-            assertThat(consumer.configuration().backoff()).isEqualTo(List.of(Duration.ofSeconds(10)));
-            assertThat(consumer.configuration().maxDeliver()).isEqualTo(2L);
+            try (final var ignored = connection.subscribtion(consumerConfiguration).await().atMost(Duration.ofSeconds(30))) {
+                final var consumer = connection.getConsumer("reader-test", consumerConfiguration.consumerConfiguration().name())
+                        .await().atMost(Duration.ofSeconds(30));
+                assertThat(consumer).isNotNull();
+                assertThat(consumer.configuration().backoff()).isEqualTo(List.of(Duration.ofSeconds(10)));
+                assertThat(consumer.configuration().maxDeliver()).isEqualTo(2L);
+            }
         }
 
         consumerConfiguration = createConsumerConfiguration(List.of(Duration.ofSeconds(10), Duration.ofSeconds(30)), 3L);
         try (final var connection = connectionFactory.create(ConnectionConfiguration.of(natsConfiguration),
-                (event, message) -> {
-                },
-                consumerConfiguration).await().atMost(Duration.ofSeconds(30))) {
-            logger.info("Connected to NATS");
-            final var consumer = connection.getConsumer("reader-test", consumerConfiguration.consumerConfiguration().name())
-                    .await().atMost(Duration.ofSeconds(30));
-            assertThat(consumer).isNotNull();
-            assertThat(consumer.configuration().backoff()).isEqualTo(List.of(Duration.ofSeconds(10), Duration.ofSeconds(30)));
-            assertThat(consumer.configuration().maxDeliver()).isEqualTo(3L);
+                new DefaultConnectionListener()).await().atMost(Duration.ofSeconds(30))) {
+            try (final var ignored = connection.subscribtion(consumerConfiguration).await().atMost(Duration.ofSeconds(30))) {
+                logger.info("Connected to NATS");
+                final var consumer = connection.getConsumer("reader-test", consumerConfiguration.consumerConfiguration().name())
+                        .await().atMost(Duration.ofSeconds(30));
+                assertThat(consumer).isNotNull();
+                assertThat(consumer.configuration().backoff())
+                        .isEqualTo(List.of(Duration.ofSeconds(10), Duration.ofSeconds(30)));
+                assertThat(consumer.configuration().maxDeliver()).isEqualTo(3L);
+            }
         }
-
     }
 
     private ReaderConsumerConfiguration<Object> createConsumerConfiguration(List<Duration> backoff, Long maxDeliver) {

@@ -18,7 +18,7 @@ class DefaultErrorListener implements ErrorListener {
 
     @Override
     public void exceptionOccurred(io.nats.client.Connection conn, Exception exp) {
-        logger.errorf("Caught exception connecting to %s with message: %s", conn.getServers(), exp.getMessage());
+        logger.debugf("Caught exception connecting to %s with message: %s", conn.getServers(), exp.getMessage());
     }
 
     @Override
