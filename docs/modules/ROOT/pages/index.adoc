@@ -78,31 +78,31 @@ If you want more examples, please take a look at the tests of the extension.
 .NATS configuration
 [format="csv",cols="2"]
 |======
-quarkus.messaging.nats.nats.servers,A comma-separated list of URI's nats://{host}:{port} to use for establishing the initial connection to the NATS cluster.
-quarkus.messaging.nats.nats.username,The username to connect to the NATS server
-quarkus.messaging.nats.nats.password,The password to connect to the NATS server
-quarkus.messaging.nats.nats.token,The token to connect to the NATS server
-quarkus.messaging.nats.nats.credential-path,The path to the credentials file to connect to the NATS server
-quarkus.messaging.nats.nats.ssl-enabled,Whether to enable SSL/TLS secure connections to the NATS server
-quarkus.messaging.nats.nats.connection-timeout,The connection timeout in milliseconds
-quarkus.messaging.nats.nats.error-listener,The classname for the error listener
-quarkus.messaging.nats.nats.buffer-size,The size in bytes to make buffers for connections
-quarkus.messaging.nats.nats.keystore-path,The path to the keystore file
-quarkus.messaging.nats.nats.keystore-password,The password for the keystore
-quarkus.messaging.nats.nats.truststore-path,The path to the trust store file
-quarkus.messaging.nats.nats.truststore-password,The password for the trust store
-quarkus.messaging.nats.nats.tls-algorithm,The TLS algorithm
+quarkus.messaging.nats.servers,A comma-separated list of URI's nats://{host}:{port} to use for establishing the initial connection to the NATS cluster.
+quarkus.messaging.nats.username,The username to connect to the NATS server
+quarkus.messaging.nats.password,The password to connect to the NATS server
+quarkus.messaging.nats.token,The token to connect to the NATS server
+quarkus.messaging.nats.credential-path,The path to the credentials file to connect to the NATS server
+quarkus.messaging.nats.ssl-enabled,Whether to enable SSL/TLS secure connections to the NATS server
+quarkus.messaging.nats.connection-timeout,The connection timeout in milliseconds
+quarkus.messaging.nats.error-listener,The classname for the error listener
+quarkus.messaging.nats.buffer-size,The size in bytes to make buffers for connections
+quarkus.messaging.nats.keystore-path,The path to the keystore file
+quarkus.messaging.nats.keystore-password,The password for the keystore
+quarkus.messaging.nats.truststore-path,The path to the trust store file
+quarkus.messaging.nats.truststore-password,The password for the trust store
+quarkus.messaging.nats.tls-algorithm,The TLS algorithm
 |======
 
 .NATS JetStream configuration
 [format="csv",cols="2"]
 |======
-quarkus.messaging.nats.nats.jet-stream.auto-configure,Autoconfigure stream and subjects based on channel configuration
-quarkus.messaging.nats.nats.jet-stream.replicas,The number of replicas a message must be stored. Default value is 1
-quarkus.messaging.nats.nats.jet-stream.storage-type,The storage type for stream data (File or Memory)
-quarkus.messaging.nats.nats.jet-stream.retention-policy,Declares the retention policy for the stream (Limits or Interest)
-quarkus.messaging.nats.nats.jet-stream.streams[i].name,Name of the stream to setup if auto-configure is enabled
-quarkus.messaging.nats.nats.jet-stream.streams[i].subjects[n],Name of the subject in stream to setup if auto-configure is enabled
+quarkus.messaging.nats.jet-stream.auto-configure,Autoconfigure stream and subjects based on channel configuration
+quarkus.messaging.nats.jet-stream.replicas,The number of replicas a message must be stored. Default value is 1
+quarkus.messaging.nats.jet-stream.storage-type,The storage type for stream data (File or Memory)
+quarkus.messaging.nats.jet-stream.retention-policy,Declares the retention policy for the stream (Limits or Interest)
+quarkus.messaging.nats.jet-stream.streams[i].name,Name of the stream to setup if auto-configure is enabled
+quarkus.messaging.nats.jet-stream.streams[i].subjects[n],Name of the subject in stream to setup if auto-configure is enabled
 |======
 
 === Channel configuration
