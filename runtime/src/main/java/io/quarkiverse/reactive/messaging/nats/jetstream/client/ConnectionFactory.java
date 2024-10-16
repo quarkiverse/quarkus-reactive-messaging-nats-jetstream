@@ -1,6 +1,8 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client;
 
-import java.time.Duration;
+import static io.nats.client.Options.DEFAULT_MAX_RECONNECT;
+import static io.nats.client.Options.DEFAULT_RECONNECT_WAIT;
+
 import java.util.Optional;
 
 import jakarta.enterprise.context.ApplicationScoped;
@@ -23,9 +25,6 @@ import io.vertx.mutiny.core.Vertx;
 @ApplicationScoped
 public class ConnectionFactory {
     private final static Logger logger = Logger.getLogger(ConnectionFactory.class);
-
-    private final static Duration DEFAULT_CONNECTION_BACKOFF = Duration.ofMillis(500);
-    private final static Long DEFAULT_CONNECTION_ATTEMPTS = 10L;
 
     private final ExecutionHolder executionHolder;
     private final MessageMapper messageMapper;
@@ -59,8 +58,8 @@ public class ConnectionFactory {
                 .onFailure().invoke(failure -> logger.errorf(failure, "Failed connecting to NATS: %s", failure.getMessage()))
                 .onFailure()
                 .retry()
-                .withBackOff(connectionConfiguration.connectionBackoff().orElse(DEFAULT_CONNECTION_BACKOFF))
-                .atMost(connectionConfiguration.connectionAttempts().orElse(DEFAULT_CONNECTION_ATTEMPTS));
+                .withBackOff(connectionConfiguration.connectionBackoff().orElse(DEFAULT_RECONNECT_WAIT))
+                .atMost(connectionConfiguration.connectionAttempts().orElse(DEFAULT_MAX_RECONNECT));
     }
 
     private Optional<Vertx> getVertx() {

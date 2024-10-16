@@ -1,5 +1,8 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration;
 
+import static io.nats.client.Options.DEFAULT_MAX_RECONNECT;
+import static io.nats.client.Options.DEFAULT_RECONNECT_WAIT;
+
 import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
 
@@ -14,7 +17,8 @@ public class ConnectionOptionsFactory {
         final var servers = configuration.servers().split(",");
         final var optionsBuilder = new Options.Builder();
         optionsBuilder.servers(servers);
-        optionsBuilder.maxReconnects(0);
+        optionsBuilder.maxReconnects(configuration.connectionAttempts().orElse(DEFAULT_MAX_RECONNECT));
+        optionsBuilder.connectionTimeout(configuration.connectionBackoff().orElse(DEFAULT_RECONNECT_WAIT));
         if (connectionListener != null) {
             optionsBuilder.connectionListener(connectionListener);
         }

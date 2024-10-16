@@ -58,7 +58,7 @@ public interface NatsConfiguration {
     /**
      * The maximum number of attempts to attempt to re-connect to NATS
      */
-    Optional<Long> connectionAttempts();
+    Optional<Integer> connectionAttempts();
 
     /**
      * The classname for the error listener
