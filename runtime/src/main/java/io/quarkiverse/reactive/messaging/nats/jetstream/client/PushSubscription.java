@@ -14,8 +14,8 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.mapper.MessageMapper;
 import io.smallrye.mutiny.Multi;
 import io.vertx.mutiny.core.Context;
 
-public class PushSubscribtion<P> implements Subscription<P> {
-    private static final Logger logger = Logger.getLogger(PushSubscribtion.class);
+public class PushSubscription<P> implements Subscription<P> {
+    private static final Logger logger = Logger.getLogger(PushSubscription.class);
 
     private final Connection connection;
     private final PushConsumerConfiguration<P> consumerConfiguration;
@@ -27,7 +27,7 @@ public class PushSubscribtion<P> implements Subscription<P> {
     private volatile JetStreamSubscription subscription;
     private volatile Dispatcher dispatcher;
 
-    PushSubscribtion(final Connection connection,
+    PushSubscription(final Connection connection,
             final PushConsumerConfiguration<P> consumerConfiguration,
             final io.nats.client.Connection natsConnection,
             final MessageMapper messageMapper,

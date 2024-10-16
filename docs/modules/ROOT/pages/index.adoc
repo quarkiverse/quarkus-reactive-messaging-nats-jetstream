@@ -17,7 +17,7 @@ For instance, with Maven, add the following dependency to your POM file:
 ----
 <dependency>
     <groupId>io.quarkiverse.reactivemessaging.nats-jetstream</groupId>
-    <artifactId>quarkus-reactive-messaging-nats-jetstream</artifactId>
+    <artifactId>quarkus-messaging-nats-jetstream</artifactId>
     <version>{project-version}</version>
 </dependency>
 ----
@@ -100,11 +100,20 @@ quarkus.messaging.nats.connection-backoff,Back-off delay between to attempt to r
 [format="csv",cols="2"]
 |======
 quarkus.messaging.nats.jet-stream.auto-configure,Autoconfigure stream and subjects based on channel configuration
-quarkus.messaging.nats.jet-stream.replicas,The number of replicas a message must be stored. Default value is 1
-quarkus.messaging.nats.jet-stream.storage-type,The storage type for stream data (File or Memory)
-quarkus.messaging.nats.jet-stream.retention-policy,Declares the retention policy for the stream (Limits or Interest)
+quarkus.messaging.nats.jet-stream.streams[i].replicas,The number of replicas a message must be stored. Default value is 1
+quarkus.messaging.nats.jet-stream.streams[i].storage-type,The storage type for stream data (File or Memory)
+quarkus.messaging.nats.jet-stream.streams[i].retention-policy,Declares the retention policy for the stream (Limits or Interest)
 quarkus.messaging.nats.jet-stream.streams[i].name,Name of the stream to setup if auto-configure is enabled
 quarkus.messaging.nats.jet-stream.streams[i].subjects[n],Name of the subject in stream to setup if auto-configure is enabled
+quarkus.messaging.nats.jet-stream.key-value-stores[i].bucket-name,Name of Key-Value store
+quarkus.messaging.nats.jet-stream.key-value-stores[i].description,Description of Key-Value store
+quarkus.messaging.nats.jet-stream.key-value-stores[i].storage-type,The storage type (File or Memory)
+quarkus.messaging.nats.jet-stream.key-value-stores[i].max-bucket-size,The maximum number of bytes for this bucket
+quarkus.messaging.nats.jet-stream.key-value-stores[i].max-history-per-key,The maximum number of history for any one key. Includes the current value.
+quarkus.messaging.nats.jet-stream.key-value-stores[i].max-value-size,The maximum size for an individual value in the bucket
+quarkus.messaging.nats.jet-stream.key-value-stores[i].ttl,The maximum age for a value in this bucket
+quarkus.messaging.nats.jet-stream.key-value-stores[i].replicas,The number of replicas for this bucket
+quarkus.messaging.nats.jet-stream.key-value-stores[i].compressed,Whether to use compression
 |======
 
 === Channel configuration

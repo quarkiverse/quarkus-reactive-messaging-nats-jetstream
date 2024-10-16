@@ -353,7 +353,7 @@ public class DefaultConnection implements Connection {
 
     @Override
     public <T> Uni<Subscription<T>> subscribtion(PushConsumerConfiguration<T> configuration) {
-        return Uni.createFrom().item(() -> new PushSubscribtion<>(this, configuration, connection, messageMapper, context));
+        return Uni.createFrom().item(() -> new PushSubscription<>(this, configuration, connection, messageMapper, context));
     }
 
     @Override
