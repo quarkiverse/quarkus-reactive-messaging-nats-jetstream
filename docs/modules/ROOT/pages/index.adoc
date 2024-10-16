@@ -92,6 +92,8 @@ quarkus.messaging.nats.keystore-password,The password for the keystore
 quarkus.messaging.nats.truststore-path,The path to the trust store file
 quarkus.messaging.nats.truststore-password,The password for the trust store
 quarkus.messaging.nats.tls-algorithm,The TLS algorithm
+quarkus.messaging.nats.connection-attempts,The maximum number of attempts to attempt to re-connect to NATS
+quarkus.messaging.nats.connection-backoff,Back-off delay between to attempt to re-connect to NATS
 |======
 
 .NATS JetStream configuration
