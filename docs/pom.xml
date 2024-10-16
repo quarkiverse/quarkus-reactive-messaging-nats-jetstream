@@ -15,7 +15,7 @@
         <!-- Make sure the doc is built after the other artifacts -->
         <dependency>
             <groupId>io.quarkiverse.reactivemessaging.nats-jetstream</groupId>
-            <artifactId>quarkus-reactive-messaging-nats-jetstream-deployment</artifactId>
+            <artifactId>quarkus-messaging-nats-jetstream-deployment</artifactId>
             <version>${project.version}</version>
         </dependency>
     </dependencies>
