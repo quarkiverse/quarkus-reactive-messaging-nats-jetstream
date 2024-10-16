@@ -91,7 +91,7 @@ class DefaultConnectionConfiguration implements ConnectionConfiguration {
     }
 
     @Override
-    public Optional<Long> connectionAttempts() {
+    public Optional<Integer> connectionAttempts() {
         return configuration.connectionAttempts();
     }
 

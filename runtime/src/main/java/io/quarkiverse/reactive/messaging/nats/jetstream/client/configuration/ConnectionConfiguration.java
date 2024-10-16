@@ -38,7 +38,7 @@ public interface ConnectionConfiguration {
 
     Optional<Duration> connectionBackoff();
 
-    Optional<Long> connectionAttempts();
+    Optional<Integer> connectionAttempts();
 
     static ConnectionConfiguration of(NatsConfiguration configuration) {
         return new DefaultConnectionConfiguration(configuration);

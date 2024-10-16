@@ -4,6 +4,7 @@ import java.time.Duration;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.microprofile.reactive.messaging.Message;
 import org.jboss.logging.Logger;
@@ -27,6 +28,7 @@ class ReaderSubscribtion<P> implements Subscription<P> {
     private final JetStreamSubscription subscription;
     private final MessageMapper messageMapper;
     private final Context context;
+    private final AtomicBoolean closed;
 
     ReaderSubscribtion(Connection connection,
             ReaderConsumerConfiguration<P> consumerConfiguration,
@@ -40,6 +42,7 @@ class ReaderSubscribtion<P> implements Subscription<P> {
         this.reader = reader;
         this.messageMapper = messageMapper;
         this.context = context;
+        this.closed = new AtomicBoolean(false);
     }
 
     @Override
@@ -49,7 +52,7 @@ class ReaderSubscribtion<P> implements Subscription<P> {
         ExecutorService pullExecutor = Executors.newSingleThreadExecutor(JetstreamWorkerThread::new);
         return Multi.createBy().repeating()
                 .uni(this::readNextMessage)
-                .whilst(message -> connection.isConnected() && subscription.isActive())
+                .whilst(message -> !closed.get())
                 .runSubscriptionOn(pullExecutor)
                 .emitOn(context::runOnContext)
                 .flatMap(message -> createMulti(message.orElse(null), traceEnabled, payloadType, context));
@@ -62,6 +65,7 @@ class ReaderSubscribtion<P> implements Subscription<P> {
 
     @Override
     public void close() {
+        this.closed.set(true);
         try {
             reader.stop();
         } catch (Throwable e) {
@@ -87,8 +91,14 @@ class ReaderSubscribtion<P> implements Subscription<P> {
     private Uni<Optional<io.nats.client.Message>> readNextMessage() {
         return Uni.createFrom().emitter(emitter -> {
             try {
-                emitter.complete(Optional
-                        .ofNullable(reader.nextMessage(consumerConfiguration.maxRequestExpires().orElse(Duration.ZERO))));
+                if (!connection.isConnected()) {
+                    emitter.fail(new ConnectionException("The connection is not connected"));
+                } else if (!subscription.isActive()) {
+                    emitter.fail(new ReaderException("The subscription is not active"));
+                } else {
+                    emitter.complete(Optional
+                            .ofNullable(reader.nextMessage(consumerConfiguration.maxRequestExpires().orElse(Duration.ZERO))));
+                }
             } catch (JetStreamStatusException e) {
                 emitter.fail(new ReaderException(e));
             } catch (IllegalStateException e) {
