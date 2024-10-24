@@ -30,10 +30,6 @@
             <artifactId>opentelemetry-instrumentation-api-semconv</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.apache.commons</groupId>
-            <artifactId>commons-lang3</artifactId>
-        </dependency>
-        <dependency>
             <groupId>io.nats</groupId>
             <artifactId>jnats</artifactId>
         </dependency>
@@ -55,6 +51,7 @@
         <dependency>
             <groupId>org.mapstruct</groupId>
             <artifactId>mapstruct</artifactId>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>io.smallrye.reactive</groupId>

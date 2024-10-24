@@ -9,7 +9,6 @@ import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.TimeoutException;
 
-import org.apache.commons.lang3.tuple.Pair;
 import org.eclipse.microprofile.reactive.messaging.Message;
 import org.jboss.logging.Logger;
 
@@ -21,11 +20,10 @@ import io.nats.client.api.StreamInfoOptions;
 import io.nats.client.impl.Headers;
 import io.quarkiverse.reactive.messaging.nats.jetstream.ExponentialBackoff;
 import io.quarkiverse.reactive.messaging.nats.jetstream.JetStreamOutgoingMessageMetadata;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.*;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.Consumer;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.JetStreamMessage;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.PurgeResult;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.StreamState;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.*;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ConsumerConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.mapper.ConsumerMapper;
 import io.quarkiverse.reactive.messaging.nats.jetstream.mapper.MessageMapper;
 import io.quarkiverse.reactive.messaging.nats.jetstream.mapper.PayloadMapper;
@@ -34,6 +32,7 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.tracing.JetStreamInstrum
 import io.quarkiverse.reactive.messaging.nats.jetstream.tracing.JetStreamTrace;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.tuples.Tuple2;
 import io.smallrye.mutiny.unchecked.Unchecked;
 import io.vertx.mutiny.core.Context;
 
@@ -214,6 +213,13 @@ public class DefaultConnection implements Connection {
     }
 
     @Override
+    public Uni<StreamConfiguration> getStreamConfiguration(String streamName) {
+        return getStreamInfo(streamName)
+                .onItem().transform(streamInfo -> StreamConfiguration.of(streamInfo.getConfiguration()))
+                .emitOn(context::runOnContext);
+    }
+
+    @Override
     public Uni<List<PurgeResult>> purgeAllStreams() {
         return getStreams()
                 .onItem().transformToUni(this::purgeAllStreams)
@@ -363,7 +369,7 @@ public class DefaultConnection implements Connection {
                 .onItem()
                 .transformToUni(pair -> Uni.createFrom()
                         .<Subscription<T>> item(Unchecked.supplier(() -> new ReaderSubscribtion<>(this, configuration,
-                                pair.getLeft(), pair.getRight(), messageMapper, context))))
+                                pair.getItem1(), pair.getItem2(), messageMapper, context))))
                 .onItem().invoke(this::addListener);
     }
 
@@ -377,11 +383,31 @@ public class DefaultConnection implements Connection {
         removeListener(subscription);
     }
 
-    private <T> Uni<Pair<JetStreamSubscription, JetStreamReader>> createReader(ReaderConsumerConfiguration<T> configuration,
+    @Override
+    public Uni<Void> addOrUpdateKeyValueStores(List<KeyValueSetupConfiguration> keyValueConfigurations) {
+        return Multi.createFrom().items(keyValueConfigurations.stream())
+                .onItem().transformToUniAndMerge(this::addOrUpdateKeyValueStore)
+                .collect().last()
+                .emitOn(context::runOnContext);
+    }
+
+    @Override
+    public Uni<List<StreamResult>> addStreams(List<StreamSetupConfiguration> streamConfigurations) {
+        return getJetStreamManagement()
+                .onItem()
+                .transformToMulti(jetStreamManagement -> Multi.createFrom()
+                        .items(streamConfigurations.stream()
+                                .map(streamConfiguration -> Tuple2.of(jetStreamManagement, streamConfiguration))))
+                .onItem().transformToUniAndMerge(tuple -> addOrUpdateStream(tuple.getItem1(), tuple.getItem2()))
+                .collect().asList()
+                .emitOn(context::runOnContext);
+    }
+
+    private <T> Uni<Tuple2<JetStreamSubscription, JetStreamReader>> createReader(ReaderConsumerConfiguration<T> configuration,
             JetStreamSubscription subscription) {
         return Uni.createFrom()
                 .item(Unchecked.supplier(() -> subscription.reader(configuration.maxRequestBatch(), configuration.rePullAt())))
-                .onItem().transform(reader -> Pair.of(subscription, reader));
+                .onItem().transform(reader -> Tuple2.of(subscription, reader));
     }
 
     /**
@@ -607,5 +633,90 @@ public class DefaultConnection implements Connection {
         } catch (Throwable failure) {
             throw new ConnectionException(failure);
         }
+    }
+
+    private Uni<Void> addOrUpdateKeyValueStore(final KeyValueSetupConfiguration keyValueSetupConfiguration) {
+        return Uni.createFrom().emitter(emitter -> {
+            try {
+                final var kvm = connection.keyValueManagement();
+                final var factory = new KeyValueConfigurationFactory();
+                if (kvm.getBucketNames().contains(keyValueSetupConfiguration.bucketName())) {
+                    kvm.update(factory.create(keyValueSetupConfiguration));
+                } else {
+                    kvm.create(factory.create(keyValueSetupConfiguration));
+                }
+                emitter.complete(null);
+            } catch (Throwable failure) {
+                emitter.fail(new SetupException(String.format("Unable to manage Key Value Store: %s", failure.getMessage()),
+                        failure));
+            }
+        });
+    }
+
+    private Uni<StreamResult> addOrUpdateStream(final JetStreamManagement jsm,
+            final StreamSetupConfiguration setupConfiguration) {
+        return getStreamInfo(jsm, setupConfiguration.configuration().name())
+                .onItem().transformToUni(streamInfo -> updateStream(jsm, streamInfo, setupConfiguration))
+                .onFailure().recoverWithUni(failure -> createStream(jsm, setupConfiguration.configuration()));
+    }
+
+    private Uni<StreamResult> createStream(final JetStreamManagement jsm,
+            final StreamConfiguration streamConfiguration) {
+        return Uni.createFrom().emitter(emitter -> {
+            try {
+                final var factory = new StreamConfigurationFactory();
+                final var streamConfig = factory.create(streamConfiguration);
+                jsm.addStream(streamConfig);
+                emitter.complete(
+                        StreamResult.builder().configuration(streamConfiguration).status(StreamStatus.Created).build());
+            } catch (Throwable failure) {
+                emitter.fail(new SetupException(String.format("Unable to create stream: %s with message: %s",
+                        streamConfiguration.name(), failure.getMessage()), failure));
+            }
+        });
+    }
+
+    private Uni<StreamResult> updateStream(final JetStreamManagement jsm,
+            final StreamInfo streamInfo,
+            final StreamSetupConfiguration setupConfiguration) {
+        return Uni.createFrom().<StreamResult> emitter(emitter -> {
+            try {
+                final var currentConfiguration = streamInfo.getConfiguration();
+                final var factory = new StreamConfigurationFactory();
+                final var configuration = factory.create(currentConfiguration, setupConfiguration.configuration());
+                if (configuration.isPresent()) {
+                    logger.debugf("Updating stream %s", setupConfiguration.configuration().name());
+                    jsm.updateStream(configuration.get());
+                    emitter.complete(StreamResult.builder().configuration(setupConfiguration.configuration())
+                            .status(StreamStatus.Updated).build());
+                } else {
+                    emitter.complete(StreamResult.builder().configuration(setupConfiguration.configuration())
+                            .status(StreamStatus.NotModified).build());
+                }
+            } catch (Throwable failure) {
+                logger.errorf(failure, "message: %s", failure.getMessage());
+                emitter.fail(new SetupException(String.format("Unable to update stream: %s with message: %s",
+                        setupConfiguration.configuration().name(), failure.getMessage()), failure));
+            }
+        })
+                .onFailure().recoverWithUni(failure -> {
+                    if (failure.getCause() instanceof JetStreamApiException && setupConfiguration.overwrite()) {
+                        return deleteStream(jsm, setupConfiguration.configuration().name())
+                                .onItem().transformToUni(v -> createStream(jsm, setupConfiguration.configuration()));
+                    }
+                    return Uni.createFrom().failure(failure);
+                });
+    }
+
+    private Uni<Void> deleteStream(final JetStreamManagement jsm, String streamName) {
+        return Uni.createFrom().emitter(emitter -> {
+            try {
+                jsm.deleteStream(streamName);
+                emitter.complete(null);
+            } catch (Throwable failure) {
+                emitter.fail(new SetupException(String.format("Unable to delete stream: %s with message: %s", streamName,
+                        failure.getMessage()), failure));
+            }
+        });
     }
 }
