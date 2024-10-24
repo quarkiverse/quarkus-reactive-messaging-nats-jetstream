@@ -14,6 +14,8 @@ public interface ConsumerMapper {
     @Mapping(source = "numAckPending", target = "acknowledgePending")
     @Mapping(source = "clusterInfo", target = "cluster")
     @Mapping(source = "consumerConfiguration", target = "configuration")
+    @Mapping(source = "streamName", target = "stream")
+    @Mapping(source = "creationTime", target = "created")
     Consumer of(ConsumerInfo consumerInfo);
 
 }

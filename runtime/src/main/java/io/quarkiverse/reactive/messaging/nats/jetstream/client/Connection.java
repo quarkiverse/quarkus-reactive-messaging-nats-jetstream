@@ -12,7 +12,7 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.*;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 
-public interface Connection extends AutoCloseable {
+public interface Connection extends StreamSetup, KeyValueStoreSetup, AutoCloseable {
 
     boolean isConnected();
 
@@ -52,6 +52,8 @@ public interface Connection extends AutoCloseable {
     Uni<Void> deleteMessage(String stream, long sequence, boolean erase);
 
     Uni<StreamState> getStreamState(String streamName);
+
+    Uni<StreamConfiguration> getStreamConfiguration(String streamName);
 
     Uni<List<PurgeResult>> purgeAllStreams();
 

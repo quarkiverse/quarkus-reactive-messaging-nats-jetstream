@@ -54,18 +54,20 @@ public interface KeyValueSetupConfiguration {
      */
     Boolean compressed();
 
-    static List<? extends KeyValueSetupConfiguration> of(JetStreamBuildConfiguration configuration) {
-        return configuration.keyValueStores().stream().map(store -> DefaultKeyValueSetupConfiguration.builder()
-                .bucketName(store.bucketName())
-                .description(store.description())
-                .storageType(store.storageType())
-                .maxBucketSize(store.maxBucketSize())
-                .maxHistoryPerKey(store.maxHistoryPerKey())
-                .maxValueSize(store.maxValueSize())
-                .ttl(store.ttl().map(Duration::parse))
-                .replicas(store.replicas())
-                .compressed(store.compressed())
-                .build()).toList();
+    static List<KeyValueSetupConfiguration> of(JetStreamBuildConfiguration configuration) {
+        return configuration.keyValueStores().stream()
+                .map(store -> (KeyValueSetupConfiguration) DefaultKeyValueSetupConfiguration.builder()
+                        .bucketName(store.bucketName())
+                        .description(store.description())
+                        .storageType(store.storageType())
+                        .maxBucketSize(store.maxBucketSize())
+                        .maxHistoryPerKey(store.maxHistoryPerKey())
+                        .maxValueSize(store.maxValueSize())
+                        .ttl(store.ttl().map(Duration::parse))
+                        .replicas(store.replicas())
+                        .compressed(store.compressed())
+                        .build())
+                .toList();
     }
 
 }

@@ -105,6 +105,25 @@ quarkus.messaging.nats.jet-stream.streams[i].storage-type,The storage type for s
 quarkus.messaging.nats.jet-stream.streams[i].retention-policy,Declares the retention policy for the stream (Limits or Interest)
 quarkus.messaging.nats.jet-stream.streams[i].name,Name of the stream to setup if auto-configure is enabled
 quarkus.messaging.nats.jet-stream.streams[i].subjects[n],Name of the subject in stream to setup if auto-configure is enabled
+quarkus.messaging.nats.jet-stream.streams[i].overwrite,If the stream already exists it will be overwritten
+quarkus.messaging.nats.jet-stream.streams[i].description,Description of stream
+quarkus.messaging.nats.jet-stream.streams[i].compression-option,The compression option for this stream
+quarkus.messaging.nats.jet-stream.streams[i].maximum-consumers,The maximum number of consumers for this stream
+quarkus.messaging.nats.jet-stream.streams[i].maximum-messages,The maximum messages for this stream
+quarkus.messaging.nats.jet-stream.streams[i].maximum-messages-per-subject,The maximum messages per subject for this stream
+quarkus.messaging.nats.jet-stream.streams[i].maximum-bytes,The maximum number of bytes for this stream
+quarkus.messaging.nats.jet-stream.streams[i].maximum-age,The maximum message age for this stream
+quarkus.messaging.nats.jet-stream.streams[i].maximum-message-size,The maximum message size for this stream
+quarkus.messaging.nats.jet-stream.streams[i].template-owner,The template json for this stream
+quarkus.messaging.nats.jet-stream.streams[i].discard-policy,The discard policy for this stream
+quarkus.messaging.nats.jet-stream.streams[i].duplicate-window,The duplicate checking window stream configuration. Duration. ZERO means duplicate checking is not enabled
+quarkus.messaging.nats.jet-stream.streams[i].allow-rollup,The flag indicating if the stream allows rollup
+quarkus.messaging.nats.jet-stream.streams[i].allow-direct,The flag indicating if the stream allows direct message access
+quarkus.messaging.nats.jet-stream.streams[i].mirror-direct,The flag indicating if the stream allows higher performance and unified direct access for mirrors as well
+quarkus.messaging.nats.jet-stream.streams[i].deny-delete,The flag indicating if deny delete is set for the stream
+quarkus.messaging.nats.jet-stream.streams[i].deny-purge,The flag indicating if deny purge is set for the stream
+quarkus.messaging.nats.jet-stream.streams[i].discard-new-per-subject,Whether discard policy with max message per subject is applied per subject
+quarkus.messaging.nats.jet-stream.streams[i].first-sequence,The first sequence used in the stream
 quarkus.messaging.nats.jet-stream.key-value-stores[i].bucket-name,Name of Key-Value store
 quarkus.messaging.nats.jet-stream.key-value-stores[i].description,Description of Key-Value store
 quarkus.messaging.nats.jet-stream.key-value-stores[i].storage-type,The storage type (File or Memory)

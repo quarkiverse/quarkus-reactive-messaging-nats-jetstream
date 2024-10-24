@@ -1,11 +1,11 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
-import io.nats.client.api.RetentionPolicy;
-import io.nats.client.api.StorageType;
+import io.nats.client.api.*;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.smallrye.config.ConfigMapping;
@@ -83,9 +83,20 @@ public interface JetStreamBuildConfiguration {
     interface Stream {
 
         /**
+         * If the stream already exists, it will be overwritten
+         */
+        @WithDefault("false")
+        Boolean overwrite();
+
+        /**
          * Name of stream
          */
         String name();
+
+        /**
+         * Description of stream
+         */
+        Optional<String> description();
 
         /**
          * Stream subjects
@@ -110,5 +121,91 @@ public interface JetStreamBuildConfiguration {
          */
         @WithDefault("Interest")
         RetentionPolicy retentionPolicy();
+
+        /**
+         * The compression option for this stream
+         */
+        @WithDefault("none")
+        CompressionOption compressionOption();
+
+        /**
+         * The maximum number of consumers for this stream
+         */
+        Optional<Long> maximumConsumers();
+
+        /**
+         * The maximum messages for this stream
+         */
+        Optional<Long> maximumMessages();
+
+        /**
+         * The maximum messages per subject for this stream
+         */
+        Optional<Long> maximumMessagesPerSubject();
+
+        /**
+         * The maximum number of bytes for this stream
+         */
+        Optional<Long> maximumBytes();
+
+        /**
+         * the maximum message age for this stream
+         */
+        Optional<Duration> maximumAge();
+
+        /**
+         * The maximum message size for this stream
+         */
+        Optional<Integer> maximumMessageSize();
+
+        /**
+         * The template json for this stream
+         */
+        Optional<String> templateOwner();
+
+        /**
+         * The discard policy for this stream
+         */
+        Optional<DiscardPolicy> discardPolicy();
+
+        /**
+         * The duplicate checking window stream configuration. Duration. ZERO means duplicate checking is not enabled
+         */
+        Optional<Duration> duplicateWindow();
+
+        /**
+         * The flag indicating if the stream allows rollup
+         */
+        Optional<Boolean> allowRollup();
+
+        /**
+         * The flag indicating if the stream allows direct message access
+         */
+        Optional<Boolean> allowDirect();
+
+        /**
+         * The flag indicating if the stream allows higher performance and unified direct access for mirrors as well
+         */
+        Optional<Boolean> mirrorDirect();
+
+        /**
+         * The flag indicating if deny delete is set for the stream
+         */
+        Optional<Boolean> denyDelete();
+
+        /**
+         * The flag indicating if deny purge is set for the stream
+         */
+        Optional<Boolean> denyPurge();
+
+        /**
+         * Whether discard policy with max message per subject is applied per subject
+         */
+        Optional<Boolean> discardNewPerSubject();
+
+        /**
+         * The first sequence used in the stream
+         */
+        Optional<Long> firstSequence();
     }
 }
