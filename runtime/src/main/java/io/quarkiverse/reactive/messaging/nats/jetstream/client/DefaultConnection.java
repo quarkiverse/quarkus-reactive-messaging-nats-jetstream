@@ -33,6 +33,7 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.tracing.JetStreamTrace;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple2;
+import io.smallrye.mutiny.tuples.Tuple5;
 import io.smallrye.mutiny.unchecked.Unchecked;
 import io.vertx.mutiny.core.Context;
 
@@ -227,8 +228,8 @@ public class DefaultConnection implements Connection {
     }
 
     @Override
-    public <T> Uni<Message<T>> publish(Message<T> message, PublishConfiguration configuration) {
-        return Uni.createFrom().<Message<T>> emitter(emitter -> {
+    public <T> Uni<Message<T>> publish(final Message<T> message, final PublishConfiguration configuration) {
+        return Uni.createFrom().<Tuple5<JetStream, String, Headers, byte[], PublishOptions>> emitter(emitter -> {
             try {
                 final var metadata = message.getMetadata(JetStreamOutgoingMessageMetadata.class);
                 final var messageId = metadata.map(JetStreamOutgoingMessageMetadata::messageId)
@@ -252,29 +253,23 @@ public class DefaultConnection implements Connection {
 
                 final var jetStream = connection.jetStream();
                 final var options = createPublishOptions(messageId, configuration.stream());
-                final var ack = jetStream.publish(
-                        subject,
-                        toJetStreamHeaders(headers),
-                        payload,
-                        options);
 
-                if (logger.isDebugEnabled()) {
-                    logger.debugf("Published message: %s", ack);
-                }
-
-                // flush all outgoing messages
-                connection.flush(Duration.ZERO);
-
-                emitter.complete(message);
+                emitter.complete(Tuple5.of(jetStream, subject, toJetStreamHeaders(headers), payload, options));
             } catch (Throwable failure) {
                 emitter.fail(
                         new PublishException(String.format("Failed to publish message: %s", failure.getMessage()), failure));
             }
         })
-                .emitOn(context::runOnContext)
-                .onItem().transformToUni(this::acknowledge)
+                .onItem()
+                .transformToUni(tuple -> Uni.createFrom().completionStage(
+                        tuple.getItem1().publishAsync(tuple.getItem2(), tuple.getItem3(), tuple.getItem4(), tuple.getItem5())))
+                .onItem()
+                .invoke(ack -> logger.debugf("Message published to stream: %s with sequence number: %d", ack.getStream(),
+                        ack.getSeqno()))
+                .onItem().transformToUni(ignore -> acknowledge(message))
                 .onFailure().recoverWithUni(failure -> notAcknowledge(message, failure))
-                .onFailure().transform(failure -> new PublishException(failure.getMessage(), failure));
+                .onFailure().transform(failure -> new PublishException(failure.getMessage(), failure))
+                .emitOn(context::runOnContext);
     }
 
     @Override
