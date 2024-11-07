@@ -282,14 +282,14 @@ public class DefaultConnection implements Connection {
 
     @Override
     public <T> Uni<Message<T>> nextMessage(FetchConsumerConfiguration<T> configuration) {
-        return getConsumerContext(configuration)
+        return addOrUpdateConsumer(configuration)
                 .onItem()
                 .transformToUni(consumerContext -> nextMessage(consumerContext, configuration));
     }
 
     @Override
     public <T> Multi<Message<T>> nextMessages(FetchConsumerConfiguration<T> configuration) {
-        return getConsumerContext(configuration)
+        return addOrUpdateConsumer(configuration)
                 .onItem().transformToMulti(consumerContext -> nextMessages(consumerContext, configuration))
                 .emitOn(context::runOnContext);
     }
