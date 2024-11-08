@@ -6,6 +6,7 @@ import static io.smallrye.reactive.messaging.tracing.TracingUtils.traceOutgoing;
 
 import java.io.IOException;
 import java.time.Duration;
+import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.TimeoutException;
 
@@ -143,6 +144,40 @@ public class DefaultConnection implements Connection {
                     }
                 }))
                 .emitOn(context::runOnContext);
+    }
+
+    @Override
+    public Uni<Void> pauseConsumer(String streamName, String consumerName, ZonedDateTime pauseUntil) {
+        return getJetStreamManagement()
+                .onItem().transformToUni(jetStreamManagement -> Uni.createFrom().emitter(emitter -> {
+                    try {
+                        final var response = jetStreamManagement.pauseConsumer(streamName, consumerName, pauseUntil);
+                        if (!response.isPaused()) {
+                            emitter.fail(new SystemException(
+                                    String.format("Unable to pause consumer %s in stream %s", consumerName, streamName)));
+                        }
+                        emitter.complete(null);
+                    } catch (Throwable failure) {
+                        emitter.fail(new SystemException(failure));
+                    }
+                }));
+    }
+
+    @Override
+    public Uni<Void> resumeConsumer(String streamName, String consumerName) {
+        return getJetStreamManagement()
+                .onItem().transformToUni(jetStreamManagement -> Uni.createFrom().emitter(emitter -> {
+                    try {
+                        final var response = jetStreamManagement.resumeConsumer(streamName, consumerName);
+                        if (!response) {
+                            emitter.fail(new SystemException(
+                                    String.format("Unable to resume consumer %s in stream %s", consumerName, streamName)));
+                        }
+                        emitter.complete(null);
+                    } catch (Throwable failure) {
+                        emitter.fail(new SystemException(failure));
+                    }
+                }));
     }
 
     @Override
@@ -513,45 +548,15 @@ public class DefaultConnection implements Connection {
                 .onItem().transformToUni(v -> Uni.createFrom().item(message));
     }
 
-    private <T> Uni<ConsumerContext> getConsumerContext(final FetchConsumerConfiguration<T> configuration) {
-        return Uni.createFrom().item(Unchecked.supplier(() -> {
-            try {
-                final var streamContext = connection.getStreamContext(configuration.stream());
-                return streamContext.getConsumerContext(configuration.name());
-            } catch (JetStreamApiException e) {
-                if (e.getApiErrorCode() == 10014) { // consumer not found
-                    throw new ConsumerNotFoundException(configuration.stream(), configuration.name());
-                } else {
-                    throw new FetchException(e);
-                }
-            } catch (IOException e) {
-                throw new FetchException(e);
-            }
-        }))
-                .onFailure().recoverWithUni(failure -> handleConsumerContextFailure(configuration, failure))
-                .emitOn(context::runOnContext);
-    }
-
-    private <T> Uni<ConsumerContext> handleConsumerContextFailure(final FetchConsumerConfiguration<T> configuration,
-            Throwable failure) {
-        if (failure instanceof ConsumerNotFoundException) {
-            return addOrUpdateConsumer(configuration);
-        } else {
-            return Uni.createFrom().failure(failure);
-        }
-    }
-
     private Uni<io.nats.client.Message> nextMessage(final ConsumerContext consumerContext,
             final Duration timeout) {
         return Uni.createFrom().<io.nats.client.Message> emitter(emitter -> {
             try {
-                try (final var fetchConsumer = fetchConsumer(consumerContext, timeout)) {
-                    final var message = fetchConsumer.nextMessage();
-                    if (message != null) {
-                        emitter.complete(message);
-                    } else {
-                        emitter.fail(new MessageNotFoundException());
-                    }
+                final var message = consumerContext.next(timeout);
+                if (message != null) {
+                    emitter.complete(message);
+                } else {
+                    emitter.fail(new MessageNotFoundException());
                 }
             } catch (Throwable failure) {
                 logger.errorf(failure, "Failed to fetch message: %s", failure.getMessage());

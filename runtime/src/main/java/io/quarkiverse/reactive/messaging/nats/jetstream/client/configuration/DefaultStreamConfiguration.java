@@ -81,7 +81,7 @@ public class DefaultStreamConfiguration implements StreamConfiguration {
 
     @Override
     public Optional<Long> maximumMessages() {
-        return Optional.ofNullable(maximumConsumers);
+        return Optional.ofNullable(maximumMessages);
     }
 
     @Override

@@ -1,6 +1,7 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client;
 
 import java.time.Duration;
+import java.time.ZonedDateTime;
 import java.util.List;
 
 import org.eclipse.microprofile.reactive.messaging.Message;
@@ -37,6 +38,10 @@ public interface Connection extends StreamSetup, KeyValueStoreSetup, AutoCloseab
     Uni<List<String>> getConsumerNames(String streamName);
 
     Uni<Void> deleteConsumer(String streamName, String consumerName);
+
+    Uni<Void> pauseConsumer(String streamName, String consumerName, ZonedDateTime pauseUntil);
+
+    Uni<Void> resumeConsumer(String streamName, String consumerName);
 
     Uni<PurgeResult> purgeStream(String streamName);
 
