@@ -3,7 +3,6 @@ package io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration;
 import java.time.Duration;
 
 import io.nats.client.api.AckPolicy;
-import io.nats.client.api.DeliverPolicy;
 
 public class ConsumerConfigurtationFactory {
 
@@ -37,7 +36,7 @@ public class ConsumerConfigurtationFactory {
         builder = builder.name(configuration.name());
         builder = builder.ackPolicy(AckPolicy.Explicit);
         builder = configuration.ackWait().map(builder::ackWait).orElse(builder);
-        builder = configuration.deliverPolicy().map(builder::deliverPolicy).orElse(builder.deliverPolicy(DeliverPolicy.All));
+        builder = configuration.deliverPolicy().map(builder::deliverPolicy).orElse(builder);
         builder = configuration.startSequence().map(builder::startSequence).orElse(builder);
         builder = configuration.startTime().map(builder::startTime).orElse(builder);
         builder = configuration.description().map(builder::description).orElse(builder);

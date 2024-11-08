@@ -45,6 +45,8 @@ public interface Connection extends StreamSetup, KeyValueStoreSetup, AutoCloseab
 
     Uni<PurgeResult> purgeStream(String streamName);
 
+    Uni<Long> getFirstSequence(String streamName);
+
     /**
      * Deletes a message, overwriting the message data with garbage
      * This can be considered an expensive (time-consuming) operation, but is more secure.
