@@ -27,7 +27,7 @@ public class DataResource {
     @GET
     @Path("/last")
     public Data getLast() {
-        return bean.getLast().orElseGet(Data::new);
+        return bean.getLast().orElseGet(() -> new Data(null, null, null));
     }
 
     @POST

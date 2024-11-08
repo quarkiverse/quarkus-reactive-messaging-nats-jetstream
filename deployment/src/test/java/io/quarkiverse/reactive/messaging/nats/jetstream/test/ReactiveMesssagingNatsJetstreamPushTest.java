@@ -64,8 +64,8 @@ public class ReactiveMesssagingNatsJetstreamPushTest {
 
         await().atMost(1, TimeUnit.MINUTES).until(() -> {
             final var dataValue = get("/data/last").as(Data.class);
-            return data.equals(dataValue.getData()) && data.equals(dataValue.getResourceId())
-                    && messageId.equals(dataValue.getMessageId());
+            return data.equals(dataValue.data()) && data.equals(dataValue.resourceId())
+                    && messageId.equals(dataValue.messageId());
         });
     }
 
@@ -79,8 +79,8 @@ public class ReactiveMesssagingNatsJetstreamPushTest {
 
         await().atMost(1, TimeUnit.MINUTES).until(() -> {
             final var dataValue = get("/dead-letter/last").as(Data.class);
-            return data.equals(dataValue.getData()) && messageId.equals(dataValue.getResourceId())
-                    && messageId.equals(dataValue.getMessageId());
+            return data.equals(dataValue.data()) && messageId.equals(dataValue.resourceId())
+                    && messageId.equals(dataValue.messageId());
         });
     }
 
