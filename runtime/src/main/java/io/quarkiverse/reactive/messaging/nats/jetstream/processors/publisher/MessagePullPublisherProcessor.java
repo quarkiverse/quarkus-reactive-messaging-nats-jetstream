@@ -23,6 +23,6 @@ public class MessagePullPublisherProcessor<T> extends MessagePublisherProcessor<
 
     @Override
     protected Uni<Subscription<T>> subscription(Connection connection) {
-        return connection.subscribtion(configuration);
+        return connection.subscription(configuration);
     }
 }

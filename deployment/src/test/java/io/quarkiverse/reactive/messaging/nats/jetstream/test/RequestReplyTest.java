@@ -86,7 +86,7 @@ public class RequestReplyTest {
                 .then().statusCode(200).extract().as(Data.class);
 
         assertThat(result).isNotNull();
-        assertThat(result.getResourceId()).isEqualTo(id);
-        assertThat(result.getData()).isEqualTo(data);
+        assertThat(result.resourceId()).isEqualTo(id);
+        assertThat(result.data()).isEqualTo(data);
     }
 }

@@ -81,9 +81,13 @@ public interface Connection extends StreamSetup, KeyValueStoreSetup, AutoCloseab
 
     <T> Uni<Message<T>> resolve(String streamName, long sequence);
 
-    <T> Uni<Subscription<T>> subscribtion(PushConsumerConfiguration<T> configuration);
+    <T> Uni<Subscription<T>> subscription(PushConsumerConfiguration<T> configuration);
 
-    <T> Uni<Subscription<T>> subscribtion(ReaderConsumerConfiguration<T> configuration);
+    <T> Uni<Subscription<T>> subscription(ReaderConsumerConfiguration<T> configuration);
 
-    <T> void close(Subscription<T> subscribtion);
+    <T> void close(Subscription<T> subscription);
+
+    Uni<Void> addSubject(String streamName, String subject);
+
+    Uni<Void> removeSubject(String streamName, String subject);
 }

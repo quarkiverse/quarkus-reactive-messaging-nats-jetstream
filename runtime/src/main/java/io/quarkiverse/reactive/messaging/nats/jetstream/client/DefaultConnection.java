@@ -8,6 +8,8 @@ import java.io.IOException;
 import java.time.Duration;
 import java.time.ZonedDateTime;
 import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeoutException;
 
 import org.eclipse.microprofile.reactive.messaging.Message;
@@ -184,8 +186,9 @@ public class DefaultConnection implements Connection {
 
     @Override
     public Uni<Long> getFirstSequence(String streamName) {
-        return getStreamState(streamName)
-                .onItem().transform(StreamState::firstSequence);
+        return getStreamInfo(streamName)
+                .onItem().transform(tuple -> tuple.getItem2().getStreamState().getFirstSequence())
+                .emitOn(context::runOnContext);
     }
 
     @Override
@@ -198,7 +201,7 @@ public class DefaultConnection implements Connection {
     @Override
     public Uni<List<String>> getSubjects(String streamName) {
         return getStreamInfo(streamName)
-                .onItem().transform(stream -> stream.getConfiguration().getSubjects())
+                .onItem().transform(tuple -> tuple.getItem2().getConfiguration().getSubjects())
                 .emitOn(context::runOnContext);
     }
 
@@ -252,14 +255,14 @@ public class DefaultConnection implements Connection {
     @Override
     public Uni<StreamState> getStreamState(String streamName) {
         return getStreamInfo(streamName)
-                .onItem().transform(streamInfo -> streamStateMapper.of(streamInfo.getStreamState()))
+                .onItem().transform(tuple -> streamStateMapper.of(tuple.getItem2().getStreamState()))
                 .emitOn(context::runOnContext);
     }
 
     @Override
     public Uni<StreamConfiguration> getStreamConfiguration(String streamName) {
         return getStreamInfo(streamName)
-                .onItem().transform(streamInfo -> StreamConfiguration.of(streamInfo.getConfiguration()))
+                .onItem().transform(tuple -> StreamConfiguration.of(tuple.getItem2().getConfiguration()))
                 .emitOn(context::runOnContext);
     }
 
@@ -325,15 +328,20 @@ public class DefaultConnection implements Connection {
 
     @Override
     public <T> Uni<Message<T>> nextMessage(FetchConsumerConfiguration<T> configuration) {
+        ExecutorService pullExecutor = Executors.newSingleThreadExecutor(JetstreamWorkerThread::new);
         return addOrUpdateConsumer(configuration)
                 .onItem()
-                .transformToUni(consumerContext -> nextMessage(consumerContext, configuration));
+                .transformToUni(consumerContext -> nextMessage(consumerContext, configuration))
+                .runSubscriptionOn(pullExecutor)
+                .emitOn(context::runOnContext);
     }
 
     @Override
     public <T> Multi<Message<T>> nextMessages(FetchConsumerConfiguration<T> configuration) {
+        ExecutorService pullExecutor = Executors.newSingleThreadExecutor(JetstreamWorkerThread::new);
         return addOrUpdateConsumer(configuration)
                 .onItem().transformToMulti(consumerContext -> nextMessages(consumerContext, configuration))
+                .runSubscriptionOn(pullExecutor)
                 .emitOn(context::runOnContext);
     }
 
@@ -396,12 +404,12 @@ public class DefaultConnection implements Connection {
     }
 
     @Override
-    public <T> Uni<Subscription<T>> subscribtion(PushConsumerConfiguration<T> configuration) {
+    public <T> Uni<Subscription<T>> subscription(PushConsumerConfiguration<T> configuration) {
         return Uni.createFrom().item(() -> new PushSubscription<>(this, configuration, connection, messageMapper, context));
     }
 
     @Override
-    public <T> Uni<Subscription<T>> subscribtion(ReaderConsumerConfiguration<T> configuration) {
+    public <T> Uni<Subscription<T>> subscription(ReaderConsumerConfiguration<T> configuration) {
         return createSubscription(configuration)
                 .onItem().transformToUni(subscription -> createReader(configuration, subscription))
                 .onItem()
@@ -438,6 +446,50 @@ public class DefaultConnection implements Connection {
                                 .map(streamConfiguration -> Tuple2.of(jetStreamManagement, streamConfiguration))))
                 .onItem().transformToUniAndMerge(tuple -> addOrUpdateStream(tuple.getItem1(), tuple.getItem2()))
                 .collect().asList()
+                .emitOn(context::runOnContext);
+    }
+
+    @Override
+    public Uni<Void> addSubject(String streamName, String subject) {
+        return getStreamInfo(streamName)
+                .onItem().transformToUni(tuple -> Uni.createFrom().<Void> emitter(emitter -> {
+                    try {
+                        final var subjects = new HashSet<>(tuple.getItem2().getConfiguration().getSubjects());
+                        if (!subjects.contains(subject)) {
+                            subjects.add(subject);
+                            final var configuration = io.nats.client.api.StreamConfiguration
+                                    .builder(tuple.getItem2().getConfiguration())
+                                    .subjects(subjects)
+                                    .build();
+                            tuple.getItem1().updateStream(configuration);
+                        }
+                        emitter.complete(null);
+                    } catch (Throwable failure) {
+                        emitter.fail(new SystemException(failure));
+                    }
+                }))
+                .emitOn(context::runOnContext);
+    }
+
+    @Override
+    public Uni<Void> removeSubject(String streamName, String subject) {
+        return getStreamInfo(streamName)
+                .onItem().transformToUni(tuple -> Uni.createFrom().<Void> emitter(emitter -> {
+                    try {
+                        final var subjects = new HashSet<>(tuple.getItem2().getConfiguration().getSubjects());
+                        if (subjects.contains(subject)) {
+                            subjects.remove(subject);
+                            final var configuration = io.nats.client.api.StreamConfiguration
+                                    .builder(tuple.getItem2().getConfiguration())
+                                    .subjects(subjects)
+                                    .build();
+                            tuple.getItem1().updateStream(configuration);
+                        }
+                        emitter.complete(null);
+                    } catch (Throwable failure) {
+                        emitter.fail(new SystemException(failure));
+                    }
+                }))
                 .emitOn(context::runOnContext);
     }
 
@@ -482,15 +534,15 @@ public class DefaultConnection implements Connection {
         });
     }
 
-    private Uni<StreamInfo> getStreamInfo(String streamName) {
+    private Uni<Tuple2<JetStreamManagement, StreamInfo>> getStreamInfo(String streamName) {
         return getJetStreamManagement()
                 .onItem().transformToUni(jsm -> getStreamInfo(jsm, streamName));
     }
 
-    private Uni<StreamInfo> getStreamInfo(JetStreamManagement jsm, String streamName) {
+    private Uni<Tuple2<JetStreamManagement, StreamInfo>> getStreamInfo(JetStreamManagement jsm, String streamName) {
         return Uni.createFrom().emitter(emitter -> {
             try {
-                emitter.complete(jsm.getStreamInfo(streamName, StreamInfoOptions.allSubjects()));
+                emitter.complete(Tuple2.of(jsm, jsm.getStreamInfo(streamName, StreamInfoOptions.allSubjects())));
             } catch (Throwable failure) {
                 emitter.fail(new SystemException(
                         String.format("Unable to read stream %s with message: %s", streamName, failure.getMessage()), failure));
@@ -558,20 +610,21 @@ public class DefaultConnection implements Connection {
 
     private Uni<io.nats.client.Message> nextMessage(final ConsumerContext consumerContext,
             final Duration timeout) {
-        return Uni.createFrom().<io.nats.client.Message> emitter(emitter -> {
+        return Uni.createFrom().emitter(emitter -> {
             try {
-                final var message = consumerContext.next(timeout);
-                if (message != null) {
-                    emitter.complete(message);
-                } else {
-                    emitter.fail(new MessageNotFoundException());
+                try (final var fetchConsumer = fetchConsumer(consumerContext, timeout)) {
+                    final var message = fetchConsumer.nextMessage();
+                    if (message != null) {
+                        emitter.complete(message);
+                    } else {
+                        emitter.fail(new MessageNotFoundException());
+                    }
                 }
             } catch (Throwable failure) {
                 logger.errorf(failure, "Failed to fetch message: %s", failure.getMessage());
                 emitter.fail(new FetchException(failure));
             }
-        })
-                .emitOn(context::runOnContext);
+        });
     }
 
     private <T> Uni<Message<T>> nextMessage(final ConsumerContext consumerContext,
@@ -664,7 +717,7 @@ public class DefaultConnection implements Connection {
     private Uni<StreamResult> addOrUpdateStream(final JetStreamManagement jsm,
             final StreamSetupConfiguration setupConfiguration) {
         return getStreamInfo(jsm, setupConfiguration.configuration().name())
-                .onItem().transformToUni(streamInfo -> updateStream(jsm, streamInfo, setupConfiguration))
+                .onItem().transformToUni(tuple -> updateStream(tuple.getItem1(), tuple.getItem2(), setupConfiguration))
                 .onFailure().recoverWithUni(failure -> createStream(jsm, setupConfiguration.configuration()));
     }
 

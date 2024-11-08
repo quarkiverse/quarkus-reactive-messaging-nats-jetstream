@@ -45,7 +45,7 @@ public class ReaderSubscribeConnectionTest {
         try (final var connection = connectionFactory.create(ConnectionConfiguration.of(natsConfiguration),
                 new DefaultConnectionListener()).await().atMost(Duration.ofSeconds(30))) {
             logger.info("Connected to NATS");
-            try (final var ignored = connection.subscribtion(consumerConfiguration).await().atMost(Duration.ofSeconds(30))) {
+            try (final var ignored = connection.subscription(consumerConfiguration).await().atMost(Duration.ofSeconds(30))) {
                 final var consumer = connection.getConsumer("reader-test", consumerConfiguration.consumerConfiguration().name())
                         .await().atMost(Duration.ofSeconds(30));
                 assertThat(consumer).isNotNull();
@@ -57,7 +57,7 @@ public class ReaderSubscribeConnectionTest {
         consumerConfiguration = createConsumerConfiguration(List.of(Duration.ofSeconds(10), Duration.ofSeconds(30)), 3L);
         try (final var connection = connectionFactory.create(ConnectionConfiguration.of(natsConfiguration),
                 new DefaultConnectionListener()).await().atMost(Duration.ofSeconds(30))) {
-            try (final var ignored = connection.subscribtion(consumerConfiguration).await().atMost(Duration.ofSeconds(30))) {
+            try (final var ignored = connection.subscription(consumerConfiguration).await().atMost(Duration.ofSeconds(30))) {
                 logger.info("Connected to NATS");
                 final var consumer = connection.getConsumer("reader-test", consumerConfiguration.consumerConfiguration().name())
                         .await().atMost(Duration.ofSeconds(30));
