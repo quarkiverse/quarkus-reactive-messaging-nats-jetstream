@@ -149,7 +149,7 @@ public class DefaultConnection implements Connection {
     @Override
     public Uni<Void> pauseConsumer(String streamName, String consumerName, ZonedDateTime pauseUntil) {
         return getJetStreamManagement()
-                .onItem().transformToUni(jetStreamManagement -> Uni.createFrom().emitter(emitter -> {
+                .onItem().transformToUni(jetStreamManagement -> Uni.createFrom().<Void> emitter(emitter -> {
                     try {
                         final var response = jetStreamManagement.pauseConsumer(streamName, consumerName, pauseUntil);
                         if (!response.isPaused()) {
@@ -160,13 +160,14 @@ public class DefaultConnection implements Connection {
                     } catch (Throwable failure) {
                         emitter.fail(new SystemException(failure));
                     }
-                }));
+                }))
+                .emitOn(context::runOnContext);
     }
 
     @Override
     public Uni<Void> resumeConsumer(String streamName, String consumerName) {
         return getJetStreamManagement()
-                .onItem().transformToUni(jetStreamManagement -> Uni.createFrom().emitter(emitter -> {
+                .onItem().transformToUni(jetStreamManagement -> Uni.createFrom().<Void> emitter(emitter -> {
                     try {
                         final var response = jetStreamManagement.resumeConsumer(streamName, consumerName);
                         if (!response) {
@@ -177,7 +178,14 @@ public class DefaultConnection implements Connection {
                     } catch (Throwable failure) {
                         emitter.fail(new SystemException(failure));
                     }
-                }));
+                }))
+                .emitOn(context::runOnContext);
+    }
+
+    @Override
+    public Uni<Long> getFirstSequence(String streamName) {
+        return getStreamState(streamName)
+                .onItem().transform(StreamState::firstSequence);
     }
 
     @Override
