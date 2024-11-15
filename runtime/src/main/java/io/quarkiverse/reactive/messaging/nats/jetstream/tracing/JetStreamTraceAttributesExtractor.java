@@ -1,7 +1,5 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.tracing;
 
-import jakarta.annotation.Nullable;
-
 import io.opentelemetry.api.common.AttributesBuilder;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.instrumentation.api.instrumenter.AttributesExtractor;
@@ -9,6 +7,11 @@ import io.opentelemetry.instrumentation.api.instrumenter.messaging.MessagingAttr
 
 public class JetStreamTraceAttributesExtractor implements AttributesExtractor<JetStreamTrace, Void> {
     private static final String MESSAGE_PAYLOAD = "message.payload";
+    private static final String MESSAGE_STREAM_SEQUENCE = "message.stream_sequence";
+    private static final String MESSAGE_CONSUMER_SEQUENCE = "message.consumer_sequence";
+    private static final String MESSAGE_CONSUMER = "message.consumer";
+    private static final String MESSAGE_DELIVERED_COUNT = "message.delivered_count";
+
     private final MessagingAttributesGetter<JetStreamTrace, Void> messagingAttributesGetter;
 
     public JetStreamTraceAttributesExtractor() {
@@ -18,12 +21,23 @@ public class JetStreamTraceAttributesExtractor implements AttributesExtractor<Je
     @Override
     public void onStart(AttributesBuilder attributesBuilder, Context context, JetStreamTrace jetStreamTrace) {
         attributesBuilder.put(MESSAGE_PAYLOAD, jetStreamTrace.payload());
+        if (jetStreamTrace.streamSequence() != null) {
+            attributesBuilder.put(MESSAGE_STREAM_SEQUENCE, jetStreamTrace.streamSequence());
+        }
+        if (jetStreamTrace.consumerSequence() != null) {
+            attributesBuilder.put(MESSAGE_CONSUMER_SEQUENCE, jetStreamTrace.consumerSequence());
+        }
+        if (jetStreamTrace.consumer() != null) {
+            attributesBuilder.put(MESSAGE_CONSUMER, jetStreamTrace.consumer());
+        }
+        if (jetStreamTrace.deliveredCount() != null) {
+            attributesBuilder.put(MESSAGE_DELIVERED_COUNT, jetStreamTrace.deliveredCount());
+        }
     }
 
     @Override
     public void onEnd(AttributesBuilder attributesBuilder, Context context, JetStreamTrace jetStreamTrace,
-            @Nullable Void unused, @Nullable Throwable throwable) {
-
+            Void unused, Throwable throwable) {
     }
 
     public MessagingAttributesGetter<JetStreamTrace, Void> getMessagingAttributesGetter() {
@@ -31,12 +45,6 @@ public class JetStreamTraceAttributesExtractor implements AttributesExtractor<Je
     }
 
     private final static class JetStreamMessagingAttributesGetter implements MessagingAttributesGetter<JetStreamTrace, Void> {
-
-        @javax.annotation.Nullable
-        @Override
-        public String getDestinationKind(JetStreamTrace jetStreamTrace) {
-            return null;
-        }
 
         @Override
         public String getSystem(JetStreamTrace trace) {
@@ -70,7 +78,7 @@ public class JetStreamTraceAttributesExtractor implements AttributesExtractor<Je
 
         @Override
         public String getMessageId(JetStreamTrace trace, Void unused) {
-            return null;
+            return trace.messageId();
         }
 
     }

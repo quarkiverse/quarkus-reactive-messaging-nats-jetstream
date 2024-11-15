@@ -61,6 +61,22 @@ public class JetStreamIncomingMessage<T> implements JetStreamMessage<T> {
         return incomingMetadata.stream();
     }
 
+    public Long getStreamSequence() {
+        return incomingMetadata.streamSequence();
+    }
+
+    public Long getConsumerSequence() {
+        return incomingMetadata.consumerSequence();
+    }
+
+    public String getConsumer() {
+        return incomingMetadata.consumer();
+    }
+
+    public Long getDeliveredCount() {
+        return incomingMetadata.deliveredCount();
+    }
+
     public Map<String, List<String>> getHeaders() {
         return toMessageHeaders(message.getHeaders());
     }

@@ -293,8 +293,13 @@ public class DefaultConnection implements Connection {
                     // Create a new span for the outbound message and record updated tracing information in
                     // the headers; this has to be done before we build the properties below
                     traceOutgoing(instrument.publisher(), message,
-                            new JetStreamTrace(configuration.stream(), subject, messageId, headers,
-                                    new String(payload)));
+                            JetStreamTrace.builder()
+                                    .stream(configuration.stream())
+                                    .subject(subject)
+                                    .messageId(messageId)
+                                    .headers(headers)
+                                    .payload(new String(payload))
+                                    .build());
                 }
 
                 final var jetStream = connection.jetStream();
