@@ -55,7 +55,7 @@ public class PushSubscription<P> implements Subscription<P> {
                         emitter::emit,
                         false,
                         pushOptions);
-            } catch (Throwable e) {
+            } catch (Exception e) {
                 logger.errorf(
                         e,
                         "Failed subscribing to stream: %s, subject: %s with message: %s",

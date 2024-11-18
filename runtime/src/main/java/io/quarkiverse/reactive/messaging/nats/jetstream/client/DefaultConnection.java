@@ -419,7 +419,7 @@ public class DefaultConnection implements Connection {
                 .onItem().transformToUni(subscription -> createReader(configuration, subscription))
                 .onItem()
                 .transformToUni(pair -> Uni.createFrom()
-                        .<Subscription<T>> item(Unchecked.supplier(() -> new ReaderSubscribtion<>(this, configuration,
+                        .<Subscription<T>> item(Unchecked.supplier(() -> new ReaderSubscription<>(this, configuration,
                                 pair.getItem1(), pair.getItem2(), messageMapper, context))))
                 .onItem().invoke(this::addListener);
     }
