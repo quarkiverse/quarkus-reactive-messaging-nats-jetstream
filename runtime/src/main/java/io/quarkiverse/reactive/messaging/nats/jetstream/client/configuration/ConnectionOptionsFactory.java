@@ -1,6 +1,5 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration;
 
-import static io.nats.client.Options.DEFAULT_MAX_RECONNECT;
 import static io.nats.client.Options.DEFAULT_RECONNECT_WAIT;
 
 import java.security.NoSuchAlgorithmException;
@@ -10,6 +9,7 @@ import io.nats.client.ErrorListener;
 import io.nats.client.Options;
 
 public class ConnectionOptionsFactory {
+    public static final int DEFAULT_MAX_RECONNECT = Integer.MAX_VALUE;
 
     public Options create(ConnectionConfiguration configuration,
             io.nats.client.ConnectionListener connectionListener)

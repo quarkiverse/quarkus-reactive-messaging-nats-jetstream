@@ -19,8 +19,8 @@ import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.core.Context;
 
-class ReaderSubscribtion<P> implements Subscription<P> {
-    private final static Logger logger = Logger.getLogger(ReaderSubscribtion.class);
+class ReaderSubscription<P> implements Subscription<P> {
+    private final static Logger logger = Logger.getLogger(ReaderSubscription.class);
 
     private final Connection connection;
     private final ReaderConsumerConfiguration<P> consumerConfiguration;
@@ -30,7 +30,7 @@ class ReaderSubscribtion<P> implements Subscription<P> {
     private final Context context;
     private final AtomicBoolean closed;
 
-    ReaderSubscribtion(Connection connection,
+    ReaderSubscription(Connection connection,
             ReaderConsumerConfiguration<P> consumerConfiguration,
             JetStreamSubscription subscription,
             JetStreamReader reader,
@@ -91,14 +91,8 @@ class ReaderSubscribtion<P> implements Subscription<P> {
     private Uni<Optional<io.nats.client.Message>> readNextMessage() {
         return Uni.createFrom().emitter(emitter -> {
             try {
-                if (!connection.isConnected()) {
-                    emitter.fail(new ConnectionException("The connection is not connected"));
-                } else if (!subscription.isActive()) {
-                    emitter.fail(new ReaderException("The subscription is not active"));
-                } else {
-                    emitter.complete(Optional
-                            .ofNullable(reader.nextMessage(consumerConfiguration.maxRequestExpires().orElse(Duration.ZERO))));
-                }
+                emitter.complete(Optional
+                        .ofNullable(reader.nextMessage(consumerConfiguration.maxRequestExpires().orElse(Duration.ZERO))));
             } catch (JetStreamStatusException e) {
                 emitter.fail(new ReaderException(e));
             } catch (IllegalStateException e) {
@@ -108,9 +102,9 @@ class ReaderSubscribtion<P> implements Subscription<P> {
             } catch (InterruptedException e) {
                 emitter.fail(new ReaderException(String.format("The reader was interrupted for stream: %s",
                         consumerConfiguration.consumerConfiguration().stream()), e));
-            } catch (Throwable throwable) {
+            } catch (Exception exception) {
                 emitter.fail(new ReaderException(String.format("Error reading next message from stream: %s",
-                        consumerConfiguration.consumerConfiguration().stream()), throwable));
+                        consumerConfiguration.consumerConfiguration().stream()), exception));
             }
         });
     }

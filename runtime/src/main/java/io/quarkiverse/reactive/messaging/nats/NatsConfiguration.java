@@ -56,7 +56,9 @@ public interface NatsConfiguration {
     Optional<Duration> connectionBackoff();
 
     /**
-     * The maximum number of attempts to attempt to re-connect to NATS
+     * The maximum number of attempts to attempt to re-connect to NATS.
+     * The default is
+     * {@value io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ConnectionOptionsFactory#DEFAULT_MAX_RECONNECT}
      */
     Optional<Integer> connectionAttempts();
 
