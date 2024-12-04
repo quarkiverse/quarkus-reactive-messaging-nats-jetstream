@@ -52,7 +52,7 @@ class ReaderSubscription<P> implements Subscription<P> {
         ExecutorService pullExecutor = Executors.newSingleThreadExecutor(JetstreamWorkerThread::new);
         return Multi.createBy().repeating()
                 .uni(this::readNextMessage)
-                .whilst(message -> !closed.get())
+                .whilst(message -> true)
                 .runSubscriptionOn(pullExecutor)
                 .emitOn(context::runOnContext)
                 .flatMap(message -> createMulti(message.orElse(null), traceEnabled, payloadType, context));
