@@ -78,15 +78,14 @@ public class DefaultConnection implements Connection {
 
     @Override
     public Uni<Void> flush(Duration duration) {
-        return Uni.createFrom().<Void> item(Unchecked.supplier(() -> {
+        return Uni.createFrom().item(Unchecked.supplier(() -> {
             try {
                 connection.flush(duration);
                 return null;
             } catch (TimeoutException | InterruptedException e) {
                 throw new ConnectionException(e);
             }
-        }))
-                .emitOn(context::runOnContext);
+        }));
     }
 
     @Override
@@ -130,8 +129,7 @@ public class DefaultConnection implements Connection {
                         emitter.fail(new SystemException(e));
                     }
                 }))
-                .onItem().transform(consumerMapper::of)
-                .emitOn(context::runOnContext);
+                .onItem().transform(consumerMapper::of);
     }
 
     @Override
@@ -144,8 +142,7 @@ public class DefaultConnection implements Connection {
                     } catch (Throwable failure) {
                         emitter.fail(new SystemException(failure));
                     }
-                }))
-                .emitOn(context::runOnContext);
+                }));
     }
 
     @Override
@@ -162,8 +159,7 @@ public class DefaultConnection implements Connection {
                     } catch (Throwable failure) {
                         emitter.fail(new SystemException(failure));
                     }
-                }))
-                .emitOn(context::runOnContext);
+                }));
     }
 
     @Override
@@ -180,29 +176,25 @@ public class DefaultConnection implements Connection {
                     } catch (Throwable failure) {
                         emitter.fail(new SystemException(failure));
                     }
-                }))
-                .emitOn(context::runOnContext);
+                }));
     }
 
     @Override
     public Uni<Long> getFirstSequence(String streamName) {
         return getStreamInfo(streamName)
-                .onItem().transform(tuple -> tuple.getItem2().getStreamState().getFirstSequence())
-                .emitOn(context::runOnContext);
+                .onItem().transform(tuple -> tuple.getItem2().getStreamState().getFirstSequence());
     }
 
     @Override
     public Uni<List<String>> getStreams() {
         return getJetStreamManagement()
-                .onItem().transformToUni(jsm -> Uni.createFrom().item(Unchecked.supplier((jsm::getStreamNames))))
-                .emitOn(context::runOnContext);
+                .onItem().transformToUni(jsm -> Uni.createFrom().item(Unchecked.supplier((jsm::getStreamNames))));
     }
 
     @Override
     public Uni<List<String>> getSubjects(String streamName) {
         return getStreamInfo(streamName)
-                .onItem().transform(tuple -> tuple.getItem2().getConfiguration().getSubjects())
-                .emitOn(context::runOnContext);
+                .onItem().transform(tuple -> tuple.getItem2().getConfiguration().getSubjects());
     }
 
     @Override
@@ -214,8 +206,7 @@ public class DefaultConnection implements Connection {
                     } catch (Throwable failure) {
                         emitter.fail(new SystemException(failure));
                     }
-                }))
-                .emitOn(context::runOnContext);
+                }));
     }
 
     @Override
@@ -228,8 +219,7 @@ public class DefaultConnection implements Connection {
                     } catch (Throwable failure) {
                         emitter.fail(new SystemException(failure));
                     }
-                }))
-                .emitOn(context::runOnContext);
+                }));
     }
 
     @Override
@@ -248,29 +238,25 @@ public class DefaultConnection implements Connection {
                                         sequence, failure.getMessage()),
                                 failure));
                     }
-                }))
-                .emitOn(context::runOnContext);
+                }));
     }
 
     @Override
     public Uni<StreamState> getStreamState(String streamName) {
         return getStreamInfo(streamName)
-                .onItem().transform(tuple -> streamStateMapper.of(tuple.getItem2().getStreamState()))
-                .emitOn(context::runOnContext);
+                .onItem().transform(tuple -> streamStateMapper.of(tuple.getItem2().getStreamState()));
     }
 
     @Override
     public Uni<StreamConfiguration> getStreamConfiguration(String streamName) {
         return getStreamInfo(streamName)
-                .onItem().transform(tuple -> StreamConfiguration.of(tuple.getItem2().getConfiguration()))
-                .emitOn(context::runOnContext);
+                .onItem().transform(tuple -> StreamConfiguration.of(tuple.getItem2().getConfiguration()));
     }
 
     @Override
     public Uni<List<PurgeResult>> purgeAllStreams() {
         return getStreams()
-                .onItem().transformToUni(this::purgeAllStreams)
-                .emitOn(context::runOnContext);
+                .onItem().transformToUni(this::purgeAllStreams);
     }
 
     @Override
@@ -319,8 +305,7 @@ public class DefaultConnection implements Connection {
                         ack.getSeqno()))
                 .onItem().transformToUni(ignore -> acknowledge(message))
                 .onFailure().recoverWithUni(failure -> notAcknowledge(message, failure))
-                .onFailure().transform(failure -> new PublishException(failure.getMessage(), failure))
-                .emitOn(context::runOnContext);
+                .onFailure().transform(failure -> new PublishException(failure.getMessage(), failure));
     }
 
     @Override
@@ -361,8 +346,7 @@ public class DefaultConnection implements Connection {
             }
         })
                 .onItem().ifNull().failWith(() -> new KeyValueNotFoundException(bucketName, key))
-                .onItem().ifNotNull().transform(keyValueEntry -> payloadMapper.of(keyValueEntry.getValue(), valueType))
-                .emitOn(context::runOnContext);
+                .onItem().ifNotNull().transform(keyValueEntry -> payloadMapper.of(keyValueEntry.getValue(), valueType));
     }
 
     @Override
@@ -375,8 +359,7 @@ public class DefaultConnection implements Connection {
             } catch (Throwable failure) {
                 emitter.fail(new KeyValueException(failure));
             }
-        })
-                .emitOn(context::runOnContext);
+        });
     }
 
     @Override
@@ -389,8 +372,7 @@ public class DefaultConnection implements Connection {
             } catch (Throwable failure) {
                 emitter.fail(new KeyValueException(failure));
             }
-        })
-                .emitOn(context::runOnContext);
+        });
     }
 
     @Override
@@ -438,8 +420,7 @@ public class DefaultConnection implements Connection {
     public Uni<Void> addOrUpdateKeyValueStores(List<KeyValueSetupConfiguration> keyValueConfigurations) {
         return Multi.createFrom().items(keyValueConfigurations.stream())
                 .onItem().transformToUniAndMerge(this::addOrUpdateKeyValueStore)
-                .collect().last()
-                .emitOn(context::runOnContext);
+                .collect().last();
     }
 
     @Override
@@ -450,8 +431,7 @@ public class DefaultConnection implements Connection {
                         .items(streamConfigurations.stream()
                                 .map(streamConfiguration -> Tuple2.of(jetStreamManagement, streamConfiguration))))
                 .onItem().transformToUniAndMerge(tuple -> addOrUpdateStream(tuple.getItem1(), tuple.getItem2()))
-                .collect().asList()
-                .emitOn(context::runOnContext);
+                .collect().asList();
     }
 
     @Override
@@ -472,8 +452,7 @@ public class DefaultConnection implements Connection {
                     } catch (Throwable failure) {
                         emitter.fail(new SystemException(failure));
                     }
-                }))
-                .emitOn(context::runOnContext);
+                }));
     }
 
     @Override
@@ -494,8 +473,7 @@ public class DefaultConnection implements Connection {
                     } catch (Throwable failure) {
                         emitter.fail(new SystemException(failure));
                     }
-                }))
-                .emitOn(context::runOnContext);
+                }));
     }
 
     private <T> Uni<Tuple2<JetStreamSubscription, JetStreamReader>> createReader(ReaderConsumerConfiguration<T> configuration,
@@ -662,8 +640,7 @@ public class DefaultConnection implements Connection {
             } catch (Throwable failure) {
                 throw new FetchException(failure);
             }
-        }))
-                .emitOn(context::runOnContext);
+        }));
     }
 
     private <T> Multi<Message<T>> nextMessages(final ConsumerContext consumerContext,

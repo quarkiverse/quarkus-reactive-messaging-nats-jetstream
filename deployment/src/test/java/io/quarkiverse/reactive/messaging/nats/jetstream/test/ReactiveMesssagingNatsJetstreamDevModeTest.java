@@ -19,7 +19,7 @@ public class ReactiveMesssagingNatsJetstreamDevModeTest {
                             TestSpanExporter.class, Data.class, DataResource.class, DataConsumingBean.class,
                             Advisory.class, DeadLetterResource.class, DeadLetterConsumingBean.class,
                             DurableResource.class, DurableConsumingBean.class, RedeliveryResource.class,
-                            RedeliveryConsumingBean.class)
+                            RedeliveryConsumingBean.class, DataCollectorBean.class, MessageConsumer.class)
                     .addAsResource("application.properties"));
 
     @Test

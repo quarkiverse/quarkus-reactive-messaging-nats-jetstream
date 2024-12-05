@@ -19,7 +19,7 @@ import io.smallrye.mutiny.Uni;
 public class DataResource {
 
     @Inject
-    DataConsumingBean bean;
+    DataCollectorBean bean;
 
     @Channel("data")
     Emitter<String> emitter;

@@ -27,7 +27,7 @@ public class ReactiveMesssagingNatsJetstreamPullTest {
                             Advisory.class, DeadLetterResource.class, DeadLetterConsumingBean.class,
                             DurableResource.class, DurableConsumingBean.class, RedeliveryResource.class,
                             RedeliveryConsumingBean.class, SubtopicsResource.class, SubtopicsConsumingBean.class,
-                            SubjectData.class))
+                            SubjectData.class, DataCollectorBean.class, MessageConsumer.class))
             .withConfigurationResource("application.properties");
 
     @BeforeEach

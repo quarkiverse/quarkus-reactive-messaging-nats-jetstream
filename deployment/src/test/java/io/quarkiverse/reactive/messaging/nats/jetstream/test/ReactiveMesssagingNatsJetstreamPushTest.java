@@ -29,7 +29,7 @@ public class ReactiveMesssagingNatsJetstreamPushTest {
                             DurableResource.class, DurableConsumingBean.class, RedeliveryResource.class,
                             RedeliveryConsumingBean.class, ExponentialBackoffConsumingBean.class,
                             ExponentialBackoffResource.class, SubtopicsResource.class, SubtopicsConsumingBean.class,
-                            SubjectData.class))
+                            SubjectData.class, DataCollectorBean.class, MessageConsumer.class))
             .withConfigurationResource("application-push.properties");
 
     @BeforeEach

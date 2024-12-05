@@ -14,7 +14,7 @@ import io.smallrye.reactive.messaging.annotations.Blocking;
 
 @ApplicationScoped
 public class SubtopicsConsumingBean {
-    private final static Logger logger = Logger.getLogger(DataConsumingBean.class);
+    private final static Logger logger = Logger.getLogger(SubtopicsConsumingBean.class);
 
     volatile Optional<SubjectData> lastData = Optional.empty();
 
