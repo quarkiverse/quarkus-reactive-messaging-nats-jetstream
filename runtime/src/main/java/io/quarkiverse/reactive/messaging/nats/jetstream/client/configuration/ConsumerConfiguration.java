@@ -54,8 +54,6 @@ public interface ConsumerConfiguration<T> {
 
     Optional<Class<T>> payloadType();
 
-    boolean traceEnabled();
-
     boolean exponentialBackoff();
 
     Duration exponentialBackoffMaxDuration();

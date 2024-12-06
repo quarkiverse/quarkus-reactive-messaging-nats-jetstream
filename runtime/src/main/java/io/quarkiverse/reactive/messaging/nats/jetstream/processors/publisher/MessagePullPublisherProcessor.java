@@ -2,8 +2,10 @@ package io.quarkiverse.reactive.messaging.nats.jetstream.processors.publisher;
 
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.Connection;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.ConnectionFactory;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.Context;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.Subscription;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ConnectionConfiguration;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.tracing.TracerFactory;
 import io.smallrye.mutiny.Uni;
 
 public class MessagePullPublisherProcessor<T> extends MessagePublisherProcessor<T> {
@@ -11,8 +13,10 @@ public class MessagePullPublisherProcessor<T> extends MessagePublisherProcessor<
 
     public MessagePullPublisherProcessor(final ConnectionFactory connectionFactory,
             final ConnectionConfiguration connectionConfiguration,
-            final MessagePullPublisherConfiguration<T> configuration) {
-        super(connectionFactory, connectionConfiguration);
+            final MessagePullPublisherConfiguration<T> configuration,
+            final TracerFactory tracerFactory,
+            final Context context) {
+        super(connectionFactory, connectionConfiguration, tracerFactory, context);
         this.configuration = configuration;
     }
 

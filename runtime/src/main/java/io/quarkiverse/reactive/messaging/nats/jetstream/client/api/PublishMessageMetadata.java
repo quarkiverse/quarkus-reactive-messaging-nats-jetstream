@@ -1,4 +1,4 @@
-package io.quarkiverse.reactive.messaging.nats.jetstream;
+package io.quarkiverse.reactive.messaging.nats.jetstream.client.api;
 
 import static io.nats.client.support.NatsJetStreamConstants.MSG_ID_HDR;
 
@@ -15,7 +15,7 @@ import io.smallrye.common.constraint.NotNull;
 import lombok.Builder;
 
 @Builder
-public record JetStreamIncomingMessageMetadata(String stream,
+public record PublishMessageMetadata(String stream,
         String subject,
         String messageId,
         Map<String, List<String>> headers,
@@ -25,13 +25,13 @@ public record JetStreamIncomingMessageMetadata(String stream,
         Long consumerSequence,
         ZonedDateTime timestamp) {
 
-    public static JetStreamIncomingMessageMetadata of(@NotNull Message message) {
+    public static PublishMessageMetadata of(@NotNull Message message) {
         final var headers = Optional.ofNullable(message.getHeaders());
-        return JetStreamIncomingMessageMetadata.builder()
+        return PublishMessageMetadata.builder()
                 .stream(message.metaData().getStream())
                 .subject(message.getSubject())
                 .messageId(headers.map(h -> h.getFirst(MSG_ID_HDR)).orElse(null))
-                .headers(headers.map(JetStreamIncomingMessageMetadata::headers).orElseGet(HashMap::new))
+                .headers(headers.map(PublishMessageMetadata::headers).orElseGet(HashMap::new))
                 .deliveredCount(message.metaData().deliveredCount())
                 .consumer(message.metaData().getConsumer())
                 .streamSequence(message.metaData().streamSequence())
@@ -40,13 +40,13 @@ public record JetStreamIncomingMessageMetadata(String stream,
                 .build();
     }
 
-    public static JetStreamIncomingMessageMetadata of(MessageInfo message) {
+    public static PublishMessageMetadata of(MessageInfo message) {
         final var headers = Optional.ofNullable(message.getHeaders());
-        return JetStreamIncomingMessageMetadata.builder()
+        return PublishMessageMetadata.builder()
                 .stream(message.getStream())
                 .subject(message.getSubject())
                 .messageId(headers.map(h -> h.getFirst(MSG_ID_HDR)).orElse(null))
-                .headers(headers.map(JetStreamIncomingMessageMetadata::headers).orElseGet(HashMap::new))
+                .headers(headers.map(PublishMessageMetadata::headers).orElseGet(HashMap::new))
                 .deliveredCount(null)
                 .consumer(null)
                 .streamSequence(message.getSeq())

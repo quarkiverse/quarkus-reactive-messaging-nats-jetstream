@@ -24,9 +24,4 @@ public class DefaultMessageSubscriberConfiguration implements MessageSubscriberC
         return configuration.getSubject().orElseThrow((() -> new IllegalArgumentException("No subject configured")));
     }
 
-    @Override
-    public boolean traceEnabled() {
-        return configuration.getTraceEnabled();
-    }
-
 }

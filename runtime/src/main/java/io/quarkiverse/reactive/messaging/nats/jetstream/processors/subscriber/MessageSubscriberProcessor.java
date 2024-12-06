@@ -9,6 +9,7 @@ import org.jboss.logging.Logger;
 
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.*;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ConnectionConfiguration;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.tracing.TracerFactory;
 import io.quarkiverse.reactive.messaging.nats.jetstream.processors.MessageProcessor;
 import io.quarkiverse.reactive.messaging.nats.jetstream.processors.Status;
 import io.smallrye.mutiny.Multi;
@@ -23,16 +24,22 @@ public class MessageSubscriberProcessor implements MessageProcessor, ConnectionL
     private final ConnectionFactory connectionFactory;
     private final AtomicReference<Status> status;
     private final AtomicReference<Connection> connection;
+    private final TracerFactory tracerFactory;
+    private final Context context;
 
     public MessageSubscriberProcessor(
             final ConnectionConfiguration connectionConfiguration,
             final ConnectionFactory connectionFactory,
-            final MessageSubscriberConfiguration configuration) {
+            final MessageSubscriberConfiguration configuration,
+            final TracerFactory tracerFactory,
+            final Context context) {
         this.connectionConfiguration = connectionConfiguration;
         this.connectionFactory = connectionFactory;
         this.configuration = configuration;
         this.status = new AtomicReference<>(new Status(true, "Subscriber processor inactive", ConnectionEvent.Closed));
         this.connection = new AtomicReference<>();
+        this.tracerFactory = tracerFactory;
+        this.context = context;
     }
 
     public <T> Flow.Subscriber<Message<T>> subscriber() {
@@ -78,7 +85,9 @@ public class MessageSubscriberProcessor implements MessageProcessor, ConnectionL
 
     private <T> Uni<Message<T>> publish(final Message<T> message) {
         return getOrEstablishConnection()
-                .onItem().transformToUni(connection -> connection.publish(message, configuration))
+                .onItem()
+                .transformToUni(connection -> context
+                        .withContext(ctx -> connection.publish(message, configuration, tracerFactory.create(), ctx)))
                 .onFailure()
                 .invoke(failure -> logger.errorf(failure, "Failed to publish with message: %s", failure.getMessage()))
                 .onFailure().recoverWithUni(() -> recover(message));

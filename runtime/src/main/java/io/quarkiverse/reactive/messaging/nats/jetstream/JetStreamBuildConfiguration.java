@@ -22,6 +22,12 @@ public interface JetStreamBuildConfiguration {
     Boolean autoConfigure();
 
     /**
+     * Enable tracing for JetStream
+     */
+    @WithDefault("true")
+    Boolean trace();
+
+    /**
      * If auto-configure is true the streams are created on Nats server.
      */
     List<Stream> streams();

@@ -198,11 +198,6 @@ public class MessagePublisherProcessorTest {
                     }
 
                     @Override
-                    public boolean traceEnabled() {
-                        return false;
-                    }
-
-                    @Override
                     public Duration ackTimeout() {
                         return Duration.ofSeconds(3);
                     }

@@ -188,11 +188,6 @@ public class DefaultMessagePullPublisherConfiguration<T> implements MessagePullP
             }
 
             @Override
-            public boolean traceEnabled() {
-                return configuration.getTraceEnabled();
-            }
-
-            @Override
             public Duration ackTimeout() {
                 return Duration.parse(configuration.getAckTimeout());
             }

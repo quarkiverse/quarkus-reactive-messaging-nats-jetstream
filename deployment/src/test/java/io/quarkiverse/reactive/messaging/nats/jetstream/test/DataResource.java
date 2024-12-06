@@ -11,7 +11,7 @@ import org.eclipse.microprofile.reactive.messaging.Emitter;
 import org.eclipse.microprofile.reactive.messaging.Message;
 import org.eclipse.microprofile.reactive.messaging.Metadata;
 
-import io.quarkiverse.reactive.messaging.nats.jetstream.JetStreamOutgoingMessageMetadata;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.SubscribeMessageMetadata;
 import io.smallrye.mutiny.Uni;
 
 @Path("/data")
@@ -40,7 +40,7 @@ public class DataResource {
         return Uni.createFrom().item(() -> {
             final var headers = new HashMap<String, List<String>>();
             headers.put("RESOURCE_ID", List.of(data));
-            final var message = Message.of(data, Metadata.of(JetStreamOutgoingMessageMetadata.of(id, headers, null)));
+            final var message = Message.of(data, Metadata.of(SubscribeMessageMetadata.of(id, headers)));
             emitter.send(message);
             return message;
         });

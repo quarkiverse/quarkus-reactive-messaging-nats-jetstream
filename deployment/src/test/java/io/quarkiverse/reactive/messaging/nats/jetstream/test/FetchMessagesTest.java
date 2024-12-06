@@ -22,10 +22,12 @@ import io.nats.client.api.DeliverPolicy;
 import io.nats.client.api.ReplayPolicy;
 import io.quarkiverse.reactive.messaging.nats.NatsConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.ConnectionFactory;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.Context;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.DefaultConnectionListener;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ConnectionConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.FetchConsumerConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.PublishConfiguration;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.tracing.TracerFactory;
 import io.quarkus.test.QuarkusUnitTest;
 import io.smallrye.mutiny.Uni;
 
@@ -43,6 +45,12 @@ public class FetchMessagesTest {
 
     @Inject
     ConnectionFactory connectionFactory;
+
+    @Inject
+    Context context;
+
+    @Inject
+    TracerFactory tracerFactory;
 
     @BeforeEach
     public void setup() throws Exception {
@@ -158,7 +166,10 @@ public class FetchMessagesTest {
                 new DefaultConnectionListener()).await().atMost(Duration.ofSeconds(30))) {
             final var publishConfiguragtion = createPublishConfiguration(subject);
             final var fetchConsumerConfiguration = createFetchConsumerConfiguration(subject);
-            connection.publish(Message.of(data), publishConfiguragtion, fetchConsumerConfiguration).await()
+            context.withContext(
+                    ctx -> connection.publish(Message.of(data), publishConfiguragtion, fetchConsumerConfiguration,
+                            tracerFactory.create(), ctx))
+                    .await()
                     .atMost(Duration.ofSeconds(30));
         }
     }
@@ -167,7 +178,9 @@ public class FetchMessagesTest {
         try (final var connection = connectionFactory.create(ConnectionConfiguration.of(natsConfiguration),
                 new DefaultConnectionListener()).await().atMost(Duration.ofSeconds(30))) {
             final var fetchConsumerConfiguration = createFetchConsumerConfiguration(subject);
-            final var received = connection.nextMessage(fetchConsumerConfiguration).await().atMost(Duration.ofSeconds(30));
+            final var received = context
+                    .withContext(ctx -> connection.nextMessage(fetchConsumerConfiguration, tracerFactory.create(), ctx)).await()
+                    .atMost(Duration.ofSeconds(30));
             if (ack) {
                 Uni.createFrom().completionStage(received.ack()).await().atMost(Duration.ofSeconds(30));
             } else {
@@ -182,11 +195,6 @@ public class FetchMessagesTest {
             @Override
             public Optional<Duration> fetchTimeout() {
                 return Optional.of(Duration.ofSeconds(10));
-            }
-
-            @Override
-            public boolean traceEnabled() {
-                return false;
             }
 
             @Override
@@ -313,10 +321,6 @@ public class FetchMessagesTest {
 
     private PublishConfiguration createPublishConfiguration(String subject) {
         return new PublishConfiguration() {
-            @Override
-            public boolean traceEnabled() {
-                return false;
-            }
 
             @Override
             public String stream() {

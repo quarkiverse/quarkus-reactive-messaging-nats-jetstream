@@ -49,7 +49,7 @@ public class ReactiveMesssagingNatsJetstreamPullTracingTest {
 
         List<SpanData> parentSpans = spans.stream().filter(spanData -> spanData.getParentSpanId().equals(SpanId.getInvalid()))
                 .toList();
-        assertEquals(1, parentSpans.size());
+        assertEquals(2, parentSpans.size());
 
         for (var parentSpan : parentSpans) {
             final var parentSpanId = parentSpan.getSpanId();

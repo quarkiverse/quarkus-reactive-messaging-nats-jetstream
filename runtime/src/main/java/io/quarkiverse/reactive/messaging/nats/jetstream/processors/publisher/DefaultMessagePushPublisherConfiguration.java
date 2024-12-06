@@ -203,11 +203,6 @@ public class DefaultMessagePushPublisherConfiguration<T> implements MessagePushP
             }
 
             @Override
-            public boolean traceEnabled() {
-                return configuration.getTraceEnabled();
-            }
-
-            @Override
             public Duration ackTimeout() {
                 return Duration.parse(configuration.getAckTimeout());
             }

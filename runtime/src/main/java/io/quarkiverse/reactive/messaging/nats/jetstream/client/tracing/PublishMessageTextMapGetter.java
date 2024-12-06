@@ -1,16 +1,14 @@
-package io.quarkiverse.reactive.messaging.nats.jetstream.tracing;
+package io.quarkiverse.reactive.messaging.nats.jetstream.client.tracing;
 
 import java.util.Collections;
 
-import jakarta.annotation.Nullable;
-
 import io.opentelemetry.context.propagation.TextMapGetter;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.PublishMessage;
 
-public enum JetStreamTraceTextMapGetter implements TextMapGetter<JetStreamTrace> {
-    INSTANCE;
+public class PublishMessageTextMapGetter<T> implements TextMapGetter<PublishMessage<T>> {
 
     @Override
-    public Iterable<String> keys(JetStreamTrace carrier) {
+    public Iterable<String> keys(PublishMessage<T> carrier) {
         final var headers = carrier.headers();
         if (headers != null) {
             return headers.keySet();
@@ -19,7 +17,7 @@ public enum JetStreamTraceTextMapGetter implements TextMapGetter<JetStreamTrace>
     }
 
     @Override
-    public String get(@Nullable JetStreamTrace carrier, String key) {
+    public String get(PublishMessage<T> carrier, String key) {
         if (carrier != null) {
             final var headers = carrier.headers();
             if (headers != null) {

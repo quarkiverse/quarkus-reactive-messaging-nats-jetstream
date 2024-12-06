@@ -7,9 +7,10 @@ import org.jboss.logging.Logger;
 
 import io.nats.client.Dispatcher;
 import io.nats.client.JetStreamSubscription;
-import io.quarkiverse.reactive.messaging.nats.jetstream.ExponentialBackoff;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.ExponentialBackoff;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.PushConsumerConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.PushSubscribeOptionsFactory;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.tracing.Tracer;
 import io.quarkiverse.reactive.messaging.nats.jetstream.mapper.MessageMapper;
 import io.smallrye.mutiny.Multi;
 import io.vertx.mutiny.core.Context;
@@ -22,7 +23,6 @@ public class PushSubscription<P> implements Subscription<P> {
     private final PushSubscribeOptionsFactory pushSubscribeOptionsFactory;
     private final io.nats.client.Connection natsConnection;
     private final MessageMapper messageMapper;
-    private final Context context;
 
     private volatile JetStreamSubscription subscription;
     private volatile Dispatcher dispatcher;
@@ -30,19 +30,16 @@ public class PushSubscription<P> implements Subscription<P> {
     PushSubscription(final Connection connection,
             final PushConsumerConfiguration<P> consumerConfiguration,
             final io.nats.client.Connection natsConnection,
-            final MessageMapper messageMapper,
-            final Context context) {
+            final MessageMapper messageMapper) {
         this.connection = connection;
         this.consumerConfiguration = consumerConfiguration;
         this.pushSubscribeOptionsFactory = new PushSubscribeOptionsFactory();
         this.natsConnection = natsConnection;
         this.messageMapper = messageMapper;
-        this.context = context;
     }
 
     @Override
-    public Multi<Message<P>> subscribe() {
-        boolean traceEnabled = consumerConfiguration.consumerConfiguration().traceEnabled();
+    public Multi<Message<P>> subscribe(Tracer<P> tracer, Context context) {
         Class<P> payloadType = consumerConfiguration.consumerConfiguration().payloadType().orElse(null);
         final var subject = consumerConfiguration.subject();
         return Multi.createFrom().<io.nats.client.Message> emitter(emitter -> {
@@ -68,13 +65,13 @@ public class PushSubscription<P> implements Subscription<P> {
                 .emitOn(context::runOnContext)
                 .map(message -> messageMapper.of(
                         message,
-                        traceEnabled,
                         payloadType,
                         context,
                         new ExponentialBackoff(
                                 consumerConfiguration.consumerConfiguration().exponentialBackoff(),
                                 consumerConfiguration.consumerConfiguration().exponentialBackoffMaxDuration()),
-                        consumerConfiguration.consumerConfiguration().ackTimeout()));
+                        consumerConfiguration.consumerConfiguration().ackTimeout()))
+                .onItem().transformToUniAndMerge(tracer::withTrace);
     }
 
     @Override
