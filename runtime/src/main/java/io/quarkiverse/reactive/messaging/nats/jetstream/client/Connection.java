@@ -10,8 +10,10 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.Consumer;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.PurgeResult;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.StreamState;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.*;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.tracing.Tracer;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
+import io.vertx.mutiny.core.Context;
 
 public interface Connection extends StreamSetup, KeyValueStoreSetup, AutoCloseable {
 
@@ -64,14 +66,16 @@ public interface Connection extends StreamSetup, KeyValueStoreSetup, AutoCloseab
 
     Uni<List<PurgeResult>> purgeAllStreams();
 
-    <T> Uni<Message<T>> publish(final Message<T> message, final PublishConfiguration configuration);
+    <T> Uni<Message<T>> publish(Message<T> message, PublishConfiguration publishConfiguration,
+            Tracer<T> tracer, Context context);
 
-    <T> Uni<Message<T>> publish(final Message<T> message, final PublishConfiguration publishConfiguration,
-            FetchConsumerConfiguration<T> consumerConfiguration);
+    <T> Uni<Message<T>> publish(Message<T> message,
+            PublishConfiguration publishConfiguration,
+            FetchConsumerConfiguration<T> consumerConfiguration, Tracer<T> tracer, Context context);
 
-    <T> Uni<Message<T>> nextMessage(FetchConsumerConfiguration<T> configuration);
+    <T> Uni<Message<T>> nextMessage(FetchConsumerConfiguration<T> configuration, Tracer<T> tracer, Context context);
 
-    <T> Multi<Message<T>> nextMessages(FetchConsumerConfiguration<T> configuration);
+    <T> Multi<Message<T>> nextMessages(FetchConsumerConfiguration<T> configuration, Tracer<T> tracer, Context context);
 
     <T> Uni<T> getKeyValue(String bucketName, String key, Class<T> valueType);
 

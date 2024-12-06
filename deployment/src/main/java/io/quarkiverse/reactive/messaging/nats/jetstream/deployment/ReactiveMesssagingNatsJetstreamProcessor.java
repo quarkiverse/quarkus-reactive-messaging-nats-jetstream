@@ -6,12 +6,13 @@ import io.nats.client.Options;
 import io.quarkiverse.reactive.messaging.nats.jetstream.JetStreamBuildConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.JetStreamConnector;
 import io.quarkiverse.reactive.messaging.nats.jetstream.JetStreamRecorder;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.Context;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.DefaultConnectionFactory;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.tracing.TracerFactory;
 import io.quarkiverse.reactive.messaging.nats.jetstream.mapper.ConsumerMapperImpl;
 import io.quarkiverse.reactive.messaging.nats.jetstream.mapper.DefaultMessageMapper;
 import io.quarkiverse.reactive.messaging.nats.jetstream.mapper.DefaultPayloadMapper;
 import io.quarkiverse.reactive.messaging.nats.jetstream.mapper.StreamStateMapperImpl;
-import io.quarkiverse.reactive.messaging.nats.jetstream.tracing.JetStreamInstrument;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeansRuntimeInitBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -53,13 +54,14 @@ class ReactiveMesssagingNatsJetstreamProcessor {
     @BuildStep
     void createNatsConnector(BuildProducer<AdditionalBeanBuildItem> buildProducer) {
         buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(JetStreamConnector.class));
-        buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(JetStreamInstrument.class));
+        buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(TracerFactory.class));
         buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(ExecutionHolder.class));
         buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(DefaultConnectionFactory.class));
         buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(DefaultPayloadMapper.class));
         buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(DefaultMessageMapper.class));
         buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(ConsumerMapperImpl.class));
         buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(StreamStateMapperImpl.class));
+        buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(Context.class));
     }
 
     @BuildStep

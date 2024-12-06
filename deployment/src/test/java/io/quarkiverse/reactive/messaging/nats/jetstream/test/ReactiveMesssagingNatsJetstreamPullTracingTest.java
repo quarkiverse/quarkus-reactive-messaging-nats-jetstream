@@ -24,7 +24,8 @@ public class ReactiveMesssagingNatsJetstreamPullTracingTest {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
             () -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(TestSpanExporter.class, Data.class, DataResource.class, DataConsumingBean.class))
+                    .addClasses(TestSpanExporter.class, Data.class, DataResource.class, DataConsumingBean.class,
+                            DataCollectorBean.class, MessageConsumer.class))
             .withConfigurationResource("application-pull-tracing.properties");
 
     @Inject
@@ -43,16 +44,17 @@ public class ReactiveMesssagingNatsJetstreamPullTracingTest {
 
         RestAssured.given().pathParam("id", messageId).pathParam("data", data).post("/data/{id}/{data}").then().statusCode(204);
 
-        final var spans = spanExporter.getFinishedSpanItems(3);
+        final var spans = spanExporter.getFinishedSpanItems(5);
         assertThat(spans).isNotEmpty();
 
         List<SpanData> parentSpans = spans.stream().filter(spanData -> spanData.getParentSpanId().equals(SpanId.getInvalid()))
                 .toList();
-        assertEquals(1, parentSpans.size());
+        assertEquals(2, parentSpans.size());
 
         for (var parentSpan : parentSpans) {
-            assertThat(spans.stream().filter(spanData -> spanData.getParentSpanId().equals(parentSpan.getSpanId())).count())
-                    .isEqualTo(1);
+            final var parentSpanId = parentSpan.getSpanId();
+            final var childSpans = spans.stream().filter(spanData -> spanData.getParentSpanId().equals(parentSpanId)).toList();
+            assertThat(childSpans).hasSize(1);
         }
     }
 }

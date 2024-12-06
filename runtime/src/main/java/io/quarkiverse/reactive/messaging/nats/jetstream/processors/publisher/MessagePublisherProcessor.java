@@ -7,6 +7,8 @@ import org.jboss.logging.Logger;
 
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.*;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ConnectionConfiguration;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.tracing.Tracer;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.tracing.TracerFactory;
 import io.quarkiverse.reactive.messaging.nats.jetstream.processors.MessageProcessor;
 import io.quarkiverse.reactive.messaging.nats.jetstream.processors.Status;
 import io.smallrye.mutiny.Multi;
@@ -21,9 +23,13 @@ public abstract class MessagePublisherProcessor<T> implements MessageProcessor, 
     private final ConnectionFactory connectionFactory;
     private final ConnectionConfiguration connectionConfiguration;
     private final AtomicReference<Subscription<T>> subscription;
+    private final Tracer<T> tracer;
+    private final Context context;
 
     public MessagePublisherProcessor(final ConnectionFactory connectionFactory,
-            final ConnectionConfiguration connectionConfiguration) {
+            final ConnectionConfiguration connectionConfiguration,
+            final TracerFactory tracerFactory,
+            final Context context) {
         this.readiness = new AtomicReference<>(
                 Status.builder().event(ConnectionEvent.Closed).message("Publish processor inactive").healthy(false).build());
         this.liveness = new AtomicReference<>(
@@ -32,6 +38,8 @@ public abstract class MessagePublisherProcessor<T> implements MessageProcessor, 
         this.connectionFactory = connectionFactory;
         this.connectionConfiguration = connectionConfiguration;
         this.subscription = new AtomicReference<>();
+        this.tracer = tracerFactory.create();
+        this.context = context;
     }
 
     @Override
@@ -82,6 +90,7 @@ public abstract class MessagePublisherProcessor<T> implements MessageProcessor, 
 
     protected abstract Uni<Subscription<T>> subscription(Connection connection);
 
+    @SuppressWarnings("ReactiveStreamsUnusedPublisher")
     private Multi<org.eclipse.microprofile.reactive.messaging.Message<T>> recover(Throwable failure) {
         return Uni.createFrom().<Void> item(() -> {
             close(this.subscription.getAndSet(null));
@@ -94,7 +103,7 @@ public abstract class MessagePublisherProcessor<T> implements MessageProcessor, 
         return getOrEstablishConnection()
                 .onItem().transformToUni(this::subscription)
                 .onItem().invoke(this.subscription::set)
-                .onItem().transformToMulti(Subscription::subscribe)
+                .onItem().transformToMulti(subscription -> context.withContext(ctx -> subscription.subscribe(tracer, ctx)))
                 .onSubscription().invoke(() -> logger.infof("Subscribed to channel %s", configuration().channel()));
     }
 

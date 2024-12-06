@@ -12,7 +12,6 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.context.BeforeDestroyed;
 import jakarta.enterprise.event.Observes;
 import jakarta.enterprise.event.Reception;
-import jakarta.inject.Inject;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.reactive.messaging.Message;
@@ -21,8 +20,10 @@ import org.jboss.logging.Logger;
 
 import io.quarkiverse.reactive.messaging.nats.NatsConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.ConnectionFactory;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.Context;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ConnectionConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ConsumerType;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.tracing.TracerFactory;
 import io.quarkiverse.reactive.messaging.nats.jetstream.processors.MessageProcessor;
 import io.quarkiverse.reactive.messaging.nats.jetstream.processors.publisher.*;
 import io.quarkiverse.reactive.messaging.nats.jetstream.processors.subscriber.MessageSubscriberConfiguration;
@@ -39,7 +40,6 @@ import io.smallrye.reactive.messaging.health.HealthReporter;
 // Publish and subscriber processor attributes
 @ConnectorAttribute(name = "stream", description = "The stream to subscribe or publish messages to", direction = INCOMING_AND_OUTGOING, type = "String")
 @ConnectorAttribute(name = "subject", description = "The subject to subscribe or publish messages to", direction = INCOMING_AND_OUTGOING, type = "String")
-@ConnectorAttribute(name = "trace-enabled", description = "Enable traces for publisher or subscriber", direction = INCOMING_AND_OUTGOING, type = "Boolean", defaultValue = "true")
 
 // Publish common processor attributes
 @ConnectorAttribute(name = "name", description = "The name of the NATS consumer", direction = INCOMING, type = "String")
@@ -83,16 +83,22 @@ public class JetStreamConnector implements InboundConnector, OutboundConnector, 
     private final List<MessageProcessor> processors;
     private final NatsConfiguration natsConfiguration;
     private final ConnectionFactory connectionFactory;
+    private final TracerFactory tracerFactory;
+    private final Context context;
 
-    @Inject
     public JetStreamConnector(
             NatsConfiguration natsConfiguration,
-            ConnectionFactory connectionFactory) {
+            ConnectionFactory connectionFactory,
+            TracerFactory tracerFactory,
+            Context context) {
         this.processors = new CopyOnWriteArrayList<>();
         this.natsConfiguration = natsConfiguration;
         this.connectionFactory = connectionFactory;
+        this.tracerFactory = tracerFactory;
+        this.context = context;
     }
 
+    @SuppressWarnings("ReactiveStreamsUnusedPublisher")
     @Override
     public Flow.Publisher<? extends Message<?>> getPublisher(Config config) {
         final var configuration = new JetStreamConnectorIncomingConfiguration(config);
@@ -108,7 +114,9 @@ public class JetStreamConnector implements InboundConnector, OutboundConnector, 
         final var processor = new MessageSubscriberProcessor(
                 connectionConfiguration,
                 connectionFactory,
-                MessageSubscriberConfiguration.of(configuration));
+                MessageSubscriberConfiguration.of(configuration),
+                tracerFactory,
+                context);
         processors.add(processor);
         return processor.subscriber();
     }
@@ -152,11 +160,15 @@ public class JetStreamConnector implements InboundConnector, OutboundConnector, 
         if (ConsumerType.Pull.equals(type)) {
             return new MessagePullPublisherProcessor<>(connectionFactory,
                     connectionConfiguration,
-                    MessagePullPublisherConfiguration.of(configuration));
+                    MessagePullPublisherConfiguration.of(configuration),
+                    tracerFactory,
+                    context);
         } else {
             return new MessagePushPublisherProcessor<>(connectionFactory,
                     connectionConfiguration,
-                    MessagePushPublisherConfiguration.of(configuration));
+                    MessagePushPublisherConfiguration.of(configuration),
+                    tracerFactory,
+                    context);
         }
     }
 }

@@ -6,6 +6,8 @@ import java.time.Duration;
 
 import org.junit.jupiter.api.Test;
 
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.ExponentialBackoff;
+
 public class ExponentialBackoffTest {
     @Test
     public void testGetDuration() {

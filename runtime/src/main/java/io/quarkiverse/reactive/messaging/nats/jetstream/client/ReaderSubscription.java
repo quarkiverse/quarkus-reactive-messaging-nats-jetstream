@@ -12,8 +12,9 @@ import org.jboss.logging.Logger;
 import io.nats.client.JetStreamReader;
 import io.nats.client.JetStreamStatusException;
 import io.nats.client.JetStreamSubscription;
-import io.quarkiverse.reactive.messaging.nats.jetstream.ExponentialBackoff;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.ExponentialBackoff;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ReaderConsumerConfiguration;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.tracing.Tracer;
 import io.quarkiverse.reactive.messaging.nats.jetstream.mapper.MessageMapper;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
@@ -27,35 +28,32 @@ class ReaderSubscription<P> implements Subscription<P> {
     private final JetStreamReader reader;
     private final JetStreamSubscription subscription;
     private final MessageMapper messageMapper;
-    private final Context context;
     private final AtomicBoolean closed;
 
     ReaderSubscription(Connection connection,
             ReaderConsumerConfiguration<P> consumerConfiguration,
             JetStreamSubscription subscription,
             JetStreamReader reader,
-            MessageMapper messageMapper,
-            Context context) {
+            MessageMapper messageMapper) {
         this.connection = connection;
         this.consumerConfiguration = consumerConfiguration;
         this.subscription = subscription;
         this.reader = reader;
         this.messageMapper = messageMapper;
-        this.context = context;
         this.closed = new AtomicBoolean(false);
     }
 
+    @SuppressWarnings("ReactiveStreamsUnusedPublisher")
     @Override
-    public Multi<Message<P>> subscribe() {
-        boolean traceEnabled = consumerConfiguration.consumerConfiguration().traceEnabled();
+    public Multi<Message<P>> subscribe(Tracer<P> tracer, Context context) {
         Class<P> payloadType = consumerConfiguration.consumerConfiguration().payloadType().orElse(null);
         ExecutorService pullExecutor = Executors.newSingleThreadExecutor(JetstreamWorkerThread::new);
         return Multi.createBy().repeating()
                 .uni(this::readNextMessage)
                 .whilst(message -> true)
                 .runSubscriptionOn(pullExecutor)
-                .emitOn(context::runOnContext)
-                .flatMap(message -> createMulti(message.orElse(null), traceEnabled, payloadType, context));
+                .flatMap(message -> createMulti(message.orElse(null), payloadType, context))
+                .onItem().transformToUniAndMerge(tracer::withTrace);
     }
 
     @Override
@@ -110,12 +108,12 @@ class ReaderSubscription<P> implements Subscription<P> {
     }
 
     private Multi<org.eclipse.microprofile.reactive.messaging.Message<P>> createMulti(io.nats.client.Message message,
-            boolean tracingEnabled, Class<P> payloadType, Context context) {
+            Class<P> payloadType, Context context) {
         if (message == null || message.getData() == null) {
             return Multi.createFrom().empty();
         } else {
             return Multi.createFrom()
-                    .item(() -> messageMapper.of(message, tracingEnabled, payloadType, context,
+                    .item(() -> messageMapper.of(message, payloadType, context,
                             new ExponentialBackoff(
                                     consumerConfiguration.consumerConfiguration().exponentialBackoff(),
                                     consumerConfiguration.consumerConfiguration().exponentialBackoffMaxDuration()),

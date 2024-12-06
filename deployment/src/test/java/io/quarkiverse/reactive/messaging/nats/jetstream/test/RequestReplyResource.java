@@ -14,7 +14,6 @@ import jakarta.enterprise.context.BeforeDestroyed;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.enterprise.event.Observes;
 import jakarta.enterprise.event.Reception;
-import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 
 import org.eclipse.microprofile.reactive.messaging.Message;
@@ -24,14 +23,16 @@ import io.nats.client.api.AckPolicy;
 import io.nats.client.api.DeliverPolicy;
 import io.nats.client.api.ReplayPolicy;
 import io.quarkiverse.reactive.messaging.nats.NatsConfiguration;
-import io.quarkiverse.reactive.messaging.nats.jetstream.JetStreamOutgoingMessageMetadata;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.Connection;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.ConnectionFactory;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.Context;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.DefaultConnectionListener;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.StreamState;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.SubscribeMessageMetadata;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ConnectionConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.FetchConsumerConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.PublishConfiguration;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.tracing.TracerFactory;
 import io.smallrye.mutiny.Uni;
 
 @Path("/request-reply")
@@ -42,14 +43,17 @@ public class RequestReplyResource {
     private final NatsConfiguration natsConfiguration;
     private final String streamName;
     private final AtomicReference<Connection> messageConnection;
+    private final TracerFactory tracerFactory;
+    private final Context context;
 
-    @Inject
     public RequestReplyResource(ConnectionFactory connectionFactory,
-            NatsConfiguration natsConfiguration) {
+            NatsConfiguration natsConfiguration, TracerFactory tracerFactory, Context context) {
         this.connectionFactory = connectionFactory;
         this.natsConfiguration = natsConfiguration;
         this.streamName = "request-reply";
         this.messageConnection = new AtomicReference<>();
+        this.tracerFactory = tracerFactory;
+        this.context = context;
     }
 
     @GET
@@ -115,13 +119,9 @@ public class RequestReplyResource {
     }
 
     private Uni<Void> produceData(Connection connection, String subject, String id, String data, String messageId) {
-        return connection.publish(
-                Message.of(new Data(data, id, messageId), Metadata.of(JetStreamOutgoingMessageMetadata.of(messageId))),
+        return context.withContext(ctx -> connection.publish(
+                Message.of(new Data(data, id, messageId), Metadata.of(SubscribeMessageMetadata.of(messageId))),
                 new PublishConfiguration() {
-                    @Override
-                    public boolean traceEnabled() {
-                        return true;
-                    }
 
                     @Override
                     public String stream() {
@@ -132,12 +132,14 @@ public class RequestReplyResource {
                     public String subject() {
                         return "events." + subject;
                     }
-                }, getConsumerConfiguration(streamName, subject))
+                }, getConsumerConfiguration(streamName, subject), tracerFactory.create(), ctx))
                 .onItem().transformToUni(m -> Uni.createFrom().voidItem());
     }
 
     public Uni<Data> consumeData(Connection connection, String subject) {
-        return connection.nextMessage(getConsumerConfiguration(streamName, subject))
+        return context
+                .withContext(
+                        c -> connection.nextMessage(getConsumerConfiguration(streamName, subject), tracerFactory.create(), c))
                 .map(message -> {
                     message.ack();
                     return message.getPayload();
@@ -170,11 +172,6 @@ public class RequestReplyResource {
             @Override
             public String name() {
                 return subject;
-            }
-
-            @Override
-            public boolean traceEnabled() {
-                return true;
             }
 
             @Override

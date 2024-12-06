@@ -1,4 +1,4 @@
-package io.quarkiverse.reactive.messaging.nats.jetstream;
+package io.quarkiverse.reactive.messaging.nats.jetstream.client.api;
 
 import static io.quarkiverse.reactive.messaging.nats.jetstream.mapper.HeaderMapper.toMessageHeaders;
 import static io.smallrye.reactive.messaging.providers.locals.ContextAwareMessage.captureContextMetadata;
@@ -17,22 +17,22 @@ import io.nats.client.Message;
 import io.smallrye.reactive.messaging.providers.helpers.VertxContext;
 import io.vertx.mutiny.core.Context;
 
-public class JetStreamIncomingMessage<T> implements JetStreamMessage<T> {
+public class PublishMessage<T> implements JetStreamMessage<T> {
     private final Message message;
     private Metadata metadata;
-    private final JetStreamIncomingMessageMetadata incomingMetadata;
+    private final PublishMessageMetadata incomingMetadata;
     private final T payload;
     private final Context context;
     private final ExponentialBackoff exponentialBackoff;
     private final Duration ackTimeout;
 
-    public JetStreamIncomingMessage(final Message message,
+    public PublishMessage(final Message message,
             final T payload,
             Context context,
             ExponentialBackoff exponentialBackoff,
             Duration ackTimeout) {
         this.message = message;
-        this.incomingMetadata = JetStreamIncomingMessageMetadata.of(message);
+        this.incomingMetadata = PublishMessageMetadata.of(message);
         this.exponentialBackoff = exponentialBackoff;
         this.metadata = captureContextMetadata(incomingMetadata);
         this.payload = payload;
@@ -45,7 +45,7 @@ public class JetStreamIncomingMessage<T> implements JetStreamMessage<T> {
         return metadata;
     }
 
-    public String getMessageId() {
+    public String messageId() {
         return incomingMetadata.messageId();
     }
 
@@ -77,7 +77,7 @@ public class JetStreamIncomingMessage<T> implements JetStreamMessage<T> {
         return incomingMetadata.deliveredCount();
     }
 
-    public Map<String, List<String>> getHeaders() {
+    public Map<String, List<String>> headers() {
         return toMessageHeaders(message.getHeaders());
     }
 
@@ -107,7 +107,7 @@ public class JetStreamIncomingMessage<T> implements JetStreamMessage<T> {
     public CompletionStage<Void> nack(Throwable reason, Metadata metadata) {
         return VertxContext.runOnContext(context.getDelegate(), f -> {
             if (exponentialBackoff.enabled()) {
-                metadata.get(JetStreamIncomingMessageMetadata.class)
+                metadata.get(PublishMessageMetadata.class)
                         .ifPresentOrElse(m -> message.nakWithDelay(exponentialBackoff.getDuration(m.deliveredCount())),
                                 message::nak);
             } else {

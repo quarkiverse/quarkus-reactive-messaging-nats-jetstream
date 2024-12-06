@@ -205,11 +205,6 @@ public class ReaderSubscribeConnectionTest {
                     }
 
                     @Override
-                    public boolean traceEnabled() {
-                        return false;
-                    }
-
-                    @Override
                     public boolean exponentialBackoff() {
                         return false;
                     }

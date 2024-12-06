@@ -19,7 +19,8 @@ public class HealthTest {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
             () -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(TestSpanExporter.class, Data.class, DataResource.class, DataConsumingBean.class))
+                    .addClasses(TestSpanExporter.class, Data.class, DataResource.class, DataConsumingBean.class,
+                            DataCollectorBean.class, MessageConsumer.class))
             .withConfigurationResource("application-health.properties");
 
     @Test

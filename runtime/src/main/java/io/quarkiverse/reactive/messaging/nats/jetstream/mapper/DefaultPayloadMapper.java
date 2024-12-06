@@ -1,6 +1,6 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.mapper;
 
-import static io.quarkiverse.reactive.messaging.nats.jetstream.mapper.DefaultMessageMapper.MESSAGE_TYPE_HEADER;
+import static io.quarkiverse.reactive.messaging.nats.jetstream.client.api.JetStreamMessage.MESSAGE_TYPE_HEADER;
 
 import java.io.IOException;
 import java.util.Optional;

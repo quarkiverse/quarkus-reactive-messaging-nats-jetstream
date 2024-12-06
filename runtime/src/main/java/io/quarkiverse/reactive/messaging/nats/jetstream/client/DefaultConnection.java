@@ -1,8 +1,6 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client;
 
 import static io.nats.client.Connection.Status.CONNECTED;
-import static io.quarkiverse.reactive.messaging.nats.jetstream.mapper.DefaultMessageMapper.MESSAGE_TYPE_HEADER;
-import static io.smallrye.reactive.messaging.tracing.TracingUtils.traceOutgoing;
 
 import java.io.IOException;
 import java.time.Duration;
@@ -21,22 +19,19 @@ import io.nats.client.api.KeyValueEntry;
 import io.nats.client.api.StreamInfo;
 import io.nats.client.api.StreamInfoOptions;
 import io.nats.client.impl.Headers;
-import io.quarkiverse.reactive.messaging.nats.jetstream.ExponentialBackoff;
-import io.quarkiverse.reactive.messaging.nats.jetstream.JetStreamOutgoingMessageMetadata;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.*;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.Consumer;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.ExponentialBackoff;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.*;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ConsumerConfiguration;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.tracing.Tracer;
 import io.quarkiverse.reactive.messaging.nats.jetstream.mapper.ConsumerMapper;
 import io.quarkiverse.reactive.messaging.nats.jetstream.mapper.MessageMapper;
 import io.quarkiverse.reactive.messaging.nats.jetstream.mapper.PayloadMapper;
 import io.quarkiverse.reactive.messaging.nats.jetstream.mapper.StreamStateMapper;
-import io.quarkiverse.reactive.messaging.nats.jetstream.tracing.JetStreamInstrument;
-import io.quarkiverse.reactive.messaging.nats.jetstream.tracing.JetStreamTrace;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple2;
-import io.smallrye.mutiny.tuples.Tuple5;
 import io.smallrye.mutiny.unchecked.Unchecked;
 import io.vertx.mutiny.core.Context;
 
@@ -45,29 +40,23 @@ public class DefaultConnection implements Connection {
 
     private final io.nats.client.Connection connection;
     private final List<ConnectionListener> listeners;
-    private final Context context;
     private final StreamStateMapper streamStateMapper;
     private final ConsumerMapper consumerMapper;
     private final MessageMapper messageMapper;
     private final PayloadMapper payloadMapper;
-    private final JetStreamInstrument instrument;
 
     DefaultConnection(final ConnectionConfiguration configuration,
             final ConnectionListener connectionListener,
-            final Context context,
             final MessageMapper messageMapper,
             final PayloadMapper payloadMapper,
             final ConsumerMapper consumerMapper,
-            final StreamStateMapper streamStateMapper,
-            final JetStreamInstrument instrumenter) throws ConnectionException {
+            final StreamStateMapper streamStateMapper) throws ConnectionException {
         this.connection = connect(configuration);
         this.listeners = new ArrayList<>(List.of(connectionListener));
-        this.context = context;
         this.streamStateMapper = streamStateMapper;
         this.consumerMapper = consumerMapper;
         this.messageMapper = messageMapper;
         this.payloadMapper = payloadMapper;
-        this.instrument = instrumenter;
         fireEvent(ConnectionEvent.Connected, "Connection established");
     }
 
@@ -78,15 +67,14 @@ public class DefaultConnection implements Connection {
 
     @Override
     public Uni<Void> flush(Duration duration) {
-        return Uni.createFrom().<Void> item(Unchecked.supplier(() -> {
+        return Uni.createFrom().item(Unchecked.supplier(() -> {
             try {
                 connection.flush(duration);
                 return null;
             } catch (TimeoutException | InterruptedException e) {
                 throw new ConnectionException(e);
             }
-        }))
-                .emitOn(context::runOnContext);
+        }));
     }
 
     @Override
@@ -130,8 +118,7 @@ public class DefaultConnection implements Connection {
                         emitter.fail(new SystemException(e));
                     }
                 }))
-                .onItem().transform(consumerMapper::of)
-                .emitOn(context::runOnContext);
+                .onItem().transform(consumerMapper::of);
     }
 
     @Override
@@ -144,8 +131,7 @@ public class DefaultConnection implements Connection {
                     } catch (Throwable failure) {
                         emitter.fail(new SystemException(failure));
                     }
-                }))
-                .emitOn(context::runOnContext);
+                }));
     }
 
     @Override
@@ -162,8 +148,7 @@ public class DefaultConnection implements Connection {
                     } catch (Throwable failure) {
                         emitter.fail(new SystemException(failure));
                     }
-                }))
-                .emitOn(context::runOnContext);
+                }));
     }
 
     @Override
@@ -180,29 +165,25 @@ public class DefaultConnection implements Connection {
                     } catch (Throwable failure) {
                         emitter.fail(new SystemException(failure));
                     }
-                }))
-                .emitOn(context::runOnContext);
+                }));
     }
 
     @Override
     public Uni<Long> getFirstSequence(String streamName) {
         return getStreamInfo(streamName)
-                .onItem().transform(tuple -> tuple.getItem2().getStreamState().getFirstSequence())
-                .emitOn(context::runOnContext);
+                .onItem().transform(tuple -> tuple.getItem2().getStreamState().getFirstSequence());
     }
 
     @Override
     public Uni<List<String>> getStreams() {
         return getJetStreamManagement()
-                .onItem().transformToUni(jsm -> Uni.createFrom().item(Unchecked.supplier((jsm::getStreamNames))))
-                .emitOn(context::runOnContext);
+                .onItem().transformToUni(jsm -> Uni.createFrom().item(Unchecked.supplier((jsm::getStreamNames))));
     }
 
     @Override
     public Uni<List<String>> getSubjects(String streamName) {
         return getStreamInfo(streamName)
-                .onItem().transform(tuple -> tuple.getItem2().getConfiguration().getSubjects())
-                .emitOn(context::runOnContext);
+                .onItem().transform(tuple -> tuple.getItem2().getConfiguration().getSubjects());
     }
 
     @Override
@@ -214,8 +195,7 @@ public class DefaultConnection implements Connection {
                     } catch (Throwable failure) {
                         emitter.fail(new SystemException(failure));
                     }
-                }))
-                .emitOn(context::runOnContext);
+                }));
     }
 
     @Override
@@ -228,8 +208,7 @@ public class DefaultConnection implements Connection {
                     } catch (Throwable failure) {
                         emitter.fail(new SystemException(failure));
                     }
-                }))
-                .emitOn(context::runOnContext);
+                }));
     }
 
     @Override
@@ -248,106 +227,73 @@ public class DefaultConnection implements Connection {
                                         sequence, failure.getMessage()),
                                 failure));
                     }
-                }))
-                .emitOn(context::runOnContext);
+                }));
     }
 
     @Override
     public Uni<StreamState> getStreamState(String streamName) {
         return getStreamInfo(streamName)
-                .onItem().transform(tuple -> streamStateMapper.of(tuple.getItem2().getStreamState()))
-                .emitOn(context::runOnContext);
+                .onItem().transform(tuple -> streamStateMapper.of(tuple.getItem2().getStreamState()));
     }
 
     @Override
     public Uni<StreamConfiguration> getStreamConfiguration(String streamName) {
         return getStreamInfo(streamName)
-                .onItem().transform(tuple -> StreamConfiguration.of(tuple.getItem2().getConfiguration()))
-                .emitOn(context::runOnContext);
+                .onItem().transform(tuple -> StreamConfiguration.of(tuple.getItem2().getConfiguration()));
     }
 
     @Override
     public Uni<List<PurgeResult>> purgeAllStreams() {
         return getStreams()
-                .onItem().transformToUni(this::purgeAllStreams)
-                .emitOn(context::runOnContext);
+                .onItem().transformToUni(this::purgeAllStreams);
     }
 
     @Override
-    public <T> Uni<Message<T>> publish(final Message<T> message, final PublishConfiguration configuration) {
-        return Uni.createFrom().<Tuple5<JetStream, String, Headers, byte[], PublishOptions>> emitter(emitter -> {
-            try {
-                final var metadata = message.getMetadata(JetStreamOutgoingMessageMetadata.class);
-                final var messageId = metadata.map(JetStreamOutgoingMessageMetadata::messageId)
-                        .orElseGet(() -> UUID.randomUUID().toString());
-                final var payload = payloadMapper.of(message.getPayload());
-                final var subject = metadata.flatMap(JetStreamOutgoingMessageMetadata::subtopic)
-                        .map(subtopic -> configuration.subject() + "." + subtopic).orElseGet(configuration::subject);
-                final var headers = new HashMap<String, List<String>>();
-                metadata.ifPresent(m -> headers.putAll(m.headers()));
-                if (message.getPayload() != null) {
-                    headers.putIfAbsent(MESSAGE_TYPE_HEADER, List.of(message.getPayload().getClass().getTypeName()));
-                }
-
-                if (configuration.traceEnabled()) {
-                    // Create a new span for the outbound message and record updated tracing information in
-                    // the headers; this has to be done before we build the properties below
-                    traceOutgoing(instrument.publisher(), message,
-                            JetStreamTrace.builder()
-                                    .stream(configuration.stream())
-                                    .subject(subject)
-                                    .messageId(messageId)
-                                    .headers(headers)
-                                    .payload(new String(payload))
-                                    .build());
-                }
-
-                final var jetStream = connection.jetStream();
-                final var options = createPublishOptions(messageId, configuration.stream());
-
-                emitter.complete(Tuple5.of(jetStream, subject, toJetStreamHeaders(headers), payload, options));
-            } catch (Throwable failure) {
-                emitter.fail(
-                        new PublishException(String.format("Failed to publish message: %s", failure.getMessage()), failure));
-            }
-        })
+    public <T> Uni<Message<T>> publish(final Message<T> message, PublishConfiguration publishConfiguration, Tracer<T> tracer,
+            Context context) {
+        return Uni.createFrom().voidItem()
+                .emitOn(context::runOnContext)
+                .onItem().transformToUni(ignore -> tracer.withTrace(message, publishConfiguration))
                 .onItem()
-                .transformToUni(tuple -> Uni.createFrom().completionStage(
-                        tuple.getItem1().publishAsync(tuple.getItem2(), tuple.getItem3(), tuple.getItem4(), tuple.getItem5())))
-                .onItem()
-                .invoke(ack -> logger.debugf("Message published to stream: %s with sequence number: %d", ack.getStream(),
-                        ack.getSeqno()))
+                .transformToUni(subscribeMessage -> getJetStream().onItem()
+                        .transform(jetStream -> Tuple2.of(jetStream, subscribeMessage)))
+                .onItem().transformToUni(tuple -> Uni.createFrom().completionStage(
+                        tuple.getItem1().publishAsync(tuple.getItem2().configuration().subject(),
+                                toJetStreamHeaders(tuple.getItem2().headers()),
+                                tuple.getItem2().payload(),
+                                createPublishOptions(tuple.getItem2().messageId(), tuple.getItem2().configuration().stream()))))
+                .onItem().transform(ack -> {
+                    logger.debugf("Message published to stream: %s with sequence number: %d", ack.getStream(), ack.getSeqno());
+                    return message;
+                })
                 .onItem().transformToUni(ignore -> acknowledge(message))
                 .onFailure().recoverWithUni(failure -> notAcknowledge(message, failure))
-                .onFailure().transform(failure -> new PublishException(failure.getMessage(), failure))
-                .emitOn(context::runOnContext);
+                .onFailure().transform(failure -> new PublishException(failure.getMessage(), failure));
     }
 
     @Override
-    public <T> Uni<Message<T>> publish(Message<T> message,
-            PublishConfiguration publishConfiguration,
-            FetchConsumerConfiguration<T> consumerConfiguration) {
+    public <T> Uni<Message<T>> publish(Message<T> message, PublishConfiguration publishConfiguration,
+            FetchConsumerConfiguration<T> consumerConfiguration, Tracer<T> tracer, Context context) {
         return addOrUpdateConsumer(consumerConfiguration)
-                .onItem().transformToUni(v -> publish(message, publishConfiguration));
+                .onItem().transformToUni(v -> publish(message, publishConfiguration, tracer, context));
     }
 
     @Override
-    public <T> Uni<Message<T>> nextMessage(FetchConsumerConfiguration<T> configuration) {
+    public <T> Uni<Message<T>> nextMessage(FetchConsumerConfiguration<T> configuration, Tracer<T> tracer, Context context) {
         ExecutorService pullExecutor = Executors.newSingleThreadExecutor(JetstreamWorkerThread::new);
         return addOrUpdateConsumer(configuration)
                 .onItem()
-                .transformToUni(consumerContext -> nextMessage(consumerContext, configuration))
-                .runSubscriptionOn(pullExecutor)
-                .emitOn(context::runOnContext);
+                .transformToUni(consumerContext -> nextMessage(consumerContext, configuration, tracer, context))
+                .runSubscriptionOn(pullExecutor);
     }
 
+    @SuppressWarnings("ReactiveStreamsUnusedPublisher")
     @Override
-    public <T> Multi<Message<T>> nextMessages(FetchConsumerConfiguration<T> configuration) {
+    public <T> Multi<Message<T>> nextMessages(FetchConsumerConfiguration<T> configuration, Tracer<T> tracer, Context context) {
         ExecutorService pullExecutor = Executors.newSingleThreadExecutor(JetstreamWorkerThread::new);
         return addOrUpdateConsumer(configuration)
-                .onItem().transformToMulti(consumerContext -> nextMessages(consumerContext, configuration))
-                .runSubscriptionOn(pullExecutor)
-                .emitOn(context::runOnContext);
+                .onItem().transformToMulti(consumerContext -> nextMessages(consumerContext, configuration, tracer, context))
+                .runSubscriptionOn(pullExecutor);
     }
 
     @Override
@@ -361,8 +307,7 @@ public class DefaultConnection implements Connection {
             }
         })
                 .onItem().ifNull().failWith(() -> new KeyValueNotFoundException(bucketName, key))
-                .onItem().ifNotNull().transform(keyValueEntry -> payloadMapper.of(keyValueEntry.getValue(), valueType))
-                .emitOn(context::runOnContext);
+                .onItem().ifNotNull().transform(keyValueEntry -> payloadMapper.of(keyValueEntry.getValue(), valueType));
     }
 
     @Override
@@ -375,8 +320,7 @@ public class DefaultConnection implements Connection {
             } catch (Throwable failure) {
                 emitter.fail(new KeyValueException(failure));
             }
-        })
-                .emitOn(context::runOnContext);
+        });
     }
 
     @Override
@@ -389,8 +333,7 @@ public class DefaultConnection implements Connection {
             } catch (Throwable failure) {
                 emitter.fail(new KeyValueException(failure));
             }
-        })
-                .emitOn(context::runOnContext);
+        });
     }
 
     @Override
@@ -400,17 +343,16 @@ public class DefaultConnection implements Connection {
                 final var jetStream = connection.jetStream();
                 final var streamContext = jetStream.getStreamContext(streamName);
                 final var messageInfo = streamContext.getMessage(sequence);
-                emitter.complete(new JetStreamMessage<>(messageInfo, payloadMapper.<T> of(messageInfo).orElse(null)));
+                emitter.complete(new ResolvedMessage<>(messageInfo, payloadMapper.<T> of(messageInfo).orElse(null)));
             } catch (IOException | JetStreamApiException e) {
                 emitter.fail(e);
             }
-        })
-                .emitOn(context::runOnContext);
+        });
     }
 
     @Override
     public <T> Uni<Subscription<T>> subscription(PushConsumerConfiguration<T> configuration) {
-        return Uni.createFrom().item(() -> new PushSubscription<>(this, configuration, connection, messageMapper, context));
+        return Uni.createFrom().item(() -> new PushSubscription<>(this, configuration, connection, messageMapper));
     }
 
     @Override
@@ -420,7 +362,7 @@ public class DefaultConnection implements Connection {
                 .onItem()
                 .transformToUni(pair -> Uni.createFrom()
                         .<Subscription<T>> item(Unchecked.supplier(() -> new ReaderSubscription<>(this, configuration,
-                                pair.getItem1(), pair.getItem2(), messageMapper, context))))
+                                pair.getItem1(), pair.getItem2(), messageMapper))))
                 .onItem().invoke(this::addListener);
     }
 
@@ -438,10 +380,10 @@ public class DefaultConnection implements Connection {
     public Uni<Void> addOrUpdateKeyValueStores(List<KeyValueSetupConfiguration> keyValueConfigurations) {
         return Multi.createFrom().items(keyValueConfigurations.stream())
                 .onItem().transformToUniAndMerge(this::addOrUpdateKeyValueStore)
-                .collect().last()
-                .emitOn(context::runOnContext);
+                .collect().last();
     }
 
+    @SuppressWarnings("ReactiveStreamsUnusedPublisher")
     @Override
     public Uni<List<StreamResult>> addStreams(List<StreamSetupConfiguration> streamConfigurations) {
         return getJetStreamManagement()
@@ -450,8 +392,7 @@ public class DefaultConnection implements Connection {
                         .items(streamConfigurations.stream()
                                 .map(streamConfiguration -> Tuple2.of(jetStreamManagement, streamConfiguration))))
                 .onItem().transformToUniAndMerge(tuple -> addOrUpdateStream(tuple.getItem1(), tuple.getItem2()))
-                .collect().asList()
-                .emitOn(context::runOnContext);
+                .collect().asList();
     }
 
     @Override
@@ -472,8 +413,7 @@ public class DefaultConnection implements Connection {
                     } catch (Throwable failure) {
                         emitter.fail(new SystemException(failure));
                     }
-                }))
-                .emitOn(context::runOnContext);
+                }));
     }
 
     @Override
@@ -494,8 +434,7 @@ public class DefaultConnection implements Connection {
                     } catch (Throwable failure) {
                         emitter.fail(new SystemException(failure));
                     }
-                }))
-                .emitOn(context::runOnContext);
+                }));
     }
 
     private <T> Uni<Tuple2<JetStreamSubscription, JetStreamReader>> createReader(ReaderConsumerConfiguration<T> configuration,
@@ -586,6 +525,17 @@ public class DefaultConnection implements Connection {
         });
     }
 
+    private Uni<JetStream> getJetStream() {
+        return Uni.createFrom().emitter(emitter -> {
+            try {
+                emitter.complete(connection.jetStream());
+            } catch (Throwable failure) {
+                emitter.fail(
+                        new SystemException(String.format("Unable to get JetStream: %s", failure.getMessage()), failure));
+            }
+        });
+    }
+
     private PublishOptions createPublishOptions(final String messageId, final String streamName) {
         return PublishOptions.builder()
                 .messageId(messageId)
@@ -633,15 +583,19 @@ public class DefaultConnection implements Connection {
     }
 
     private <T> Uni<Message<T>> nextMessage(final ConsumerContext consumerContext,
-            final FetchConsumerConfiguration<T> configuration) {
-        return nextMessage(consumerContext, configuration.fetchTimeout().orElse(null))
+            final FetchConsumerConfiguration<T> configuration,
+            final Tracer<T> tracer,
+            final Context context) {
+        return Uni.createFrom().voidItem()
+                .emitOn(context::runOnContext)
+                .onItem().transformToUni(ignore -> nextMessage(consumerContext, configuration.fetchTimeout().orElse(null)))
                 .map(message -> messageMapper.of(
                         message,
-                        configuration.traceEnabled(),
                         configuration.payloadType().orElse(null),
                         context,
                         new ExponentialBackoff(false, Duration.ZERO),
-                        configuration.ackTimeout()));
+                        configuration.ackTimeout()))
+                .onItem().transformToUni(message -> tracer.withTrace(message));
     }
 
     private Headers toJetStreamHeaders(Map<String, List<String>> headers) {
@@ -662,33 +616,37 @@ public class DefaultConnection implements Connection {
             } catch (Throwable failure) {
                 throw new FetchException(failure);
             }
-        }))
-                .emitOn(context::runOnContext);
+        }));
     }
 
+    @SuppressWarnings("ReactiveStreamsUnusedPublisher")
     private <T> Multi<Message<T>> nextMessages(final ConsumerContext consumerContext,
-            FetchConsumerConfiguration<T> configuration) {
-        return Multi.createFrom().<Message<T>> emitter(emitter -> {
-            try {
-                try (final var fetchConsumer = fetchConsumer(consumerContext, configuration.fetchTimeout().orElse(null))) {
-                    var message = fetchConsumer.nextMessage();
-                    while (message != null) {
-                        emitter.emit(messageMapper.of(
-                                message,
-                                configuration.traceEnabled(),
-                                configuration.payloadType().orElse(null),
-                                context,
-                                new ExponentialBackoff(false, Duration.ZERO),
-                                configuration.ackTimeout()));
-                        message = fetchConsumer.nextMessage();
+            final FetchConsumerConfiguration<T> configuration,
+            final Tracer<T> tracer,
+            final Context context) {
+        return Uni.createFrom().voidItem()
+                .emitOn(context::runOnContext)
+                .onItem().transformToMulti(ignore -> Multi.createFrom().<Message<T>> emitter(emitter -> {
+                    try {
+                        try (final var fetchConsumer = fetchConsumer(consumerContext,
+                                configuration.fetchTimeout().orElse(null))) {
+                            var message = fetchConsumer.nextMessage();
+                            while (message != null) {
+                                emitter.emit(messageMapper.of(
+                                        message,
+                                        configuration.payloadType().orElse(null),
+                                        context,
+                                        new ExponentialBackoff(false, Duration.ZERO),
+                                        configuration.ackTimeout()));
+                                message = fetchConsumer.nextMessage();
+                            }
+                            emitter.complete();
+                        }
+                    } catch (Throwable failure) {
+                        emitter.fail(new FetchException(failure));
                     }
-                    emitter.complete();
-                }
-            } catch (Throwable failure) {
-                emitter.fail(new FetchException(failure));
-            }
-        })
-                .emitOn(context::runOnContext);
+                }))
+                .onItem().transformToUniAndMerge(tracer::withTrace);
     }
 
     private io.nats.client.Connection connect(ConnectionConfiguration configuration) throws ConnectionException {
