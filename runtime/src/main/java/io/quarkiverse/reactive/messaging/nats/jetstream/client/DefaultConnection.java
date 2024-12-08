@@ -14,16 +14,15 @@ import org.eclipse.microprofile.reactive.messaging.Message;
 import org.jboss.logging.Logger;
 
 import io.nats.client.*;
-import io.nats.client.api.ConsumerInfo;
-import io.nats.client.api.KeyValueEntry;
-import io.nats.client.api.StreamInfo;
-import io.nats.client.api.StreamInfoOptions;
+import io.nats.client.api.*;
 import io.nats.client.impl.Headers;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.*;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.Consumer;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.ExponentialBackoff;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.StreamState;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.*;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ConsumerConfiguration;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.StreamConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.tracing.Tracer;
 import io.quarkiverse.reactive.messaging.nats.jetstream.mapper.ConsumerMapper;
 import io.quarkiverse.reactive.messaging.nats.jetstream.mapper.MessageMapper;
@@ -249,24 +248,19 @@ public class DefaultConnection implements Connection {
     }
 
     @Override
-    public <T> Uni<Message<T>> publish(final Message<T> message, PublishConfiguration publishConfiguration, Tracer<T> tracer,
-            Context context) {
+    public <T> Uni<Message<T>> publish(final Message<T> message, final PublishConfiguration publishConfiguration,
+            final Tracer<T> tracer, final Context context) {
         return Uni.createFrom().voidItem()
                 .emitOn(context::runOnContext)
                 .onItem().transformToUni(ignore -> tracer.withTrace(message, publishConfiguration))
-                .onItem()
-                .transformToUni(subscribeMessage -> getJetStream().onItem()
-                        .transform(jetStream -> Tuple2.of(jetStream, subscribeMessage)))
-                .onItem().transformToUni(tuple -> Uni.createFrom().completionStage(
-                        tuple.getItem1().publishAsync(tuple.getItem2().configuration().subject(),
-                                toJetStreamHeaders(tuple.getItem2().headers()),
-                                tuple.getItem2().payload(),
-                                createPublishOptions(tuple.getItem2().messageId(), tuple.getItem2().configuration().stream()))))
-                .onItem().transform(ack -> {
-                    logger.debugf("Message published to stream: %s with sequence number: %d", ack.getStream(), ack.getSeqno());
-                    return message;
+                .onItem().transformToUni(this::getJetStream)
+                .onItem().transformToUni(this::publishMessage)
+                .onItem().transform(tuple -> {
+                    logger.debugf("Message published to stream: %s with sequence number: %d", tuple.getItem1().getStream(),
+                            tuple.getItem1().getSeqno());
+                    return tuple.getItem2();
                 })
-                .onItem().transformToUni(ignore -> acknowledge(message))
+                .onItem().transformToUni(this::acknowledge)
                 .onFailure().recoverWithUni(failure -> notAcknowledge(message, failure))
                 .onFailure().transform(failure -> new PublishException(failure.getMessage(), failure));
     }
@@ -742,5 +736,18 @@ public class DefaultConnection implements Connection {
                         failure.getMessage()), failure));
             }
         });
+    }
+
+    private <T> Uni<Tuple2<JetStream, SubscribeMessage<T>>> getJetStream(SubscribeMessage<T> subscribeMessage) {
+        return getJetStream().onItem().transform(jetStream -> Tuple2.of(jetStream, subscribeMessage));
+    }
+
+    private <T> Uni<Tuple2<PublishAck, Message<T>>> publishMessage(Tuple2<JetStream, SubscribeMessage<T>> tuple) {
+        return Uni.createFrom().completionStage(
+                tuple.getItem1().publishAsync(tuple.getItem2().configuration().subject(),
+                        toJetStreamHeaders(tuple.getItem2().headers()),
+                        tuple.getItem2().payload(),
+                        createPublishOptions(tuple.getItem2().messageId(), tuple.getItem2().configuration().stream())))
+                .onItem().transform(ack -> Tuple2.of(ack, tuple.getItem2().message()));
     }
 }
