@@ -9,6 +9,7 @@ import org.jboss.logging.Logger;
 
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.*;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ConnectionConfiguration;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.tracing.Tracer;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.tracing.TracerFactory;
 import io.quarkiverse.reactive.messaging.nats.jetstream.processors.MessageProcessor;
 import io.quarkiverse.reactive.messaging.nats.jetstream.processors.Status;
@@ -16,7 +17,7 @@ import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.reactive.messaging.providers.helpers.MultiUtils;
 
-public class MessageSubscriberProcessor implements MessageProcessor, ConnectionListener {
+public class MessageSubscriberProcessor<T> implements MessageProcessor, ConnectionListener {
     private final static Logger logger = Logger.getLogger(MessageSubscriberProcessor.class);
 
     private final ConnectionConfiguration connectionConfiguration;
@@ -24,7 +25,7 @@ public class MessageSubscriberProcessor implements MessageProcessor, ConnectionL
     private final ConnectionFactory connectionFactory;
     private final AtomicReference<Status> status;
     private final AtomicReference<Connection> connection;
-    private final TracerFactory tracerFactory;
+    private final Tracer<T> tracer;
     private final Context context;
 
     public MessageSubscriberProcessor(
@@ -38,15 +39,15 @@ public class MessageSubscriberProcessor implements MessageProcessor, ConnectionL
         this.configuration = configuration;
         this.status = new AtomicReference<>(new Status(true, "Subscriber processor inactive", ConnectionEvent.Closed));
         this.connection = new AtomicReference<>();
-        this.tracerFactory = tracerFactory;
+        this.tracer = tracerFactory.create();
         this.context = context;
     }
 
-    public <T> Flow.Subscriber<Message<T>> subscriber() {
+    public Flow.Subscriber<Message<T>> subscriber() {
         return MultiUtils.via(this::subscribe);
     }
 
-    private <T> Multi<Message<T>> subscribe(Multi<Message<T>> subscription) {
+    private Multi<Message<T>> subscribe(Multi<Message<T>> subscription) {
         return subscription.onItem().transformToUniAndConcatenate(this::publish);
     }
 
@@ -83,17 +84,17 @@ public class MessageSubscriberProcessor implements MessageProcessor, ConnectionL
         this.status.set(Status.builder().healthy(true).message(message).event(event).build());
     }
 
-    private <T> Uni<Message<T>> publish(final Message<T> message) {
+    private Uni<Message<T>> publish(final Message<T> message) {
         return getOrEstablishConnection()
                 .onItem()
                 .transformToUni(connection -> context
-                        .withContext(ctx -> connection.publish(message, configuration, tracerFactory.create(), ctx)))
+                        .withContext(ctx -> connection.publish(message, configuration, tracer, ctx)))
                 .onFailure()
                 .invoke(failure -> logger.errorf(failure, "Failed to publish with message: %s", failure.getMessage()))
                 .onFailure().recoverWithUni(() -> recover(message));
     }
 
-    private <T> Uni<Message<T>> recover(final Message<T> message) {
+    private Uni<Message<T>> recover(final Message<T> message) {
         return Uni.createFrom().<Void> item(() -> {
             close();
             return null;

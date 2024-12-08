@@ -100,6 +100,7 @@ quarkus.messaging.nats.connection-backoff,Back-off delay between to attempt to r
 [format="csv",cols="2"]
 |======
 quarkus.messaging.nats.jet-stream.auto-configure,Autoconfigure stream and subjects based on channel configuration
+quarkus.messaging.nats.jet-stream.trace,Enable tracing
 quarkus.messaging.nats.jet-stream.streams[i].replicas,The number of replicas a message must be stored. Default value is 1
 quarkus.messaging.nats.jet-stream.streams[i].storage-type,The storage type for stream data (File or Memory)
 quarkus.messaging.nats.jet-stream.streams[i].retention-policy,Declares the retention policy for the stream (Limits or Interest)
@@ -151,7 +152,6 @@ mp.messaging.outgoing.[channel-name].trace-enabled,Enable traces for subscriber
 mp.messaging.incoming.[channel-name].name,The name of the NATS consumer
 mp.messaging.incoming.[channel-name].stream,The stream to publish messages from
 mp.messaging.incoming.[channel-name].subject,The subject to publish messages from
-mp.messaging.incoming.[channel-name].trace-enabled,Enable traces for publisher
 mp.messaging.incoming.[channel-name].publisher-type,"The publisher type (Pull, Push)"
 mp.messaging.incoming.[channel-name].payload-type,The class name of the payload type
 mp.messaging.incoming.[channel-name].durable,Sets the durable name for the consumer
