@@ -22,7 +22,7 @@ public class DefaultMessageMapper implements MessageMapper {
 
     @SuppressWarnings("unchecked")
     @Override
-    public <T> org.eclipse.microprofile.reactive.messaging.Message<T> of(
+    public <T> PublishMessage<T> of(
             io.nats.client.Message message,
             Class<T> payloadType,
             Context context,

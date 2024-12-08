@@ -3,6 +3,7 @@ package io.quarkiverse.reactive.messaging.nats.jetstream.client;
 import static io.nats.client.Connection.Status.CONNECTED;
 
 import java.io.IOException;
+import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
 import java.time.ZonedDateTime;
 import java.util.*;
@@ -96,7 +97,7 @@ public class DefaultConnection implements Connection {
         new ArrayList<>(listeners).forEach(listener -> {
             try {
                 listener.close();
-            } catch (Throwable failure) {
+            } catch (Exception failure) {
                 logger.warnf(failure, "Error closing listener: %s", failure.getMessage());
             }
         });
@@ -110,61 +111,61 @@ public class DefaultConnection implements Connection {
     @Override
     public Uni<Consumer> getConsumer(String stream, String consumerName) {
         return getJetStreamManagement()
-                .onItem().transformToUni(jsm -> Uni.createFrom().<ConsumerInfo> emitter(emitter -> {
+                .onItem().transformToUni(jsm -> Uni.createFrom().item(Unchecked.supplier(() -> {
                     try {
-                        emitter.complete(jsm.getConsumerInfo(stream, consumerName));
+                        return jsm.getConsumerInfo(stream, consumerName);
                     } catch (IOException | JetStreamApiException e) {
-                        emitter.fail(new SystemException(e));
+                        throw new SystemException(e);
                     }
-                }))
+                })))
                 .onItem().transform(consumerMapper::of);
     }
 
     @Override
     public Uni<Void> deleteConsumer(String streamName, String consumerName) {
         return getJetStreamManagement()
-                .onItem().transformToUni(jsm -> Uni.createFrom().<Void> emitter(emitter -> {
+                .onItem().transformToUni(jsm -> Uni.createFrom().item(Unchecked.supplier(() -> {
                     try {
                         jsm.deleteConsumer(streamName, consumerName);
-                        emitter.complete(null);
-                    } catch (Throwable failure) {
-                        emitter.fail(new SystemException(failure));
+                        return null;
+                    } catch (IOException | JetStreamApiException failure) {
+                        throw new SystemException(failure);
                     }
-                }));
+                })));
     }
 
     @Override
     public Uni<Void> pauseConsumer(String streamName, String consumerName, ZonedDateTime pauseUntil) {
         return getJetStreamManagement()
-                .onItem().transformToUni(jetStreamManagement -> Uni.createFrom().<Void> emitter(emitter -> {
+                .onItem().transformToUni(jetStreamManagement -> Uni.createFrom().item(Unchecked.supplier(() -> {
                     try {
                         final var response = jetStreamManagement.pauseConsumer(streamName, consumerName, pauseUntil);
                         if (!response.isPaused()) {
-                            emitter.fail(new SystemException(
-                                    String.format("Unable to pause consumer %s in stream %s", consumerName, streamName)));
+                            throw new SystemException(
+                                    String.format("Unable to pause consumer %s in stream %s", consumerName, streamName));
                         }
-                        emitter.complete(null);
-                    } catch (Throwable failure) {
-                        emitter.fail(new SystemException(failure));
+                        return null;
+                    } catch (IOException | JetStreamApiException failure) {
+                        throw new SystemException(failure);
                     }
-                }));
+                })));
     }
 
     @Override
     public Uni<Void> resumeConsumer(String streamName, String consumerName) {
         return getJetStreamManagement()
-                .onItem().transformToUni(jetStreamManagement -> Uni.createFrom().<Void> emitter(emitter -> {
+                .onItem().transformToUni(jetStreamManagement -> Uni.createFrom().item(Unchecked.supplier(() -> {
                     try {
                         final var response = jetStreamManagement.resumeConsumer(streamName, consumerName);
                         if (!response) {
-                            emitter.fail(new SystemException(
-                                    String.format("Unable to resume consumer %s in stream %s", consumerName, streamName)));
+                            throw new SystemException(
+                                    String.format("Unable to resume consumer %s in stream %s", consumerName, streamName));
                         }
-                        emitter.complete(null);
-                    } catch (Throwable failure) {
-                        emitter.fail(new SystemException(failure));
+                        return null;
+                    } catch (IOException | JetStreamApiException failure) {
+                        throw new SystemException(failure);
                     }
-                }));
+                })));
     }
 
     @Override
@@ -188,45 +189,45 @@ public class DefaultConnection implements Connection {
     @Override
     public Uni<List<String>> getConsumerNames(String streamName) {
         return getJetStreamManagement()
-                .onItem().transformToUni(jsm -> Uni.createFrom().<List<String>> emitter(emitter -> {
+                .onItem().transformToUni(jsm -> Uni.createFrom().item(Unchecked.supplier(() -> {
                     try {
-                        emitter.complete(jsm.getConsumerNames(streamName));
-                    } catch (Throwable failure) {
-                        emitter.fail(new SystemException(failure));
+                        return jsm.getConsumerNames(streamName);
+                    } catch (IOException | JetStreamApiException failure) {
+                        throw new SystemException(failure);
                     }
-                }));
+                })));
     }
 
     @Override
     public Uni<PurgeResult> purgeStream(String streamName) {
         return getJetStreamManagement()
-                .onItem().transformToUni(jsm -> Uni.createFrom().<PurgeResult> emitter(emitter -> {
+                .onItem().transformToUni(jsm -> Uni.createFrom().item(Unchecked.supplier(() -> {
                     try {
                         final var response = jsm.purgeStream(streamName);
-                        emitter.complete(new PurgeResult(streamName, response.isSuccess(), response.getPurged()));
-                    } catch (Throwable failure) {
-                        emitter.fail(new SystemException(failure));
+                        return new PurgeResult(streamName, response.isSuccess(), response.getPurged());
+                    } catch (IOException | JetStreamApiException failure) {
+                        throw new SystemException(failure);
                     }
-                }));
+                })));
     }
 
     @Override
     public Uni<Void> deleteMessage(String stream, long sequence, boolean erase) {
         return getJetStreamManagement()
-                .onItem().transformToUni(jsm -> Uni.createFrom().<Void> emitter(emitter -> {
+                .onItem().transformToUni(jsm -> Uni.createFrom().item(Unchecked.supplier(() -> {
                     try {
                         if (!jsm.deleteMessage(stream, sequence, erase)) {
-                            emitter.fail(new DeleteException(
-                                    String.format("Unable to delete message in stream %s with sequence %d", stream, sequence)));
+                            throw new DeleteException(
+                                    String.format("Unable to delete message in stream %s with sequence %d", stream, sequence));
                         }
-                        emitter.complete(null);
-                    } catch (Throwable failure) {
-                        emitter.fail(new DeleteException(
+                        return null;
+                    } catch (IOException | JetStreamApiException failure) {
+                        throw new DeleteException(
                                 String.format("Unable to delete message in stream %s with sequence %d: %s", stream,
                                         sequence, failure.getMessage()),
-                                failure));
+                                failure);
                     }
-                }));
+                })));
     }
 
     @Override
@@ -292,56 +293,54 @@ public class DefaultConnection implements Connection {
 
     @Override
     public <T> Uni<T> getKeyValue(String bucketName, String key, Class<T> valueType) {
-        return Uni.createFrom().<KeyValueEntry> emitter(emitter -> {
+        return Uni.createFrom().item(Unchecked.supplier(() -> {
             try {
                 final var keyValue = connection.keyValue(bucketName);
-                emitter.complete(keyValue.get(key));
-            } catch (Throwable failure) {
-                emitter.fail(new KeyValueException(failure));
+                return keyValue.get(key);
+            } catch (IOException failure) {
+                throw new KeyValueException(failure);
             }
-        })
+        }))
                 .onItem().ifNull().failWith(() -> new KeyValueNotFoundException(bucketName, key))
                 .onItem().ifNotNull().transform(keyValueEntry -> payloadMapper.of(keyValueEntry.getValue(), valueType));
     }
 
     @Override
     public <T> Uni<Void> putKeyValue(String bucketName, String key, T value) {
-        return Uni.createFrom().<Void> emitter(emitter -> {
+        return Uni.createFrom().item(Unchecked.supplier(() -> {
             try {
                 KeyValue keyValue = connection.keyValue(bucketName);
                 keyValue.put(key, payloadMapper.of(value));
-                emitter.complete(null);
-            } catch (Throwable failure) {
-                emitter.fail(new KeyValueException(failure));
+                return null;
+            } catch (Exception failure) {
+                throw new KeyValueException(failure);
             }
-        });
+        }));
     }
 
     @Override
     public Uni<Void> deleteKeyValue(String bucketName, String key) {
-        return Uni.createFrom().<Void> emitter(emitter -> {
+        return Uni.createFrom().item(Unchecked.supplier(() -> {
             try {
                 KeyValue keyValue = connection.keyValue(bucketName);
                 keyValue.delete(key);
-                emitter.complete(null);
-            } catch (Throwable failure) {
-                emitter.fail(new KeyValueException(failure));
+                return null;
+            } catch (Exception failure) {
+                throw new KeyValueException(failure);
             }
-        });
+        }));
     }
 
     @Override
-    public <T> Uni<Message<T>> resolve(String streamName, long sequence) {
-        return Uni.createFrom().<Message<T>> emitter(emitter -> {
-            try {
-                final var jetStream = connection.jetStream();
-                final var streamContext = jetStream.getStreamContext(streamName);
-                final var messageInfo = streamContext.getMessage(sequence);
-                emitter.complete(new ResolvedMessage<>(messageInfo, payloadMapper.<T> of(messageInfo).orElse(null)));
-            } catch (IOException | JetStreamApiException e) {
-                emitter.fail(e);
-            }
-        });
+    public <T> Uni<Message<T>> resolve(String streamName, long sequence, Tracer<T> tracer, Context context) {
+        return Uni.createFrom().item(Unchecked.supplier(() -> {
+            final var jetStream = connection.jetStream();
+            final var streamContext = jetStream.getStreamContext(streamName);
+            final var messageInfo = streamContext.getMessage(sequence);
+            return new ResolvedMessage<>(messageInfo, payloadMapper.<T> of(messageInfo).orElse(null));
+        }))
+                .emitOn(context::runOnContext)
+                .onItem().transformToUni(message -> tracer.withTrace(message));
     }
 
     @Override
@@ -392,7 +391,7 @@ public class DefaultConnection implements Connection {
     @Override
     public Uni<Void> addSubject(String streamName, String subject) {
         return getStreamInfo(streamName)
-                .onItem().transformToUni(tuple -> Uni.createFrom().<Void> emitter(emitter -> {
+                .onItem().transformToUni(tuple -> Uni.createFrom().item(Unchecked.supplier(() -> {
                     try {
                         final var subjects = new HashSet<>(tuple.getItem2().getConfiguration().getSubjects());
                         if (!subjects.contains(subject)) {
@@ -403,17 +402,17 @@ public class DefaultConnection implements Connection {
                                     .build();
                             tuple.getItem1().updateStream(configuration);
                         }
-                        emitter.complete(null);
-                    } catch (Throwable failure) {
-                        emitter.fail(new SystemException(failure));
+                        return null;
+                    } catch (IOException | JetStreamApiException failure) {
+                        throw new SystemException(failure);
                     }
-                }));
+                })));
     }
 
     @Override
     public Uni<Void> removeSubject(String streamName, String subject) {
         return getStreamInfo(streamName)
-                .onItem().transformToUni(tuple -> Uni.createFrom().<Void> emitter(emitter -> {
+                .onItem().transformToUni(tuple -> Uni.createFrom().item(Unchecked.supplier(() -> {
                     try {
                         final var subjects = new HashSet<>(tuple.getItem2().getConfiguration().getSubjects());
                         if (subjects.contains(subject)) {
@@ -424,11 +423,11 @@ public class DefaultConnection implements Connection {
                                     .build();
                             tuple.getItem1().updateStream(configuration);
                         }
-                        emitter.complete(null);
-                    } catch (Throwable failure) {
-                        emitter.fail(new SystemException(failure));
+                        return null;
+                    } catch (IOException | JetStreamApiException failure) {
+                        throw new SystemException(failure);
                     }
-                }));
+                })));
     }
 
     private <T> Uni<Tuple2<JetStreamSubscription, JetStreamReader>> createReader(ReaderConsumerConfiguration<T> configuration,
@@ -620,7 +619,7 @@ public class DefaultConnection implements Connection {
             final Context context) {
         return Uni.createFrom().voidItem()
                 .emitOn(context::runOnContext)
-                .onItem().transformToMulti(ignore -> Multi.createFrom().<Message<T>> emitter(emitter -> {
+                .onItem().transformToMulti(ignore -> Multi.createFrom().<PublishMessage<T>> emitter(emitter -> {
                     try {
                         try (final var fetchConsumer = fetchConsumer(consumerContext,
                                 configuration.fetchTimeout().orElse(null))) {
@@ -648,13 +647,13 @@ public class DefaultConnection implements Connection {
             ConnectionOptionsFactory optionsFactory = new ConnectionOptionsFactory();
             final var options = optionsFactory.create(configuration, new InternalConnectionListener(this));
             return Nats.connect(options);
-        } catch (Throwable failure) {
+        } catch (IOException | InterruptedException | NoSuchAlgorithmException failure) {
             throw new ConnectionException(failure);
         }
     }
 
     private Uni<Void> addOrUpdateKeyValueStore(final KeyValueSetupConfiguration keyValueSetupConfiguration) {
-        return Uni.createFrom().emitter(emitter -> {
+        return Uni.createFrom().item(Unchecked.supplier(() -> {
             try {
                 final var kvm = connection.keyValueManagement();
                 final var factory = new KeyValueConfigurationFactory();
@@ -663,12 +662,12 @@ public class DefaultConnection implements Connection {
                 } else {
                     kvm.create(factory.create(keyValueSetupConfiguration));
                 }
-                emitter.complete(null);
-            } catch (Throwable failure) {
-                emitter.fail(new SetupException(String.format("Unable to manage Key Value Store: %s", failure.getMessage()),
-                        failure));
+                return null;
+            } catch (Exception failure) {
+                throw new SetupException(String.format("Unable to manage Key Value Store: %s", failure.getMessage()),
+                        failure);
             }
-        });
+        }));
     }
 
     private Uni<StreamResult> addOrUpdateStream(final JetStreamManagement jsm,
@@ -680,24 +679,26 @@ public class DefaultConnection implements Connection {
 
     private Uni<StreamResult> createStream(final JetStreamManagement jsm,
             final StreamConfiguration streamConfiguration) {
-        return Uni.createFrom().emitter(emitter -> {
+        return Uni.createFrom().item(Unchecked.supplier(() -> {
             try {
                 final var factory = new StreamConfigurationFactory();
                 final var streamConfig = factory.create(streamConfiguration);
                 jsm.addStream(streamConfig);
-                emitter.complete(
-                        StreamResult.builder().configuration(streamConfiguration).status(StreamStatus.Created).build());
-            } catch (Throwable failure) {
-                emitter.fail(new SetupException(String.format("Unable to create stream: %s with message: %s",
-                        streamConfiguration.name(), failure.getMessage()), failure));
+                return StreamResult.builder()
+                        .configuration(streamConfiguration)
+                        .status(StreamStatus.Created)
+                        .build();
+            } catch (Exception failure) {
+                throw new SetupException(String.format("Unable to create stream: %s with message: %s",
+                        streamConfiguration.name(), failure.getMessage()), failure);
             }
-        });
+        }));
     }
 
     private Uni<StreamResult> updateStream(final JetStreamManagement jsm,
             final StreamInfo streamInfo,
             final StreamSetupConfiguration setupConfiguration) {
-        return Uni.createFrom().<StreamResult> emitter(emitter -> {
+        return Uni.createFrom().item(Unchecked.supplier(() -> {
             try {
                 final var currentConfiguration = streamInfo.getConfiguration();
                 final var factory = new StreamConfigurationFactory();
@@ -705,18 +706,18 @@ public class DefaultConnection implements Connection {
                 if (configuration.isPresent()) {
                     logger.debugf("Updating stream %s", setupConfiguration.configuration().name());
                     jsm.updateStream(configuration.get());
-                    emitter.complete(StreamResult.builder().configuration(setupConfiguration.configuration())
-                            .status(StreamStatus.Updated).build());
+                    return StreamResult.builder().configuration(setupConfiguration.configuration())
+                            .status(StreamStatus.Updated).build();
                 } else {
-                    emitter.complete(StreamResult.builder().configuration(setupConfiguration.configuration())
-                            .status(StreamStatus.NotModified).build());
+                    return StreamResult.builder().configuration(setupConfiguration.configuration())
+                            .status(StreamStatus.NotModified).build();
                 }
-            } catch (Throwable failure) {
+            } catch (Exception failure) {
                 logger.errorf(failure, "message: %s", failure.getMessage());
-                emitter.fail(new SetupException(String.format("Unable to update stream: %s with message: %s",
-                        setupConfiguration.configuration().name(), failure.getMessage()), failure));
+                throw new SetupException(String.format("Unable to update stream: %s with message: %s",
+                        setupConfiguration.configuration().name(), failure.getMessage()), failure);
             }
-        })
+        }))
                 .onFailure().recoverWithUni(failure -> {
                     if (failure.getCause() instanceof JetStreamApiException && setupConfiguration.overwrite()) {
                         return deleteStream(jsm, setupConfiguration.configuration().name())
@@ -727,15 +728,15 @@ public class DefaultConnection implements Connection {
     }
 
     private Uni<Void> deleteStream(final JetStreamManagement jsm, String streamName) {
-        return Uni.createFrom().emitter(emitter -> {
+        return Uni.createFrom().item(Unchecked.supplier(() -> {
             try {
                 jsm.deleteStream(streamName);
-                emitter.complete(null);
-            } catch (Throwable failure) {
-                emitter.fail(new SetupException(String.format("Unable to delete stream: %s with message: %s", streamName,
-                        failure.getMessage()), failure));
+                return null;
+            } catch (IOException | JetStreamApiException failure) {
+                throw new SetupException(String.format("Unable to delete stream: %s with message: %s", streamName,
+                        failure.getMessage()), failure);
             }
-        });
+        }));
     }
 
     private <T> Uni<Tuple2<JetStream, SubscribeMessage<T>>> getJetStream(SubscribeMessage<T> subscribeMessage) {

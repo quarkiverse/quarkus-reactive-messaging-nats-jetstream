@@ -83,7 +83,7 @@ public interface Connection extends StreamSetup, KeyValueStoreSetup, AutoCloseab
 
     Uni<Void> deleteKeyValue(String bucketName, String key);
 
-    <T> Uni<Message<T>> resolve(String streamName, long sequence);
+    <T> Uni<Message<T>> resolve(String streamName, long sequence, Tracer<T> tracer, Context context);
 
     <T> Uni<Subscription<T>> subscription(PushConsumerConfiguration<T> configuration);
 

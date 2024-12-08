@@ -52,6 +52,10 @@ public class ResolvedMessage<T> implements JetStreamMessage<T> {
         return incomingMetadata.stream();
     }
 
+    public MessageInfo messageInfo() {
+        return message;
+    }
+
     public Map<String, List<String>> headers() {
         return toMessageHeaders(message.getHeaders());
     }

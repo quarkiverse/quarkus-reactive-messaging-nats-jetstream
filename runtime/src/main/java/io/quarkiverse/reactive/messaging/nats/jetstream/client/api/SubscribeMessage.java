@@ -30,9 +30,8 @@ public record SubscribeMessage<T>(byte[] payload, String type, PublishConfigurat
         final var headers = metadata != null && metadata.headers() != null ? new HashMap<>(metadata.headers())
                 : new HashMap<String, List<String>>();
         if (type != null) {
-            headers.put(MESSAGE_TYPE_HEADER, List.of(type));
+            headers.putIfAbsent(MESSAGE_TYPE_HEADER, List.of(type));
         }
-
         return SubscribeMessage.<T> builder()
                 .payload(payload)
                 .message(message)

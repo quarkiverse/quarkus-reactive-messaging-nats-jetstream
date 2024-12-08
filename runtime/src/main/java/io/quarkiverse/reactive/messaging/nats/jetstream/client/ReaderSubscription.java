@@ -13,6 +13,7 @@ import io.nats.client.JetStreamReader;
 import io.nats.client.JetStreamStatusException;
 import io.nats.client.JetStreamSubscription;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.ExponentialBackoff;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.PublishMessage;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ReaderConsumerConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.tracing.Tracer;
 import io.quarkiverse.reactive.messaging.nats.jetstream.mapper.MessageMapper;
@@ -107,7 +108,7 @@ class ReaderSubscription<P> implements Subscription<P> {
         });
     }
 
-    private Multi<org.eclipse.microprofile.reactive.messaging.Message<P>> createMulti(io.nats.client.Message message,
+    private Multi<PublishMessage<P>> createMulti(io.nats.client.Message message,
             Class<P> payloadType, Context context) {
         if (message == null || message.getData() == null) {
             return Multi.createFrom().empty();

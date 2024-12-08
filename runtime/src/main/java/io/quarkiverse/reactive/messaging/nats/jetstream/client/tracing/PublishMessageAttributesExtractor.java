@@ -17,24 +17,16 @@ public class PublishMessageAttributesExtractor<T> implements AttributesExtractor
     private final MessagingAttributesGetter<PublishMessage<T>, Void> messagingAttributesGetter;
 
     public PublishMessageAttributesExtractor() {
-        this.messagingAttributesGetter = new JetStreamMessagingAttributesGetter<>();
+        this.messagingAttributesGetter = new PublishMessageAttributesGetter<>();
     }
 
     @Override
     public void onStart(AttributesBuilder attributesBuilder, Context context, PublishMessage<T> message) {
         attributesBuilder.put(MESSAGE_PAYLOAD, new String(message.getData()));
-        if (message.getStreamSequence() != null) {
-            attributesBuilder.put(MESSAGE_STREAM_SEQUENCE, message.getStreamSequence());
-        }
-        if (message.getConsumerSequence() != null) {
-            attributesBuilder.put(MESSAGE_CONSUMER_SEQUENCE, message.getConsumerSequence());
-        }
-        if (message.getConsumer() != null) {
-            attributesBuilder.put(MESSAGE_CONSUMER, message.getConsumer());
-        }
-        if (message.getDeliveredCount() != null) {
-            attributesBuilder.put(MESSAGE_DELIVERED_COUNT, message.getDeliveredCount());
-        }
+        attributesBuilder.put(MESSAGE_STREAM_SEQUENCE, message.getStreamSequence());
+        attributesBuilder.put(MESSAGE_CONSUMER_SEQUENCE, message.getConsumerSequence());
+        attributesBuilder.put(MESSAGE_CONSUMER, message.getConsumer());
+        attributesBuilder.put(MESSAGE_DELIVERED_COUNT, message.getDeliveredCount());
     }
 
     @Override
@@ -46,7 +38,7 @@ public class PublishMessageAttributesExtractor<T> implements AttributesExtractor
         return messagingAttributesGetter;
     }
 
-    private final static class JetStreamMessagingAttributesGetter<T>
+    private final static class PublishMessageAttributesGetter<T>
             implements MessagingAttributesGetter<PublishMessage<T>, Void> {
 
         @Override
