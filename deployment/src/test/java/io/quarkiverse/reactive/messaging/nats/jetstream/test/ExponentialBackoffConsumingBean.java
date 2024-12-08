@@ -8,7 +8,6 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.context.BeforeDestroyed;
 import jakarta.enterprise.event.Observes;
 import jakarta.enterprise.event.Reception;
-import jakarta.inject.Inject;
 
 import org.eclipse.microprofile.reactive.messaging.Incoming;
 import org.eclipse.microprofile.reactive.messaging.Message;
@@ -17,8 +16,10 @@ import org.jboss.logging.Logger;
 import io.quarkiverse.reactive.messaging.nats.NatsConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.Connection;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.ConnectionFactory;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.Context;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.DefaultConnectionListener;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ConnectionConfiguration;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.tracing.TracerFactory;
 import io.smallrye.mutiny.Uni;
 
 @ApplicationScoped
@@ -30,13 +31,17 @@ public class ExponentialBackoffConsumingBean {
     private final NatsConfiguration natsConfiguration;
     private final ConnectionFactory connectionFactory;
     private final AtomicReference<Connection> connection;
+    private final TracerFactory tracerFactory;
+    private final Context context;
 
-    @Inject
-    public ExponentialBackoffConsumingBean(NatsConfiguration natsConfiguration, ConnectionFactory connectionFactory) {
+    public ExponentialBackoffConsumingBean(NatsConfiguration natsConfiguration, ConnectionFactory connectionFactory,
+            TracerFactory tracerFactory, Context context) {
         this.natsConfiguration = natsConfiguration;
         this.connectionFactory = connectionFactory;
         this.connection = new AtomicReference<>();
         this.retries = new AtomicReference<>(new HashMap<>());
+        this.tracerFactory = tracerFactory;
+        this.context = context;
         this.maxDeliveries = new AtomicReference<>(new ArrayList<>());
     }
 
@@ -80,7 +85,9 @@ public class ExponentialBackoffConsumingBean {
 
     private Uni<Void> maxDeliveries(Connection connection, Message<Advisory> message) {
         final var advisory = message.getPayload();
-        return connection.<Integer> resolve(advisory.stream(), advisory.stream_seq())
+        return context
+                .withContext(ctx -> connection.<Integer> resolve(advisory.stream(), advisory.stream_seq(),
+                        tracerFactory.create(), ctx))
                 .onItem().invoke(msg -> {
                     maxDeliveries.get().add(msg.getPayload());
                     message.ack();
