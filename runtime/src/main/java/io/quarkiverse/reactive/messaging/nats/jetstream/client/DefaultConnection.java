@@ -744,10 +744,10 @@ public class DefaultConnection implements Connection {
 
     private <T> Uni<Tuple2<PublishAck, Message<T>>> publishMessage(Tuple2<JetStream, SubscribeMessage<T>> tuple) {
         return Uni.createFrom().completionStage(
-                        tuple.getItem1().publishAsync(tuple.getItem2().configuration().subject(),
-                                toJetStreamHeaders(tuple.getItem2().headers()),
-                                tuple.getItem2().payload(),
-                                createPublishOptions(tuple.getItem2().messageId(), tuple.getItem2().configuration().stream())))
+                tuple.getItem1().publishAsync(tuple.getItem2().configuration().subject(),
+                        toJetStreamHeaders(tuple.getItem2().headers()),
+                        tuple.getItem2().payload(),
+                        createPublishOptions(tuple.getItem2().messageId(), tuple.getItem2().configuration().stream())))
                 .onItem().transform(ack -> Tuple2.of(ack, tuple.getItem2().message()));
     }
 }
