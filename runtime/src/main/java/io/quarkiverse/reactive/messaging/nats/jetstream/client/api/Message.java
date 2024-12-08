@@ -19,8 +19,6 @@ public record Message(String stream,
         String consumer,
         Long deliveredCount) {
 
-    public static final String MESSAGE_TYPE_HEADER = "message.type";
-
     public static <T> io.quarkiverse.reactive.messaging.nats.jetstream.client.JetStreamMessage of(PublishMessage<T> message) {
         return io.quarkiverse.reactive.messaging.nats.jetstream.client.JetStreamMessage.builder()
                 .stream(message.getStream())
@@ -42,7 +40,7 @@ public record Message(String stream,
         final var subject = configuration.subject();
         final var headers = new HashMap<String, List<String>>();
         if (type != null) {
-            headers.putIfAbsent(MESSAGE_TYPE_HEADER, List.of(type.getTypeName()));
+            headers.putIfAbsent(JetStreamMessage.MESSAGE_TYPE_HEADER, List.of(type.getTypeName()));
         }
         return io.quarkiverse.reactive.messaging.nats.jetstream.client.JetStreamMessage.builder()
                 .stream(configuration.stream())
