@@ -15,6 +15,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.opentelemetry.api.trace.SpanId;
 import io.opentelemetry.sdk.trace.data.SpanData;
+import io.quarkiverse.reactive.messaging.nats.jetstream.test.resources.*;
 import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
 import io.restassured.parsing.Parser;

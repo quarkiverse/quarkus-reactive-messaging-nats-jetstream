@@ -1,4 +1,4 @@
-package io.quarkiverse.reactive.messaging.nats.jetstream.test;
+package io.quarkiverse.reactive.messaging.nats.jetstream.test.resources;
 
 import java.time.Duration;
 import java.util.concurrent.Flow;

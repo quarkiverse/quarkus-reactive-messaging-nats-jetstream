@@ -28,6 +28,7 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.Con
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.FetchConsumerConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.PublishConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.tracing.TracerFactory;
+import io.quarkiverse.reactive.messaging.nats.jetstream.test.resources.Data;
 import io.quarkus.test.QuarkusUnitTest;
 import io.smallrye.mutiny.Uni;
 
