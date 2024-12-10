@@ -40,7 +40,7 @@ public class SubscribeMessageAttributesExtractor<T> implements AttributesExtract
 
         @Override
         public String getDestination(SubscribeMessage<T> message) {
-            return String.format("%s.%s", message.configuration().stream(), message.configuration().subject());
+            return String.format("%s.%s", message.stream(), message.subject());
         }
 
         @Override
