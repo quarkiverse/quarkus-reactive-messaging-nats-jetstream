@@ -199,6 +199,13 @@ public class DefaultConnection implements Connection {
     }
 
     @Override
+    public <T> Uni<Consumer> addOrUpdateConsumer(ConsumerConfiguration<T> configuration) {
+        return addOrUpdateConsumerInternal(configuration)
+                .onItem()
+                .transform(Unchecked.function(consumerContext -> consumerMapper.of(consumerContext.getConsumerInfo())));
+    }
+
+    @Override
     public Uni<PurgeResult> purgeStream(String streamName) {
         return getJetStreamManagement()
                 .onItem().transformToUni(jsm -> Uni.createFrom().item(Unchecked.supplier(() -> {
@@ -276,7 +283,7 @@ public class DefaultConnection implements Connection {
     @Override
     public <T> Uni<Message<T>> nextMessage(FetchConsumerConfiguration<T> configuration, Tracer<T> tracer, Context context) {
         ExecutorService pullExecutor = Executors.newSingleThreadExecutor(JetstreamWorkerThread::new);
-        return addOrUpdateConsumer(configuration)
+        return addOrUpdateConsumerInternal(configuration)
                 .onItem()
                 .transformToUni(consumerContext -> nextMessage(consumerContext, configuration, tracer, context))
                 .runSubscriptionOn(pullExecutor);
@@ -286,7 +293,7 @@ public class DefaultConnection implements Connection {
     @Override
     public <T> Multi<Message<T>> nextMessages(FetchConsumerConfiguration<T> configuration, Tracer<T> tracer, Context context) {
         ExecutorService pullExecutor = Executors.newSingleThreadExecutor(JetstreamWorkerThread::new);
-        return addOrUpdateConsumer(configuration)
+        return addOrUpdateConsumerInternal(configuration)
                 .onItem().transformToMulti(consumerContext -> nextMessages(consumerContext, configuration, tracer, context))
                 .runSubscriptionOn(pullExecutor);
     }
@@ -597,7 +604,7 @@ public class DefaultConnection implements Connection {
         return result;
     }
 
-    private <T> Uni<ConsumerContext> addOrUpdateConsumer(ConsumerConfiguration<T> configuration) {
+    private <T> Uni<ConsumerContext> addOrUpdateConsumerInternal(ConsumerConfiguration<T> configuration) {
         return Uni.createFrom().item(Unchecked.supplier(() -> {
             try {
                 final var factory = new ConsumerConfigurtationFactory();

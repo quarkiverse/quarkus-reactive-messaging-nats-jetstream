@@ -39,6 +39,8 @@ public interface Connection extends StreamSetup, KeyValueStoreSetup, AutoCloseab
 
     Uni<List<String>> getConsumerNames(String streamName);
 
+    <T> Uni<Consumer> addOrUpdateConsumer(ConsumerConfiguration<T> configuration);
+
     Uni<Void> deleteConsumer(String streamName, String consumerName);
 
     Uni<Void> pauseConsumer(String streamName, String consumerName, ZonedDateTime pauseUntil);
