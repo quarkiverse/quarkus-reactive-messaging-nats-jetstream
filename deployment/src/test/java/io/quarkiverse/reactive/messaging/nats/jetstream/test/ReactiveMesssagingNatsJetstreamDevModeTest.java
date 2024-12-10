@@ -8,6 +8,7 @@ import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkiverse.reactive.messaging.nats.jetstream.test.resources.*;
 import io.quarkus.test.QuarkusDevModeTest;
 
 public class ReactiveMesssagingNatsJetstreamDevModeTest {

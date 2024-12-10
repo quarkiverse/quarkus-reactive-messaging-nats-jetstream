@@ -1,4 +1,4 @@
-package io.quarkiverse.reactive.messaging.nats.jetstream.test;
+package io.quarkiverse.reactive.messaging.nats.jetstream.test.resources;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
