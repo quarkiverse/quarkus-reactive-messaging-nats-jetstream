@@ -1,6 +1,7 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client.tracing;
 
 import static io.opentelemetry.instrumentation.api.instrumenter.messaging.MessageOperation.RECEIVE;
+import static io.opentelemetry.instrumentation.api.instrumenter.messaging.MessageOperation.SEND;
 import static io.opentelemetry.instrumentation.api.instrumenter.messaging.MessagingAttributesExtractor.create;
 import static io.smallrye.reactive.messaging.tracing.TracingUtils.getOpenTelemetry;
 
@@ -12,7 +13,6 @@ import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.instrumentation.api.instrumenter.Instrumenter;
 import io.opentelemetry.instrumentation.api.instrumenter.InstrumenterBuilder;
-import io.opentelemetry.instrumentation.api.instrumenter.messaging.MessageOperation;
 import io.opentelemetry.instrumentation.api.instrumenter.messaging.MessagingAttributesExtractor;
 import io.opentelemetry.instrumentation.api.instrumenter.messaging.MessagingAttributesGetter;
 import io.opentelemetry.instrumentation.api.instrumenter.messaging.MessagingSpanNameExtractor;
@@ -29,7 +29,9 @@ import io.smallrye.mutiny.unchecked.Unchecked;
 import io.smallrye.reactive.messaging.TracingMetadata;
 import io.smallrye.reactive.messaging.providers.locals.LocalContextMetadata;
 import io.smallrye.reactive.messaging.tracing.TracingUtils;
+import lombok.extern.jbosslog.JBossLog;
 
+@JBossLog
 public class DefaultTracer<T> implements Tracer<T> {
     private final JetStreamBuildConfiguration configuration;
     private final PayloadMapper payloadMapper;
@@ -52,6 +54,7 @@ public class DefaultTracer<T> implements Tracer<T> {
 
     @Override
     public Uni<SubscribeMessage<T>> withTrace(Message<T> message, PublishConfiguration configuration) {
+        log.debugf("Adding trace on thread: %s", Thread.currentThread().getName());
         return addTracingMetadata(message)
                 .onItem().transform(Unchecked.function(m -> createSubscribeMessage(m, configuration)))
                 .onItem().transformToUni(this::traceOutgoing);
@@ -59,6 +62,7 @@ public class DefaultTracer<T> implements Tracer<T> {
 
     @Override
     public Uni<Message<T>> withTrace(PublishMessage<T> message) {
+        log.debugf("Adding trace on thread: %s", Thread.currentThread().getName());
         if (configuration.trace()) {
             return Uni.createFrom().item(Unchecked.supplier(() -> {
                 TracingUtils.traceIncoming(publisher, message, message);
@@ -70,6 +74,7 @@ public class DefaultTracer<T> implements Tracer<T> {
 
     @Override
     public Uni<Message<T>> withTrace(ResolvedMessage<T> message) {
+        log.debugf("Adding trace on thread: %s", Thread.currentThread().getName());
         if (configuration.trace()) {
             return Uni.createFrom().item(Unchecked.supplier(() -> {
                 TracingUtils.traceIncoming(resolver, message, message);
@@ -96,8 +101,8 @@ public class DefaultTracer<T> implements Tracer<T> {
                 .getMessagingAttributesGetter();
         InstrumenterBuilder<SubscribeMessage<T>, Void> builder = Instrumenter.builder(openTelemetry,
                 "io.smallrye.reactive.messaging.jetstream",
-                MessagingSpanNameExtractor.create(messagingAttributesGetter, MessageOperation.SEND));
-        return builder.addAttributesExtractor(create(messagingAttributesGetter, MessageOperation.SEND))
+                MessagingSpanNameExtractor.create(messagingAttributesGetter, SEND));
+        return builder.addAttributesExtractor(create(messagingAttributesGetter, SEND))
                 .addAttributesExtractor(attributesExtractor)
                 .buildProducerInstrumenter(new SubscribeMessageTextMapSetter<>());
     }
@@ -143,7 +148,7 @@ public class DefaultTracer<T> implements Tracer<T> {
      */
     @SuppressWarnings("resource")
     private Message<T> attachContext(Message<T> message) {
-        if (connector) {
+        if (!connector) {
             var messageContext = message.getMetadata(LocalContextMetadata.class)
                     .map(LocalContextMetadata::context)
                     .orElse(null);
@@ -165,9 +170,11 @@ public class DefaultTracer<T> implements Tracer<T> {
      */
     private Uni<Message<T>> addTracingMetadata(final Message<T> message) {
         return Uni.createFrom().item(Unchecked.supplier(() -> {
-            if (configuration.trace() && message.getMetadata(TracingMetadata.class).isEmpty()) {
-                var otelContext = QuarkusContextStorage.INSTANCE.current();
-                return message.addMetadata(TracingMetadata.withCurrent(otelContext));
+            if (!connector) {
+                if (configuration.trace() && message.getMetadata(TracingMetadata.class).isEmpty()) {
+                    var otelContext = QuarkusContextStorage.INSTANCE.current();
+                    return message.addMetadata(TracingMetadata.withCurrent(otelContext));
+                }
             }
             return message;
         }));
