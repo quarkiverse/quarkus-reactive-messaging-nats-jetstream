@@ -6,6 +6,7 @@ import static io.smallrye.reactive.messaging.providers.locals.ContextAwareMessag
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
@@ -15,6 +16,7 @@ import org.eclipse.microprofile.reactive.messaging.Metadata;
 
 import io.nats.client.Message;
 import io.smallrye.reactive.messaging.providers.helpers.VertxContext;
+import io.smallrye.reactive.messaging.providers.locals.LocalContextMetadata;
 import io.vertx.mutiny.core.Context;
 
 public class PublishMessage<T> implements JetStreamMessage<T> {
@@ -125,6 +127,34 @@ public class PublishMessage<T> implements JetStreamMessage<T> {
     @Override
     public synchronized void injectMetadata(Object metadataObject) {
         this.metadata = metadata.with(metadataObject);
+    }
+
+    @Override
+    public Optional<LocalContextMetadata> getContextMetadata() {
+        return metadata.get(LocalContextMetadata.class);
+    }
+
+    @Override
+    public org.eclipse.microprofile.reactive.messaging.Message<T> addMetadata(Object metadata) {
+        this.metadata = this.metadata.with(metadata);
+        return this;
+    }
+
+    @Override
+    public org.eclipse.microprofile.reactive.messaging.Message<T> withMetadata(Iterable<Object> metadata) {
+        this.metadata = this.metadata.with(metadata);
+        return this;
+    }
+
+    @Override
+    public org.eclipse.microprofile.reactive.messaging.Message<T> withMetadata(Metadata metadata) {
+        this.metadata = this.metadata.with(metadata);
+        return this;
+    }
+
+    @Override
+    public void runOnMessageContext(Runnable runnable) {
+        VertxContext.runOnContext(context.getDelegate(), runnable);
     }
 
     @Override

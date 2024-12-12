@@ -132,14 +132,15 @@ public class RequestReplyResource {
                     public String subject() {
                         return "events." + subject;
                     }
-                }, getConsumerConfiguration(streamName, subject), tracerFactory.create(), ctx))
+                }, getConsumerConfiguration(streamName, subject), tracerFactory.create(false), ctx))
                 .onItem().transformToUni(m -> Uni.createFrom().voidItem());
     }
 
     public Uni<Data> consumeData(Connection connection, String subject) {
         return context
                 .withContext(
-                        c -> connection.nextMessage(getConsumerConfiguration(streamName, subject), tracerFactory.create(), c))
+                        c -> connection.nextMessage(getConsumerConfiguration(streamName, subject), tracerFactory.create(false),
+                                c))
                 .map(message -> {
                     message.ack();
                     return message.getPayload();

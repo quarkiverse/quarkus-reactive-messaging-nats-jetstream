@@ -22,6 +22,10 @@ public class TracerFactory {
     }
 
     public <T> Tracer<T> create() {
-        return new DefaultTracer<>(openTelemetry, configuration, payloadMapper);
+        return new DefaultTracer<>(openTelemetry, configuration, payloadMapper, true);
+    }
+
+    public <T> Tracer<T> create(boolean connector) {
+        return new DefaultTracer<>(openTelemetry, configuration, payloadMapper, connector);
     }
 }

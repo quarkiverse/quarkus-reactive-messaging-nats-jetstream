@@ -586,9 +586,8 @@ public class DefaultConnection implements Connection {
             final FetchConsumerConfiguration<T> configuration,
             final Tracer<T> tracer,
             final Context context) {
-        return Uni.createFrom().voidItem()
+        return nextMessage(consumerContext, configuration.fetchTimeout().orElse(null))
                 .emitOn(context::runOnContext)
-                .onItem().transformToUni(ignore -> nextMessage(consumerContext, configuration.fetchTimeout().orElse(null)))
                 .map(message -> messageMapper.of(
                         message,
                         configuration.payloadType().orElse(null),
@@ -624,28 +623,27 @@ public class DefaultConnection implements Connection {
             final FetchConsumerConfiguration<T> configuration,
             final Tracer<T> tracer,
             final Context context) {
-        return Uni.createFrom().voidItem()
-                .emitOn(context::runOnContext)
-                .onItem().transformToMulti(ignore -> Multi.createFrom().<PublishMessage<T>> emitter(emitter -> {
-                    try {
-                        try (final var fetchConsumer = fetchConsumer(consumerContext,
-                                configuration.fetchTimeout().orElse(null))) {
-                            var message = fetchConsumer.nextMessage();
-                            while (message != null) {
-                                emitter.emit(messageMapper.of(
-                                        message,
-                                        configuration.payloadType().orElse(null),
-                                        context,
-                                        new ExponentialBackoff(false, Duration.ZERO),
-                                        configuration.ackTimeout()));
-                                message = fetchConsumer.nextMessage();
-                            }
-                            emitter.complete();
-                        }
-                    } catch (Throwable failure) {
-                        emitter.fail(new FetchException(failure));
+        return Multi.createFrom().<PublishMessage<T>> emitter(emitter -> {
+            try {
+                try (final var fetchConsumer = fetchConsumer(consumerContext,
+                        configuration.fetchTimeout().orElse(null))) {
+                    var message = fetchConsumer.nextMessage();
+                    while (message != null) {
+                        emitter.emit(messageMapper.of(
+                                message,
+                                configuration.payloadType().orElse(null),
+                                context,
+                                new ExponentialBackoff(false, Duration.ZERO),
+                                configuration.ackTimeout()));
+                        message = fetchConsumer.nextMessage();
                     }
-                }))
+                    emitter.complete();
+                }
+            } catch (Throwable failure) {
+                emitter.fail(new FetchException(failure));
+            }
+        })
+                .emitOn(context::runOnContext)
                 .onItem().transformToUniAndMerge(tracer::withTrace);
     }
 

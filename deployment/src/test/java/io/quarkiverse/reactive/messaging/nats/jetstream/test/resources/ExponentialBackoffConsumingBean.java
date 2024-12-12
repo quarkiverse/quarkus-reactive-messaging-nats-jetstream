@@ -87,7 +87,7 @@ public class ExponentialBackoffConsumingBean {
         final var advisory = message.getPayload();
         return context
                 .withContext(ctx -> connection.<Integer> resolve(advisory.stream(), advisory.stream_seq(),
-                        tracerFactory.create(), ctx))
+                        tracerFactory.create(false), ctx))
                 .onItem().invoke(msg -> {
                     maxDeliveries.get().add(msg.getPayload());
                     message.ack();
