@@ -80,7 +80,8 @@ public class DeadLetterConsumingBean {
         final var advisory = message.getPayload();
         return context
                 .withContext(
-                        ctx -> connection.<Data> resolve(advisory.stream(), advisory.stream_seq(), tracerFactory.create(), ctx))
+                        ctx -> connection.<Data> resolve(advisory.stream(), advisory.stream_seq(), tracerFactory.create(false),
+                                ctx))
                 .onItem().invoke(dataMessage -> lastData.set(dataMessage.getPayload()))
                 .onItem().transformToUni(m -> Uni.createFrom().completionStage(message.ack()))
                 .onFailure().recoverWithUni(throwable -> Uni.createFrom().completionStage(message.nack(throwable)));

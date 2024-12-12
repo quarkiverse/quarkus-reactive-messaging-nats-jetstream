@@ -169,7 +169,7 @@ public class FetchMessagesTest {
             final var fetchConsumerConfiguration = createFetchConsumerConfiguration(subject);
             context.withContext(
                     ctx -> connection.publish(Message.of(data), publishConfiguragtion, fetchConsumerConfiguration,
-                            tracerFactory.create(), ctx))
+                            tracerFactory.create(false), ctx))
                     .await()
                     .atMost(Duration.ofSeconds(30));
         }
@@ -180,7 +180,8 @@ public class FetchMessagesTest {
                 new DefaultConnectionListener()).await().atMost(Duration.ofSeconds(30))) {
             final var fetchConsumerConfiguration = createFetchConsumerConfiguration(subject);
             final var received = context
-                    .withContext(ctx -> connection.nextMessage(fetchConsumerConfiguration, tracerFactory.create(), ctx)).await()
+                    .withContext(ctx -> connection.nextMessage(fetchConsumerConfiguration, tracerFactory.create(false), ctx))
+                    .await()
                     .atMost(Duration.ofSeconds(30));
             if (ack) {
                 Uni.createFrom().completionStage(received.ack()).await().atMost(Duration.ofSeconds(30));
