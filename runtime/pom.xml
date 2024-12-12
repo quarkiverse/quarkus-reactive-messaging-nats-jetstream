@@ -36,7 +36,6 @@
         <dependency>
             <groupId>net.i2p.crypto</groupId>
             <artifactId>eddsa</artifactId>
-            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.graalvm.sdk</groupId>

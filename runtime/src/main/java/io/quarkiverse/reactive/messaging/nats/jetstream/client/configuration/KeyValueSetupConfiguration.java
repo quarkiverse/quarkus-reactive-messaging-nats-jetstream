@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.Optional;
 
 import io.nats.client.api.StorageType;
-import io.quarkiverse.reactive.messaging.nats.jetstream.JetStreamBuildConfiguration;
+import io.quarkiverse.reactive.messaging.nats.jetstream.JetStreamConfiguration;
 
 public interface KeyValueSetupConfiguration {
 
@@ -54,7 +54,7 @@ public interface KeyValueSetupConfiguration {
      */
     Boolean compressed();
 
-    static List<KeyValueSetupConfiguration> of(JetStreamBuildConfiguration configuration) {
+    static List<KeyValueSetupConfiguration> of(JetStreamConfiguration configuration) {
         return configuration.keyValueStores().stream()
                 .map(store -> (KeyValueSetupConfiguration) DefaultKeyValueSetupConfiguration.builder()
                         .bucketName(store.bucketName())

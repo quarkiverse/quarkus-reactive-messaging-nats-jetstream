@@ -5,10 +5,13 @@ import java.util.Optional;
 
 public interface PullConsumerConfiguration<T> {
 
+    Duration maxExpires();
+
+    Integer batchSize();
+
+    Integer rePullAt();
+
     Optional<Integer> maxWaiting();
 
-    Optional<Duration> maxRequestExpires();
-
     ConsumerConfiguration<T> consumerConfiguration();
-
 }

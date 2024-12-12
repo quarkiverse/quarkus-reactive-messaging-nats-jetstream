@@ -1,10 +1,34 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration;
 
 import java.time.Duration;
-import java.util.Optional;
 
-public interface FetchConsumerConfiguration<T> extends ConsumerConfiguration<T> {
+public interface FetchConsumerConfiguration<T> {
 
-    Optional<Duration> fetchTimeout();
+    Duration timeout();
 
+    Integer batchSize();
+
+    ConsumerConfiguration<T> consumerConfiguration();
+
+    static <P> FetchConsumerConfiguration<P> of(final ConsumerConfiguration<P> configuration,
+            final Duration fetchTimeout,
+            final Integer batchSize) {
+        return new FetchConsumerConfiguration<P>() {
+            @Override
+            public Duration timeout() {
+                return fetchTimeout;
+            }
+
+            @Override
+            public Integer batchSize() {
+                return batchSize;
+            }
+
+            @Override
+            public ConsumerConfiguration<P> consumerConfiguration() {
+                return configuration;
+            }
+        };
+
+    }
 }

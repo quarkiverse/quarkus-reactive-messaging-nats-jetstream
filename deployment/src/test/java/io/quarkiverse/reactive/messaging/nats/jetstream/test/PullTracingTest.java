@@ -20,7 +20,7 @@ import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
 import io.restassured.parsing.Parser;
 
-public class ReactiveMesssagingNatsJetstreamPushTracingTest {
+public class PullTracingTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
@@ -50,12 +50,12 @@ public class ReactiveMesssagingNatsJetstreamPushTracingTest {
 
         List<SpanData> parentSpans = spans.stream().filter(spanData -> spanData.getParentSpanId().equals(SpanId.getInvalid()))
                 .toList();
-        assertEquals(2, parentSpans.size());
+        assertEquals(1, parentSpans.size());
 
         for (var parentSpan : parentSpans) {
-            assertThat(spans.stream().filter(spanData -> spanData.getParentSpanId().equals(parentSpan.getSpanId())).count())
-                    .isEqualTo(1);
+            final var parentSpanId = parentSpan.getSpanId();
+            final var childSpans = spans.stream().filter(spanData -> spanData.getParentSpanId().equals(parentSpanId)).toList();
+            assertThat(childSpans).hasSize(1);
         }
     }
-
 }

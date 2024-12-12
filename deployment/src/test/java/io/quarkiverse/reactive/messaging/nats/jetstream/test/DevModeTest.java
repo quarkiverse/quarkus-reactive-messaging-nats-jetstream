@@ -11,7 +11,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkiverse.reactive.messaging.nats.jetstream.test.resources.*;
 import io.quarkus.test.QuarkusDevModeTest;
 
-public class ReactiveMesssagingNatsJetstreamDevModeTest {
+public class DevModeTest {
 
     @RegisterExtension
     final static QuarkusDevModeTest devModeTest = new QuarkusDevModeTest()

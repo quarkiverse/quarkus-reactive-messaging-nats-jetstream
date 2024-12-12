@@ -3,12 +3,11 @@ package io.quarkiverse.reactive.messaging.nats.jetstream.deployment;
 import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 
 import io.nats.client.Options;
-import io.quarkiverse.reactive.messaging.nats.jetstream.JetStreamBuildConfiguration;
+import io.quarkiverse.reactive.messaging.nats.jetstream.JetStreamConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.JetStreamConnector;
 import io.quarkiverse.reactive.messaging.nats.jetstream.JetStreamRecorder;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.Context;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.DefaultConnectionFactory;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.tracing.TracerFactory;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.tracing.DefaultTracerFactory;
 import io.quarkiverse.reactive.messaging.nats.jetstream.mapper.ConsumerMapperImpl;
 import io.quarkiverse.reactive.messaging.nats.jetstream.mapper.DefaultMessageMapper;
 import io.quarkiverse.reactive.messaging.nats.jetstream.mapper.DefaultPayloadMapper;
@@ -54,21 +53,21 @@ class ReactiveMesssagingNatsJetstreamProcessor {
     @BuildStep
     void createNatsConnector(BuildProducer<AdditionalBeanBuildItem> buildProducer) {
         buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(JetStreamConnector.class));
-        buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(TracerFactory.class));
+        buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(DefaultTracerFactory.class));
         buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(ExecutionHolder.class));
         buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(DefaultConnectionFactory.class));
         buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(DefaultPayloadMapper.class));
         buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(DefaultMessageMapper.class));
         buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(ConsumerMapperImpl.class));
         buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(StreamStateMapperImpl.class));
-        buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(Context.class));
+        buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(DefaultTracerFactory.class));
     }
 
     @BuildStep
     @Record(RUNTIME_INIT)
     @Consume(SyntheticBeansRuntimeInitBuildItem.class)
     public void configureJetStream(JetStreamRecorder recorder,
-            JetStreamBuildConfiguration buildConfig) {
+            JetStreamConfiguration buildConfig) {
         if (buildConfig.autoConfigure()) {
             recorder.setup();
         }

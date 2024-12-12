@@ -5,6 +5,7 @@ import java.util.Optional;
 
 import io.nats.client.AuthHandler;
 import io.nats.client.support.SSLUtils;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ConnectionOptionsFactory;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.smallrye.config.ConfigMapping;
@@ -58,7 +59,7 @@ public interface NatsConfiguration {
     /**
      * The maximum number of attempts to attempt to re-connect to NATS.
      * The default is
-     * {@value io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ConnectionOptionsFactory#DEFAULT_MAX_RECONNECT}
+     * {@value ConnectionOptionsFactory#DEFAULT_MAX_RECONNECT}
      */
     Optional<Integer> connectionAttempts();
 

@@ -12,6 +12,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkiverse.reactive.messaging.nats.jetstream.test.resources.Data;
+import io.quarkiverse.reactive.messaging.nats.jetstream.test.resources.KeyValueStoreResource;
+import io.quarkiverse.reactive.messaging.nats.jetstream.test.resources.TestSpanExporter;
 import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
 import io.restassured.filter.log.RequestLoggingFilter;

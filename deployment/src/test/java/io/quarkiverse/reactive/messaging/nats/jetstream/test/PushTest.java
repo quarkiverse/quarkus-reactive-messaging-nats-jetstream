@@ -4,7 +4,6 @@ import static io.restassured.RestAssured.*;
 import static org.awaitility.Awaitility.await;
 
 import java.util.Arrays;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
@@ -19,7 +18,7 @@ import io.restassured.filter.log.RequestLoggingFilter;
 import io.restassured.filter.log.ResponseLoggingFilter;
 import io.restassured.parsing.Parser;
 
-public class ReactiveMesssagingNatsJetstreamPushTest {
+public class PushTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
@@ -28,8 +27,7 @@ public class ReactiveMesssagingNatsJetstreamPushTest {
                             TestSpanExporter.class, Data.class, DataResource.class, DataConsumingBean.class,
                             Advisory.class, DeadLetterResource.class, DeadLetterConsumingBean.class,
                             DurableResource.class, DurableConsumingBean.class, RedeliveryResource.class,
-                            RedeliveryConsumingBean.class, ExponentialBackoffConsumingBean.class,
-                            ExponentialBackoffResource.class, DataCollectorBean.class, MessageConsumer.class))
+                            RedeliveryConsumingBean.class, DataCollectorBean.class, MessageConsumer.class))
             .withConfigurationResource("application-push.properties");
 
     @BeforeEach
@@ -93,28 +91,6 @@ public class ReactiveMesssagingNatsJetstreamPushTest {
             final var values = Arrays.asList(get("/durable/values").as(Integer[].class));
             return values.size() == 5 && values.contains(1) && values.contains(2) && values.contains(3) && values.contains(4)
                     && values.contains(5);
-        });
-    }
-
-    @Test
-    void exponentialBackoffConsumer() {
-        for (int i = 1; i <= 5; i++) {
-            given().pathParam("data", i).post("/exponential-backoff/{data}").then().statusCode(204);
-        }
-
-        await().atMost(1, TimeUnit.MINUTES).until(() -> {
-            for (int i = 1; i <= 5; i++) {
-                final int retries = get("/exponential-backoff/{data}/retries", i).as(Integer.class);
-                if (retries != 3) {
-                    return false;
-                }
-
-                final List<Integer> maxDelivered = Arrays.asList(get("/exponential-backoff/max-delivered").as(Integer[].class));
-                return maxDelivered.size() == 5 && maxDelivered.contains(1) && maxDelivered.contains(2)
-                        && maxDelivered.contains(3) && maxDelivered.contains(4)
-                        && maxDelivered.contains(5);
-            }
-            return true;
         });
     }
 

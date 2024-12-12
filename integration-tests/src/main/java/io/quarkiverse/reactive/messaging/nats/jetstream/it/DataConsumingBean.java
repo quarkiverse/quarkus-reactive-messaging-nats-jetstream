@@ -8,7 +8,7 @@ import org.eclipse.microprofile.reactive.messaging.Incoming;
 import org.eclipse.microprofile.reactive.messaging.Message;
 import org.jboss.logging.Logger;
 
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.PublishMessageMetadata;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.SubscribeMessageMetadata;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.reactive.messaging.annotations.Blocking;
 
@@ -32,7 +32,7 @@ public class DataConsumingBean {
 
     private void handleData(Message<Data> message) {
         logger.infof("Received message: %s", message);
-        message.getMetadata(PublishMessageMetadata.class)
+        message.getMetadata(SubscribeMessageMetadata.class)
                 .ifPresent(metadata -> lastData = Optional.of(
                         new Data(message.getPayload().getData(), metadata.headers().get("RESOURCE_ID").get(0),
                                 metadata.messageId(), message.getPayload().getCreationTime())));

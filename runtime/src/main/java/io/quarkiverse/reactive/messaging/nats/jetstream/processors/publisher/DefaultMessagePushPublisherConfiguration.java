@@ -96,9 +96,8 @@ public class DefaultMessagePushPublisherConfiguration<T> implements MessagePushP
             }
 
             @Override
-            public List<String> filterSubjects() {
-                return configuration.getFilterSubjects().map(filterSubjects -> List.of(filterSubjects.split(",")))
-                        .orElseGet(List::of);
+            public String subject() {
+                return configuration.getSubject().orElseThrow(() -> new IllegalStateException("No subject configured"));
             }
 
             @Override
@@ -188,23 +187,6 @@ public class DefaultMessagePushPublisherConfiguration<T> implements MessagePushP
             @Override
             public Optional<Class<T>> payloadType() {
                 return configuration.getPayloadType().map(DefaultPayloadMapper::loadClass);
-            }
-
-            @Override
-            public boolean exponentialBackoff() {
-                return configuration.getExponentialBackoff() != null ? configuration.getExponentialBackoff() : false;
-            }
-
-            @Override
-            public Duration exponentialBackoffMaxDuration() {
-                return configuration.getExponentialBackoffMaxDuration() != null
-                        ? Duration.parse(configuration.getExponentialBackoffMaxDuration())
-                        : null;
-            }
-
-            @Override
-            public Duration ackTimeout() {
-                return Duration.parse(configuration.getAckTimeout());
             }
 
             private List<Duration> getBackOff(List<String> backoff) {

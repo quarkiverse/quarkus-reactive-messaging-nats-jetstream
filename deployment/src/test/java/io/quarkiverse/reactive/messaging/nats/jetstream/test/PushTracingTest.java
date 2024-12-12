@@ -20,14 +20,14 @@ import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
 import io.restassured.parsing.Parser;
 
-public class ReactiveMesssagingNatsJetstreamPullTracingTest {
+public class PushTracingTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
             () -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(TestSpanExporter.class, Data.class, DataResource.class, DataConsumingBean.class,
                             DataCollectorBean.class, MessageConsumer.class))
-            .withConfigurationResource("application-pull-tracing.properties");
+            .withConfigurationResource("application-push-tracing.properties");
 
     @Inject
     TestSpanExporter spanExporter;
@@ -50,12 +50,12 @@ public class ReactiveMesssagingNatsJetstreamPullTracingTest {
 
         List<SpanData> parentSpans = spans.stream().filter(spanData -> spanData.getParentSpanId().equals(SpanId.getInvalid()))
                 .toList();
-        assertEquals(2, parentSpans.size());
+        assertEquals(1, parentSpans.size());
 
         for (var parentSpan : parentSpans) {
-            final var parentSpanId = parentSpan.getSpanId();
-            final var childSpans = spans.stream().filter(spanData -> spanData.getParentSpanId().equals(parentSpanId)).toList();
-            assertThat(childSpans).hasSize(1);
+            assertThat(spans.stream().filter(spanData -> spanData.getParentSpanId().equals(parentSpan.getSpanId())).count())
+                    .isEqualTo(1);
         }
     }
+
 }

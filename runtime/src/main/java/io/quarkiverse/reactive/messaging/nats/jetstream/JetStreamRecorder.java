@@ -1,7 +1,5 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream;
 
-import java.time.Duration;
-
 import jakarta.enterprise.inject.spi.CDI;
 
 import io.quarkiverse.reactive.messaging.nats.NatsConfiguration;
@@ -16,13 +14,11 @@ import io.quarkus.runtime.annotations.Recorder;
 
 @Recorder
 public class JetStreamRecorder {
-    private final static Duration WAIT = Duration.ofSeconds(10);
-
     private final RuntimeValue<NatsConfiguration> natsConfiguration;
-    private final RuntimeValue<JetStreamBuildConfiguration> jetStreamConfiguration;
+    private final RuntimeValue<JetStreamConfiguration> jetStreamConfiguration;
 
     public JetStreamRecorder(RuntimeValue<NatsConfiguration> natsConfiguration,
-            RuntimeValue<JetStreamBuildConfiguration> jetStreamConfiguration) {
+            RuntimeValue<JetStreamConfiguration> jetStreamConfiguration) {
         this.natsConfiguration = natsConfiguration;
         this.jetStreamConfiguration = jetStreamConfiguration;
     }
@@ -32,11 +28,18 @@ public class JetStreamRecorder {
             final var connectionConfiguration = ConnectionConfiguration.of(natsConfiguration.getValue());
             final var connectionFactory = CDI.current().select(ConnectionFactory.class).get();
             try (final var connection = connectionFactory.create(connectionConfiguration, new DefaultConnectionListener())
-                    .await().atMost(WAIT)) {
-                connection.addStreams(StreamSetupConfiguration.of(jetStreamConfiguration.getValue())).await().atMost(WAIT);
-                connection.addOrUpdateKeyValueStores(KeyValueSetupConfiguration.of(jetStreamConfiguration.getValue())).await()
-                        .atMost(WAIT);
-            } catch (Throwable failure) {
+                    .await().indefinitely()) {
+                connection.streamManagement()
+                        .onItem()
+                        .transformToUni(streamManagement -> streamManagement
+                                .addStreams(StreamSetupConfiguration.of(jetStreamConfiguration.getValue())))
+                        .await().indefinitely();
+                connection.keyValueStoreManagement()
+                        .onItem()
+                        .transformToUni(keyValueStoreManagement -> keyValueStoreManagement
+                                .addKeyValueStores(KeyValueSetupConfiguration.of(jetStreamConfiguration.getValue())))
+                        .await().indefinitely();
+            } catch (Exception failure) {
                 throw new SetupException(
                         String.format("Unable to configure streams and key value stores: %s", failure.getMessage()),
                         failure);

@@ -16,6 +16,7 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.SubjectState;
 import io.quarkiverse.reactive.messaging.nats.jetstream.test.resources.Data;
 import io.quarkiverse.reactive.messaging.nats.jetstream.test.resources.RequestReplyResource;
 import io.quarkiverse.reactive.messaging.nats.jetstream.test.resources.StreamInfo;
+import io.quarkiverse.reactive.messaging.nats.jetstream.test.resources.TestSpanExporter;
 import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
 import io.restassured.filter.log.RequestLoggingFilter;

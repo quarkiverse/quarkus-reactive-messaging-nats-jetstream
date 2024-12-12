@@ -16,10 +16,8 @@ import org.jboss.logging.Logger;
 import io.quarkiverse.reactive.messaging.nats.NatsConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.Connection;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.ConnectionFactory;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.Context;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.DefaultConnectionListener;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ConnectionConfiguration;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.tracing.TracerFactory;
 import io.smallrye.mutiny.Uni;
 
 @ApplicationScoped
@@ -27,19 +25,14 @@ public class DeadLetterConsumingBean {
     private final static Logger logger = Logger.getLogger(DeadLetterConsumingBean.class);
 
     private final AtomicReference<Data> lastData;
-    private final AtomicReference<Connection> connection;
+    private final AtomicReference<Connection<Data>> connection;
     private final NatsConfiguration natsConfiguration;
     private final ConnectionFactory connectionFactory;
-    private final TracerFactory tracerFactory;
-    private final Context context;
 
-    public DeadLetterConsumingBean(NatsConfiguration natsConfiguration, ConnectionFactory connectionFactory,
-            TracerFactory tracerFactory, Context context) {
+    public DeadLetterConsumingBean(NatsConfiguration natsConfiguration, ConnectionFactory connectionFactory) {
         this.connection = new AtomicReference<>();
         this.natsConfiguration = natsConfiguration;
         this.connectionFactory = connectionFactory;
-        this.tracerFactory = tracerFactory;
-        this.context = context;
         this.lastData = new AtomicReference<>();
     }
 
@@ -75,19 +68,16 @@ public class DeadLetterConsumingBean {
         }
     }
 
-    public Uni<Void> deadLetter(Connection connection, Message<Advisory> message) {
+    public Uni<Void> deadLetter(Connection<Data> connection, Message<Advisory> message) {
         logger.infof("Received dead letter on dead-letter-consumer channel: %s", message);
         final var advisory = message.getPayload();
-        return context
-                .withContext(
-                        ctx -> connection.<Data> resolve(advisory.stream(), advisory.stream_seq(), tracerFactory.create(false),
-                                ctx))
+        return connection.<Data> resolve(advisory.stream(), advisory.stream_seq())
                 .onItem().invoke(dataMessage -> lastData.set(dataMessage.getPayload()))
                 .onItem().transformToUni(m -> Uni.createFrom().completionStage(message.ack()))
                 .onFailure().recoverWithUni(throwable -> Uni.createFrom().completionStage(message.nack(throwable)));
     }
 
-    private Uni<Connection> getOrEstablishConnection() {
+    private Uni<Connection<Data>> getOrEstablishConnection() {
         return Uni.createFrom().item(() -> Optional.ofNullable(connection.get())
                 .filter(Connection::isConnected)
                 .orElse(null))
