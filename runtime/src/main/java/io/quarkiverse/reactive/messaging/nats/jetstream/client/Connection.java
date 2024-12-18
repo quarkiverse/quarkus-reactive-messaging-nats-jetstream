@@ -7,6 +7,7 @@ import org.eclipse.microprofile.reactive.messaging.Message;
 
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.Consumer;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.*;
+import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 
 public interface Connection<T> extends AutoCloseable {
@@ -24,7 +25,7 @@ public interface Connection<T> extends AutoCloseable {
 
     Uni<Message<T>> next(ConsumerConfiguration<T> configuration, Duration timeout);
 
-    Uni<List<Message<T>>> fetch(FetchConsumerConfiguration<T> configuration);
+    Multi<Message<T>> fetch(FetchConsumerConfiguration<T> configuration);
 
     Uni<Message<T>> resolve(String streamName, long sequence);
 
