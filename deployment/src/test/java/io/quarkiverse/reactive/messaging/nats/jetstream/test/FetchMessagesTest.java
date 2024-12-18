@@ -22,13 +22,13 @@ import io.nats.client.api.DeliverPolicy;
 import io.nats.client.api.ReplayPolicy;
 import io.quarkiverse.reactive.messaging.nats.NatsConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.ConnectionFactory;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.Context;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.DefaultConnectionListener;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.StreamManagement;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ConnectionConfiguration;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.FetchConsumerConfiguration;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ConsumerConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.PublishConfiguration;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.tracing.TracerFactory;
 import io.quarkiverse.reactive.messaging.nats.jetstream.test.resources.Data;
+import io.quarkiverse.reactive.messaging.nats.jetstream.test.resources.TestSpanExporter;
 import io.quarkus.test.QuarkusUnitTest;
 import io.smallrye.mutiny.Uni;
 
@@ -47,17 +47,12 @@ public class FetchMessagesTest {
     @Inject
     ConnectionFactory connectionFactory;
 
-    @Inject
-    Context context;
-
-    @Inject
-    TracerFactory tracerFactory;
-
     @BeforeEach
     public void setup() throws Exception {
         try (final var connection = connectionFactory.create(ConnectionConfiguration.of(natsConfiguration),
                 new DefaultConnectionListener()).await().atMost(Duration.ofSeconds(30))) {
-            connection.purgeAllStreams().await().atMost(Duration.ofSeconds(30));
+            connection.streamManagement().onItem().transformToUni(StreamManagement::purgeAllStreams)
+                    .await().atMost(Duration.ofSeconds(30));
         }
     }
 
@@ -149,16 +144,18 @@ public class FetchMessagesTest {
     private void addSubject(String subject) throws Exception {
         try (final var connection = connectionFactory.create(ConnectionConfiguration.of(natsConfiguration),
                 new DefaultConnectionListener()).await().atMost(Duration.ofSeconds(30))) {
-            connection.addSubject("fetch-test", subject).await()
-                    .atMost(Duration.ofSeconds(30));
+            connection.streamManagement()
+                    .onItem().transformToUni(streamManagement -> streamManagement.addSubject("fetch-test", subject))
+                    .await().atMost(Duration.ofSeconds(30));
         }
     }
 
     private void removeSubject(String subject) throws Exception {
-        try (final var connection = connectionFactory.create(ConnectionConfiguration.of(natsConfiguration),
-                new DefaultConnectionListener()).await().atMost(Duration.ofSeconds(30))) {
-            connection.removeSubject("fetch-test", subject).await()
-                    .atMost(Duration.ofSeconds(30));
+        try (final var connection = connectionFactory.create(ConnectionConfiguration.of(natsConfiguration)).await()
+                .atMost(Duration.ofSeconds(30))) {
+            connection.streamManagement()
+                    .onItem().transformToUni(streamManagement -> streamManagement.removeSubject("fetch-test", subject))
+                    .await().atMost(Duration.ofSeconds(30));
         }
     }
 
@@ -166,23 +163,18 @@ public class FetchMessagesTest {
         try (final var connection = connectionFactory.create(ConnectionConfiguration.of(natsConfiguration),
                 new DefaultConnectionListener()).await().atMost(Duration.ofSeconds(30))) {
             final var publishConfiguragtion = createPublishConfiguration(subject);
-            final var fetchConsumerConfiguration = createFetchConsumerConfiguration(subject);
-            context.withContext(
-                    ctx -> connection.publish(Message.of(data), publishConfiguragtion, fetchConsumerConfiguration,
-                            tracerFactory.create(false), ctx))
+            connection.publish(Message.of(data), publishConfiguragtion)
                     .await()
                     .atMost(Duration.ofSeconds(30));
         }
     }
 
     private Data fetch(String subject, boolean ack) throws Exception {
-        try (final var connection = connectionFactory.create(ConnectionConfiguration.of(natsConfiguration),
+        try (final var connection = connectionFactory.<Data> create(ConnectionConfiguration.of(natsConfiguration),
                 new DefaultConnectionListener()).await().atMost(Duration.ofSeconds(30))) {
-            final var fetchConsumerConfiguration = createFetchConsumerConfiguration(subject);
-            final var received = context
-                    .withContext(ctx -> connection.nextMessage(fetchConsumerConfiguration, tracerFactory.create(false), ctx))
-                    .await()
-                    .atMost(Duration.ofSeconds(30));
+            final var consumerConfiguration = createConsumerConfiguration(subject);
+            final var received = connection.next(consumerConfiguration, Duration.ofSeconds(30))
+                    .await().atMost(Duration.ofSeconds(30));
             if (ack) {
                 Uni.createFrom().completionStage(received.ack()).await().atMost(Duration.ofSeconds(30));
             } else {
@@ -192,27 +184,8 @@ public class FetchMessagesTest {
         }
     }
 
-    private FetchConsumerConfiguration<Data> createFetchConsumerConfiguration(String subject) {
-        return new FetchConsumerConfiguration<Data>() {
-            @Override
-            public Optional<Duration> fetchTimeout() {
-                return Optional.of(Duration.ofSeconds(10));
-            }
-
-            @Override
-            public boolean exponentialBackoff() {
-                return false;
-            }
-
-            @Override
-            public Duration exponentialBackoffMaxDuration() {
-                return null;
-            }
-
-            @Override
-            public Duration ackTimeout() {
-                return Duration.ofSeconds(30);
-            }
+    private ConsumerConfiguration<Data> createConsumerConfiguration(String subject) {
+        return new ConsumerConfiguration<>() {
 
             @Override
             public String name() {
@@ -230,8 +203,8 @@ public class FetchMessagesTest {
             }
 
             @Override
-            public List<String> filterSubjects() {
-                return List.of(subject);
+            public String subject() {
+                return subject;
             }
 
             @Override

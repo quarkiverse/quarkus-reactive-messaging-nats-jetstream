@@ -1,4 +1,4 @@
-package io.quarkiverse.reactive.messaging.nats.jetstream.test;
+package io.quarkiverse.reactive.messaging.nats.jetstream.test.resources;
 
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
@@ -17,7 +17,6 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.client.Connection;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.ConnectionFactory;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.DefaultConnectionListener;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ConnectionConfiguration;
-import io.quarkiverse.reactive.messaging.nats.jetstream.test.resources.Data;
 import io.smallrye.mutiny.Uni;
 
 @Path("/key-value")
@@ -26,7 +25,7 @@ import io.smallrye.mutiny.Uni;
 public class KeyValueStoreResource {
     private final ConnectionFactory connectionFactory;
     private final NatsConfiguration natsConfiguration;
-    private final AtomicReference<Connection> connection;
+    private final AtomicReference<Connection<Data>> connection;
 
     @Inject
     public KeyValueStoreResource(ConnectionFactory connectionFactory, NatsConfiguration natsConfiguration) {
@@ -67,21 +66,24 @@ public class KeyValueStoreResource {
         }
     }
 
-    private Uni<Data> getValue(Connection connection, String key) {
-        return connection.getKeyValue("test", key, Data.class)
+    private Uni<Data> getValue(Connection<Data> connection, String key) {
+        return connection.keyValueStore("test")
+                .onItem().transformToUni(keyValueStore -> keyValueStore.get(key, Data.class))
                 .onItem().ifNull().failWith(new NotFoundException())
                 .onFailure().transform(failure -> new NotFoundException(failure.getMessage()));
     }
 
-    public Uni<Void> putValue(Connection keyValueConnection, String key, Data data) {
-        return keyValueConnection.putKeyValue("test", key, data);
+    public Uni<Void> putValue(Connection<Data> connection, String key, Data data) {
+        return connection.keyValueStore("test")
+                .onItem().transformToUni(keyValueStore -> keyValueStore.put(key, data));
     }
 
-    public Uni<Void> deleteValue(Connection connection, String key) {
-        return connection.deleteKeyValue("test", key);
+    public Uni<Void> deleteValue(Connection<Data> connection, String key) {
+        return connection.keyValueStore("test")
+                .onItem().transformToUni(keyValueStore -> keyValueStore.delete(key));
     }
 
-    private Uni<Connection> getOrEstablishConnection() {
+    private Uni<Connection<Data>> getOrEstablishConnection() {
         return Uni.createFrom().item(() -> Optional.ofNullable(connection.get())
                 .filter(Connection::isConnected)
                 .orElse(null))

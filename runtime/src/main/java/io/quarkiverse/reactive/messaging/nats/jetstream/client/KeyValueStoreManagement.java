@@ -5,7 +5,8 @@ import java.util.List;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.KeyValueSetupConfiguration;
 import io.smallrye.mutiny.Uni;
 
-public interface KeyValueStoreSetup {
+public interface KeyValueStoreManagement {
 
-    Uni<Void> addOrUpdateKeyValueStores(List<KeyValueSetupConfiguration> keyValueConfigurations);
+    Uni<Void> addKeyValueStores(List<KeyValueSetupConfiguration> keyValueConfigurations);
+
 }

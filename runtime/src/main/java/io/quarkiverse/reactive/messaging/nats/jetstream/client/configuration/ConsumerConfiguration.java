@@ -18,7 +18,7 @@ public interface ConsumerConfiguration<T> {
 
     Optional<String> durable();
 
-    List<String> filterSubjects();
+    String subject();
 
     Optional<Duration> ackWait();
 
@@ -53,11 +53,4 @@ public interface ConsumerConfiguration<T> {
     Optional<ZonedDateTime> pauseUntil();
 
     Optional<Class<T>> payloadType();
-
-    boolean exponentialBackoff();
-
-    Duration exponentialBackoffMaxDuration();
-
-    Duration ackTimeout();
-
 }

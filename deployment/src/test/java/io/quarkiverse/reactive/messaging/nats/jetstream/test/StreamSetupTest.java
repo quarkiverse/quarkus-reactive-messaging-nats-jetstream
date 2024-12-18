@@ -42,50 +42,58 @@ public class StreamSetupTest {
         try (final var connection = connectionFactory.create(ConnectionConfiguration.of(natsConfiguration),
                 new DefaultConnectionListener()).await().atMost(Duration.ofSeconds(30))) {
 
-            final var currentConfiguration = connection.getStreamConfiguration("stream-test").await()
-                    .atMost(Duration.ofSeconds(30));
+            final var currentConfiguration = connection.streamManagement()
+                    .onItem().transformToUni(streamManagement -> streamManagement.getStreamConfiguration("stream-test"))
+                    .await().atMost(Duration.ofSeconds(30));
             assertThat(currentConfiguration).isNotNull();
             assertThat(currentConfiguration.subjects()).containsExactly("stream-data");
             assertThat(currentConfiguration.storageType()).isEqualTo(StorageType.File);
             assertThat(currentConfiguration.retentionPolicy()).isEqualTo(RetentionPolicy.Interest);
 
-            final var notModifiedResult = connection
-                    .addStreams(List.of(StreamSetupConfiguration.builder()
-                            .configuration(update(Set.of("stream-data"), RetentionPolicy.Interest)).overwrite(false).build()))
+            final var notModifiedResult = connection.streamManagement()
+                    .onItem().transformToUni(streamManagement -> streamManagement
+                            .addStreams(List.of(StreamSetupConfiguration.builder()
+                                    .configuration(update(Set.of("stream-data"), RetentionPolicy.Interest)).overwrite(false)
+                                    .build())))
                     .await().atMost(Duration.ofSeconds(30));
             assertThat(notModifiedResult).hasSize(1);
             assertThat(notModifiedResult.get(0).status()).isEqualTo(StreamStatus.NotModified);
 
-            final var notModifiedConfiguration = connection.getStreamConfiguration("stream-test").await()
-                    .atMost(Duration.ofSeconds(30));
+            final var notModifiedConfiguration = connection.streamManagement()
+                    .onItem().transformToUni(streamManagement -> streamManagement.getStreamConfiguration("stream-test"))
+                    .await().atMost(Duration.ofSeconds(30));
             assertThat(notModifiedConfiguration).isNotNull();
             assertThat(notModifiedConfiguration.subjects()).containsExactly("stream-data");
             assertThat(notModifiedConfiguration.storageType()).isEqualTo(StorageType.File);
             assertThat(notModifiedConfiguration.retentionPolicy()).isEqualTo(RetentionPolicy.Interest);
 
-            final var updatedSubjectsResult = connection
-                    .addStreams(List.of(StreamSetupConfiguration.builder()
-                            .configuration(update(Set.of("stream-data", "stream-data-2"), RetentionPolicy.Interest))
-                            .overwrite(false).build()))
+            final var updatedSubjectsResult = connection.streamManagement()
+                    .onItem().transformToUni(streamManagement -> streamManagement
+                            .addStreams(List.of(StreamSetupConfiguration.builder()
+                                    .configuration(update(Set.of("stream-data", "stream-data-2"), RetentionPolicy.Interest))
+                                    .overwrite(false).build())))
                     .await().atMost(Duration.ofSeconds(30));
             assertThat(updatedSubjectsResult).hasSize(1);
             assertThat(updatedSubjectsResult.get(0).status()).isEqualTo(StreamStatus.Updated);
 
-            final var updatedSubjectsConfiguration = connection.getStreamConfiguration("stream-test").await()
-                    .atMost(Duration.ofSeconds(30));
+            final var updatedSubjectsConfiguration = connection.streamManagement()
+                    .onItem().transformToUni(streamManagement -> streamManagement.getStreamConfiguration("stream-test"))
+                    .await().atMost(Duration.ofSeconds(30));
             assertThat(updatedSubjectsConfiguration).isNotNull();
             assertThat(updatedSubjectsConfiguration.subjects()).containsExactlyInAnyOrder("stream-data", "stream-data-2");
 
-            final var updatedRetentionPolicyResult = connection
-                    .addStreams(List.of(StreamSetupConfiguration.builder()
+            final var updatedRetentionPolicyResult = connection.streamManagement()
+                    .onItem()
+                    .transformToUni(streamManagement -> streamManagement.addStreams(List.of(StreamSetupConfiguration.builder()
                             .configuration(update(Set.of("stream-data", "stream-data-2"), RetentionPolicy.WorkQueue))
-                            .overwrite(true).build()))
+                            .overwrite(true).build())))
                     .await().atMost(Duration.ofSeconds(30));
             assertThat(updatedRetentionPolicyResult).hasSize(1);
             assertThat(updatedRetentionPolicyResult.get(0).status()).isEqualTo(StreamStatus.Created);
 
-            final var retentionPolicyConfiguration = connection.getStreamConfiguration("stream-test").await()
-                    .atMost(Duration.ofSeconds(30));
+            final var retentionPolicyConfiguration = connection.streamManagement()
+                    .onItem().transformToUni(streamManagement -> streamManagement.getStreamConfiguration("stream-test"))
+                    .await().atMost(Duration.ofSeconds(30));
             assertThat(retentionPolicyConfiguration).isNotNull();
             assertThat(retentionPolicyConfiguration.subjects()).containsExactlyInAnyOrder("stream-data", "stream-data-2");
             assertThat(retentionPolicyConfiguration.storageType()).isEqualTo(StorageType.File);

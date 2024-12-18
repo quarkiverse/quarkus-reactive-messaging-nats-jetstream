@@ -1,10 +1,11 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration;
 
 import java.time.Duration;
+import java.util.List;
 
 import io.nats.client.api.AckPolicy;
 
-public class ConsumerConfigurtationFactory {
+public class ConsumerConfigurationFactory {
 
     public <T> io.nats.client.api.ConsumerConfiguration create(final ConsumerConfiguration<T> configuration) {
         return builder(configuration).build();
@@ -13,7 +14,6 @@ public class ConsumerConfigurtationFactory {
     public <T> io.nats.client.api.ConsumerConfiguration create(final PullConsumerConfiguration<T> configuration) {
         var builder = builder(configuration.consumerConfiguration());
         builder = configuration.maxWaiting().map(builder::maxPullWaiting).orElse(builder);
-        builder = configuration.maxRequestExpires().map(builder::maxExpires).orElse(builder);
         return builder.build();
     }
 
@@ -30,9 +30,7 @@ public class ConsumerConfigurtationFactory {
     private <T> io.nats.client.api.ConsumerConfiguration.Builder builder(final ConsumerConfiguration<T> configuration) {
         var builder = io.nats.client.api.ConsumerConfiguration.builder();
         builder = configuration.durable().map(builder::durable).orElse(builder);
-        if (!configuration.filterSubjects().isEmpty()) {
-            builder = builder.filterSubjects(configuration.filterSubjects());
-        }
+        builder = builder.filterSubjects(List.of(configuration.subject()));
         builder = builder.name(configuration.name());
         builder = builder.ackPolicy(AckPolicy.Explicit);
         builder = configuration.ackWait().map(builder::ackWait).orElse(builder);

@@ -1,201 +1,152 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client.api;
 
-import java.util.*;
+import static io.quarkiverse.reactive.messaging.nats.jetstream.mapper.HeaderMapper.toMessageHeaders;
+import static io.smallrye.reactive.messaging.providers.locals.ContextAwareMessage.captureContextMetadata;
+
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.CompletionStage;
-import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import org.eclipse.microprofile.reactive.messaging.Message;
 import org.eclipse.microprofile.reactive.messaging.Metadata;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.PublishConfiguration;
-import io.smallrye.reactive.messaging.providers.MetadataInjectableMessage;
-import io.smallrye.reactive.messaging.providers.locals.ContextAwareMessage;
+import io.nats.client.Message;
+import io.smallrye.reactive.messaging.providers.helpers.VertxContext;
 import io.smallrye.reactive.messaging.providers.locals.LocalContextMetadata;
-import lombok.Builder;
+import io.vertx.mutiny.core.Context;
 
-@Builder
-public record SubscribeMessage<T>(String stream, String subject, byte[] payload, String type, String messageId,
-        Map<String, List<String>> headers, Message<T> message) implements JetStreamMessage<T> {
+public class SubscribeMessage<T> implements JetStreamMessage<T> {
+    private final Message message;
+    private Metadata metadata;
+    private final SubscribeMessageMetadata subscribeMessageMetadata;
+    private final T payload;
+    private final Context context;
 
-    @Override
-    public void injectMetadata(Object o) {
-        if (message instanceof MetadataInjectableMessage<T> metadataInjectableMessage) {
-            metadataInjectableMessage.injectMetadata(o);
-        }
+    public SubscribeMessage(final Message message,
+            final T payload,
+            Context context) {
+        this.message = message;
+        this.subscribeMessageMetadata = SubscribeMessageMetadata.of(message);
+        this.metadata = captureContextMetadata(subscribeMessageMetadata);
+        this.payload = payload;
+        this.context = context;
     }
 
     @Override
     public Metadata getMetadata() {
-        return message.getMetadata();
+        return metadata;
     }
 
-    @Override
-    public Optional<LocalContextMetadata> getContextMetadata() {
-        if (message instanceof ContextAwareMessage<T> contextAwareMessage) {
-            return contextAwareMessage.getContextMetadata();
-        }
-        return Optional.empty();
+    public String messageId() {
+        return subscribeMessageMetadata.messageId();
     }
 
-    @Override
-    public void runOnMessageContext(Runnable runnable) {
-        if (message instanceof ContextAwareMessage<T> contextAwareMessage) {
-            contextAwareMessage.runOnMessageContext(runnable);
-            ;
-        }
+    public byte[] getData() {
+        return message.getData();
     }
 
-    @Override
-    public <P> Message<P> withPayload(P payload) {
-        try {
-            final var obejectMapper = new ObjectMapper();
-            return SubscribeMessage.<P> builder()
-                    .stream(stream)
-                    .subject(subject)
-                    .payload(obejectMapper.writeValueAsBytes(payload))
-                    .message(message.withPayload(payload))
-                    .type(payload.getClass().getTypeName())
-                    .messageId(messageId)
-                    .headers(headers)
-                    .build();
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
-        }
+    public String getSubject() {
+        return subscribeMessageMetadata.subject();
     }
 
-    @Override
-    public Message<T> withMetadata(Iterable<Object> metadata) {
-        return SubscribeMessage.of(message.withMetadata(metadata), this);
+    public String getStream() {
+        return subscribeMessageMetadata.stream();
     }
 
-    @Override
-    public Message<T> withMetadata(Metadata metadata) {
-        return SubscribeMessage.of(message.withMetadata(metadata), this);
+    public Long getStreamSequence() {
+        return subscribeMessageMetadata.streamSequence();
     }
 
-    @Override
-    public Message<T> withAck(Supplier<CompletionStage<Void>> supplier) {
-        return SubscribeMessage.of(message.withAck(supplier), this);
+    public Long getConsumerSequence() {
+        return subscribeMessageMetadata.consumerSequence();
     }
 
-    @Override
-    public Message<T> withAckWithMetadata(Function<Metadata, CompletionStage<Void>> supplier) {
-        return SubscribeMessage.of(message.withAckWithMetadata(supplier), this);
+    public String getConsumer() {
+        return subscribeMessageMetadata.consumer();
     }
 
-    @Override
-    public Message<T> withNack(Function<Throwable, CompletionStage<Void>> nack) {
-        return SubscribeMessage.of(message.withNack(nack), this);
+    public Long getDeliveredCount() {
+        return subscribeMessageMetadata.deliveredCount();
     }
 
-    @Override
-    public Message<T> withNackWithMetadata(BiFunction<Throwable, Metadata, CompletionStage<Void>> nack) {
-        return SubscribeMessage.of(message.withNackWithMetadata(nack), this);
-    }
-
-    @Override
-    public <M> Optional<M> getMetadata(Class<? extends M> clazz) {
-        return message.getMetadata(clazz);
-    }
-
-    @Override
-    public Supplier<CompletionStage<Void>> getAck() {
-        return message.getAck();
-    }
-
-    @Override
-    public Function<Metadata, CompletionStage<Void>> getAckWithMetadata() {
-        return message.getAckWithMetadata();
-    }
-
-    @Override
-    public Function<Throwable, CompletionStage<Void>> getNack() {
-        return message.getNack();
-    }
-
-    @Override
-    public BiFunction<Throwable, Metadata, CompletionStage<Void>> getNackWithMetadata() {
-        return message.getNackWithMetadata();
-    }
-
-    @Override
-    public CompletionStage<Void> ack() {
-        return message.ack();
-    }
-
-    @Override
-    public CompletionStage<Void> ack(Metadata metadata) {
-        return message.ack(metadata);
-    }
-
-    @Override
-    public CompletionStage<Void> nack(Throwable reason) {
-        return message.nack(reason);
-    }
-
-    @Override
-    public CompletionStage<Void> nack(Throwable reason, Metadata metadata) {
-        return message.nack(reason, metadata);
-    }
-
-    @Override
-    public <C> C unwrap(Class<C> unwrapType) {
-        return message.unwrap(unwrapType);
-    }
-
-    @Override
-    public Message<T> addMetadata(Object metadata) {
-        return message.addMetadata(metadata);
-    }
-
-    @Override
-    public <R> Message<R> thenApply(Function<Message<T>, Message<R>> modifier) {
-        return message.thenApply(modifier);
+    public Map<String, List<String>> headers() {
+        return toMessageHeaders(message.getHeaders());
     }
 
     @Override
     public T getPayload() {
-        return message.getPayload();
+        return payload;
     }
 
-    public static <T> SubscribeMessage<T> of(Message<T> message, byte[] payload, PublishConfiguration configuration) {
-        final var metadata = message.getMetadata(SubscribeMessageMetadata.class);
-        final var stream = metadata.flatMap(SubscribeMessageMetadata::streamOptional).orElseGet(configuration::stream);
-        final var subject = metadata.flatMap(SubscribeMessageMetadata::subjectOptional).orElseGet(configuration::subject);
-        final var messageId = metadata.flatMap(SubscribeMessageMetadata::messageIdOptional)
-                .orElseGet(() -> UUID.randomUUID().toString());
-        final var type = message.getPayload() != null ? message.getPayload().getClass().getTypeName() : null;
-        final var headers = metadata.flatMap(SubscribeMessageMetadata::headersOptional).map(HashMap::new)
-                .orElseGet(HashMap::new);
-        if (type != null) {
-            headers.putIfAbsent(MESSAGE_TYPE_HEADER, List.of(type));
-        }
-        return SubscribeMessage.<T> builder()
-                .stream(stream)
-                .subject(subject)
-                .payload(payload)
-                .message(message)
-                .type(type)
-                .messageId(messageId)
-                .headers(headers)
-                .build();
+    @Override
+    public Supplier<CompletionStage<Void>> getAck() {
+        return this::ack;
     }
 
-    private static <T> SubscribeMessage<T> of(Message<T> message, SubscribeMessage<T> subscribeMessage) {
-        return SubscribeMessage.<T> builder()
-                .stream(subscribeMessage.stream())
-                .subject(subscribeMessage.subject())
-                .payload(subscribeMessage.payload())
-                .message(message)
-                .type(subscribeMessage.type())
-                .messageId(subscribeMessage.messageId())
-                .headers(subscribeMessage.headers())
-                .build();
+    @Override
+    public CompletionStage<Void> ack() {
+        return VertxContext.runOnContext(context.getDelegate(), f -> {
+            try {
+                message.ack();
+                this.runOnMessageContext(() -> f.complete(null));
+            } catch (Exception e) {
+                this.runOnMessageContext(() -> f.completeExceptionally(e));
+            }
+        });
     }
 
+    @Override
+    public CompletionStage<Void> nack(Throwable reason, Metadata metadata) {
+        return VertxContext.runOnContext(context.getDelegate(), f -> {
+            try {
+                message.nak();
+                this.runOnMessageContext(() -> f.complete(null));
+            } catch (Exception e) {
+                this.runOnMessageContext(() -> f.completeExceptionally(e));
+            }
+        });
+    }
+
+    @Override
+    public Function<Throwable, CompletionStage<Void>> getNack() {
+        return this::nack;
+    }
+
+    @Override
+    public synchronized void injectMetadata(Object metadataObject) {
+        this.metadata = metadata.with(metadataObject);
+    }
+
+    @Override
+    public Optional<LocalContextMetadata> getContextMetadata() {
+        return metadata.get(LocalContextMetadata.class);
+    }
+
+    @Override
+    public org.eclipse.microprofile.reactive.messaging.Message<T> addMetadata(Object metadata) {
+        this.metadata = this.metadata.with(metadata);
+        return this;
+    }
+
+    @Override
+    public org.eclipse.microprofile.reactive.messaging.Message<T> withMetadata(Iterable<Object> metadata) {
+        this.metadata = this.metadata.with(metadata);
+        return this;
+    }
+
+    @Override
+    public org.eclipse.microprofile.reactive.messaging.Message<T> withMetadata(Metadata metadata) {
+        this.metadata = this.metadata.with(metadata);
+        return this;
+    }
+
+    @Override
+    public String toString() {
+        return "SubscribeMessage{" +
+                "metadata=" + subscribeMessageMetadata +
+                ", payload=" + payload +
+                '}';
+    }
 }

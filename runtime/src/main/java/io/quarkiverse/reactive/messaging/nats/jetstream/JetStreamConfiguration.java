@@ -13,7 +13,7 @@ import io.smallrye.config.WithDefault;
 
 @ConfigMapping(prefix = "quarkus.messaging.nats.jet-stream")
 @ConfigRoot(phase = ConfigPhase.BUILD_AND_RUN_TIME_FIXED)
-public interface JetStreamBuildConfiguration {
+public interface JetStreamConfiguration {
 
     /**
      * Autoconfigure stream and subjects based on channel configuration

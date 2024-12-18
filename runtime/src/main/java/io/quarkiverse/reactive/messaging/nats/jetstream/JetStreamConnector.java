@@ -20,10 +20,8 @@ import org.jboss.logging.Logger;
 
 import io.quarkiverse.reactive.messaging.nats.NatsConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.ConnectionFactory;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.Context;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ConnectionConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ConsumerType;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.tracing.TracerFactory;
 import io.quarkiverse.reactive.messaging.nats.jetstream.processors.MessageProcessor;
 import io.quarkiverse.reactive.messaging.nats.jetstream.processors.publisher.*;
 import io.quarkiverse.reactive.messaging.nats.jetstream.processors.subscriber.MessageSubscriberConfiguration;
@@ -46,7 +44,6 @@ import io.smallrye.reactive.messaging.health.HealthReporter;
 @ConnectorAttribute(name = "publisher-type", description = "The publisher type (Pull, Push)", direction = INCOMING, type = "String", defaultValue = "Pull")
 @ConnectorAttribute(name = "payload-type", description = "The payload type", direction = INCOMING, type = "String")
 @ConnectorAttribute(name = "durable", description = "Sets the durable name for the consumer", direction = INCOMING, type = "String")
-@ConnectorAttribute(name = "filter-subjects", description = "A comma separated list of subjects that overlap with the subjects bound to the stream to filter delivery to subscribers", direction = INCOMING, type = "String")
 @ConnectorAttribute(name = "ack-wait", description = "The duration that the server will wait for an ack for any individual message once it has been delivered to a consumer. If an ack is not received in time, the message will be redelivered.", direction = INCOMING, type = "String")
 @ConnectorAttribute(name = "deliver-policy", description = "The point in the stream to receive messages from, either DeliverAll, DeliverLast, DeliverNew, DeliverByStartSequence, DeliverByStartTime, or DeliverLastPerSubject.", direction = INCOMING, type = "String")
 @ConnectorAttribute(name = "description", description = "A description of the consumer.", direction = INCOMING, type = "String")
@@ -58,13 +55,10 @@ import io.smallrye.reactive.messaging.health.HealthReporter;
 @ConnectorAttribute(name = "memory-storage", description = "If set, forces the consumer state to be kept in memory rather than inherit the storage type of the stream (file in this case).", direction = INCOMING, type = "Boolean")
 @ConnectorAttribute(name = "back-off", description = "The timing of re-deliveries as a comma-separated list of durations", direction = INCOMING, type = "String")
 @ConnectorAttribute(name = "retry-backoff", description = "The retry backoff in milliseconds for retry publishing messages", direction = INCOMING, type = "Long", defaultValue = "10000")
-@ConnectorAttribute(name = "exponential-backoff", description = "Calculation a exponential backoff using deliveredCount metadata (NB back-off must undefined to work properly)", direction = INCOMING, type = "Boolean", defaultValue = "false")
-@ConnectorAttribute(name = "exponential-backoff-max-duration", description = "The maximum duration of exponential backoff", direction = INCOMING, type = "String", defaultValue = "PT2M")
-@ConnectorAttribute(name = "ack-timeout", description = "The duration to wait for an ack confirmation", direction = INCOMING, type = "String", defaultValue = "PT2S")
 
 // Publish pull processor attributes
 @ConnectorAttribute(name = "pull.batch-size", description = "The size of batch of messages to be pulled in pull mode", direction = INCOMING, type = "int", defaultValue = "100")
-@ConnectorAttribute(name = "pull.repull-at", description = "The point in the current batch to tell the server to start the next batch", direction = INCOMING, type = "int", defaultValue = "50")
+@ConnectorAttribute(name = "pull.re-pull-at", description = "The point in the current batch to tell the server to start the next batch", direction = INCOMING, type = "int", defaultValue = "50")
 @ConnectorAttribute(name = "pull.max-waiting", description = "The maximum number of waiting pull requests.", direction = INCOMING, type = "Integer")
 @ConnectorAttribute(name = "pull.max-expires", description = "The maximum duration a single pull request will wait for messages to be available to pull.", direction = INCOMING, type = "String")
 
@@ -83,19 +77,13 @@ public class JetStreamConnector implements InboundConnector, OutboundConnector, 
     private final List<MessageProcessor> processors;
     private final NatsConfiguration natsConfiguration;
     private final ConnectionFactory connectionFactory;
-    private final TracerFactory tracerFactory;
-    private final Context context;
 
     public JetStreamConnector(
             NatsConfiguration natsConfiguration,
-            ConnectionFactory connectionFactory,
-            TracerFactory tracerFactory,
-            Context context) {
+            ConnectionFactory connectionFactory) {
         this.processors = new CopyOnWriteArrayList<>();
         this.natsConfiguration = natsConfiguration;
         this.connectionFactory = connectionFactory;
-        this.tracerFactory = tracerFactory;
-        this.context = context;
     }
 
     @SuppressWarnings("ReactiveStreamsUnusedPublisher")
@@ -111,12 +99,10 @@ public class JetStreamConnector implements InboundConnector, OutboundConnector, 
     public Flow.Subscriber<? extends Message<?>> getSubscriber(Config config) {
         final var connectionConfiguration = ConnectionConfiguration.of(natsConfiguration);
         final var configuration = new JetStreamConnectorIncomingConfiguration(config);
-        final var processor = new MessageSubscriberProcessor(
+        final var processor = new MessageSubscriberProcessor<>(
                 connectionConfiguration,
                 connectionFactory,
-                MessageSubscriberConfiguration.of(configuration),
-                tracerFactory,
-                context);
+                MessageSubscriberConfiguration.of(configuration));
         processors.add(processor);
         return processor.subscriber();
     }
@@ -160,15 +146,11 @@ public class JetStreamConnector implements InboundConnector, OutboundConnector, 
         if (ConsumerType.Pull.equals(type)) {
             return new MessagePullPublisherProcessor<>(connectionFactory,
                     connectionConfiguration,
-                    MessagePullPublisherConfiguration.of(configuration),
-                    tracerFactory,
-                    context);
+                    MessagePullPublisherConfiguration.of(configuration));
         } else {
             return new MessagePushPublisherProcessor<>(connectionFactory,
                     connectionConfiguration,
-                    MessagePushPublisherConfiguration.of(configuration),
-                    tracerFactory,
-                    context);
+                    MessagePushPublisherConfiguration.of(configuration));
         }
     }
 }

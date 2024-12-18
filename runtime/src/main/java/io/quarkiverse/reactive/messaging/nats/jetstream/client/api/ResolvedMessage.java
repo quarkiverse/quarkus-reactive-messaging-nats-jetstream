@@ -21,12 +21,12 @@ public class ResolvedMessage<T> implements JetStreamMessage<T> {
 
     private final MessageInfo message;
     private Metadata metadata;
-    private final PublishMessageMetadata incomingMetadata;
+    private final SubscribeMessageMetadata incomingMetadata;
     private final T payload;
 
     public ResolvedMessage(final MessageInfo message, final T payload) {
         this.message = message;
-        this.incomingMetadata = PublishMessageMetadata.of(message);
+        this.incomingMetadata = SubscribeMessageMetadata.of(message);
         this.metadata = captureContextMetadata(incomingMetadata);
         this.payload = payload;
     }

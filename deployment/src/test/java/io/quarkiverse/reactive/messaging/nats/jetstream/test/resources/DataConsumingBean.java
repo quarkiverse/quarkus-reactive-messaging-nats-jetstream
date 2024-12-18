@@ -8,7 +8,7 @@ import org.eclipse.microprofile.reactive.messaging.Incoming;
 import org.eclipse.microprofile.reactive.messaging.Message;
 import org.jboss.logging.Logger;
 
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.PublishMessageMetadata;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.SubscribeMessageMetadata;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple2;
 
@@ -34,7 +34,7 @@ public class DataConsumingBean implements MessageConsumer<String> {
     private Uni<Message<String>> publish(Message<String> message) {
         try {
             return Uni.createFrom()
-                    .item(() -> message.getMetadata(PublishMessageMetadata.class)
+                    .item(() -> message.getMetadata(SubscribeMessageMetadata.class)
                             .map(metadata -> Tuple2.of(metadata.headers().get("RESOURCE_ID").get(0), metadata.messageId()))
                             .orElse(Tuple2.of(null, null)))
                     .onItem()

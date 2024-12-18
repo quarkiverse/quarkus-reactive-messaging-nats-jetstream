@@ -32,28 +32,29 @@ public class DefaultMessagePullPublisherConfiguration<T> implements MessagePullP
     }
 
     @Override
-    public Optional<Integer> maxWaiting() {
-        return configuration.getPullMaxWaiting();
+    public String subject() {
+        return configuration.getSubject().orElseThrow(() -> new IllegalStateException("No subject configured"));
     }
 
     @Override
-    public Optional<Duration> maxRequestExpires() {
-        return configuration.getPullMaxExpires().map(Duration::parse);
+    public Duration maxExpires() {
+        final var converter = new DurationConverter();
+        return configuration.getPullMaxExpires().map(converter::convert).orElse(Duration.ZERO);
     }
 
     @Override
-    public Integer maxRequestBatch() {
+    public Integer batchSize() {
         return configuration.getPullBatchSize();
     }
 
     @Override
     public Integer rePullAt() {
-        return configuration.getPullRepullAt();
+        return configuration.getPullRePullAt();
     }
 
     @Override
-    public String subject() {
-        return configuration.getSubject().orElseThrow(() -> new IllegalStateException("No subject configured"));
+    public Optional<Integer> maxWaiting() {
+        return configuration.getPullMaxWaiting();
     }
 
     @Override
@@ -76,14 +77,13 @@ public class DefaultMessagePullPublisherConfiguration<T> implements MessagePullP
             }
 
             @Override
-            public Optional<String> durable() {
-                return configuration.getDurable();
+            public String subject() {
+                return configuration.getSubject().orElseThrow(() -> new IllegalStateException("No subject configured"));
             }
 
             @Override
-            public List<String> filterSubjects() {
-                return configuration.getFilterSubjects().map(filterSubjects -> List.of(filterSubjects.split(",")))
-                        .orElseGet(List::of);
+            public Optional<String> durable() {
+                return configuration.getDurable();
             }
 
             @Override
@@ -173,23 +173,6 @@ public class DefaultMessagePullPublisherConfiguration<T> implements MessagePullP
             @Override
             public Optional<Class<T>> payloadType() {
                 return configuration.getPayloadType().map(DefaultPayloadMapper::loadClass);
-            }
-
-            @Override
-            public boolean exponentialBackoff() {
-                return configuration.getExponentialBackoff() != null ? configuration.getExponentialBackoff() : false;
-            }
-
-            @Override
-            public Duration exponentialBackoffMaxDuration() {
-                return configuration.getExponentialBackoffMaxDuration() != null
-                        ? Duration.parse(configuration.getExponentialBackoffMaxDuration())
-                        : null;
-            }
-
-            @Override
-            public Duration ackTimeout() {
-                return Duration.parse(configuration.getAckTimeout());
             }
 
             private List<Duration> of(List<String> values) {

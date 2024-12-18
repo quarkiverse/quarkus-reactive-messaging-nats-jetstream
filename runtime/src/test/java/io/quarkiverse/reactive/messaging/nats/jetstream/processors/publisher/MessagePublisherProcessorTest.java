@@ -93,6 +93,11 @@ public class MessagePublisherProcessorTest {
                     }
 
                     @Override
+                    public String subject() {
+                        return "test";
+                    }
+
+                    @Override
                     public Optional<String> durable() {
                         return Optional.of(durable);
                     }
@@ -115,11 +120,6 @@ public class MessagePublisherProcessorTest {
                     @Override
                     public Optional<ZonedDateTime> pauseUntil() {
                         return Optional.empty();
-                    }
-
-                    @Override
-                    public List<String> filterSubjects() {
-                        return List.of();
                     }
 
                     @Override
@@ -185,21 +185,6 @@ public class MessagePublisherProcessorTest {
                     @Override
                     public Optional<Class<Object>> payloadType() {
                         return Optional.empty();
-                    }
-
-                    @Override
-                    public boolean exponentialBackoff() {
-                        return false;
-                    }
-
-                    @Override
-                    public Duration exponentialBackoffMaxDuration() {
-                        return null;
-                    }
-
-                    @Override
-                    public Duration ackTimeout() {
-                        return Duration.ofSeconds(3);
                     }
                 };
             }

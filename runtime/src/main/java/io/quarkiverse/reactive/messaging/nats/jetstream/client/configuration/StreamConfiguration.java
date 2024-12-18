@@ -6,7 +6,7 @@ import java.util.Optional;
 import java.util.Set;
 
 import io.nats.client.api.*;
-import io.quarkiverse.reactive.messaging.nats.jetstream.JetStreamBuildConfiguration;
+import io.quarkiverse.reactive.messaging.nats.jetstream.JetStreamConfiguration;
 
 public interface StreamConfiguration {
     /**
@@ -125,7 +125,7 @@ public interface StreamConfiguration {
      */
     Optional<Long> firstSequence();
 
-    static StreamConfiguration of(JetStreamBuildConfiguration.Stream stream) {
+    static StreamConfiguration of(JetStreamConfiguration.Stream stream) {
         return DefaultStreamConfiguration.builder()
                 .name(stream.name())
                 .description(stream.description().orElse(null))

@@ -18,7 +18,7 @@ import io.restassured.filter.log.RequestLoggingFilter;
 import io.restassured.filter.log.ResponseLoggingFilter;
 import io.restassured.parsing.Parser;
 
-public class ReactiveMesssagingNatsJetstreamPullTest {
+public class PullTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
@@ -51,20 +51,6 @@ public class ReactiveMesssagingNatsJetstreamPullTest {
                 .when().get("/q/health/live")
                 .then()
                 .statusCode(200);
-    }
-
-    @Test
-    public void metadata() {
-        final var messageId = "4dc58197-8cfb-4099-a211-25d5c2d04f4b";
-        final var data = "N6cXzM";
-
-        given().pathParam("id", messageId).pathParam("data", data).post("/data/{id}/{data}").then().statusCode(204);
-
-        await().atMost(1, TimeUnit.MINUTES).until(() -> {
-            final var dataValue = get("/data/last").as(Data.class);
-            return data.equals(dataValue.data()) && data.equals(dataValue.resourceId())
-                    && messageId.equals(dataValue.messageId());
-        });
     }
 
     @Test

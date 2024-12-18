@@ -8,7 +8,7 @@ import org.eclipse.microprofile.reactive.messaging.Incoming;
 import org.eclipse.microprofile.reactive.messaging.Message;
 import org.jboss.logging.Logger;
 
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.PublishMessageMetadata;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.SubscribeMessageMetadata;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.reactive.messaging.annotations.Blocking;
 
@@ -34,7 +34,7 @@ public class SubjectDataConsumingBean implements MessageConsumer<String> {
         return Uni.createFrom().item(() -> message)
                 .onItem().invoke(m -> logger.infof("Received message: %s", m))
                 .onItem().transform(m -> {
-                    m.getMetadata(PublishMessageMetadata.class)
+                    m.getMetadata(SubscribeMessageMetadata.class)
                             .ifPresent(metadata -> lastData = Optional.of(
                                     new SubjectData(message.getPayload(), metadata.headers().get("RESOURCE_ID").get(0),
                                             metadata.messageId(),

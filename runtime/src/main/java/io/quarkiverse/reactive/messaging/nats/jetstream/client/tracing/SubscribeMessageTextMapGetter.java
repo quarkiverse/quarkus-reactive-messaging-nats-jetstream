@@ -3,13 +3,13 @@ package io.quarkiverse.reactive.messaging.nats.jetstream.client.tracing;
 import java.util.Collections;
 
 import io.opentelemetry.context.propagation.TextMapGetter;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.PublishMessage;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.SubscribeMessageMetadata;
 
-public class PublishMessageTextMapGetter<T> implements TextMapGetter<PublishMessage<T>> {
+public class SubscribeMessageTextMapGetter implements TextMapGetter<SubscribeMessageMetadata> {
 
     @Override
-    public Iterable<String> keys(PublishMessage<T> carrier) {
-        final var headers = carrier.headers();
+    public Iterable<String> keys(SubscribeMessageMetadata metadata) {
+        final var headers = metadata.headers();
         if (headers != null) {
             return headers.keySet();
         }
@@ -17,9 +17,9 @@ public class PublishMessageTextMapGetter<T> implements TextMapGetter<PublishMess
     }
 
     @Override
-    public String get(PublishMessage<T> carrier, String key) {
-        if (carrier != null) {
-            final var headers = carrier.headers();
+    public String get(SubscribeMessageMetadata metadata, String key) {
+        if (metadata != null) {
+            final var headers = metadata.headers();
             if (headers != null) {
                 final var value = headers.get(key);
                 if (value != null) {

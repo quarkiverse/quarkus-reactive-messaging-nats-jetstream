@@ -7,15 +7,17 @@ import java.time.Duration;
 
 import io.nats.client.ErrorListener;
 import io.nats.client.Options;
+import io.vertx.mutiny.core.Vertx;
 
 public class ConnectionOptionsFactory {
     public static final int DEFAULT_MAX_RECONNECT = Integer.MAX_VALUE;
 
-    public Options create(ConnectionConfiguration configuration,
-            io.nats.client.ConnectionListener connectionListener)
+    public Options create(final ConnectionConfiguration configuration,
+            final io.nats.client.ConnectionListener connectionListener,
+            final Vertx vertx)
             throws NoSuchAlgorithmException {
-        final var servers = configuration.servers().split(",");
         final var optionsBuilder = new Options.Builder();
+        final var servers = configuration.servers().split(",");
         optionsBuilder.servers(servers);
         optionsBuilder.maxReconnects(configuration.connectionAttempts().orElse(DEFAULT_MAX_RECONNECT));
         optionsBuilder.connectionTimeout(configuration.connectionBackoff().orElse(DEFAULT_RECONNECT_WAIT));
@@ -41,14 +43,8 @@ public class ConnectionOptionsFactory {
         return optionsBuilder.build();
     }
 
-    public Options create(ConnectionConfiguration configuration)
-            throws NoSuchAlgorithmException {
-        return create(configuration, null);
-    }
-
     private ErrorListener getErrorListener(ConnectionConfiguration configuration) {
         return configuration.errorListener()
                 .orElseGet(DefaultErrorListener::new);
     }
-
 }

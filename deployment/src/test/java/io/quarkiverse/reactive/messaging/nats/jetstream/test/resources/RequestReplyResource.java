@@ -25,14 +25,12 @@ import io.nats.client.api.ReplayPolicy;
 import io.quarkiverse.reactive.messaging.nats.NatsConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.Connection;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.ConnectionFactory;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.Context;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.DefaultConnectionListener;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.StreamManagement;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.PublishMessageMetadata;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.StreamState;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.SubscribeMessageMetadata;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ConnectionConfiguration;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.FetchConsumerConfiguration;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ConsumerConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.PublishConfiguration;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.tracing.TracerFactory;
 import io.smallrye.mutiny.Uni;
 
 @Path("/request-reply")
@@ -42,44 +40,46 @@ public class RequestReplyResource {
     private final ConnectionFactory connectionFactory;
     private final NatsConfiguration natsConfiguration;
     private final String streamName;
-    private final AtomicReference<Connection> messageConnection;
-    private final TracerFactory tracerFactory;
-    private final Context context;
+    private final AtomicReference<Connection<Data>> messageConnection;
 
     public RequestReplyResource(ConnectionFactory connectionFactory,
-            NatsConfiguration natsConfiguration, TracerFactory tracerFactory, Context context) {
+            NatsConfiguration natsConfiguration) {
         this.connectionFactory = connectionFactory;
         this.natsConfiguration = natsConfiguration;
         this.streamName = "request-reply";
         this.messageConnection = new AtomicReference<>();
-        this.tracerFactory = tracerFactory;
-        this.context = context;
     }
 
     @GET
     @Path("/streams")
     public Uni<List<String>> getStreams() {
-        return getOrEstablishMessageConnection().onItem().transformToUni(Connection::getStreams);
+        return getOrEstablishMessageConnection()
+                .onItem().transformToUni(Connection::streamManagement)
+                .onItem().transformToUni(StreamManagement::getStreams);
     }
 
     @GET
     @Path("/streams/{stream}/consumers")
     public Uni<List<String>> getConsumers(@PathParam("stream") String stream) {
-        return getOrEstablishMessageConnection().onItem()
-                .transformToUni(connection -> connection.getConsumerNames(stream));
+        return getOrEstablishMessageConnection()
+                .onItem().transformToUni(Connection::streamManagement)
+                .onItem().transformToUni(streamManagement -> streamManagement.getConsumerNames(stream));
     }
 
     @GET
     @Path("/streams/{stream}/subjects")
     public Uni<List<String>> getSubjects(@PathParam("stream") String stream) {
-        return getOrEstablishMessageConnection().onItem().transformToUni(connection -> connection.getSubjects(stream));
+        return getOrEstablishMessageConnection()
+                .onItem().transformToUni(Connection::streamManagement)
+                .onItem().transformToUni(streamManagement -> streamManagement.getSubjects(stream));
     }
 
     @GET
     @Path("/streams/{stream}/state")
     public Uni<StreamState> getStreamState(@PathParam("stream") String stream) {
-        return getOrEstablishMessageConnection().onItem()
-                .transformToUni(connection -> connection.getStreamState(stream));
+        return getOrEstablishMessageConnection()
+                .onItem().transformToUni(Connection::streamManagement)
+                .onItem().transformToUni(streamManagement -> streamManagement.getStreamState(stream));
     }
 
     @POST
@@ -108,19 +108,18 @@ public class RequestReplyResource {
         }
     }
 
-    private Uni<Connection> getOrEstablishMessageConnection() {
+    private Uni<Connection<Data>> getOrEstablishMessageConnection() {
         return Uni.createFrom().item(() -> Optional.ofNullable(messageConnection.get())
                 .filter(Connection::isConnected)
                 .orElse(null))
                 .onItem().ifNull()
-                .switchTo(() -> connectionFactory.create(ConnectionConfiguration.of(natsConfiguration),
-                        new DefaultConnectionListener()))
+                .switchTo(() -> connectionFactory.create(ConnectionConfiguration.of(natsConfiguration)))
                 .onItem().invoke(this.messageConnection::set);
     }
 
-    private Uni<Void> produceData(Connection connection, String subject, String id, String data, String messageId) {
-        return context.withContext(ctx -> connection.publish(
-                Message.of(new Data(data, id, messageId), Metadata.of(SubscribeMessageMetadata.of(messageId))),
+    private Uni<Void> produceData(Connection<Data> connection, String subject, String id, String data, String messageId) {
+        return connection.publish(
+                Message.of(new Data(data, id, messageId), Metadata.of(PublishMessageMetadata.of(messageId))),
                 new PublishConfiguration() {
 
                     @Override
@@ -132,15 +131,12 @@ public class RequestReplyResource {
                     public String subject() {
                         return "events." + subject;
                     }
-                }, getConsumerConfiguration(streamName, subject), tracerFactory.create(false), ctx))
+                }, getConsumerConfiguration(streamName, subject))
                 .onItem().transformToUni(m -> Uni.createFrom().voidItem());
     }
 
-    public Uni<Data> consumeData(Connection connection, String subject) {
-        return context
-                .withContext(
-                        c -> connection.nextMessage(getConsumerConfiguration(streamName, subject), tracerFactory.create(false),
-                                c))
+    public Uni<Data> consumeData(Connection<Data> connection, String subject) {
+        return connection.next(getConsumerConfiguration(streamName, subject), Duration.ofSeconds(10))
                 .map(message -> {
                     message.ack();
                     return message.getPayload();
@@ -148,12 +144,8 @@ public class RequestReplyResource {
                 .onFailure().recoverWithUni(Uni.createFrom().failure(NotFoundException::new));
     }
 
-    private FetchConsumerConfiguration<Data> getConsumerConfiguration(String streamName, String subject) {
-        return new FetchConsumerConfiguration<>() {
-            @Override
-            public String stream() {
-                return streamName;
-            }
+    private ConsumerConfiguration<Data> getConsumerConfiguration(String streamName, String subject) {
+        return new ConsumerConfiguration<>() {
 
             @Override
             public Optional<Long> startSequence() {
@@ -181,21 +173,6 @@ public class RequestReplyResource {
             }
 
             @Override
-            public boolean exponentialBackoff() {
-                return false;
-            }
-
-            @Override
-            public Duration exponentialBackoffMaxDuration() {
-                return null;
-            }
-
-            @Override
-            public Duration ackTimeout() {
-                return Duration.ofSeconds(30);
-            }
-
-            @Override
             public Optional<DeliverPolicy> deliverPolicy() {
                 return Optional.empty();
             }
@@ -216,8 +193,13 @@ public class RequestReplyResource {
             }
 
             @Override
-            public List<String> filterSubjects() {
-                return List.of("events." + subject);
+            public String stream() {
+                return streamName;
+            }
+
+            @Override
+            public String subject() {
+                return "events." + subject;
             }
 
             @Override
@@ -270,10 +252,6 @@ public class RequestReplyResource {
                 return List.of();
             }
 
-            @Override
-            public Optional<Duration> fetchTimeout() {
-                return Optional.of(Duration.ofSeconds(5));
-            }
         };
     }
 }
