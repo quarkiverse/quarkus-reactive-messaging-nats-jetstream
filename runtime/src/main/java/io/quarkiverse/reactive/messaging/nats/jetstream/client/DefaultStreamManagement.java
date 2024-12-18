@@ -6,14 +6,11 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 
-import io.nats.client.ConsumerContext;
 import io.nats.client.JetStreamApiException;
 import io.nats.client.JetStreamManagement;
 import io.nats.client.api.StreamInfo;
 import io.nats.client.api.StreamInfoOptions;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.*;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ConsumerConfiguration;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ConsumerConfigurationFactory;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.StreamConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.StreamConfigurationFactory;
 import io.quarkiverse.reactive.messaging.nats.jetstream.mapper.ConsumerMapper;
@@ -313,19 +310,6 @@ class DefaultStreamManagement implements StreamManagement {
             } catch (IOException | JetStreamApiException failure) {
                 throw new SetupException(String.format("Unable to delete stream: %s with message: %s", streamName,
                         failure.getMessage()), failure);
-            }
-        }));
-    }
-
-    private <T> Uni<ConsumerContext> addOrUpdateConsumerInternal(ConsumerConfiguration<T> configuration) {
-        return Uni.createFrom().item(Unchecked.supplier(() -> {
-            try {
-                final var factory = new ConsumerConfigurationFactory();
-                final var consumerConfiguration = factory.create(configuration);
-                final var streamContext = connection.getStreamContext(configuration.stream());
-                return streamContext.createOrUpdateConsumer(consumerConfiguration);
-            } catch (Throwable failure) {
-                throw new SystemException(failure);
             }
         }));
     }

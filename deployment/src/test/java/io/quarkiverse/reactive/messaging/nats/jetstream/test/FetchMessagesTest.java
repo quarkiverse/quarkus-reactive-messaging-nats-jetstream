@@ -26,6 +26,7 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.client.DefaultConnection
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.StreamManagement;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ConnectionConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ConsumerConfiguration;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.FetchConsumerConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.PublishConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.test.resources.Data;
 import io.quarkiverse.reactive.messaging.nats.jetstream.test.resources.TestSpanExporter;
@@ -61,7 +62,7 @@ public class FetchMessagesTest {
         final var data = new Data("test", "52b13992-749a-4943-ab8f-2403c734c648", "46c818c9-8915-48a6-9378-b8f540b0afe2");
         publish(data, "fetch-data");
 
-        final var received = fetch("fetch-data", true);
+        final var received = next("fetch-data", true);
         assertThat(received).isEqualTo(data);
     }
 
@@ -73,10 +74,10 @@ public class FetchMessagesTest {
         publish(data1, "fetch-data");
         publish(data2, "fetch-data");
 
-        final var received1 = fetch("fetch-data", true);
+        final var received1 = next("fetch-data", true);
         assertThat(received1).isEqualTo(data1);
 
-        final var received2 = fetch("fetch-data", true);
+        final var received2 = next("fetch-data", true);
         assertThat(received2).isEqualTo(data2);
     }
 
@@ -88,10 +89,10 @@ public class FetchMessagesTest {
         publish(data1, "fetch-data");
         publish(data2, "fetch-data");
 
-        final var received1 = fetch("fetch-data", false);
+        final var received1 = next("fetch-data", false);
         assertThat(received1).isEqualTo(data1);
 
-        final var received2 = fetch("fetch-data", true);
+        final var received2 = next("fetch-data", true);
         assertThat(received2).isEqualTo(data1);
     }
 
@@ -107,16 +108,16 @@ public class FetchMessagesTest {
         publish(data3, "resources." + data3.resourceId());
         publish(data4, "resources." + data4.resourceId());
 
-        final var received1 = fetch("resources." + data1.resourceId(), true);
+        final var received1 = next("resources." + data1.resourceId(), true);
         assertThat(received1).isEqualTo(data1);
 
-        final var received2 = fetch("resources." + data2.resourceId(), true);
+        final var received2 = next("resources." + data2.resourceId(), true);
         assertThat(received2).isEqualTo(data2);
 
-        final var received3 = fetch("resources." + data3.resourceId(), true);
+        final var received3 = next("resources." + data3.resourceId(), true);
         assertThat(received3).isEqualTo(data3);
 
-        final var received4 = fetch("resources." + data4.resourceId(), true);
+        final var received4 = next("resources." + data4.resourceId(), true);
         assertThat(received4).isEqualTo(data4);
     }
 
@@ -131,14 +132,28 @@ public class FetchMessagesTest {
         publish(data1, data1.resourceId());
         publish(data2, data2.resourceId());
 
-        final var received1 = fetch(data1.resourceId(), true);
+        final var received1 = next(data1.resourceId(), true);
         assertThat(received1).isEqualTo(data1);
 
-        final var received2 = fetch(data2.resourceId(), true);
+        final var received2 = next(data2.resourceId(), true);
         assertThat(received2).isEqualTo(data2);
 
         removeSubject(data1.resourceId());
         removeSubject(data2.resourceId());
+    }
+
+    @Test
+    void fetchMessages() throws Exception {
+        final var data1 = new Data("test1", "64a8903f-983a-4775-8c41-e59c1a40ca08", "5a6af883-2be2-4c73-9d5d-7cdc4157f2fb");
+        final var data2 = new Data("test2", "64a8903f-983a-4775-8c41-e59c1a40ca08", "d38ddb6f-3b9c-4a6c-978e-e97c0b66a2fd");
+
+        addSubject(data1.resourceId());
+
+        publish(data1, data1.resourceId());
+        publish(data2, data2.resourceId());
+
+        final var received = fetch(data1.resourceId(), true);
+        assertThat(received).containsExactly(data1, data2);
     }
 
     private void addSubject(String subject) throws Exception {
@@ -160,16 +175,17 @@ public class FetchMessagesTest {
     }
 
     private void publish(Data data, String subject) throws Exception {
-        try (final var connection = connectionFactory.create(ConnectionConfiguration.of(natsConfiguration),
+        try (final var connection = connectionFactory.<Data> create(ConnectionConfiguration.of(natsConfiguration),
                 new DefaultConnectionListener()).await().atMost(Duration.ofSeconds(30))) {
             final var publishConfiguragtion = createPublishConfiguration(subject);
-            connection.publish(Message.of(data), publishConfiguragtion)
+            final var consumerConfiguration = createConsumerConfiguration(subject);
+            connection.publish(Message.of(data), publishConfiguragtion, consumerConfiguration)
                     .await()
                     .atMost(Duration.ofSeconds(30));
         }
     }
 
-    private Data fetch(String subject, boolean ack) throws Exception {
+    private Data next(String subject, boolean ack) throws Exception {
         try (final var connection = connectionFactory.<Data> create(ConnectionConfiguration.of(natsConfiguration),
                 new DefaultConnectionListener()).await().atMost(Duration.ofSeconds(30))) {
             final var consumerConfiguration = createConsumerConfiguration(subject);
@@ -182,6 +198,44 @@ public class FetchMessagesTest {
             }
             return received.getPayload();
         }
+    }
+
+    private List<Data> fetch(String subject, boolean ack) throws Exception {
+        try (final var connection = connectionFactory.<Data> create(ConnectionConfiguration.of(natsConfiguration),
+                new DefaultConnectionListener()).await().atMost(Duration.ofSeconds(30))) {
+            final var consumerConfiguration = createFetchConsumerConfiguration(subject);
+            final var received = connection.fetch(consumerConfiguration)
+                    .onItem().transformToUniAndMerge(message -> {
+                        if (ack) {
+                            return Uni.createFrom().completionStage(message.ack())
+                                    .onItem().transform(ignored -> message);
+                        } else {
+                            return Uni.createFrom().completionStage(message.nack(new RuntimeException()))
+                                    .onItem().transform(ignored -> message);
+                        }
+                    }).collect().asList()
+                    .await().atMost(Duration.ofSeconds(30));
+            return received.stream().map(Message::getPayload).toList();
+        }
+    }
+
+    private FetchConsumerConfiguration<Data> createFetchConsumerConfiguration(String subject) {
+        return new FetchConsumerConfiguration<>() {
+            @Override
+            public Duration timeout() {
+                return Duration.ofSeconds(3);
+            }
+
+            @Override
+            public Integer batchSize() {
+                return 10;
+            }
+
+            @Override
+            public ConsumerConfiguration<Data> consumerConfiguration() {
+                return createConsumerConfiguration(subject);
+            }
+        };
     }
 
     private ConsumerConfiguration<Data> createConsumerConfiguration(String subject) {

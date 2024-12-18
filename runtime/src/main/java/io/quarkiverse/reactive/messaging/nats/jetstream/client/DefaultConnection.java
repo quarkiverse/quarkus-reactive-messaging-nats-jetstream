@@ -7,6 +7,8 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import org.eclipse.microprofile.reactive.messaging.Message;
 
@@ -110,7 +112,8 @@ class DefaultConnection<T> implements Connection<T> {
     public Uni<Consumer> addConsumer(ConsumerConfiguration<T> configuration) {
         return context().executeBlocking(addOrUpdateConsumer(configuration)
                 .onItem()
-                .transform(Unchecked.function(consumerContext -> consumerMapper.of(consumerContext.getConsumerInfo()))));
+                .transform(Unchecked.function(consumerContext -> consumerMapper.of(consumerContext.getConsumerInfo()))))
+                .onFailure().transform(SystemException::new);
     }
 
     @Override
@@ -121,41 +124,49 @@ class DefaultConnection<T> implements Connection<T> {
                 .transformToUni(
                         consumerContext -> Uni.createFrom().item(Unchecked.supplier(() -> consumerContext.next(timeout))))
                 .emitOn(context::runOnContext)
-                .onItem().transformToUni(message -> transformMessage(message, configuration, context()))
+                .onItem().ifNull().failWith(MessageNotFoundException::new)
+                .onItem().ifNotNull().transformToUni(message -> transformMessage(message, configuration, context()))
                 .onItem().transformToUni(message -> tracerFactory.<T> create(TracerType.Subscribe).withTrace(message,
-                        new AttachContextTraceSupplier<>())));
+                        new AttachContextTraceSupplier<>())))
+                .onFailure().transform(failure -> {
+                    if (failure instanceof MessageNotFoundException) {
+                        return failure;
+                    }
+                    return new FetchException(failure);
+                });
     }
 
     @SuppressWarnings("ReactiveStreamsUnusedPublisher")
     @Override
-    public Uni<List<Message<T>>> fetch(FetchConsumerConfiguration<T> configuration) {
+    public Multi<Message<T>> fetch(FetchConsumerConfiguration<T> configuration) {
         final var context = context();
-        return context.executeBlocking(addOrUpdateConsumer(configuration.consumerConfiguration())
-                .onItem().transformToUni(consumerContext -> fetchMessages(consumerContext, configuration, context))
-                .onItem().transformToMulti(messages -> Multi.createFrom().items(messages.stream()))
+        return addOrUpdateConsumer(configuration.consumerConfiguration())
+                .onItem().transformToMulti(consumerContext -> fetchMessages(consumerContext, configuration, context))
                 .onItem().transformToUniAndMerge(message -> tracerFactory.<T> create(TracerType.Subscribe).withTrace(message,
                         new AttachContextTraceSupplier<>()))
-                .collect().asList());
+                .onFailure().transform(FetchException::new);
     }
 
     @Override
     public Uni<Message<T>> resolve(String streamName, long sequence) {
-        return context().executeBlocking(Uni.createFrom().item(Unchecked.supplier(() -> {
+        return context().executeBlocking(Uni.createFrom().<Message<T>> item(Unchecked.supplier(() -> {
             final var jetStream = connection.jetStream();
             final var streamContext = jetStream.getStreamContext(streamName);
             final var messageInfo = streamContext.getMessage(sequence);
             return new ResolvedMessage<>(messageInfo, payloadMapper.<T> of(messageInfo).orElse(null));
-        })));
+        })))
+                .onFailure().transform(ResolveException::new);
     }
 
     @Override
     public Uni<Subscription<T>> subscribe(PushConsumerConfiguration<T> configuration) {
         final var context = context();
-        return context.executeBlocking(Uni.createFrom().item(Unchecked.supplier(() -> {
+        return context.executeBlocking(Uni.createFrom().<Subscription<T>> item(Unchecked.supplier(() -> {
             final var subscription = new PushSubscription<>(connection, configuration, messageMapper, tracerFactory, context);
             subscriptions.put(configuration.subject(), subscription);
             return subscription;
-        })));
+        })))
+                .onFailure().transform(SubscripeException::new);
     }
 
     @Override
@@ -166,10 +177,11 @@ class DefaultConnection<T> implements Connection<T> {
                         .onItem()
                         .transform(reader -> new PullSubscription<>(configuration, subscription, reader, messageMapper,
                                 tracerFactory, context)))
-                .onItem().transform(subscription -> {
+                .onItem().<Subscription<T>> transform(subscription -> {
                     subscriptions.put(configuration.consumerConfiguration().subject(), subscription);
                     return subscription;
-                }));
+                }))
+                .onFailure().transform(SubscripeException::new);
     }
 
     @Override
@@ -243,8 +255,9 @@ class DefaultConnection<T> implements Connection<T> {
         }));
     }
 
-    private Uni<List<Message<T>>> fetchMessages(ConsumerContext consumerContext, FetchConsumerConfiguration<T> configuration,
+    private Multi<Message<T>> fetchMessages(ConsumerContext consumerContext, FetchConsumerConfiguration<T> configuration,
             Context context) {
+        ExecutorService executor = Executors.newSingleThreadExecutor(JetstreamWorkerThread::new);
         return Multi.createFrom().<io.nats.client.Message> emitter(emitter -> {
             try {
                 try (final var fetchConsumer = fetchConsumer(consumerContext, configuration)) {
@@ -259,10 +272,10 @@ class DefaultConnection<T> implements Connection<T> {
                 emitter.fail(new FetchException(failure));
             }
         })
+                .runSubscriptionOn(executor)
                 .emitOn(context::runOnContext)
                 .onItem()
-                .transformToUniAndMerge(message -> transformMessage(message, configuration.consumerConfiguration(), context))
-                .collect().asList();
+                .transformToUniAndMerge(message -> transformMessage(message, configuration.consumerConfiguration(), context));
     }
 
     private FetchConsumer fetchConsumer(final ConsumerContext consumerContext,
