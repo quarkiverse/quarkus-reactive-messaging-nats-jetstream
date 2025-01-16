@@ -172,15 +172,14 @@ class DefaultConnection<T> implements Connection<T> {
     @Override
     public Uni<Subscription<T>> subscribe(PullConsumerConfiguration<T> configuration) {
         final var context = context();
-        return context.executeBlocking(createStreamContext(configuration)
-                .onItem().transformToUni(streamContext -> createConsumerContext(configuration, streamContext)
-                        .onItem()
-                        .transform(consumerContext -> new PullSubscription<>(configuration, consumerContext, messageMapper,
-                                tracerFactory, context)))
+        return context.executeBlocking(addOrUpdateConsumer(configuration.consumerConfiguration())
+                .onItem()
+                .transform(consumerContext -> new PullSubscription<>(configuration, consumerContext, messageMapper,
+                        tracerFactory, context)))
                 .onItem().<Subscription<T>> transform(subscription -> {
                     subscriptions.put(configuration.consumerConfiguration().subject(), subscription);
                     return subscription;
-                }))
+                })
                 .onFailure().transform(SubscribeException::new);
     }
 
@@ -306,27 +305,6 @@ class DefaultConnection<T> implements Connection<T> {
                 throw new SystemException(failure);
             }
         }));
-    }
-
-    /**
-     * Creates a subscription.
-     * If an IllegalArgumentException is thrown the consumer configuration is modified.
-     */
-    private Uni<StreamContext> createStreamContext(PullConsumerConfiguration<T> configuration) {
-        return Uni.createFrom()
-                .item(Unchecked.supplier(() -> connection.getStreamContext(configuration.consumerConfiguration().stream())));
-    }
-
-    private Uni<ConsumerContext> createConsumerContext(PullConsumerConfiguration<T> configuration,
-            StreamContext streamContext) {
-        return Uni.createFrom().emitter(emitter -> {
-            try {
-                final var optionsFactory = new ConsumerConfigurationFactory();
-                emitter.complete(streamContext.createOrUpdateConsumer(optionsFactory.create(configuration)));
-            } catch (Exception failure) {
-                emitter.fail(failure);
-            }
-        });
     }
 
     private Context context() {
