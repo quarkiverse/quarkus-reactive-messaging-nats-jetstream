@@ -9,8 +9,6 @@ public interface PullConsumerConfiguration<T> {
 
     Integer batchSize();
 
-    Integer rePullAt();
-
     Optional<Integer> maxWaiting();
 
     ConsumerConfiguration<T> consumerConfiguration();

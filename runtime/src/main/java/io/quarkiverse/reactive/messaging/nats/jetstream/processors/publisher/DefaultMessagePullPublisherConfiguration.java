@@ -48,11 +48,6 @@ public class DefaultMessagePullPublisherConfiguration<T> implements MessagePullP
     }
 
     @Override
-    public Integer rePullAt() {
-        return configuration.getPullRePullAt();
-    }
-
-    @Override
     public Optional<Integer> maxWaiting() {
         return configuration.getPullMaxWaiting();
     }

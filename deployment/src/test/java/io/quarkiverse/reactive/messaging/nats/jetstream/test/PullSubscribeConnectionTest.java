@@ -83,11 +83,6 @@ public class PullSubscribeConnectionTest {
             }
 
             @Override
-            public Integer rePullAt() {
-                return 50;
-            }
-
-            @Override
             public Integer batchSize() {
                 return 100;
             }
