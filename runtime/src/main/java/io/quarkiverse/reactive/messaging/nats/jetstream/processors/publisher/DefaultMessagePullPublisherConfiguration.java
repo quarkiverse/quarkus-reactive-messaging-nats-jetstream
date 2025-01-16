@@ -39,7 +39,7 @@ public class DefaultMessagePullPublisherConfiguration<T> implements MessagePullP
     @Override
     public Duration maxExpires() {
         final var converter = new DurationConverter();
-        return configuration.getPullMaxExpires().map(converter::convert).orElse(Duration.ZERO);
+        return configuration.getPullMaxExpires().map(converter::convert).orElse(null);
     }
 
     @Override

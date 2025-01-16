@@ -1,15 +1,13 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client;
 
-import java.time.Duration;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import org.eclipse.microprofile.reactive.messaging.Message;
 
-import io.nats.client.JetStreamReader;
+import io.nats.client.ConsumerContext;
 import io.nats.client.JetStreamStatusException;
-import io.nats.client.JetStreamSubscription;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.PullConsumerConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.tracing.TracerFactory;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.tracing.TracerType;
@@ -17,30 +15,17 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.mapper.MessageMapper;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.core.Context;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.jbosslog.JBossLog;
 
+@RequiredArgsConstructor
 @JBossLog
 public class PullSubscription<T> implements Subscription<T> {
     private final PullConsumerConfiguration<T> consumerConfiguration;
-    private final JetStreamReader reader;
-    private final JetStreamSubscription subscription;
+    private final ConsumerContext consumerContext;
     private final MessageMapper messageMapper;
     private final TracerFactory tracerFactory;
     private final Context context;
-
-    PullSubscription(PullConsumerConfiguration<T> consumerConfiguration,
-            JetStreamSubscription subscription,
-            JetStreamReader reader,
-            MessageMapper messageMapper,
-            TracerFactory tracerFactory,
-            Context context) {
-        this.consumerConfiguration = consumerConfiguration;
-        this.subscription = subscription;
-        this.reader = reader;
-        this.messageMapper = messageMapper;
-        this.tracerFactory = tracerFactory;
-        this.context = context;
-    }
 
     @SuppressWarnings("ReactiveStreamsUnusedPublisher")
     @Override
@@ -59,32 +44,20 @@ public class PullSubscription<T> implements Subscription<T> {
 
     @Override
     public void close() {
-        try {
-            reader.stop();
-        } catch (Exception e) {
-            log.warnf("Failed to stop reader with message %s", e.getMessage());
-        }
-        try {
-            if (subscription.isActive()) {
-                subscription.drain(Duration.ofMillis(1000));
-            }
-        } catch (Exception e) {
-            log.warnf("Interrupted while draining subscription");
-        }
-        try {
-            if (subscription.isActive()) {
-                subscription.unsubscribe();
-            }
-        } catch (Exception e) {
-            log.warnf("Failed to unsubscribe subscription with message %s", e.getMessage());
-        }
+        // nothing to do when using simplified NATS api
     }
 
     private Uni<Optional<io.nats.client.Message>> readNextMessage() {
         return Uni.createFrom().emitter(emitter -> {
             try {
-                emitter.complete(Optional
-                        .ofNullable(reader.nextMessage(consumerConfiguration.maxExpires())));
+                var maxExpires = consumerConfiguration.maxExpires();
+                if (maxExpires != null) {
+                    emitter.complete(Optional
+                            .ofNullable(consumerContext.next(maxExpires)));
+                } else {
+                    emitter.complete(Optional
+                            .ofNullable(consumerContext.next()));
+                }
             } catch (JetStreamStatusException e) {
                 emitter.fail(new PullException(e));
             } catch (IllegalStateException e) {

@@ -166,22 +166,22 @@ class DefaultConnection<T> implements Connection<T> {
             subscriptions.put(configuration.subject(), subscription);
             return subscription;
         })))
-                .onFailure().transform(SubscripeException::new);
+                .onFailure().transform(SubscribeException::new);
     }
 
     @Override
     public Uni<Subscription<T>> subscribe(PullConsumerConfiguration<T> configuration) {
         final var context = context();
-        return context.executeBlocking(createSubscription(configuration)
-                .onItem().transformToUni(subscription -> createReader(configuration, subscription)
+        return context.executeBlocking(createStreamContext(configuration)
+                .onItem().transformToUni(streamContext -> createConsumerContext(configuration, streamContext)
                         .onItem()
-                        .transform(reader -> new PullSubscription<>(configuration, subscription, reader, messageMapper,
+                        .transform(consumerContext -> new PullSubscription<>(configuration, consumerContext, messageMapper,
                                 tracerFactory, context)))
                 .onItem().<Subscription<T>> transform(subscription -> {
                     subscriptions.put(configuration.consumerConfiguration().subject(), subscription);
                     return subscription;
                 }))
-                .onFailure().transform(SubscripeException::new);
+                .onFailure().transform(SubscribeException::new);
     }
 
     @Override
@@ -268,7 +268,7 @@ class DefaultConnection<T> implements Connection<T> {
                     }
                     emitter.complete();
                 }
-            } catch (Throwable failure) {
+            } catch (Exception failure) {
                 emitter.fail(new FetchException(failure));
             }
         })
@@ -302,7 +302,7 @@ class DefaultConnection<T> implements Connection<T> {
                 final var consumerConfiguration = factory.create(configuration);
                 final var streamContext = connection.getStreamContext(configuration.stream());
                 return streamContext.createOrUpdateConsumer(consumerConfiguration);
-            } catch (Throwable failure) {
+            } catch (Exception failure) {
                 throw new SystemException(failure);
             }
         }));
@@ -312,43 +312,21 @@ class DefaultConnection<T> implements Connection<T> {
      * Creates a subscription.
      * If an IllegalArgumentException is thrown the consumer configuration is modified.
      */
-    private Uni<JetStreamSubscription> createSubscription(PullConsumerConfiguration<T> configuration) {
-        return Uni.createFrom().item(Unchecked.supplier(connection::jetStream))
-                .onItem().transformToUni(jetStream -> createSubscription(jetStream, configuration));
+    private Uni<StreamContext> createStreamContext(PullConsumerConfiguration<T> configuration) {
+        return Uni.createFrom()
+                .item(Unchecked.supplier(() -> connection.getStreamContext(configuration.consumerConfiguration().stream())));
     }
 
-    private Uni<JetStreamSubscription> createSubscription(JetStream jetStream,
-            PullConsumerConfiguration<T> configuration) {
-        return subscribe(jetStream, configuration)
-                .onFailure().recoverWithUni(failure -> {
-                    if (failure instanceof IllegalArgumentException) {
-                        return streamManagement()
-                                .onItem()
-                                .transformToUni(streamManagement -> streamManagement.deleteConsumer(
-                                        configuration.consumerConfiguration().stream(),
-                                        configuration.consumerConfiguration().name()))
-                                .onItem().transformToUni(v -> subscribe(jetStream, configuration));
-                    } else {
-                        return Uni.createFrom().failure(failure);
-                    }
-                });
-    }
-
-    private Uni<JetStreamSubscription> subscribe(JetStream jetStream, PullConsumerConfiguration<T> configuration) {
+    private Uni<ConsumerContext> createConsumerContext(PullConsumerConfiguration<T> configuration,
+            StreamContext streamContext) {
         return Uni.createFrom().emitter(emitter -> {
             try {
-                final var optionsFactory = new PullSubscribeOptionsFactory();
-                emitter.complete(jetStream.subscribe(configuration.consumerConfiguration().subject(),
-                        optionsFactory.create(configuration)));
-            } catch (Throwable failure) {
+                final var optionsFactory = new ConsumerConfigurationFactory();
+                emitter.complete(streamContext.createOrUpdateConsumer(optionsFactory.create(configuration)));
+            } catch (Exception failure) {
                 emitter.fail(failure);
             }
         });
-    }
-
-    private Uni<JetStreamReader> createReader(PullConsumerConfiguration<T> configuration, JetStreamSubscription subscription) {
-        return Uni.createFrom()
-                .item(Unchecked.supplier(() -> subscription.reader(configuration.batchSize(), configuration.rePullAt())));
     }
 
     private Context context() {
@@ -360,7 +338,7 @@ class DefaultConnection<T> implements Connection<T> {
             final var factory = new ConnectionOptionsFactory();
             final var options = factory.create(configuration, new InternalConnectionListener<>(this), vertx);
             return Nats.connect(options);
-        } catch (Throwable failure) {
+        } catch (Exception failure) {
             throw new ConnectionException(failure);
         }
     }
