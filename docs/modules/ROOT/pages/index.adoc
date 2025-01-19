@@ -169,9 +169,9 @@ mp.messaging.incoming.[channel-name].memory-storage,"If set, forces the consumer
 mp.messaging.incoming.[channel-name].back-off,The timing of re-deliveries as a comma-separated list of durations
 mp.messaging.incoming.[channel-name].retry-backoff,The retry backoff in milliseconds for retry publishing messages
 mp.messaging.incoming.[channel-name].pull.batch-size,The size of batch of messages to be pulled in pull mode
-mp.messaging.incoming.[channel-name].pull.re-pull-at,The point in the current batch to tell the server to start the next batch
+mp.messaging.incoming.[channel-name].pull.re-pull-at,The point in the current batch to tell the server to start the next batch. Not used anymore.
 mp.messaging.incoming.[channel-name].pull.max-waiting,The maximum number of waiting pull requests
-mp.messaging.incoming.[channel-name].pull.max-expires,The maximum duration a single pull request will wait for messages to be available to pull
+mp.messaging.incoming.[channel-name].pull.max-expires,The maximum duration a single pull request will wait for messages to be available to pull. NATS require this to be 1000ms or above. Default is 3000ms.
 mp.messaging.incoming.[channel-name].push.ordered,Flag indicating whether this subscription should be ordered
 mp.messaging.incoming.[channel-name].push.deliver-group,The optional deliver group to join
 mp.messaging.incoming.[channel-name].push.flow-control,Enables per-subscription flow control using a sliding-window protocol. This protocol relies on the server and client exchanging messages to regulate when and how many messages are pushed to the client. This one-to-one flow control mechanism works in tandem with the one-to-many flow control imposed by MaxAckPending across all subscriptions bound to a consumer.

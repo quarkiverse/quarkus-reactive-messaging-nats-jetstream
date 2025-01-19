@@ -10,7 +10,7 @@ import io.nats.client.Options;
 import io.vertx.mutiny.core.Vertx;
 
 public class ConnectionOptionsFactory {
-    public static final int DEFAULT_MAX_RECONNECT = Integer.MAX_VALUE;
+    public static final int DEFAULT_MAX_RECONNECT = -1;
 
     public Options create(final ConnectionConfiguration configuration,
             final io.nats.client.ConnectionListener connectionListener,

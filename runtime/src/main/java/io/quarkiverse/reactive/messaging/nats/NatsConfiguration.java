@@ -58,7 +58,7 @@ public interface NatsConfiguration {
 
     /**
      * The maximum number of attempts to attempt to re-connect to NATS.
-     * The default is
+     * The default is -1 which means unlimited.
      * {@value ConnectionOptionsFactory#DEFAULT_MAX_RECONNECT}
      */
     Optional<Integer> connectionAttempts();
