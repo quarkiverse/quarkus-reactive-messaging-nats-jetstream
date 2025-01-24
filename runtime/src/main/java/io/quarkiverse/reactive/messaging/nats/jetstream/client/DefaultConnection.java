@@ -25,6 +25,7 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.mapper.ConsumerMapper;
 import io.quarkiverse.reactive.messaging.nats.jetstream.mapper.MessageMapper;
 import io.quarkiverse.reactive.messaging.nats.jetstream.mapper.PayloadMapper;
 import io.quarkiverse.reactive.messaging.nats.jetstream.mapper.StreamStateMapper;
+import io.quarkus.tls.TlsConfigurationRegistry;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.unchecked.Unchecked;
@@ -51,8 +52,9 @@ class DefaultConnection<T> implements Connection<T> {
             final ConsumerMapper consumerMapper,
             final StreamStateMapper streamStateMapper,
             final TracerFactory tracerFactory,
-            final Vertx vertx) throws ConnectionException {
-        this.connection = connect(configuration, vertx);
+            final Vertx vertx,
+            final TlsConfigurationRegistry tlsConfigurationRegistry) throws ConnectionException {
+        this.connection = connect(configuration, tlsConfigurationRegistry);
         this.listeners = listeners;
         this.streamStateMapper = streamStateMapper;
         this.consumerMapper = consumerMapper;
@@ -311,10 +313,11 @@ class DefaultConnection<T> implements Connection<T> {
         return vertx.getOrCreateContext();
     }
 
-    private io.nats.client.Connection connect(ConnectionConfiguration configuration, Vertx vertx) throws ConnectionException {
+    private io.nats.client.Connection connect(ConnectionConfiguration configuration,
+            TlsConfigurationRegistry tlsConfigurationRegistry) throws ConnectionException {
         try {
             final var factory = new ConnectionOptionsFactory();
-            final var options = factory.create(configuration, new InternalConnectionListener<>(this), vertx);
+            final var options = factory.create(configuration, new InternalConnectionListener<>(this), tlsConfigurationRegistry);
             return Nats.connect(options);
         } catch (Exception failure) {
             throw new ConnectionException(failure);

@@ -95,6 +95,11 @@ class DefaultConnectionConfiguration implements ConnectionConfiguration {
         return configuration.connectionAttempts();
     }
 
+    @Override
+    public Optional<String> tlsConfigurationName() {
+        return configuration.tlsConfigurationName();
+    }
+
     private ErrorListener getInstanceOfErrorListener(String className) {
         try {
             var clazz = DefaultPayloadMapper.loadClass(className);

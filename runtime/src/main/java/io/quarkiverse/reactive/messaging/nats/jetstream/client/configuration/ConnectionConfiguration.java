@@ -40,6 +40,8 @@ public interface ConnectionConfiguration {
 
     Optional<Integer> connectionAttempts();
 
+    Optional<String> tlsConfigurationName();
+
     static ConnectionConfiguration of(NatsConfiguration configuration) {
         return new DefaultConnectionConfiguration(configuration);
     }
