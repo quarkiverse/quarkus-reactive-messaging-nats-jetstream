@@ -98,4 +98,9 @@ public interface NatsConfiguration {
      */
     Optional<String> tlsAlgorithm();
 
+    /**
+     * The name of the TLS configuration (bucket) used for client authentication in the TLS registry.
+     */
+    Optional<String> tlsConfigurationName();
+
 }

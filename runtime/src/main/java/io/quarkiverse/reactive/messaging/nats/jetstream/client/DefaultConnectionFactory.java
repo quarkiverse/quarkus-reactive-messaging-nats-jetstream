@@ -1,17 +1,14 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client;
 
 import java.time.Duration;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 import jakarta.enterprise.context.ApplicationScoped;
 
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ConnectionConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.tracing.TracerFactory;
-import io.quarkiverse.reactive.messaging.nats.jetstream.mapper.ConsumerMapper;
-import io.quarkiverse.reactive.messaging.nats.jetstream.mapper.MessageMapper;
-import io.quarkiverse.reactive.messaging.nats.jetstream.mapper.PayloadMapper;
-import io.quarkiverse.reactive.messaging.nats.jetstream.mapper.StreamStateMapper;
+import io.quarkiverse.reactive.messaging.nats.jetstream.mapper.*;
+import io.quarkus.tls.TlsConfigurationRegistry;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.unchecked.Unchecked;
 import io.smallrye.reactive.messaging.providers.connectors.ExecutionHolder;
@@ -29,6 +26,7 @@ public class DefaultConnectionFactory implements ConnectionFactory {
     private final ConsumerMapper consumerMapper;
     private final StreamStateMapper streamStateMapper;
     private final TracerFactory tracerFactory;
+    private final TlsConfigurationRegistry tlsConfigurationRegistry;
 
     @Override
     public <T> Uni<Connection<T>> create(final ConnectionConfiguration connectionConfiguration) {
@@ -61,7 +59,8 @@ public class DefaultConnectionFactory implements ConnectionFactory {
             final Vertx vertx) {
         return Uni.createFrom().item(
                 Unchecked.supplier(() -> new DefaultConnection<>(connectionConfiguration, connectionListeners,
-                        messageMapper, payloadMapper, consumerMapper, streamStateMapper, tracerFactory, vertx)));
+                        messageMapper, payloadMapper, consumerMapper, streamStateMapper, tracerFactory, vertx,
+                        tlsConfigurationRegistry)));
     }
 
     private Vertx getVertx() {
