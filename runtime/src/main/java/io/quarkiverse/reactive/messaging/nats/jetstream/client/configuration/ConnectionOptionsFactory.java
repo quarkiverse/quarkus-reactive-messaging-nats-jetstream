@@ -37,8 +37,11 @@ public class ConnectionOptionsFactory {
                 .ifPresent(connectionTimeout -> optionsBuilder.connectionTimeout(Duration.ofMillis(connectionTimeout)));
         if (configuration.sslEnabled()) {
             optionsBuilder.opentls();
-            TlsConfiguration tlsConfiguration = configuration.tlsConfigurationName().flatMap(tlsConfigurationRegistry::get)
+
+            final var tlsConfiguration = configuration.tlsConfigurationName()
+                    .flatMap(name -> name != null ? tlsConfigurationRegistry.get(name) : tlsConfigurationRegistry.getDefault())
                     .orElseGet(null);
+
             if (tlsConfiguration != null) {
                 optionsBuilder.sslContext(tlsConfiguration.createSSLContext());
             }
