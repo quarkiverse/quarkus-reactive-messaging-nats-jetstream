@@ -28,20 +28,15 @@ public class ConnectionOptionsFactory {
                 .ifPresent(username -> optionsBuilder.userInfo(username, configuration.password().orElse("")));
         configuration.token().map(String::toCharArray).ifPresent(optionsBuilder::token);
         configuration.credentialPath().ifPresent(optionsBuilder::credentialPath);
-        configuration.keystorePath().ifPresent(optionsBuilder::keystorePath);
-        configuration.keystorePassword().map(String::toCharArray).ifPresent(optionsBuilder::keystorePassword);
-        configuration.truststorePath().ifPresent(optionsBuilder::truststorePath);
-        configuration.truststorePassword().map(String::toCharArray).ifPresent(optionsBuilder::truststorePassword);
         configuration.bufferSize().ifPresent(optionsBuilder::bufferSize);
         configuration.connectionTimeout()
                 .ifPresent(connectionTimeout -> optionsBuilder.connectionTimeout(Duration.ofMillis(connectionTimeout)));
         if (configuration.sslEnabled()) {
             optionsBuilder.opentls();
             TlsConfiguration tlsConfiguration = configuration.tlsConfigurationName().flatMap(tlsConfigurationRegistry::get)
-                    .orElseGet(null);
-            if (tlsConfiguration != null) {
-                optionsBuilder.sslContext(tlsConfiguration.createSSLContext());
-            }
+                    .orElseThrow(() -> new IllegalArgumentException(
+                            "No Quarkus TLS configuration found for name: " + configuration.tlsConfigurationName().orElse("")));
+            optionsBuilder.sslContext(tlsConfiguration.createSSLContext());
         }
         configuration.tlsAlgorithm().ifPresent(optionsBuilder::tlsAlgorithm);
         return optionsBuilder.build();
