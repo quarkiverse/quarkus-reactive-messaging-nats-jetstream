@@ -33,7 +33,9 @@ public class ConnectionOptionsFactory {
                 .ifPresent(connectionTimeout -> optionsBuilder.connectionTimeout(Duration.ofMillis(connectionTimeout)));
         if (configuration.sslEnabled()) {
             optionsBuilder.opentls();
-            TlsConfiguration tlsConfiguration = configuration.tlsConfigurationName().flatMap(tlsConfigurationRegistry::get)
+
+            final var tlsConfiguration = configuration.tlsConfigurationName()
+                    .flatMap(name -> name != null ? tlsConfigurationRegistry.get(name) : tlsConfigurationRegistry.getDefault())
                     .orElseThrow(() -> new IllegalArgumentException(
                             "No Quarkus TLS configuration found for name: " + configuration.tlsConfigurationName().orElse("")));
             optionsBuilder.sslContext(tlsConfiguration.createSSLContext());
