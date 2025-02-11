@@ -74,26 +74,6 @@ public interface NatsConfiguration {
     Optional<Integer> bufferSize();
 
     /**
-     * The path to the keystore file
-     */
-    Optional<String> keystorePath();
-
-    /**
-     * The password for the keystore
-     */
-    Optional<String> keystorePassword();
-
-    /**
-     * The path to the trust store file
-     */
-    Optional<String> truststorePath();
-
-    /**
-     * The password for the trust store
-     */
-    Optional<String> truststorePassword();
-
-    /**
      * The tls algorithm. Default is {@value SSLUtils#DEFAULT_TLS_ALGORITHM}
      */
     Optional<String> tlsAlgorithm();
