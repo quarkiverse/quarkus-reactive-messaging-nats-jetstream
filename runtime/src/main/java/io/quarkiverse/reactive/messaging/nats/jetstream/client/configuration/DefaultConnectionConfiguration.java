@@ -61,26 +61,6 @@ class DefaultConnectionConfiguration implements ConnectionConfiguration {
     }
 
     @Override
-    public Optional<String> keystorePath() {
-        return configuration.keystorePath();
-    }
-
-    @Override
-    public Optional<String> keystorePassword() {
-        return configuration.keystorePassword();
-    }
-
-    @Override
-    public Optional<String> truststorePath() {
-        return configuration.truststorePath();
-    }
-
-    @Override
-    public Optional<String> truststorePassword() {
-        return configuration.truststorePassword();
-    }
-
-    @Override
     public Optional<String> tlsAlgorithm() {
         return configuration.tlsAlgorithm();
     }

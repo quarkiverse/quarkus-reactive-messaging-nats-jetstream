@@ -26,14 +26,6 @@ public interface ConnectionConfiguration {
 
     Optional<String> credentialPath();
 
-    Optional<String> keystorePath();
-
-    Optional<String> keystorePassword();
-
-    Optional<String> truststorePath();
-
-    Optional<String> truststorePassword();
-
     Optional<String> tlsAlgorithm();
 
     Optional<Duration> connectionBackoff();
