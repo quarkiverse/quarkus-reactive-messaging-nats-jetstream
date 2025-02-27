@@ -3,6 +3,7 @@ package io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration;
 import static io.nats.client.Options.DEFAULT_RECONNECT_WAIT;
 
 import java.time.Duration;
+import java.util.Optional;
 
 import io.nats.client.ErrorListener;
 import io.nats.client.Options;
@@ -34,11 +35,18 @@ public class ConnectionOptionsFactory {
         if (configuration.sslEnabled()) {
             optionsBuilder.opentls();
 
-            final var tlsConfiguration = configuration.tlsConfigurationName()
-                    .flatMap(name -> name != null ? tlsConfigurationRegistry.get(name) : tlsConfigurationRegistry.getDefault())
-                    .orElseThrow(() -> new IllegalArgumentException(
-                            "No Quarkus TLS configuration found for name: " + configuration.tlsConfigurationName().orElse("")));
-            optionsBuilder.sslContext(tlsConfiguration.createSSLContext());
+            final Optional<TlsConfiguration> tlsConfiguration;
+            if (configuration.tlsConfigurationName().isPresent()) {
+                tlsConfiguration = tlsConfigurationRegistry.get(configuration.tlsConfigurationName().get());
+            } else {
+                tlsConfiguration = tlsConfigurationRegistry.getDefault();
+            }
+
+            if (tlsConfiguration.isEmpty()) {
+                throw new IllegalStateException("No Quarkus TLS configuration found for NATS JetStream connection");
+            } else {
+                optionsBuilder.sslContext(tlsConfiguration.get().createSSLContext());
+            }
         }
         configuration.tlsAlgorithm().ifPresent(optionsBuilder::tlsAlgorithm);
         return optionsBuilder.build();
