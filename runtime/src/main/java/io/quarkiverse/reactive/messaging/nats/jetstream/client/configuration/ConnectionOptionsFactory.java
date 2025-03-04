@@ -33,11 +33,9 @@ public class ConnectionOptionsFactory {
                 .ifPresent(connectionTimeout -> optionsBuilder.connectionTimeout(Duration.ofMillis(connectionTimeout)));
         if (configuration.sslEnabled()) {
             optionsBuilder.opentls();
-
             final var tlsConfiguration = configuration.tlsConfigurationName()
-                    .flatMap(name -> name != null ? tlsConfigurationRegistry.get(name) : tlsConfigurationRegistry.getDefault())
-                    .orElseThrow(() -> new IllegalArgumentException(
-                            "No Quarkus TLS configuration found for name: " + configuration.tlsConfigurationName().orElse("")));
+                    .flatMap(tlsConfigurationRegistry::get)
+                    .orElseGet(() -> getDefaultTlsConfiguration(tlsConfigurationRegistry));
             optionsBuilder.sslContext(tlsConfiguration.createSSLContext());
         }
         configuration.tlsAlgorithm().ifPresent(optionsBuilder::tlsAlgorithm);
@@ -47,5 +45,10 @@ public class ConnectionOptionsFactory {
     private ErrorListener getErrorListener(ConnectionConfiguration configuration) {
         return configuration.errorListener()
                 .orElseGet(DefaultErrorListener::new);
+    }
+
+    private TlsConfiguration getDefaultTlsConfiguration(TlsConfigurationRegistry tlsConfigurationRegistry) {
+        return tlsConfigurationRegistry.getDefault().orElseThrow(
+                () -> new IllegalStateException("No Quarkus TLS configuration found for NATS JetStream connection"));
     }
 }
