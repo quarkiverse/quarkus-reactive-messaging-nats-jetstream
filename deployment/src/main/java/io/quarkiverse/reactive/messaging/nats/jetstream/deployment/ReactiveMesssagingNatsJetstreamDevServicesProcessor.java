@@ -24,16 +24,16 @@ import io.quarkus.deployment.builditem.DockerStatusBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.console.ConsoleInstalledBuildItem;
 import io.quarkus.deployment.console.StartupLogCompressor;
-import io.quarkus.deployment.dev.devservices.GlobalDevServicesConfig;
+import io.quarkus.deployment.dev.devservices.DevServicesConfig;
 import io.quarkus.deployment.logging.LoggingSetupBuildItem;
 import io.quarkus.devservices.common.ContainerLocator;
 import io.quarkus.runtime.LaunchMode;
 
 /**
  * Starts a NATS JetStream broker as dev service if needed.
- * It uses https://hub.docker.com/_/nats as image.
+ * It uses <a href="https://hub.docker.com/nats">NATS</a> as image.
  */
-@BuildSteps(onlyIfNot = IsNormal.class, onlyIf = GlobalDevServicesConfig.Enabled.class)
+@BuildSteps(onlyIfNot = IsNormal.class, onlyIf = DevServicesConfig.Enabled.class)
 public class ReactiveMesssagingNatsJetstreamDevServicesProcessor {
     private static final Logger logger = Logger.getLogger(ReactiveMesssagingNatsJetstreamDevServicesProcessor.class);
 
@@ -50,6 +50,7 @@ public class ReactiveMesssagingNatsJetstreamDevServicesProcessor {
     static volatile boolean first = true;
     static volatile JetStreamDevServiceCfg cfg;
 
+    @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
     @BuildStep
     public DevServicesResultBuildItem startJetStreamDevService(
             DockerStatusBuildItem dockerStatusBuildItem,
@@ -58,7 +59,7 @@ public class ReactiveMesssagingNatsJetstreamDevServicesProcessor {
             Optional<ConsoleInstalledBuildItem> consoleInstalledBuildItem,
             CuratedApplicationShutdownBuildItem closeBuildItem,
             LoggingSetupBuildItem loggingSetupBuildItem,
-            GlobalDevServicesConfig devServicesConfig) {
+            DevServicesConfig devServicesConfig) {
 
         JetStreamDevServiceCfg configuration = new JetStreamDevServiceCfg(devServicesBuildTimeConfig);
 
@@ -77,7 +78,7 @@ public class ReactiveMesssagingNatsJetstreamDevServicesProcessor {
         try {
             DevServicesResultBuildItem.RunningDevService newDevService = startJetStreamContainer(dockerStatusBuildItem,
                     configuration, launchMode,
-                    devServicesConfig.timeout);
+                    devServicesConfig.timeout());
             if (newDevService != null) {
                 devService = newDevService;
                 if (newDevService.isOwner()) {
@@ -129,9 +130,11 @@ public class ReactiveMesssagingNatsJetstreamDevServicesProcessor {
         }
     }
 
+    @SuppressWarnings({ "OptionalUsedAsFieldOrParameterType", "resource" })
     private RunningDevService startJetStreamContainer(DockerStatusBuildItem dockerStatusBuildItem,
             JetStreamDevServiceCfg config,
-            LaunchModeBuildItem launchMode, Optional<Duration> timeout) {
+            LaunchModeBuildItem launchMode,
+            Optional<Duration> timeout) {
         if (!config.devServicesEnabled) {
             // explicitly disabled
             logger.debug("Not starting Dev Services for NATS JetStream, as it has been disabled in the config.");
