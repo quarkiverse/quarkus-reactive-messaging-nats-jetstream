@@ -1,15 +1,15 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.deployment;
 
-import java.util.Optional;
-
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithDefault;
 
+import java.util.Optional;
+
 @ConfigMapping(prefix = "quarkus.messaging.nats.jet-stream.devservices")
 @ConfigRoot(phase = ConfigPhase.BUILD_TIME)
-public interface ReactiveMesssagingNatsJetstreamDevServicesBuildTimeConfig {
+public interface ReactiveMessagingNatsJetstreamDevServicesBuildTimeConfig {
 
     /**
      * If Dev Services for NATS JetStream has been explicitly enabled or disabled. Dev Services are generally enabled

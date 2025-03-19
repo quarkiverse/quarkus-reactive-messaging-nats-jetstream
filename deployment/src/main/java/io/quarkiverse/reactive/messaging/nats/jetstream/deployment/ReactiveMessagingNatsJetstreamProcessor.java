@@ -1,7 +1,5 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.deployment;
 
-import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
-
 import io.nats.client.Options;
 import io.quarkiverse.reactive.messaging.nats.jetstream.JetStreamConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.JetStreamConnector;
@@ -24,9 +22,11 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.smallrye.reactive.messaging.providers.connectors.ExecutionHolder;
 
-class ReactiveMesssagingNatsJetstreamProcessor {
+import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 
-    static final String FEATURE = "reactive-messsaging-nats-jetstream";
+class ReactiveMessagingNatsJetstreamProcessor {
+
+    static final String FEATURE = "reactive-messaging-nats-jetstream";
 
     @BuildStep
     FeatureBuildItem feature() {
