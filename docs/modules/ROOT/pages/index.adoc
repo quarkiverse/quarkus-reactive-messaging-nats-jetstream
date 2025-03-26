@@ -154,7 +154,7 @@ mp.messaging.incoming.[channel-name].payload-type,The class name of the payload 
 mp.messaging.incoming.[channel-name].durable,Sets the durable name for the consumer
 mp.messaging.incoming.[channel-name].filter-subjects,A comma separated list of subjects that overlap with the subjects bound to the stream to filter delivery to subscribers
 mp.messaging.incoming.[channel-name].ack-wait,"The duration that the server will wait for an ack for any individual message once it has been delivered to a consumer. If an ack is not received in time, the message will be redelivered"
-mp.messaging.incoming.[channel-name].deliver-policy,"The point in the stream to receive messages from, either DeliverAll, DeliverLast, DeliverNew, DeliverByStartSequence, DeliverByStartTime, or DeliverLastPerSubject"
+mp.messaging.incoming.[channel-name].deliver-policy,"The point in the stream to receive messages from, either All, Last, New, ByStartSequence, ByStartTime or LastPerSubject
 mp.messaging.incoming.[channel-name].description,A description of the consumer
 mp.messaging.incoming.[channel-name].inactive-threshold,Duration that instructs the server to cleanup consumers that are inactive for that long
 mp.messaging.incoming.[channel-name].description,A description of the consumer
