@@ -1,6 +1,6 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client.tracing;
 
-import static io.opentelemetry.instrumentation.api.instrumenter.messaging.MessageOperation.SEND;
+import static io.opentelemetry.instrumentation.api.instrumenter.messaging.MessageOperation.PUBLISH;
 import static io.smallrye.reactive.messaging.tracing.TracingUtils.getOpenTelemetry;
 
 import jakarta.enterprise.inject.Instance;
@@ -66,8 +66,8 @@ public class PublishTracer<T> implements Tracer<T> {
         InstrumenterBuilder<PublishMessageMetadata, Void> builder = Instrumenter.builder(
                 getOpenTelemetry(openTelemetryInstance),
                 "io.smallrye.reactive.messaging.jetstream",
-                MessagingSpanNameExtractor.create(messagingAttributesGetter, SEND));
-        return builder.addAttributesExtractor(MessagingAttributesExtractor.create(messagingAttributesGetter, SEND))
+                MessagingSpanNameExtractor.create(messagingAttributesGetter, PUBLISH));
+        return builder.addAttributesExtractor(MessagingAttributesExtractor.create(messagingAttributesGetter, PUBLISH))
                 .addAttributesExtractor(attributesExtractor)
                 .buildProducerInstrumenter(new PublishMessageTextMapSetter());
     }
