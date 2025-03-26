@@ -46,11 +46,6 @@ public class PublishMessageAttributesExtractor implements AttributesExtractor<Pu
         }
 
         @Override
-        public String getDestinationKind(PublishMessageMetadata metadata) {
-            return "Stream";
-        }
-
-        @Override
         public boolean isTemporaryDestination(PublishMessageMetadata metadata) {
             return false;
         }

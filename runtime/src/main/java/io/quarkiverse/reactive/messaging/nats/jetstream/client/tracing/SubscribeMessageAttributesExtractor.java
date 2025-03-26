@@ -53,11 +53,6 @@ public class SubscribeMessageAttributesExtractor implements AttributesExtractor<
         }
 
         @Override
-        public String getDestinationKind(SubscribeMessageMetadata metadata) {
-            return "Stream";
-        }
-
-        @Override
         public boolean isTemporaryDestination(SubscribeMessageMetadata metadata) {
             return false;
         }
