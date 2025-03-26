@@ -177,6 +177,18 @@ mp.messaging.incoming.[channel-name].push.rate-limit,"Used to throttle the deliv
 mp.messaging.incoming.[channel-name].push.headers-only,Delivers only the headers of messages in the stream and not the bodies. Additionally adds Nats-Msg-Size header to indicate the size of the removed payload.
 |======
 
+=== Dev service configuration
+
+[format="csv",cols="2"]
+|======
+quarkus.messaging.nats.jet-stream.devservices.enabled,Enable dev services (default enabled)
+quarkus.messaging.nats.jet-stream.devservices.port,Fixed port the dev service will listen to
+quarkus.messaging.nats.jet-stream.devservices.image-name,The image to use
+quarkus.messaging.nats.jet-stream.devservices.share,Indicates if the NATS JetStream broker managed by Quarkus Dev Services is shared
+quarkus.messaging.nats.jet-stream.devservices.service-name,This property is used when you need multiple shared NATS JetStream brokers.
+
+|======
+
 == NATS JetStream
 This extension utilizes the NATS JetStream client to connect to a NATS JetStream broker.
 
