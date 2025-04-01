@@ -35,7 +35,7 @@
         <smallrye-reactive-messaging-otel.version>4.27.0</smallrye-reactive-messaging-otel.version>
         <microprofile-config-api.version>3.1</microprofile-config-api.version>
         <assertj-core.version>3.27.3</assertj-core.version>
-        <lombok.version>1.18.36</lombok.version>
+        <lombok.version>1.18.38</lombok.version>
         <opentelemetry-instrumentation-api-semconv.version>1.28.0-alpha</opentelemetry-instrumentation-api-semconv.version>
         <org.mapstruct.version>1.6.3</org.mapstruct.version>
     </properties>
