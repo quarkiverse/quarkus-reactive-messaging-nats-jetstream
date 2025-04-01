@@ -345,6 +345,11 @@ public class FetchMessagesTest {
             public Optional<Class<Data>> payloadType() {
                 return Optional.empty();
             }
+
+            @Override
+            public Optional<Duration> acknowledgeTimeout() {
+                return Optional.of(Duration.ofMillis(1000));
+            }
         };
     }
 

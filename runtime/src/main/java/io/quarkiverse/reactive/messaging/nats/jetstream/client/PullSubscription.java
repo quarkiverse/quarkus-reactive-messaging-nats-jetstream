@@ -78,7 +78,8 @@ public class PullSubscription<T> implements Subscription<T> {
             return Multi.createFrom().empty();
         } else {
             return Multi.createFrom()
-                    .item(() -> messageMapper.of(message, payloadType, context));
+                    .item(() -> messageMapper.of(message, payloadType, context,
+                            consumerConfiguration.consumerConfiguration().acknowledgeTimeout().orElse(null)));
         }
     }
 }

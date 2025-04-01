@@ -1,5 +1,6 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.mapper;
 
+import java.time.Duration;
 import java.util.List;
 
 import jakarta.enterprise.context.ApplicationScoped;
@@ -21,20 +22,22 @@ public class DefaultMessageMapper implements MessageMapper {
     public <T> SubscribeMessage<T> of(
             Message message,
             Class<T> payloadType,
-            Context context) {
+            Context context,
+            Duration timeout) {
         try {
             return payloadType != null
-                    ? new SubscribeMessage<>(message, payloadMapper.of(message, payloadType), context)
+                    ? new SubscribeMessage<>(message, payloadMapper.of(message, payloadType), context, timeout)
                     : new SubscribeMessage<>(message,
                             (T) payloadMapper.of(message).orElseGet(message::getData),
-                            context);
+                            context,
+                            timeout);
         } catch (ClassCastException e) {
             throw new RuntimeException(e);
         }
     }
 
     @Override
-    public <T> List<SubscribeMessage<T>> of(List<Message> messages, Class<T> payloadType, Context context) {
-        return messages.stream().map(message -> of(message, payloadType, context)).toList();
+    public <T> List<SubscribeMessage<T>> of(List<Message> messages, Class<T> payloadType, Context context, Duration timeout) {
+        return messages.stream().map(message -> of(message, payloadType, context, timeout)).toList();
     }
 }

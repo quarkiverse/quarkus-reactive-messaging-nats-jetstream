@@ -293,7 +293,8 @@ class DefaultConnection<T> implements Connection<T> {
     private Uni<Message<T>> transformMessage(io.nats.client.Message message, ConsumerConfiguration<T> configuration,
             Context context) {
         return Uni.createFrom()
-                .item(Unchecked.supplier(() -> messageMapper.of(message, configuration.payloadType().orElse(null), context)));
+                .item(Unchecked.supplier(() -> messageMapper.of(message, configuration.payloadType().orElse(null), context,
+                        configuration.acknowledgeTimeout().orElse(null))));
     }
 
     private Uni<ConsumerContext> addOrUpdateConsumer(ConsumerConfiguration<T> configuration) {

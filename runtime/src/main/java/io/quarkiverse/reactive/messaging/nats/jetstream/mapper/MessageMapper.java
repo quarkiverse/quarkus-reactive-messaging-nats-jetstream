@@ -1,5 +1,6 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.mapper;
 
+import java.time.Duration;
 import java.util.List;
 
 import io.nats.client.Message;
@@ -9,8 +10,8 @@ import io.vertx.mutiny.core.Context;
 public interface MessageMapper {
 
     <T> List<SubscribeMessage<T>> of(List<Message> messages,
-            Class<T> payloadType, Context context);
+            Class<T> payloadType, Context context, Duration timeout);
 
     <T> SubscribeMessage<T> of(Message message,
-            Class<T> payloadType, Context context);
+            Class<T> payloadType, Context context, Duration timeout);
 }

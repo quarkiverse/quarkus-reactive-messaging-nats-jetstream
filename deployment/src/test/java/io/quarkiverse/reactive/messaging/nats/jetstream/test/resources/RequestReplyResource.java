@@ -252,6 +252,10 @@ public class RequestReplyResource {
                 return List.of();
             }
 
+            @Override
+            public Optional<Duration> acknowledgeTimeout() {
+                return Optional.of(Duration.ofMillis(1000));
+            }
         };
     }
 }

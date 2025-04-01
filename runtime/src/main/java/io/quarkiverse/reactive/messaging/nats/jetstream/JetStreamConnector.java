@@ -55,6 +55,7 @@ import io.smallrye.reactive.messaging.health.HealthReporter;
 @ConnectorAttribute(name = "memory-storage", description = "If set, forces the consumer state to be kept in memory rather than inherit the storage type of the stream (file in this case).", direction = INCOMING, type = "Boolean")
 @ConnectorAttribute(name = "back-off", description = "The timing of re-deliveries as a comma-separated list of durations", direction = INCOMING, type = "String")
 @ConnectorAttribute(name = "retry-backoff", description = "The retry backoff in milliseconds for retry publishing messages", direction = INCOMING, type = "Long", defaultValue = "10000")
+@ConnectorAttribute(name = "acknowledge-timeout", description = "The duration in milliseconds to wait for an ack confirmation", direction = INCOMING, type = "Long")
 
 // Publish pull processor attributes
 @ConnectorAttribute(name = "pull.batch-size", description = "The size of batch of messages to be pulled in pull mode", direction = INCOMING, type = "int", defaultValue = "100")

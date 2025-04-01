@@ -165,6 +165,7 @@ mp.messaging.incoming.[channel-name].replicas,"Sets the number of replicas for t
 mp.messaging.incoming.[channel-name].memory-storage,"If set, forces the consumer state to be kept in memory rather than inherit the storage type of the stream (file in this case)."
 mp.messaging.incoming.[channel-name].back-off,The timing of re-deliveries as a comma-separated list of durations
 mp.messaging.incoming.[channel-name].retry-backoff,The retry backoff in milliseconds for retry publishing messages
+mp.messaging.incoming.[channel-name].acknowledge-timeout,The duration in milliseconds to wait for an ack confirmation
 mp.messaging.incoming.[channel-name].pull.batch-size,The size of batch of messages to be pulled in pull mode
 mp.messaging.incoming.[channel-name].pull.max-waiting,The maximum number of waiting pull requests
 mp.messaging.incoming.[channel-name].pull.max-expires,The maximum duration a single pull request will wait for messages to be available to pull. NATS require this to be 1000ms or above. Default is 3000ms.
