@@ -24,7 +24,7 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.smallrye.reactive.messaging.providers.connectors.ExecutionHolder;
 
-class ReactiveMesssagingNatsJetstreamProcessor {
+class ReactiveMessagingNatsJetstreamProcessor {
 
     static final String FEATURE = "reactive-messsaging-nats-jetstream";
 

@@ -1,6 +1,6 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.deployment;
 
-import static io.quarkiverse.reactive.messaging.nats.jetstream.deployment.ReactiveMesssagingNatsJetstreamProcessor.FEATURE;
+import static io.quarkiverse.reactive.messaging.nats.jetstream.deployment.ReactiveMessagingNatsJetstreamProcessor.FEATURE;
 
 import java.io.Closeable;
 import java.time.Duration;
@@ -34,8 +34,8 @@ import io.quarkus.runtime.LaunchMode;
  * It uses <a href="https://hub.docker.com/nats">NATS</a> as image.
  */
 @BuildSteps(onlyIfNot = IsNormal.class, onlyIf = DevServicesConfig.Enabled.class)
-public class ReactiveMesssagingNatsJetstreamDevServicesProcessor {
-    private static final Logger logger = Logger.getLogger(ReactiveMesssagingNatsJetstreamDevServicesProcessor.class);
+public class ReactiveMessagingNatsJetstreamDevServicesProcessor {
+    private static final Logger logger = Logger.getLogger(ReactiveMessagingNatsJetstreamDevServicesProcessor.class);
 
     /**
      * Label to add to shared Dev Service for pulsar running in containers.
@@ -55,7 +55,7 @@ public class ReactiveMesssagingNatsJetstreamDevServicesProcessor {
     public DevServicesResultBuildItem startJetStreamDevService(
             DockerStatusBuildItem dockerStatusBuildItem,
             LaunchModeBuildItem launchMode,
-            ReactiveMesssagingNatsJetstreamDevServicesBuildTimeConfig devServicesBuildTimeConfig,
+            ReactiveMessagingNatsJetstreamDevServicesBuildTimeConfig devServicesBuildTimeConfig,
             Optional<ConsoleInstalledBuildItem> consoleInstalledBuildItem,
             CuratedApplicationShutdownBuildItem closeBuildItem,
             LoggingSetupBuildItem loggingSetupBuildItem,
@@ -185,7 +185,7 @@ public class ReactiveMesssagingNatsJetstreamDevServicesProcessor {
         private final boolean shared;
         private final String serviceName;
 
-        public JetStreamDevServiceCfg(ReactiveMesssagingNatsJetstreamDevServicesBuildTimeConfig devServicesConfig) {
+        public JetStreamDevServiceCfg(ReactiveMessagingNatsJetstreamDevServicesBuildTimeConfig devServicesConfig) {
             this.devServicesEnabled = devServicesConfig.enabled().orElse(true);
             this.imageName = devServicesConfig.imageName();
             this.fixedExposedPort = devServicesConfig.port().orElse(0);

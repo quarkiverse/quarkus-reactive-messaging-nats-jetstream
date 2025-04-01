@@ -9,7 +9,7 @@ import io.smallrye.config.WithDefault;
 
 @ConfigMapping(prefix = "quarkus.messaging.nats.jet-stream.devservices")
 @ConfigRoot(phase = ConfigPhase.BUILD_TIME)
-public interface ReactiveMesssagingNatsJetstreamDevServicesBuildTimeConfig {
+public interface ReactiveMessagingNatsJetstreamDevServicesBuildTimeConfig {
 
     /**
      * If Dev Services for NATS JetStream has been explicitly enabled or disabled. Dev Services are generally enabled
