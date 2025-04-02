@@ -3,6 +3,7 @@ package io.quarkiverse.reactive.messaging.nats.jetstream.client.api;
 import static io.quarkiverse.reactive.messaging.nats.jetstream.mapper.HeaderMapper.toMessageHeaders;
 import static io.smallrye.reactive.messaging.providers.locals.ContextAwareMessage.captureContextMetadata;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -18,20 +19,25 @@ import io.smallrye.reactive.messaging.providers.locals.LocalContextMetadata;
 import io.vertx.mutiny.core.Context;
 
 public class SubscribeMessage<T> implements JetStreamMessage<T> {
+    public static Duration DEFAULT_ACK_TIMEOUT = Duration.ofSeconds(5);
+
     private final Message message;
     private Metadata metadata;
     private final SubscribeMessageMetadata subscribeMessageMetadata;
     private final T payload;
     private final Context context;
+    private final Duration timeout;
 
     public SubscribeMessage(final Message message,
             final T payload,
-            Context context) {
+            final Context context,
+            final Duration timeout) {
         this.message = message;
         this.subscribeMessageMetadata = SubscribeMessageMetadata.of(message);
         this.metadata = captureContextMetadata(subscribeMessageMetadata);
         this.payload = payload;
         this.context = context;
+        this.timeout = timeout;
     }
 
     @Override
@@ -89,7 +95,7 @@ public class SubscribeMessage<T> implements JetStreamMessage<T> {
     public CompletionStage<Void> ack() {
         return VertxContext.runOnContext(context.getDelegate(), f -> {
             try {
-                message.ack();
+                message.ackSync(timeout);
                 this.runOnMessageContext(() -> f.complete(null));
             } catch (Exception e) {
                 this.runOnMessageContext(() -> f.completeExceptionally(e));

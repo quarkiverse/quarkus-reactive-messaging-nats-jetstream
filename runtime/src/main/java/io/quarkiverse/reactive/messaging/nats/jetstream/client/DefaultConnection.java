@@ -1,6 +1,7 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client;
 
 import static io.nats.client.Connection.Status.CONNECTED;
+import static io.quarkiverse.reactive.messaging.nats.jetstream.client.api.SubscribeMessage.DEFAULT_ACK_TIMEOUT;
 
 import java.io.IOException;
 import java.time.Duration;
@@ -293,7 +294,8 @@ class DefaultConnection<T> implements Connection<T> {
     private Uni<Message<T>> transformMessage(io.nats.client.Message message, ConsumerConfiguration<T> configuration,
             Context context) {
         return Uni.createFrom()
-                .item(Unchecked.supplier(() -> messageMapper.of(message, configuration.payloadType().orElse(null), context)));
+                .item(Unchecked.supplier(() -> messageMapper.of(message, configuration.payloadType().orElse(null), context,
+                        configuration.acknowledgeTimeout().orElse(DEFAULT_ACK_TIMEOUT))));
     }
 
     private Uni<ConsumerContext> addOrUpdateConsumer(ConsumerConfiguration<T> configuration) {

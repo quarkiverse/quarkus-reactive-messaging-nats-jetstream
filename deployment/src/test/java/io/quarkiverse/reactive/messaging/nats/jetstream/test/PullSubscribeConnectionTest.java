@@ -199,6 +199,11 @@ public class PullSubscribeConnectionTest {
                     public Optional<Class<Object>> payloadType() {
                         return Optional.of(Object.class);
                     }
+
+                    @Override
+                    public Optional<Duration> acknowledgeTimeout() {
+                        return Optional.of(Duration.ofMillis(1000));
+                    }
                 };
             }
         };

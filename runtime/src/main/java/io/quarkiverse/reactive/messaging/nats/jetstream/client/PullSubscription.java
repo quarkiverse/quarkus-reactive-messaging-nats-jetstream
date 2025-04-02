@@ -1,5 +1,7 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client;
 
+import static io.quarkiverse.reactive.messaging.nats.jetstream.client.api.SubscribeMessage.DEFAULT_ACK_TIMEOUT;
+
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -78,7 +80,8 @@ public class PullSubscription<T> implements Subscription<T> {
             return Multi.createFrom().empty();
         } else {
             return Multi.createFrom()
-                    .item(() -> messageMapper.of(message, payloadType, context));
+                    .item(() -> messageMapper.of(message, payloadType, context,
+                            consumerConfiguration.consumerConfiguration().acknowledgeTimeout().orElse(DEFAULT_ACK_TIMEOUT)));
         }
     }
 }

@@ -189,6 +189,11 @@ public class DefaultMessagePushPublisherConfiguration<T> implements MessagePushP
                 return configuration.getPayloadType().map(DefaultPayloadMapper::loadClass);
             }
 
+            @Override
+            public Optional<Duration> acknowledgeTimeout() {
+                return configuration.getAcknowledgeTimeout().map(Duration::ofMillis);
+            }
+
             private List<Duration> getBackOff(List<String> backoff) {
                 if (backoff == null || backoff.isEmpty()) {
                     return List.of();

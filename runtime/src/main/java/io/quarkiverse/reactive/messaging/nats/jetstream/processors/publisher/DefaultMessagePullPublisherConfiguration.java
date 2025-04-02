@@ -170,6 +170,11 @@ public class DefaultMessagePullPublisherConfiguration<T> implements MessagePullP
                 return configuration.getPayloadType().map(DefaultPayloadMapper::loadClass);
             }
 
+            @Override
+            public Optional<Duration> acknowledgeTimeout() {
+                return configuration.getAcknowledgeTimeout().map(Duration::ofMillis);
+            }
+
             private List<Duration> of(List<String> values) {
                 final var converter = new DurationConverter();
                 if (values == null || values.isEmpty()) {

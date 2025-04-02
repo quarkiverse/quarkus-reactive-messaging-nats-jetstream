@@ -186,6 +186,11 @@ public class MessagePublisherProcessorTest {
                     public Optional<Class<Object>> payloadType() {
                         return Optional.empty();
                     }
+
+                    @Override
+                    public Optional<Duration> acknowledgeTimeout() {
+                        return Optional.of(Duration.ofMillis(1000));
+                    }
                 };
             }
         });

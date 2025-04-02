@@ -53,4 +53,6 @@ public interface ConsumerConfiguration<T> {
     Optional<ZonedDateTime> pauseUntil();
 
     Optional<Class<T>> payloadType();
+
+    Optional<Duration> acknowledgeTimeout();
 }
