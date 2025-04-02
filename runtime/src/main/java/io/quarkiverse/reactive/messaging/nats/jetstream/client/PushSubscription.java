@@ -1,5 +1,7 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client;
 
+import static io.quarkiverse.reactive.messaging.nats.jetstream.client.api.SubscribeMessage.DEFAULT_ACK_TIMEOUT;
+
 import java.time.Duration;
 
 import org.eclipse.microprofile.reactive.messaging.Message;
@@ -68,7 +70,7 @@ public class PushSubscription<T> implements Subscription<T> {
         })
                 .emitOn(context::runOnContext)
                 .map(message -> transformMessage(message, payloadType, context,
-                        consumerConfiguration.consumerConfiguration().acknowledgeTimeout().orElse(null)))
+                        consumerConfiguration.consumerConfiguration().acknowledgeTimeout().orElse(DEFAULT_ACK_TIMEOUT)))
                 .onItem().transformToUniAndMerge(message -> tracer.withTrace(message, msg -> msg));
     }
 

@@ -19,6 +19,8 @@ import io.smallrye.reactive.messaging.providers.locals.LocalContextMetadata;
 import io.vertx.mutiny.core.Context;
 
 public class SubscribeMessage<T> implements JetStreamMessage<T> {
+    public static Duration DEFAULT_ACK_TIMEOUT = Duration.ofSeconds(5);
+
     private final Message message;
     private Metadata metadata;
     private final SubscribeMessageMetadata subscribeMessageMetadata;
@@ -93,11 +95,7 @@ public class SubscribeMessage<T> implements JetStreamMessage<T> {
     public CompletionStage<Void> ack() {
         return VertxContext.runOnContext(context.getDelegate(), f -> {
             try {
-                if (timeout == null) {
-                    message.ack();
-                } else {
-                    message.ackSync(timeout);
-                }
+                message.ackSync(timeout);
                 this.runOnMessageContext(() -> f.complete(null));
             } catch (Exception e) {
                 this.runOnMessageContext(() -> f.completeExceptionally(e));
