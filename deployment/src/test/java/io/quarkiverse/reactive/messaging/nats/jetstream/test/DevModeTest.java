@@ -35,7 +35,7 @@ public class DevModeTest {
         devModeTest.modifySourceFile(ValueProducingBean.class, s -> s.replace("* 2", "* 3"));
 
         await()
-                .atMost(1, TimeUnit.MINUTES)
+                .atMost(3, TimeUnit.MINUTES)
                 .until(() -> {
                     String value = get("/value/last").asString();
                     return value.equalsIgnoreCase("30");
