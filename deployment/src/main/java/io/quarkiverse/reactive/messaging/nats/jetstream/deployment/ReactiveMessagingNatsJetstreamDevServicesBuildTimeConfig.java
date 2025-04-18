@@ -30,7 +30,7 @@ public interface ReactiveMessagingNatsJetstreamDevServicesBuildTimeConfig {
      *
      * Check https://hub.docker.com/_/nats to find the available versions.
      */
-    @WithDefault("nats:2.10")
+    @WithDefault("nats:2.11")
     String imageName();
 
     /**
