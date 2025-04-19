@@ -9,7 +9,7 @@ import org.testcontainers.utility.DockerImageName;
 
 public class NatsJetStreamContainer extends GenericContainer<NatsJetStreamContainer> {
     private static final Logger logger = Logger.getLogger(NatsJetStreamContainer.class);
-    public static final DockerImageName NATS_IMAGE = DockerImageName.parse("nats:2.10");
+    public static final DockerImageName NATS_IMAGE = DockerImageName.parse("nats:2.11");
 
     static final Integer NATS_PORT = 4222;
     static final Integer NATS_HTTP_PORT = 8222;
