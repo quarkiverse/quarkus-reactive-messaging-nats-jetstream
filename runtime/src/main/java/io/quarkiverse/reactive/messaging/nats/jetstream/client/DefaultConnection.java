@@ -68,6 +68,11 @@ class DefaultConnection<T> implements Connection<T> {
     }
 
     @Override
+    public io.nats.client.Connection getNatsConnection() {
+        return connection;
+    }
+
+    @Override
     public boolean isConnected() {
         return CONNECTED.equals(connection.getStatus());
     }
