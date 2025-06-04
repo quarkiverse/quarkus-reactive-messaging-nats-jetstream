@@ -12,6 +12,8 @@ import io.smallrye.mutiny.Uni;
 
 public interface Connection<T> extends AutoCloseable {
 
+    io.nats.client.Connection getNatsConnection();
+
     boolean isConnected();
 
     List<ConnectionListener> listeners();
