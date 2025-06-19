@@ -2,6 +2,7 @@ package io.quarkiverse.reactive.messaging.nats.jetstream.client;
 
 import java.time.ZonedDateTime;
 import java.util.List;
+import java.util.Map;
 
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.*;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.StreamConfiguration;
@@ -11,7 +12,7 @@ public interface StreamManagement {
 
     Uni<Consumer> getConsumer(String stream, String consumerName);
 
-    Uni<List<String>> getStreams();
+    Uni<List<String>> getStreamNames();
 
     Uni<List<String>> getSubjects(String streamName);
 
@@ -48,5 +49,8 @@ public interface StreamManagement {
 
     Uni<Void> removeSubject(String streamName, String subject);
 
-    Uni<List<StreamResult>> addStreams(List<StreamSetupConfiguration> streamConfigurations);
+    /**
+     * Adds streams. The map key is the name of the stream
+     */
+    Uni<List<StreamResult>> addStreams(Map<String, ? extends StreamConfiguration> streamConfigurations);
 }

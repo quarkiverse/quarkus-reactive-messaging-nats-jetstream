@@ -1,24 +1,27 @@
-package io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration;
+package io.quarkiverse.reactive.messaging.nats.jetstream.client;
+
+import io.nats.client.api.AckPolicy;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ConsumerConfiguration;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.PullConsumerConfiguration;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.PushConsumerConfiguration;
 
 import java.time.Duration;
 import java.util.List;
 
-import io.nats.client.api.AckPolicy;
+public abstract class AbstractConsumer {
 
-public class ConsumerConfigurationFactory {
-
-    public <T> io.nats.client.api.ConsumerConfiguration create(final ConsumerConfiguration<T> configuration) {
-        return builder(configuration).build();
+    protected <T> io.nats.client.api.ConsumerConfiguration createConsumerConfiguration(final String name, final ConsumerConfiguration<T> configuration) {
+        return builder(name, configuration).build();
     }
 
-    public <T> io.nats.client.api.ConsumerConfiguration create(final PullConsumerConfiguration<T> configuration) {
-        var builder = builder(configuration.consumerConfiguration());
+    protected <T> io.nats.client.api.ConsumerConfiguration createConsumerConfiguration(final String name, final PullConsumerConfiguration<T> configuration) {
+        var builder = builder(name, configuration);
         builder = configuration.maxWaiting().map(builder::maxPullWaiting).orElse(builder);
         return builder.build();
     }
 
-    public <T> io.nats.client.api.ConsumerConfiguration create(final PushConsumerConfiguration<T> configuration) {
-        var builder = builder(configuration.consumerConfiguration());
+    protected <T> io.nats.client.api.ConsumerConfiguration createConsumerConfiguration(final String name, final PushConsumerConfiguration<T> configuration) {
+        var builder = builder(name, configuration);
         builder = configuration.flowControl().map(builder::flowControl).orElse(builder);
         builder = configuration.idleHeartbeat().map(builder::idleHeartbeat).orElse(builder);
         builder = configuration.rateLimit().map(builder::rateLimit).orElse(builder);
@@ -27,11 +30,11 @@ public class ConsumerConfigurationFactory {
         return builder.build();
     }
 
-    private <T> io.nats.client.api.ConsumerConfiguration.Builder builder(final ConsumerConfiguration<T> configuration) {
+    private <T> io.nats.client.api.ConsumerConfiguration.Builder builder(final String name, final ConsumerConfiguration<T> configuration) {
         var builder = io.nats.client.api.ConsumerConfiguration.builder();
         builder = configuration.durable().map(builder::durable).orElse(builder);
         builder = builder.filterSubjects(List.of(configuration.subject()));
-        builder = builder.name(configuration.name());
+        builder = builder.name(name);
         builder = builder.ackPolicy(AckPolicy.Explicit);
         builder = configuration.ackWait().map(builder::ackWait).orElse(builder);
         builder = configuration.deliverPolicy().map(builder::deliverPolicy).orElse(builder);
@@ -51,8 +54,8 @@ public class ConsumerConfigurationFactory {
         if (!configuration.backoff().isEmpty()) {
             builder = builder.backoff(configuration.backoff().toArray(new Duration[0]));
         }
-        builder = configuration.ackPolicy().map(builder::ackPolicy).orElse(builder);
         builder = configuration.pauseUntil().map(builder::pauseUntil).orElse(builder);
         return builder;
     }
+
 }

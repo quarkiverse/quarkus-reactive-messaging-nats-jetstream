@@ -17,7 +17,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.nats.client.api.AckPolicy;
 import io.nats.client.api.DeliverPolicy;
 import io.nats.client.api.ReplayPolicy;
-import io.quarkiverse.reactive.messaging.nats.NatsConfiguration;
+import io.quarkiverse.reactive.messaging.nats.jetstream.NatsConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.ConnectionFactory;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.DefaultConnectionListener;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ConnectionConfiguration;

@@ -1,6 +1,7 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client;
 
 import static io.nats.client.Connection.Status.CONNECTED;
+import static io.nats.client.Options.DEFAULT_RECONNECT_WAIT;
 import static io.quarkiverse.reactive.messaging.nats.jetstream.client.api.SubscribeMessage.DEFAULT_ACK_TIMEOUT;
 
 import java.io.IOException;
@@ -11,6 +12,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import io.quarkus.tls.TlsConfiguration;
 import org.eclipse.microprofile.reactive.messaging.Message;
 
 import io.nats.client.*;
@@ -35,7 +37,7 @@ import io.vertx.mutiny.core.Vertx;
 import lombok.extern.jbosslog.JBossLog;
 
 @JBossLog
-class DefaultConnection<T> implements Connection<T> {
+class DefaultConnection<T> extends AbstractConsumer implements Connection<T> {
     private final io.nats.client.Connection connection;
     private final List<ConnectionListener> listeners;
     private final StreamStateMapper streamStateMapper;
@@ -104,25 +106,17 @@ class DefaultConnection<T> implements Connection<T> {
     }
 
     @Override
-    public Uni<Message<T>> publish(Message<T> message, PublishConfiguration publishConfiguration,
-            ConsumerConfiguration<T> consumerConfiguration) {
-        return addConsumer(consumerConfiguration)
-                .onItem().invoke(consumer -> log.infof("Consumer created: %s", consumer))
-                .onItem().transformToUni(ignore -> publish(message, publishConfiguration));
-    }
-
-    @Override
-    public Uni<Consumer> addConsumer(ConsumerConfiguration<T> configuration) {
-        return context().executeBlocking(addOrUpdateConsumer(configuration)
+    public Uni<Consumer> addConsumer(String consumerName, ConsumerConfiguration<T> configuration) {
+        return context().executeBlocking(addOrUpdateConsumer(consumerName, configuration)
                 .onItem()
                 .transform(Unchecked.function(consumerContext -> consumerMapper.of(consumerContext.getConsumerInfo()))))
                 .onFailure().transform(SystemException::new);
     }
 
     @Override
-    public Uni<Message<T>> next(ConsumerConfiguration<T> configuration, Duration timeout) {
+    public Uni<Message<T>> next(String consumerName, ConsumerConfiguration<T> configuration, Duration timeout) {
         final var context = context();
-        return context.executeBlocking(addOrUpdateConsumer(configuration)
+        return context.executeBlocking(addOrUpdateConsumer(consumerName, configuration)
                 .onItem()
                 .transformToUni(
                         consumerContext -> Uni.createFrom().item(Unchecked.supplier(() -> consumerContext.next(timeout))))
@@ -141,9 +135,9 @@ class DefaultConnection<T> implements Connection<T> {
 
     @SuppressWarnings("ReactiveStreamsUnusedPublisher")
     @Override
-    public Multi<Message<T>> fetch(FetchConsumerConfiguration<T> configuration) {
+    public Multi<Message<T>> fetch(String consumerName, FetchConsumerConfiguration<T> configuration) {
         final var context = context();
-        return addOrUpdateConsumer(configuration.consumerConfiguration())
+        return addOrUpdateConsumer(consumerName, configuration.consumerConfiguration())
                 .onItem().transformToMulti(consumerContext -> fetchMessages(consumerContext, configuration, context))
                 .onItem().transformToUniAndMerge(message -> tracerFactory.<T> create(TracerType.Subscribe).withTrace(message,
                         new AttachContextTraceSupplier<>()))
@@ -162,10 +156,10 @@ class DefaultConnection<T> implements Connection<T> {
     }
 
     @Override
-    public Uni<Subscription<T>> subscribe(PushConsumerConfiguration<T> configuration) {
+    public Uni<Subscription<T>> subscribe(String consumerName, PushConsumerConfiguration<T> configuration) {
         final var context = context();
         return context.executeBlocking(Uni.createFrom().<Subscription<T>> item(Unchecked.supplier(() -> {
-            final var subscription = new PushSubscription<>(connection, configuration, messageMapper, tracerFactory, context);
+            final var subscription = new PushSubscription<>(consumerName, connection, configuration, messageMapper, tracerFactory, context);
             subscriptions.put(configuration.subject(), subscription);
             return subscription;
         })))
@@ -173,14 +167,14 @@ class DefaultConnection<T> implements Connection<T> {
     }
 
     @Override
-    public Uni<Subscription<T>> subscribe(PullConsumerConfiguration<T> configuration) {
+    public Uni<Subscription<T>> subscribe(String consumerName, PullConsumerConfiguration<T> configuration) {
         final var context = context();
-        return context.executeBlocking(addOrUpdateConsumer(configuration.consumerConfiguration())
+        return context.executeBlocking(addOrUpdateConsumer(consumerName, configuration))
                 .onItem()
                 .transform(consumerContext -> new PullSubscription<>(configuration, consumerContext, messageMapper,
-                        tracerFactory, context)))
+                        tracerFactory, context))
                 .onItem().<Subscription<T>> transform(subscription -> {
-                    subscriptions.put(configuration.consumerConfiguration().subject(), subscription);
+                    subscriptions.put(configuration.subject(), subscription);
                     return subscription;
                 })
                 .onFailure().transform(SubscribeException::new);
@@ -298,11 +292,10 @@ class DefaultConnection<T> implements Connection<T> {
                         configuration.acknowledgeTimeout().orElse(DEFAULT_ACK_TIMEOUT))));
     }
 
-    private Uni<ConsumerContext> addOrUpdateConsumer(ConsumerConfiguration<T> configuration) {
+    private Uni<ConsumerContext> addOrUpdateConsumer(String consumerName, ConsumerConfiguration<T> configuration) {
         return Uni.createFrom().item(Unchecked.supplier(() -> {
             try {
-                final var factory = new ConsumerConfigurationFactory();
-                final var consumerConfiguration = factory.create(configuration);
+                final var consumerConfiguration = createConsumerConfiguration(consumerName, configuration);
                 final var streamContext = connection.getStreamContext(configuration.stream());
                 return streamContext.createOrUpdateConsumer(consumerConfiguration);
             } catch (Exception failure) {
@@ -318,11 +311,50 @@ class DefaultConnection<T> implements Connection<T> {
     private io.nats.client.Connection connect(ConnectionConfiguration configuration,
             TlsConfigurationRegistry tlsConfigurationRegistry) throws ConnectionException {
         try {
-            final var factory = new ConnectionOptionsFactory();
-            final var options = factory.create(configuration, new InternalConnectionListener<>(this), tlsConfigurationRegistry);
+            final var options = createConnectionOptions(configuration, new InternalConnectionListener<>(this), tlsConfigurationRegistry);
             return Nats.connect(options);
         } catch (Exception failure) {
             throw new ConnectionException(failure);
         }
+    }
+
+    public Options createConnectionOptions(final ConnectionConfiguration configuration,
+                          final io.nats.client.ConnectionListener connectionListener,
+                          final TlsConfigurationRegistry tlsConfigurationRegistry)
+            throws Exception {
+        final var optionsBuilder = new Options.Builder();
+        final var servers = configuration.servers();
+        optionsBuilder.servers(servers.toArray(new String[0]));
+        optionsBuilder.maxReconnects(configuration.connectionAttempts().orElse(DEFAULT_MAX_RECONNECT));
+        optionsBuilder.connectionTimeout(configuration.connectionBackoff().orElse(DEFAULT_RECONNECT_WAIT));
+        if (connectionListener != null) {
+            optionsBuilder.connectionListener(connectionListener);
+        }
+        optionsBuilder.errorListener(getErrorListener(configuration));
+        configuration.username()
+                .ifPresent(username -> optionsBuilder.userInfo(username, configuration.password().orElse("")));
+        configuration.token().map(String::toCharArray).ifPresent(optionsBuilder::token);
+        configuration.credentialPath().ifPresent(optionsBuilder::credentialPath);
+        configuration.bufferSize().ifPresent(optionsBuilder::bufferSize);
+        configuration.connectionTimeout().ifPresent(optionsBuilder::connectionTimeout);
+        if (configuration.sslEnabled().orElse(false)) {
+            optionsBuilder.opentls();
+            final var tlsConfiguration = configuration.tlsConfigurationName()
+                    .flatMap(tlsConfigurationRegistry::get)
+                    .orElseGet(() -> getDefaultTlsConfiguration(tlsConfigurationRegistry));
+            optionsBuilder.sslContext(tlsConfiguration.createSSLContext());
+        }
+        configuration.tlsAlgorithm().ifPresent(optionsBuilder::tlsAlgorithm);
+        return optionsBuilder.build();
+    }
+
+    private ErrorListener getErrorListener(ConnectionConfiguration configuration) {
+        return configuration.errorListener()
+                .orElseGet(DefaultErrorListener::new);
+    }
+
+    private TlsConfiguration getDefaultTlsConfiguration(TlsConfigurationRegistry tlsConfigurationRegistry) {
+        return tlsConfigurationRegistry.getDefault().orElseThrow(
+                () -> new IllegalStateException("No Quarkus TLS configuration found for NATS JetStream connection"));
     }
 }

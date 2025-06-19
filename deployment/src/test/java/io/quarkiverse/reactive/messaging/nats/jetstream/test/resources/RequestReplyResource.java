@@ -22,7 +22,7 @@ import org.eclipse.microprofile.reactive.messaging.Metadata;
 import io.nats.client.api.AckPolicy;
 import io.nats.client.api.DeliverPolicy;
 import io.nats.client.api.ReplayPolicy;
-import io.quarkiverse.reactive.messaging.nats.NatsConfiguration;
+import io.quarkiverse.reactive.messaging.nats.jetstream.NatsConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.Connection;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.ConnectionFactory;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.StreamManagement;

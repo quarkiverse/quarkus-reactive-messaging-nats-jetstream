@@ -32,7 +32,7 @@ public class PullSubscription<T> implements Subscription<T> {
     @SuppressWarnings("ReactiveStreamsUnusedPublisher")
     @Override
     public Multi<Message<T>> subscribe() {
-        Class<T> payloadType = consumerConfiguration.consumerConfiguration().payloadType().orElse(null);
+        Class<T> payloadType = consumerConfiguration.payloadType().orElse(null);
         final var tracer = tracerFactory.<T> create(TracerType.Subscribe);
         ExecutorService pullExecutor = Executors.newSingleThreadExecutor(JetstreamWorkerThread::new);
         return Multi.createBy().repeating()
@@ -66,10 +66,10 @@ public class PullSubscription<T> implements Subscription<T> {
                 emitter.complete(Optional.empty());
             } catch (InterruptedException e) {
                 emitter.fail(new PullException(String.format("The reader was interrupted for stream: %s",
-                        consumerConfiguration.consumerConfiguration().stream()), e));
+                        consumerConfiguration.stream()), e));
             } catch (Exception exception) {
                 emitter.fail(new PullException(String.format("Error reading next message from stream: %s",
-                        consumerConfiguration.consumerConfiguration().stream()), exception));
+                        consumerConfiguration.stream()), exception));
             }
         });
     }
@@ -81,7 +81,7 @@ public class PullSubscription<T> implements Subscription<T> {
         } else {
             return Multi.createFrom()
                     .item(() -> messageMapper.of(message, payloadType, context,
-                            consumerConfiguration.consumerConfiguration().acknowledgeTimeout().orElse(DEFAULT_ACK_TIMEOUT)));
+                            consumerConfiguration.acknowledgeTimeout().orElse(DEFAULT_ACK_TIMEOUT)));
         }
     }
 }

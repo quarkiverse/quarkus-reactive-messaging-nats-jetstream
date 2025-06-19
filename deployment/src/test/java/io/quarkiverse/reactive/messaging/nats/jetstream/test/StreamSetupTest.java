@@ -16,7 +16,7 @@ import io.nats.client.api.CompressionOption;
 import io.nats.client.api.DiscardPolicy;
 import io.nats.client.api.RetentionPolicy;
 import io.nats.client.api.StorageType;
-import io.quarkiverse.reactive.messaging.nats.NatsConfiguration;
+import io.quarkiverse.reactive.messaging.nats.jetstream.NatsConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.ConnectionFactory;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.DefaultConnectionListener;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.StreamSetupConfiguration;

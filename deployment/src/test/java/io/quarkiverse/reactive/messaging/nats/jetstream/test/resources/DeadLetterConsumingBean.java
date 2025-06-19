@@ -13,7 +13,7 @@ import org.eclipse.microprofile.reactive.messaging.Incoming;
 import org.eclipse.microprofile.reactive.messaging.Message;
 import org.jboss.logging.Logger;
 
-import io.quarkiverse.reactive.messaging.nats.NatsConfiguration;
+import io.quarkiverse.reactive.messaging.nats.jetstream.NatsConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.Connection;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.ConnectionFactory;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.DefaultConnectionListener;

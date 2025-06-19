@@ -1,6 +1,6 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.deployment;
 
-import static io.quarkiverse.reactive.messaging.nats.jetstream.deployment.ReactiveMessagingNatsJetstreamProcessor.FEATURE;
+import static io.quarkiverse.reactive.messaging.nats.jetstream.deployment.JetStreamProcessor.FEATURE;
 
 import java.io.Closeable;
 import java.time.Duration;
@@ -34,8 +34,8 @@ import io.quarkus.runtime.LaunchMode;
  * It uses <a href="https://hub.docker.com/nats">NATS</a> as image.
  */
 @BuildSteps(onlyIfNot = IsNormal.class, onlyIf = DevServicesConfig.Enabled.class)
-public class ReactiveMessagingNatsJetstreamDevServicesProcessor {
-    private static final Logger logger = Logger.getLogger(ReactiveMessagingNatsJetstreamDevServicesProcessor.class);
+public class JetStreamDevServicesProcessor {
+    private static final Logger logger = Logger.getLogger(JetStreamDevServicesProcessor.class);
 
     /**
      * Label to add to shared Dev Service for pulsar running in containers.
@@ -44,7 +44,7 @@ public class ReactiveMessagingNatsJetstreamDevServicesProcessor {
     private static final String DEV_SERVICE_LABEL = "quarkus-dev-service-jetstream";
 
     private static final ContainerLocator jetStreamContainerLocator = new ContainerLocator(DEV_SERVICE_LABEL,
-            NatsJetStreamContainer.NATS_PORT);
+            JetStreamContainer.NATS_PORT);
 
     static volatile RunningDevService devService;
     static volatile boolean first = true;
@@ -55,7 +55,7 @@ public class ReactiveMessagingNatsJetstreamDevServicesProcessor {
     public DevServicesResultBuildItem startJetStreamDevService(
             DockerStatusBuildItem dockerStatusBuildItem,
             LaunchModeBuildItem launchMode,
-            ReactiveMessagingNatsJetstreamDevServicesBuildTimeConfig devServicesBuildTimeConfig,
+            JetStreamDevServicesBuildTimeConfig devServicesBuildTimeConfig,
             Optional<ConsoleInstalledBuildItem> consoleInstalledBuildItem,
             CuratedApplicationShutdownBuildItem closeBuildItem,
             LoggingSetupBuildItem loggingSetupBuildItem,
@@ -148,14 +148,14 @@ public class ReactiveMessagingNatsJetstreamDevServicesProcessor {
 
         final Supplier<RunningDevService> defaultJetStreamBrokerSupplier = () -> {
             // Starting the broker
-            NatsJetStreamContainer container = new NatsJetStreamContainer(DockerImageName.parse(config.imageName)
+            JetStreamContainer container = new JetStreamContainer(DockerImageName.parse(config.imageName)
                     .asCompatibleSubstituteFor("nats"))
                     .withNetwork(Network.SHARED);
             if (launchMode.getLaunchMode() == LaunchMode.DEVELOPMENT) { // Only adds the label in dev mode.
                 container.withLabel(DEV_SERVICE_LABEL, config.serviceName);
             }
             if (config.fixedExposedPort != 0) {
-                container.withPort(config.fixedExposedPort);
+                container = container.withPort(config.fixedExposedPort);
             }
             timeout.ifPresent(container::withStartupTimeout);
             container.start();
@@ -172,8 +172,8 @@ public class ReactiveMessagingNatsJetstreamDevServicesProcessor {
     private RunningDevService getRunningService(String containerId, Closeable closeable, String serverUrl) {
         Map<String, String> configMap = new HashMap<>();
         configMap.put("quarkus.messaging.nats.servers", serverUrl);
-        configMap.put("quarkus.messaging.nats.username", NatsJetStreamContainer.USERNAME);
-        configMap.put("quarkus.messaging.nats.password", NatsJetStreamContainer.PASSWORD);
+        configMap.put("quarkus.messaging.nats.username", JetStreamContainer.USERNAME);
+        configMap.put("quarkus.messaging.nats.password", JetStreamContainer.PASSWORD);
         configMap.put("quarkus.messaging.nats.ssl-enabled", "false");
         return new RunningDevService(FEATURE, containerId, closeable, configMap);
     }
@@ -185,7 +185,7 @@ public class ReactiveMessagingNatsJetstreamDevServicesProcessor {
         private final boolean shared;
         private final String serviceName;
 
-        public JetStreamDevServiceCfg(ReactiveMessagingNatsJetstreamDevServicesBuildTimeConfig devServicesConfig) {
+        public JetStreamDevServiceCfg(JetStreamDevServicesBuildTimeConfig devServicesConfig) {
             this.devServicesEnabled = devServicesConfig.enabled().orElse(true);
             this.imageName = devServicesConfig.imageName();
             this.fixedExposedPort = devServicesConfig.port().orElse(0);

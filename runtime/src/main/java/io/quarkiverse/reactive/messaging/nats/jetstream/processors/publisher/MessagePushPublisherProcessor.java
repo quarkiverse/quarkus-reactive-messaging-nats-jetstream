@@ -2,6 +2,7 @@ package io.quarkiverse.reactive.messaging.nats.jetstream.processors.publisher;
 
 import java.time.Duration;
 
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.PushConsumerConfiguration;
 import org.eclipse.microprofile.reactive.messaging.Message;
 
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.Connection;
@@ -11,28 +12,23 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.Con
 import io.smallrye.mutiny.Multi;
 
 public class MessagePushPublisherProcessor<T> extends MessagePublisherProcessor<T> {
-    private final MessagePushPublisherConfiguration<T> configuration;
+    private final PushConsumerConfiguration<T> configuration;
+    private final String consumerName;
 
-    public MessagePushPublisherProcessor(final ConnectionFactory connectionFactory,
-            final ConnectionConfiguration connectionConfiguration,
-            final MessagePushPublisherConfiguration<T> configuration) {
-        super(connectionFactory, connectionConfiguration);
+    public MessagePushPublisherProcessor(final String channel,
+                                         final ConnectionFactory connectionFactory,
+                                         final ConnectionConfiguration connectionConfiguration,
+                                         final String consumerName,
+                                         final PushConsumerConfiguration<T> configuration,
+                                         final Duration retryBackoff) {
+        super(channel, connectionFactory, connectionConfiguration, retryBackoff);
         this.configuration = configuration;
-    }
-
-    @Override
-    protected MessagePublisherConfiguration configuration() {
-        return configuration;
+        this.consumerName = consumerName;
     }
 
     @Override
     protected Multi<Message<T>> subscription(Connection<T> connection) {
-        return connection.subscribe(configuration)
+        return connection.subscribe(consumerName, configuration)
                 .onItem().transformToMulti(Subscription::subscribe);
-    }
-
-    @Override
-    protected Duration retryBackoff() {
-        return configuration.retryBackoff();
     }
 }

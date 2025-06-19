@@ -3,7 +3,6 @@ package io.quarkiverse.reactive.messaging.nats.jetstream.deployment;
 import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 
 import io.nats.client.Options;
-import io.quarkiverse.reactive.messaging.nats.jetstream.JetStreamConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.JetStreamConnector;
 import io.quarkiverse.reactive.messaging.nats.jetstream.JetStreamRecorder;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.DefaultConnectionFactory;
@@ -24,7 +23,7 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.smallrye.reactive.messaging.providers.connectors.ExecutionHolder;
 
-class ReactiveMessagingNatsJetstreamProcessor {
+class JetStreamProcessor {
 
     static final String FEATURE = "reactive-messsaging-nats-jetstream";
 
@@ -61,6 +60,7 @@ class ReactiveMessagingNatsJetstreamProcessor {
         buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(ConsumerMapperImpl.class));
         buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(StreamStateMapperImpl.class));
         buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(DefaultTracerFactory.class));
+        buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(DefaultConnectionConfigurationFactory.class));
     }
 
     @BuildStep

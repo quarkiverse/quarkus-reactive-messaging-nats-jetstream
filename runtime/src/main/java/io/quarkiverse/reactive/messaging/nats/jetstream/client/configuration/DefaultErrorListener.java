@@ -8,7 +8,7 @@ import io.nats.client.JetStreamSubscription;
 import io.nats.client.Message;
 import io.nats.client.support.Status;
 
-class DefaultErrorListener implements ErrorListener {
+public class DefaultErrorListener implements ErrorListener {
     private final static Logger logger = Logger.getLogger(DefaultErrorListener.class);
 
     @Override

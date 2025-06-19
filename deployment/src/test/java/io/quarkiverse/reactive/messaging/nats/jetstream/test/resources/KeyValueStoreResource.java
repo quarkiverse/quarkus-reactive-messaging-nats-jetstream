@@ -12,7 +12,7 @@ import jakarta.enterprise.event.Reception;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 
-import io.quarkiverse.reactive.messaging.nats.NatsConfiguration;
+import io.quarkiverse.reactive.messaging.nats.jetstream.NatsConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.Connection;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.ConnectionFactory;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.DefaultConnectionListener;

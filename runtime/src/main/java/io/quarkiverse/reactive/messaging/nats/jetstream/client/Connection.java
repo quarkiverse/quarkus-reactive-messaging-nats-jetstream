@@ -11,6 +11,7 @@ import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 
 public interface Connection<T> extends AutoCloseable {
+    int DEFAULT_MAX_RECONNECT = -1;
 
     boolean isConnected();
 
@@ -18,20 +19,17 @@ public interface Connection<T> extends AutoCloseable {
 
     Uni<Message<T>> publish(Message<T> message, PublishConfiguration publishConfiguration);
 
-    Uni<Message<T>> publish(Message<T> message, PublishConfiguration publishConfiguration,
-            ConsumerConfiguration<T> consumerConfiguration);
+    Uni<Consumer> addConsumer(String consumerName, ConsumerConfiguration<T> configuration);
 
-    Uni<Consumer> addConsumer(ConsumerConfiguration<T> configuration);
+    Uni<Message<T>> next(String consumerName, ConsumerConfiguration<T> configuration, Duration timeout);
 
-    Uni<Message<T>> next(ConsumerConfiguration<T> configuration, Duration timeout);
-
-    Multi<Message<T>> fetch(FetchConsumerConfiguration<T> configuration);
+    Multi<Message<T>> fetch(String consumerName, FetchConsumerConfiguration<T> configuration);
 
     Uni<Message<T>> resolve(String streamName, long sequence);
 
-    Uni<Subscription<T>> subscribe(PushConsumerConfiguration<T> configuration);
+    Uni<Subscription<T>> subscribe(String consumerName, PushConsumerConfiguration<T> configuration);
 
-    Uni<Subscription<T>> subscribe(PullConsumerConfiguration<T> configuration);
+    Uni<Subscription<T>> subscribe(String consumerName, PullConsumerConfiguration<T> configuration);
 
     Uni<KeyValueStore<T>> keyValueStore(String bucketName);
 
