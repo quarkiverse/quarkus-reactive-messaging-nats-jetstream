@@ -36,4 +36,6 @@ public interface Connection<T> extends AutoCloseable {
     Uni<StreamManagement> streamManagement();
 
     Uni<KeyValueStoreManagement> keyValueStoreManagement();
+
+    void nativeConnection(java.util.function.Consumer<io.nats.client.Connection> connection);
 }

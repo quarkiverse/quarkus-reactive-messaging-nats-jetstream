@@ -197,6 +197,11 @@ class DefaultConnection<T> extends AbstractConsumer implements Connection<T> {
         return context().executeBlocking(Uni.createFrom().item(() -> new DefaultKeyValueStoreManagement(connection, vertx)));
     }
 
+    @Override
+    public void nativeConnection(java.util.function.Consumer<io.nats.client.Connection> connection) {
+        connection.accept(this.connection);
+    }
+
     private PublishOptions createPublishOptions(final String messageId, final String streamName) {
         return PublishOptions.builder()
                 .messageId(messageId)
