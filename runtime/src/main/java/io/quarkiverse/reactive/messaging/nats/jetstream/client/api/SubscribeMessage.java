@@ -107,7 +107,12 @@ public class SubscribeMessage<T> implements JetStreamMessage<T> {
     public CompletionStage<Void> nack(Throwable reason, Metadata metadata) {
         return VertxContext.runOnContext(context.getDelegate(), f -> {
             try {
-                message.nak();
+                final var nackMetadata = metadata.get(NackMetadata.class);
+                if (nackMetadata.isPresent() && nackMetadata.get().delayWaitOptional().isPresent()) {
+                    message.nakWithDelay(nackMetadata.get().delayWaitOptional().get());
+                } else {
+                    message.nak();
+                }
                 this.runOnMessageContext(() -> f.complete(null));
             } catch (Exception e) {
                 this.runOnMessageContext(() -> f.completeExceptionally(e));
