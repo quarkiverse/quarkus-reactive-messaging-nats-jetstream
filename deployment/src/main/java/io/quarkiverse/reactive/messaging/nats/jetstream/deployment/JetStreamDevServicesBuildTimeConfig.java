@@ -7,15 +7,9 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithDefault;
 
-@ConfigMapping(prefix = "quarkus.messaging.nats.jet-stream.devservices")
+@ConfigMapping(prefix = "quarkus.messaging.nats.devservices")
 @ConfigRoot(phase = ConfigPhase.BUILD_TIME)
 public interface JetStreamDevServicesBuildTimeConfig {
-
-    /**
-     * If Dev Services for NATS JetStream has been explicitly enabled or disabled. Dev Services are generally enabled
-     * by default, unless there is an existing configuration present.
-     */
-    Optional<Boolean> enabled();
 
     /**
      * Optional fixed port the dev service will listen to.

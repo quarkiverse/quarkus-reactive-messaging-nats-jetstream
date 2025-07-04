@@ -4,5 +4,5 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.Str
 import lombok.Builder;
 
 @Builder
-public record StreamResult(StreamConfiguration configuration, StreamStatus status) {
+public record StreamResult(String name, StreamConfiguration configuration, StreamStatus status) {
 }

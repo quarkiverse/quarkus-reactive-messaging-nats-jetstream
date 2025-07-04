@@ -17,19 +17,19 @@ public interface Connection<T> extends AutoCloseable {
 
     List<ConnectionListener> listeners();
 
-    Uni<Message<T>> publish(Message<T> message, PublishConfiguration publishConfiguration);
+    Uni<Message<T>> publish(Message<T> message, String stream, String subject);
 
-    Uni<Consumer> addConsumer(String consumerName, ConsumerConfiguration<T> configuration);
+    Uni<Consumer> addConsumer(String stream, ConsumerConfiguration<T> configuration);
 
-    Uni<Message<T>> next(String consumerName, ConsumerConfiguration<T> configuration, Duration timeout);
+    Uni<Message<T>> next(String stream, ConsumerConfiguration<T> configuration, Duration timeout);
 
-    Multi<Message<T>> fetch(String consumerName, FetchConsumerConfiguration<T> configuration);
+    Multi<Message<T>> fetch(String stream, FetchConsumerConfiguration<T> configuration);
 
-    Uni<Message<T>> resolve(String streamName, long sequence);
+    Uni<Message<T>> resolve(String stream, long sequence);
 
-    Uni<Subscription<T>> subscribe(String consumerName, PushConsumerConfiguration<T> configuration);
+    Uni<Subscription<T>> subscribe(String stream, PushConsumerConfiguration<T> configuration);
 
-    Uni<Subscription<T>> subscribe(String consumerName, PullConsumerConfiguration<T> configuration);
+    Uni<Subscription<T>> subscribe(String stream, PullConsumerConfiguration<T> configuration);
 
     Uni<KeyValueStore<T>> keyValueStore(String bucketName);
 

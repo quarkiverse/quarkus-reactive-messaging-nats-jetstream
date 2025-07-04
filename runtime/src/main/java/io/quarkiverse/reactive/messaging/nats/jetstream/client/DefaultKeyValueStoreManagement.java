@@ -1,5 +1,7 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client;
 
+import java.util.Map;
+
 import io.nats.client.Connection;
 import io.nats.client.api.KeyValueConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.KeyValueStoreConfiguration;
@@ -9,8 +11,6 @@ import io.smallrye.mutiny.unchecked.Unchecked;
 import io.vertx.mutiny.core.Context;
 import io.vertx.mutiny.core.Vertx;
 import lombok.RequiredArgsConstructor;
-
-import java.util.Map;
 
 @RequiredArgsConstructor
 class DefaultKeyValueStoreManagement implements KeyValueStoreManagement {
@@ -45,7 +45,8 @@ class DefaultKeyValueStoreManagement implements KeyValueStoreManagement {
         return vertx.getOrCreateContext();
     }
 
-    private KeyValueConfiguration createConfiguration(final String name, final KeyValueStoreConfiguration keyValueStoreConfiguration) {
+    private KeyValueConfiguration createConfiguration(final String name,
+            final KeyValueStoreConfiguration keyValueStoreConfiguration) {
         var builder = KeyValueConfiguration.builder();
         builder = builder.name(name);
         builder = keyValueStoreConfiguration.description().map(builder::description).orElse(builder);

@@ -12,11 +12,10 @@ import jakarta.enterprise.event.Reception;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 
-import io.quarkiverse.reactive.messaging.nats.jetstream.NatsConfiguration;
+import io.quarkiverse.reactive.messaging.nats.jetstream.configuration.JetStreamConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.Connection;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.ConnectionFactory;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.DefaultConnectionListener;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ConnectionConfiguration;
 import io.smallrye.mutiny.Uni;
 
 @Path("/key-value")
@@ -24,13 +23,13 @@ import io.smallrye.mutiny.Uni;
 @RequestScoped
 public class KeyValueStoreResource {
     private final ConnectionFactory connectionFactory;
-    private final NatsConfiguration natsConfiguration;
+    private final JetStreamConfiguration jetStreamConfiguration;
     private final AtomicReference<Connection<Data>> connection;
 
     @Inject
-    public KeyValueStoreResource(ConnectionFactory connectionFactory, NatsConfiguration natsConfiguration) {
+    public KeyValueStoreResource(ConnectionFactory connectionFactory, JetStreamConfiguration jetStreamConfiguration) {
         this.connectionFactory = connectionFactory;
-        this.natsConfiguration = natsConfiguration;
+        this.jetStreamConfiguration = jetStreamConfiguration;
         this.connection = new AtomicReference<>();
     }
 
@@ -88,7 +87,7 @@ public class KeyValueStoreResource {
                 .filter(Connection::isConnected)
                 .orElse(null))
                 .onItem().ifNull()
-                .switchTo(() -> connectionFactory.create(ConnectionConfiguration.of(natsConfiguration),
+                .switchTo(() -> connectionFactory.create(jetStreamConfiguration.connection(),
                         new DefaultConnectionListener()))
                 .onItem().invoke(this.connection::set);
     }

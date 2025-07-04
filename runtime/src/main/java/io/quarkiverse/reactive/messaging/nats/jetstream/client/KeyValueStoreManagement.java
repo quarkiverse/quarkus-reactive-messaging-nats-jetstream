@@ -1,9 +1,9 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client;
 
+import java.util.Map;
+
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.KeyValueStoreConfiguration;
 import io.smallrye.mutiny.Uni;
-
-import java.util.Map;
 
 public interface KeyValueStoreManagement {
 

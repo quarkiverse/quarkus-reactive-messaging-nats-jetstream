@@ -1,5 +1,26 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.test.resources;
 
+import io.nats.client.api.DeliverPolicy;
+import io.nats.client.api.ReplayPolicy;
+import io.quarkiverse.reactive.messaging.nats.jetstream.configuration.JetStreamConfiguration;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.Connection;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.ConnectionFactory;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.StreamManagement;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.PublishMessageMetadata;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.StreamState;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ConsumerConfiguration;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ConsumerType;
+import io.smallrye.mutiny.Uni;
+import jakarta.annotation.Priority;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.BeforeDestroyed;
+import jakarta.enterprise.context.RequestScoped;
+import jakarta.enterprise.event.Observes;
+import jakarta.enterprise.event.Reception;
+import jakarta.ws.rs.*;
+import org.eclipse.microprofile.reactive.messaging.Message;
+import org.eclipse.microprofile.reactive.messaging.Metadata;
+
 import java.time.Duration;
 import java.time.ZonedDateTime;
 import java.util.List;
@@ -8,44 +29,19 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 
-import jakarta.annotation.Priority;
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.context.BeforeDestroyed;
-import jakarta.enterprise.context.RequestScoped;
-import jakarta.enterprise.event.Observes;
-import jakarta.enterprise.event.Reception;
-import jakarta.ws.rs.*;
-
-import org.eclipse.microprofile.reactive.messaging.Message;
-import org.eclipse.microprofile.reactive.messaging.Metadata;
-
-import io.nats.client.api.AckPolicy;
-import io.nats.client.api.DeliverPolicy;
-import io.nats.client.api.ReplayPolicy;
-import io.quarkiverse.reactive.messaging.nats.jetstream.NatsConfiguration;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.Connection;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.ConnectionFactory;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.StreamManagement;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.PublishMessageMetadata;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.StreamState;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ConnectionConfiguration;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ConsumerConfiguration;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.PublishConfiguration;
-import io.smallrye.mutiny.Uni;
-
 @Path("/request-reply")
 @Produces("application/json")
 @RequestScoped
 public class RequestReplyResource {
     private final ConnectionFactory connectionFactory;
-    private final NatsConfiguration natsConfiguration;
+    private final JetStreamConfiguration jetStreamConfiguration;
     private final String streamName;
     private final AtomicReference<Connection<Data>> messageConnection;
 
     public RequestReplyResource(ConnectionFactory connectionFactory,
-            NatsConfiguration natsConfiguration) {
+            JetStreamConfiguration jetStreamConfiguration) {
         this.connectionFactory = connectionFactory;
-        this.natsConfiguration = natsConfiguration;
+        this.jetStreamConfiguration = jetStreamConfiguration;
         this.streamName = "request-reply";
         this.messageConnection = new AtomicReference<>();
     }
@@ -55,7 +51,7 @@ public class RequestReplyResource {
     public Uni<List<String>> getStreams() {
         return getOrEstablishMessageConnection()
                 .onItem().transformToUni(Connection::streamManagement)
-                .onItem().transformToUni(StreamManagement::getStreams);
+                .onItem().transformToUni(StreamManagement::getStreamNames);
     }
 
     @GET
@@ -113,30 +109,21 @@ public class RequestReplyResource {
                 .filter(Connection::isConnected)
                 .orElse(null))
                 .onItem().ifNull()
-                .switchTo(() -> connectionFactory.create(ConnectionConfiguration.of(natsConfiguration)))
+                .switchTo(() -> connectionFactory.create(jetStreamConfiguration.connection()))
                 .onItem().invoke(this.messageConnection::set);
     }
 
     private Uni<Void> produceData(Connection<Data> connection, String subject, String id, String data, String messageId) {
-        return connection.publish(
-                Message.of(new Data(data, id, messageId), Metadata.of(PublishMessageMetadata.of(messageId))),
-                new PublishConfiguration() {
-
-                    @Override
-                    public String stream() {
-                        return streamName;
-                    }
-
-                    @Override
-                    public String subject() {
-                        return "events." + subject;
-                    }
-                }, getConsumerConfiguration(streamName, subject))
+        return connection.addConsumer(streamName, getConsumerConfiguration(subject))
+                .onItem().transformToUni(consumer -> connection.publish(
+                        Message.of(new Data(data, id, messageId), Metadata.of(PublishMessageMetadata.of(messageId))),
+                        streamName,
+                         "events." + subject))
                 .onItem().transformToUni(m -> Uni.createFrom().voidItem());
     }
 
     public Uni<Data> consumeData(Connection<Data> connection, String subject) {
-        return connection.next(getConsumerConfiguration(streamName, subject), Duration.ofSeconds(10))
+        return connection.next(streamName, getConsumerConfiguration(subject), Duration.ofSeconds(10))
                 .map(message -> {
                     message.ack();
                     return message.getPayload();
@@ -144,16 +131,16 @@ public class RequestReplyResource {
                 .onFailure().recoverWithUni(Uni.createFrom().failure(NotFoundException::new));
     }
 
-    private ConsumerConfiguration<Data> getConsumerConfiguration(String streamName, String subject) {
+    private ConsumerConfiguration<Data> getConsumerConfiguration(String subject) {
         return new ConsumerConfiguration<>() {
 
             @Override
-            public Optional<Long> startSequence() {
-                return Optional.empty();
+            public ConsumerType type() {
+                return ConsumerType.Plain;
             }
 
             @Override
-            public Optional<AckPolicy> ackPolicy() {
+            public Optional<Long> startSequence() {
                 return Optional.empty();
             }
 
@@ -173,8 +160,8 @@ public class RequestReplyResource {
             }
 
             @Override
-            public Optional<DeliverPolicy> deliverPolicy() {
-                return Optional.empty();
+            public DeliverPolicy deliverPolicy() {
+                return DeliverPolicy.All;
             }
 
             @Override
@@ -188,13 +175,8 @@ public class RequestReplyResource {
             }
 
             @Override
-            public Optional<String> durable() {
-                return Optional.of(subject);
-            }
-
-            @Override
-            public String stream() {
-                return streamName;
+            public Boolean durable() {
+                return true;
             }
 
             @Override
@@ -223,13 +205,13 @@ public class RequestReplyResource {
             }
 
             @Override
-            public Optional<ReplayPolicy> replayPolicy() {
-                return Optional.empty();
+            public ReplayPolicy replayPolicy() {
+                return ReplayPolicy.Instant;
             }
 
             @Override
-            public Optional<Integer> replicas() {
-                return Optional.empty();
+            public Integer replicas() {
+                return 1;
             }
 
             @Override
@@ -243,13 +225,13 @@ public class RequestReplyResource {
             }
 
             @Override
-            public Map<String, String> metadata() {
-                return Map.of();
+            public Optional<Map<String, String>> metadata() {
+                return Optional.empty();
             }
 
             @Override
-            public List<Duration> backoff() {
-                return List.of();
+            public Optional<List<Duration>> backoff() {
+                return Optional.empty();
             }
 
             @Override

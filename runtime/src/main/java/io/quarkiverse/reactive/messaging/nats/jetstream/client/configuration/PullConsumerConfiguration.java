@@ -5,8 +5,13 @@ import java.util.Optional;
 
 public interface PullConsumerConfiguration<T> extends ConsumerConfiguration<T> {
 
+    @Override
+    default ConsumerType type() {
+        return ConsumerType.Pull;
+    }
+
     /**
-     * The maximum duration a single pull request will wait for messages to be available to pull
+     * The maximum duration of a single pull request will wait for messages to be available to pull
      */
     Duration maxExpires();
 

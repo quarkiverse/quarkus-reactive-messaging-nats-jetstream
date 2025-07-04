@@ -9,6 +9,7 @@ import org.eclipse.microprofile.reactive.messaging.Message;
 import org.jboss.logging.Logger;
 
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.SubscribeMessageMetadata;
+import io.quarkiverse.reactive.messaging.nats.jetstream.test.MessageConsumer;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple2;
 

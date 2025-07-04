@@ -23,6 +23,7 @@ import lombok.extern.jbosslog.JBossLog;
 @RequiredArgsConstructor
 @JBossLog
 public class PullSubscription<T> implements Subscription<T> {
+    private final String stream;
     private final PullConsumerConfiguration<T> consumerConfiguration;
     private final ConsumerContext consumerContext;
     private final MessageMapper messageMapper;
@@ -66,10 +67,10 @@ public class PullSubscription<T> implements Subscription<T> {
                 emitter.complete(Optional.empty());
             } catch (InterruptedException e) {
                 emitter.fail(new PullException(String.format("The reader was interrupted for stream: %s",
-                        consumerConfiguration.stream()), e));
+                        stream), e));
             } catch (Exception exception) {
                 emitter.fail(new PullException(String.format("Error reading next message from stream: %s",
-                        consumerConfiguration.stream()), exception));
+                        stream), exception));
             }
         });
     }

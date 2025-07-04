@@ -6,7 +6,6 @@ import java.util.*;
 
 import org.eclipse.microprofile.reactive.messaging.Message;
 
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.PublishConfiguration;
 import lombok.Builder;
 
 @Builder
@@ -55,7 +54,8 @@ public record PublishMessageMetadata(String stream,
                 .build();
     }
 
-    public static <P> PublishMessageMetadata of(final Message<P> message, final PublishConfiguration configuration,
+    public static <P> PublishMessageMetadata of(final Message<P> message, final String stream,
+            final String subject,
             byte[] payload) {
         final var metadata = getMetadata(message);
         final var type = metadata.flatMap(PublishMessageMetadata::typeOptional).orElseGet(() -> getType(message));
@@ -64,8 +64,8 @@ public record PublishMessageMetadata(String stream,
             headers.putIfAbsent(MESSAGE_TYPE_HEADER, List.of(type.getTypeName()));
         }
         return PublishMessageMetadata.builder()
-                .stream(metadata.flatMap(PublishMessageMetadata::streamOptional).orElseGet(configuration::stream))
-                .subject(metadata.flatMap(PublishMessageMetadata::subjectOptional).orElseGet(configuration::subject))
+                .stream(stream)
+                .subject(metadata.flatMap(PublishMessageMetadata::subjectOptional).orElse(subject))
                 .payload(metadata.flatMap(PublishMessageMetadata::payloadOptional).orElse(payload))
                 .type(type)
                 .messageId(metadata.flatMap(PublishMessageMetadata::messageIdOptional)

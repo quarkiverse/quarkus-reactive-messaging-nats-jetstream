@@ -1,5 +1,11 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.processors.publisher;
 
+import java.time.Duration;
+import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
+
+import org.eclipse.microprofile.reactive.messaging.Message;
+
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.Connection;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.ConnectionEvent;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.ConnectionFactory;
@@ -10,15 +16,11 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.processors.Status;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import lombok.extern.jbosslog.JBossLog;
-import org.eclipse.microprofile.reactive.messaging.Message;
-
-import java.time.Duration;
-import java.util.Optional;
-import java.util.concurrent.atomic.AtomicReference;
 
 @JBossLog
 public abstract class MessagePublisherProcessor<T> implements MessageProcessor, ConnectionListener {
     private final String channel;
+    private final String stream;
     private final AtomicReference<Status> readiness;
     private final AtomicReference<Status> liveness;
     private final AtomicReference<Connection<T>> connection;
@@ -27,10 +29,12 @@ public abstract class MessagePublisherProcessor<T> implements MessageProcessor, 
     private final Duration retryBackoff;
 
     public MessagePublisherProcessor(final String channel,
-                                     final ConnectionFactory connectionFactory,
-                                     final ConnectionConfiguration connectionConfiguration,
-                                     final Duration retryBackoff) {
+            final String stream,
+            final ConnectionFactory connectionFactory,
+            final ConnectionConfiguration connectionConfiguration,
+            final Duration retryBackoff) {
         this.channel = channel;
+        this.stream = stream;
         this.readiness = new AtomicReference<>(
                 Status.builder().event(ConnectionEvent.Closed).message("Publish processor inactive").healthy(false).build());
         this.liveness = new AtomicReference<>(
@@ -44,6 +48,11 @@ public abstract class MessagePublisherProcessor<T> implements MessageProcessor, 
     @Override
     public String channel() {
         return channel;
+    }
+
+    @Override
+    public String stream() {
+        return stream;
     }
 
     @Override
@@ -77,9 +86,9 @@ public abstract class MessagePublisherProcessor<T> implements MessageProcessor, 
                 this.liveness.set(Status.builder().event(event).message(message).healthy(true).build());
             }
             case Closed, CommunicationFailed, Disconnected ->
-                    this.readiness.set(Status.builder().event(event).message(message).healthy(false).build());
+                this.readiness.set(Status.builder().event(event).message(message).healthy(false).build());
             case Reconnected ->
-                    this.readiness.set(Status.builder().event(event).message(message).healthy(true).build());
+                this.readiness.set(Status.builder().event(event).message(message).healthy(true).build());
         }
     }
 
@@ -98,8 +107,8 @@ public abstract class MessagePublisherProcessor<T> implements MessageProcessor, 
 
     private Uni<Connection<T>> getOrEstablishConnection() {
         return Uni.createFrom().item(() -> Optional.ofNullable(connection.get())
-                        .filter(Connection::isConnected)
-                        .orElse(null))
+                .filter(Connection::isConnected)
+                .orElse(null))
                 .onItem().ifNull().switchTo(this::connect)
                 .onItem().invoke(this.connection::set);
     }

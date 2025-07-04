@@ -1,23 +1,20 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration;
 
-import io.nats.client.AuthHandler;
-import io.nats.client.ErrorListener;
-import io.nats.client.Options;
-import io.nats.client.support.SSLUtils;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.Connection;
-
 import java.time.Duration;
-import java.util.List;
 import java.util.Optional;
 
-import static io.nats.client.support.Validator.emptyAsNull;
+import io.nats.client.AuthHandler;
+import io.nats.client.ErrorListener;
+import io.nats.client.support.SSLUtils;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.Connection;
+import io.smallrye.config.WithDefault;
 
 public interface ConnectionConfiguration {
 
     /**
-     * A list of URI's nats://{host}:{port} to use for establishing the initial connection to the NATS cluster.
+     * A comma separated list of URI's nats://{host}:{port} to use for establishing the initial connection to the NATS cluster.
      */
-    List<String> servers();
+    String servers();
 
     /**
      * The username to connect to the NATS server
@@ -33,7 +30,6 @@ public interface ConnectionConfiguration {
      * The token to connect to the NATS server
      */
     Optional<String> token();
-
 
     /**
      * Enable SSL connecting to servers
@@ -52,10 +48,11 @@ public interface ConnectionConfiguration {
 
     /**
      * The maximum number of attempts to attempt to re-connect to NATS.
-     * The default is -1 which means unlimited.
+     * The default is -1 that means unlimited.
      * {@value Connection#DEFAULT_MAX_RECONNECT}
      */
-    Optional<Integer> connectionAttempts();
+    @WithDefault("-1")
+    Integer connectionAttempts();
 
     /**
      * The classname for the error listener

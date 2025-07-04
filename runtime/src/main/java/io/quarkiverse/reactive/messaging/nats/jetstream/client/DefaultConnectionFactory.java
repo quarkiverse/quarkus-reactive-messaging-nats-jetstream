@@ -43,15 +43,9 @@ public class DefaultConnectionFactory implements ConnectionFactory {
             List<ConnectionListener> connectionListeners) {
         final var vertx = getVertx();
         final var context = vertx.getOrCreateContext();
-        if (connectionConfiguration.connectionAttempts().isEmpty()) {
-            return context.<Connection<T>> executeBlocking(connect(connectionConfiguration, connectionListeners, vertx))
-                    .onFailure().retry().withBackOff(connectionConfiguration.connectionBackoff().orElse(DEFAULT_BACKOFF))
-                    .indefinitely();
-        } else {
-            return context.<Connection<T>> executeBlocking(connect(connectionConfiguration, connectionListeners, vertx))
-                    .onFailure().retry().withBackOff(connectionConfiguration.connectionBackoff().orElse(DEFAULT_BACKOFF))
-                    .atMost(connectionConfiguration.connectionAttempts().get());
-        }
+        return context.<Connection<T>> executeBlocking(connect(connectionConfiguration, connectionListeners, vertx))
+                .onFailure().retry().withBackOff(connectionConfiguration.connectionBackoff().orElse(DEFAULT_BACKOFF))
+                .atMost(connectionConfiguration.connectionAttempts());
     }
 
     private <T> Uni<Connection<T>> connect(final ConnectionConfiguration connectionConfiguration,

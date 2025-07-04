@@ -1,33 +1,32 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream;
 
+import jakarta.enterprise.inject.spi.CDI;
+
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.ConnectionFactory;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.DefaultConnectionListener;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.SetupException;
+import io.quarkiverse.reactive.messaging.nats.jetstream.configuration.JetStreamConfiguration;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
-import jakarta.enterprise.inject.spi.CDI;
 
 @Recorder
 public class JetStreamRecorder {
-    private final RuntimeValue<NatsConfiguration> natsConfiguration;
+    private final RuntimeValue<JetStreamConfiguration> natsConfiguration;
 
-    public JetStreamRecorder(RuntimeValue<NatsConfiguration> natsConfiguration) {
+    public JetStreamRecorder(RuntimeValue<JetStreamConfiguration> natsConfiguration) {
         this.natsConfiguration = natsConfiguration;
     }
 
     public void setup() {
         if (natsConfiguration.getValue().autoConfigure()) {
             final var connectionFactory = CDI.current().select(ConnectionFactory.class).get();
-            try (final var connection = connectionFactory.create(natsConfiguration.getValue().connection(), new DefaultConnectionListener())
+            try (final var connection = connectionFactory
+                    .create(natsConfiguration.getValue().connection(), new DefaultConnectionListener())
                     .await().indefinitely()) {
-                natsConfiguration.getValue().jetStream().map(NatsConfiguration.JetStream::streams).ifPresent(streamConfigurations -> {
-                    connection.streamManagement()
-                            .onItem()
-                            .transformToUni(streamManagement -> streamManagement
-                                    .addStreams(streamConfigurations))
-                            .await().indefinitely();
-                });
-
+                natsConfiguration.getValue().streams().forEach((key, value) -> connection.streamManagement()
+                        .onItem()
+                        .transformToUni(streamManagement -> streamManagement.addStream(key, value))
+                        .await().indefinitely());
                 connection.keyValueStoreManagement()
                         .onItem()
                         .transformToUni(keyValueStoreManagement -> keyValueStoreManagement

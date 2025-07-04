@@ -5,6 +5,11 @@ import java.util.Optional;
 
 public interface PushConsumerConfiguration<T> extends ConsumerConfiguration<T> {
 
+    @Override
+    default ConsumerType type() {
+        return ConsumerType.Push;
+    }
+
     /**
      * Flag indicating whether this subscription should be ordered
      */

@@ -1,25 +1,33 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration;
 
-import io.nats.client.api.DeliverPolicy;
-import io.nats.client.api.ReplayPolicy;
-
 import java.time.Duration;
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import io.nats.client.api.DeliverPolicy;
+import io.nats.client.api.ReplayPolicy;
+import io.smallrye.config.WithDefault;
+
 public interface ConsumerConfiguration<T> {
 
     /**
-     * The stream to subscribe or publish messages to
+     * The type of the consumer, either Pull, Push, or Fetch.
      */
-    String stream();
+    @WithDefault("Pull")
+    ConsumerType type();
 
     /**
-     * Sets the durable name for the consumer
+     * The name of the consumer
      */
-    Optional<String> durable();
+    String name();
+
+    /**
+     * Set to true if the consumer should be durable.
+     */
+    @WithDefault("false")
+    Boolean durable();
 
     /**
      * The subject to subscribe or publish messages to
@@ -36,7 +44,8 @@ public interface ConsumerConfiguration<T> {
      * The point in the stream to receive messages from, either DeliverAll, DeliverLast, DeliverNew, DeliverByStartSequence,
      * DeliverByStartTime, or DeliverLastPerSubject
      */
-    Optional<DeliverPolicy> deliverPolicy();
+    @WithDefault("DeliverAll")
+    DeliverPolicy deliverPolicy();
 
     /**
      * The start sequence
@@ -74,13 +83,15 @@ public interface ConsumerConfiguration<T> {
      * ReplayInstant (the default), the messages will be pushed to the client as fast as possible while adhering to the
      * Ack Policy, Max Ack Pending and the client's ability to consume those messages
      */
-    Optional<ReplayPolicy> replayPolicy();
+    @WithDefault("ReplayInstant")
+    ReplayPolicy replayPolicy();
 
     /**
      * Sets the number of replicas for the consumer's state. By default, when the value is set to zero, consumers
      * inherit the number of replicas from the stream
      */
-    Optional<Integer> replicas();
+    @WithDefault("1")
+    Integer replicas();
 
     /**
      * If set, forces the consumer state to be kept in memory rather than inherit the storage type of the
@@ -96,12 +107,12 @@ public interface ConsumerConfiguration<T> {
     /**
      * The consumer metadata
      */
-    Map<String, String> metadata();
+    Optional<Map<String, String>> metadata();
 
     /**
      * The timing of re-deliveries as a comma-separated list of durations
      */
-    List<Duration> backoff();
+    Optional<List<Duration>> backoff();
 
     /**
      * The pause until

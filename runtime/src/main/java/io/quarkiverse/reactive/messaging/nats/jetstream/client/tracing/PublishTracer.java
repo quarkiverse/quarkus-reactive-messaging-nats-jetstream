@@ -1,5 +1,12 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client.tracing;
 
+import static io.opentelemetry.instrumentation.api.instrumenter.messaging.MessageOperation.PUBLISH;
+import static io.smallrye.reactive.messaging.tracing.TracingUtils.getOpenTelemetry;
+
+import jakarta.enterprise.inject.Instance;
+
+import org.eclipse.microprofile.reactive.messaging.Message;
+
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.instrumentation.api.instrumenter.Instrumenter;
 import io.opentelemetry.instrumentation.api.instrumenter.InstrumenterBuilder;
@@ -11,11 +18,6 @@ import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.unchecked.Unchecked;
 import io.smallrye.reactive.messaging.TracingMetadata;
 import io.smallrye.reactive.messaging.tracing.TracingUtils;
-import jakarta.enterprise.inject.Instance;
-import org.eclipse.microprofile.reactive.messaging.Message;
-
-import static io.opentelemetry.instrumentation.api.instrumenter.messaging.MessageOperation.PUBLISH;
-import static io.smallrye.reactive.messaging.tracing.TracingUtils.getOpenTelemetry;
 
 public class PublishTracer<T> implements Tracer<T> {
     private final boolean enabled;

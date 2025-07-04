@@ -4,12 +4,12 @@ import static io.quarkiverse.reactive.messaging.nats.jetstream.client.api.Subscr
 
 import java.time.Duration;
 
-import io.nats.client.PushSubscribeOptions;
 import org.eclipse.microprofile.reactive.messaging.Message;
 
 import io.nats.client.Connection;
 import io.nats.client.Dispatcher;
 import io.nats.client.JetStreamSubscription;
+import io.nats.client.PushSubscribeOptions;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.PushConsumerConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.tracing.TracerFactory;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.tracing.TracerType;
@@ -20,7 +20,7 @@ import lombok.extern.jbosslog.JBossLog;
 
 @JBossLog
 public class PushSubscription<T> extends AbstractConsumer implements Subscription<T> {
-    private final String consumerName;
+    private final String stream;
     private final PushConsumerConfiguration<T> configuration;
     private final Connection connection;
     private final MessageMapper messageMapper;
@@ -30,14 +30,14 @@ public class PushSubscription<T> extends AbstractConsumer implements Subscriptio
     private volatile JetStreamSubscription subscription;
     private volatile Dispatcher dispatcher;
 
-    PushSubscription(final String consumerName,
-                     final Connection connection,
+    PushSubscription(final Connection connection,
+            final String stream,
             final PushConsumerConfiguration<T> configuration,
             final MessageMapper messageMapper,
             final TracerFactory tracerFactory,
             final Context context) {
-        this.consumerName = consumerName;
         this.connection = connection;
+        this.stream = stream;
         this.configuration = configuration;
         this.messageMapper = messageMapper;
         this.tracerFactory = tracerFactory;
@@ -63,7 +63,7 @@ public class PushSubscription<T> extends AbstractConsumer implements Subscriptio
                 log.errorf(
                         e,
                         "Failed subscribing to stream: %s, subject: %s with message: %s",
-                        configuration.stream(),
+                        stream,
                         subject,
                         e.getMessage());
                 emitter.fail(e);
@@ -102,9 +102,11 @@ public class PushSubscription<T> extends AbstractConsumer implements Subscriptio
         var builder = PushSubscribeOptions.builder();
         builder = configuration.ordered().map(builder::ordered).orElse(builder);
         builder = configuration.deliverGroup().map(builder::deliverGroup).orElse(builder);
-        builder = configuration.durable().map(builder::durable).orElse(builder);
-        builder = builder.stream(configuration.stream());
-        builder = builder.configuration(createConsumerConfiguration(consumerName, configuration));
+        if (configuration.durable()) {
+            builder = builder.durable(configuration.name());
+        }
+        builder = builder.stream(stream);
+        builder = builder.configuration(createConsumerConfiguration(configuration));
         return builder.build();
     }
 }

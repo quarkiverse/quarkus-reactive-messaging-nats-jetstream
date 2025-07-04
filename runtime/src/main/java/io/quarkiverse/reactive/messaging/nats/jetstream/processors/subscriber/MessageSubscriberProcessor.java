@@ -4,7 +4,6 @@ import java.util.Optional;
 import java.util.concurrent.Flow;
 import java.util.concurrent.atomic.AtomicReference;
 
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.PublishConfiguration;
 import org.eclipse.microprofile.reactive.messaging.Message;
 
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.Connection;
@@ -22,20 +21,24 @@ import lombok.extern.jbosslog.JBossLog;
 @JBossLog
 public class MessageSubscriberProcessor<T> implements MessageProcessor, ConnectionListener {
     private final String channel;
+    private final String stream;
+    private final String subject;
     private final ConnectionConfiguration connectionConfiguration;
-    private final PublishConfiguration configuration;
     private final ConnectionFactory connectionFactory;
+
     private final AtomicReference<Status> status;
     private final AtomicReference<Connection<T>> connection;
 
     public MessageSubscriberProcessor(final String channel,
-                                      final ConnectionConfiguration connectionConfiguration,
-                                      final ConnectionFactory connectionFactory,
-                                      final PublishConfiguration configuration) {
+            final String stream,
+            final String subject,
+            final ConnectionConfiguration connectionConfiguration,
+            final ConnectionFactory connectionFactory) {
         this.channel = channel;
+        this.stream = stream;
+        this.subject = subject;
         this.connectionConfiguration = connectionConfiguration;
         this.connectionFactory = connectionFactory;
-        this.configuration = configuration;
         this.status = new AtomicReference<>(new Status(true, "Subscriber processor inactive", ConnectionEvent.Closed));
         this.connection = new AtomicReference<>();
     }
@@ -51,6 +54,11 @@ public class MessageSubscriberProcessor<T> implements MessageProcessor, Connecti
     @Override
     public String channel() {
         return channel;
+    }
+
+    @Override
+    public String stream() {
+        return stream;
     }
 
     @Override
@@ -84,24 +92,24 @@ public class MessageSubscriberProcessor<T> implements MessageProcessor, Connecti
     private Uni<Message<T>> publish(final Message<T> message) {
         return getOrEstablishConnection()
                 .onItem()
-                .transformToUni(connection -> connection.publish(message, configuration))
+                .transformToUni(connection -> connection.publish(message, stream, subject))
                 .onFailure()
                 .invoke(failure -> log.errorf(failure, "Failed to publish with message: %s", failure.getMessage()))
                 .onFailure().recoverWithUni(() -> recover(message));
     }
 
     private Uni<Message<T>> recover(final Message<T> message) {
-        return Uni.createFrom().<Void>item(() -> {
-                    close();
-                    return null;
-                })
+        return Uni.createFrom().<Void> item(() -> {
+            close();
+            return null;
+        })
                 .onItem().transformToUni(v -> publish(message));
     }
 
     private Uni<? extends Connection<T>> getOrEstablishConnection() {
         return Uni.createFrom().item(() -> Optional.ofNullable(connection.get())
-                        .filter(Connection::isConnected)
-                        .orElse(null))
+                .filter(Connection::isConnected)
+                .orElse(null))
                 .onItem().ifNull().switchTo(() -> connectionFactory.create(connectionConfiguration, this))
                 .onItem().invoke(this.connection::set);
     }

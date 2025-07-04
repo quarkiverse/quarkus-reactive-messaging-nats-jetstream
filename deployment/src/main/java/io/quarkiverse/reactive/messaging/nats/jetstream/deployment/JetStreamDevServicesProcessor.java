@@ -61,7 +61,7 @@ public class JetStreamDevServicesProcessor {
             LoggingSetupBuildItem loggingSetupBuildItem,
             DevServicesConfig devServicesConfig) {
 
-        JetStreamDevServiceCfg configuration = new JetStreamDevServiceCfg(devServicesBuildTimeConfig);
+        JetStreamDevServiceCfg configuration = new JetStreamDevServiceCfg(devServicesBuildTimeConfig, devServicesConfig);
 
         if (devService != null) {
             boolean shouldShutdownTheBroker = !configuration.equals(cfg);
@@ -171,10 +171,10 @@ public class JetStreamDevServicesProcessor {
 
     private RunningDevService getRunningService(String containerId, Closeable closeable, String serverUrl) {
         Map<String, String> configMap = new HashMap<>();
-        configMap.put("quarkus.messaging.nats.servers", serverUrl);
-        configMap.put("quarkus.messaging.nats.username", JetStreamContainer.USERNAME);
-        configMap.put("quarkus.messaging.nats.password", JetStreamContainer.PASSWORD);
-        configMap.put("quarkus.messaging.nats.ssl-enabled", "false");
+        configMap.put("quarkus.messaging.nats.connection.servers", serverUrl);
+        configMap.put("quarkus.messaging.nats.connection.username", JetStreamContainer.USERNAME);
+        configMap.put("quarkus.messaging.nats.connection.password", JetStreamContainer.PASSWORD);
+        configMap.put("quarkus.messaging.nats.connection.ssl-enabled", "false");
         return new RunningDevService(FEATURE, containerId, closeable, configMap);
     }
 
@@ -185,12 +185,13 @@ public class JetStreamDevServicesProcessor {
         private final boolean shared;
         private final String serviceName;
 
-        public JetStreamDevServiceCfg(JetStreamDevServicesBuildTimeConfig devServicesConfig) {
-            this.devServicesEnabled = devServicesConfig.enabled().orElse(true);
-            this.imageName = devServicesConfig.imageName();
-            this.fixedExposedPort = devServicesConfig.port().orElse(0);
-            this.shared = devServicesConfig.shared();
-            this.serviceName = devServicesConfig.serviceName();
+        public JetStreamDevServiceCfg(JetStreamDevServicesBuildTimeConfig jetStreamDevServicesConfig,
+                DevServicesConfig devServicesConfig) {
+            this.devServicesEnabled = devServicesConfig.enabled();
+            this.imageName = jetStreamDevServicesConfig.imageName();
+            this.fixedExposedPort = jetStreamDevServicesConfig.port().orElse(0);
+            this.shared = jetStreamDevServicesConfig.shared();
+            this.serviceName = jetStreamDevServicesConfig.serviceName();
         }
 
         @Override

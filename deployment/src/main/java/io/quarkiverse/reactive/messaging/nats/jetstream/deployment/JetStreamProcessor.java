@@ -11,6 +11,8 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.mapper.ConsumerMapperImp
 import io.quarkiverse.reactive.messaging.nats.jetstream.mapper.DefaultMessageMapper;
 import io.quarkiverse.reactive.messaging.nats.jetstream.mapper.DefaultPayloadMapper;
 import io.quarkiverse.reactive.messaging.nats.jetstream.mapper.StreamStateMapperImpl;
+import io.quarkiverse.reactive.messaging.nats.jetstream.processors.publisher.MessagePublisherProcessorFactory;
+import io.quarkiverse.reactive.messaging.nats.jetstream.processors.subscriber.MessageSubscriberProcessorFactory;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeansRuntimeInitBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -50,7 +52,7 @@ class JetStreamProcessor {
     }
 
     @BuildStep
-    void createNatsConnector(BuildProducer<AdditionalBeanBuildItem> buildProducer) {
+    void createJetStreamConnector(BuildProducer<AdditionalBeanBuildItem> buildProducer) {
         buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(JetStreamConnector.class));
         buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(DefaultTracerFactory.class));
         buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(ExecutionHolder.class));
@@ -60,16 +62,14 @@ class JetStreamProcessor {
         buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(ConsumerMapperImpl.class));
         buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(StreamStateMapperImpl.class));
         buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(DefaultTracerFactory.class));
-        buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(DefaultConnectionConfigurationFactory.class));
+        buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(MessagePublisherProcessorFactory.class));
+        buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(MessageSubscriberProcessorFactory.class));
     }
 
     @BuildStep
     @Record(RUNTIME_INIT)
     @Consume(SyntheticBeansRuntimeInitBuildItem.class)
-    public void configureJetStream(JetStreamRecorder recorder,
-            JetStreamConfiguration buildConfig) {
-        if (buildConfig.autoConfigure()) {
-            recorder.setup();
-        }
+    public void configureJetStream(JetStreamRecorder recorder) {
+        recorder.setup();
     }
 }

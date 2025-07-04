@@ -13,11 +13,10 @@ import org.eclipse.microprofile.reactive.messaging.Incoming;
 import org.eclipse.microprofile.reactive.messaging.Message;
 import org.jboss.logging.Logger;
 
-import io.quarkiverse.reactive.messaging.nats.jetstream.NatsConfiguration;
+import io.quarkiverse.reactive.messaging.nats.jetstream.configuration.JetStreamConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.Connection;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.ConnectionFactory;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.DefaultConnectionListener;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ConnectionConfiguration;
 import io.smallrye.mutiny.Uni;
 
 @ApplicationScoped
@@ -26,12 +25,12 @@ public class DeadLetterConsumingBean {
 
     private final AtomicReference<Data> lastData;
     private final AtomicReference<Connection<Data>> connection;
-    private final NatsConfiguration natsConfiguration;
+    private final JetStreamConfiguration jetStreamConfiguration;
     private final ConnectionFactory connectionFactory;
 
-    public DeadLetterConsumingBean(NatsConfiguration natsConfiguration, ConnectionFactory connectionFactory) {
+    public DeadLetterConsumingBean(JetStreamConfiguration jetStreamConfiguration, ConnectionFactory connectionFactory) {
         this.connection = new AtomicReference<>();
-        this.natsConfiguration = natsConfiguration;
+        this.jetStreamConfiguration = jetStreamConfiguration;
         this.connectionFactory = connectionFactory;
         this.lastData = new AtomicReference<>();
     }
@@ -82,7 +81,7 @@ public class DeadLetterConsumingBean {
                 .filter(Connection::isConnected)
                 .orElse(null))
                 .onItem().ifNull()
-                .switchTo(() -> connectionFactory.create(ConnectionConfiguration.of(natsConfiguration),
+                .switchTo(() -> connectionFactory.create(jetStreamConfiguration.connection(),
                         new DefaultConnectionListener()))
                 .onItem().invoke(this.connection::set);
     }

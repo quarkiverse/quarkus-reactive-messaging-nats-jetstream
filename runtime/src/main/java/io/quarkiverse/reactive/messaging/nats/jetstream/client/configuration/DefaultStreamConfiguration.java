@@ -7,30 +7,32 @@ import io.nats.client.api.StorageType;
 import lombok.Builder;
 
 import java.time.Duration;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
 @Builder
 public record DefaultStreamConfiguration(Optional<String> description,
-                                         Set<String> subjects,
-                                         Integer replicas,
-                                         StorageType storageType,
-                                         RetentionPolicy retentionPolicy,
-                                         CompressionOption compressionOption,
-                                         Optional<Long> maximumConsumers,
-                                         Optional<Long> maximumMessages,
-                                         Optional<Long> maximumMessagesPerSubject,
-                                         Optional<Long> maximumBytes,
-                                         Optional<Duration> maximumAge,
-                                         Optional<Integer> maximumMessageSize,
-                                         Optional<String> templateOwner,
-                                         Optional<DiscardPolicy> discardPolicy,
-                                         Optional<Duration> duplicateWindow,
-                                         Optional<Boolean> allowRollup,
-                                         Optional<Boolean> allowDirect,
-                                         Optional<Boolean> mirrorDirect,
-                                         Optional<Boolean> denyDelete,
-                                         Optional<Boolean> denyPurge,
-                                         Optional<Boolean> discardNewPerSubject,
-                                         Optional<Long> firstSequence) implements StreamConfiguration {
+        Optional<Set<String>> subjects,
+        Integer replicas,
+        StorageType storageType,
+        RetentionPolicy retentionPolicy,
+        CompressionOption compressionOption,
+        Optional<Long> maximumConsumers,
+        Optional<Long> maximumMessages,
+        Optional<Long> maximumMessagesPerSubject,
+        Optional<Long> maximumBytes,
+        Optional<Duration> maximumAge,
+        Optional<Integer> maximumMessageSize,
+        Optional<String> templateOwner,
+        Optional<DiscardPolicy> discardPolicy,
+        Optional<Duration> duplicateWindow,
+        Optional<Boolean> allowRollup,
+        Optional<Boolean> allowDirect,
+        Optional<Boolean> mirrorDirect,
+        Optional<Boolean> denyDelete,
+        Optional<Boolean> denyPurge,
+        Optional<Boolean> discardNewPerSubject,
+        Optional<Long> firstSequence,
+        ConsumerConfiguration<?>[] consumers) implements StreamConfiguration {
 }
