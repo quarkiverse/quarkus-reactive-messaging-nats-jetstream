@@ -3,8 +3,8 @@ package io.quarkiverse.reactive.messaging.nats.jetstream.client;
 import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
-class InternalConnectionListener<T> implements io.nats.client.ConnectionListener {
-    private final Connection<T> connection;
+class InternalConnectionListener implements io.nats.client.ConnectionListener {
+    private final Connection connection;
 
     @Override
     public void connectionEvent(io.nats.client.Connection connection, Events type) {

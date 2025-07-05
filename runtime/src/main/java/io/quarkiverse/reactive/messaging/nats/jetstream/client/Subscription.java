@@ -4,9 +4,9 @@ import org.eclipse.microprofile.reactive.messaging.Message;
 
 import io.smallrye.mutiny.Multi;
 
-public interface Subscription<T> {
+public interface Subscription {
 
-    Multi<Message<T>> subscribe();
+    Multi<Message<?>> subscribe();
 
     void close();
 }

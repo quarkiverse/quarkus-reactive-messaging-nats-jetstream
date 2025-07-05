@@ -10,21 +10,21 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.Pus
 
 public abstract class AbstractConsumer {
 
-    protected <T> io.nats.client.api.ConsumerConfiguration createConsumerConfiguration(
-            final ConsumerConfiguration<T> configuration) {
-        return builder(configuration).build();
+    protected <T> io.nats.client.api.ConsumerConfiguration createConsumerConfiguration(final String name,
+            final ConsumerConfiguration configuration) {
+        return builder(name, configuration).build();
     }
 
-    protected <T> io.nats.client.api.ConsumerConfiguration createConsumerConfiguration(
-            final PullConsumerConfiguration<T> configuration) {
-        var builder = builder(configuration);
+    protected <T> io.nats.client.api.ConsumerConfiguration createConsumerConfiguration(final String name,
+            final PullConsumerConfiguration configuration) {
+        var builder = builder(name, configuration);
         builder = configuration.maxWaiting().map(builder::maxPullWaiting).orElse(builder);
         return builder.build();
     }
 
-    protected <T> io.nats.client.api.ConsumerConfiguration createConsumerConfiguration(
-            final PushConsumerConfiguration<T> configuration) {
-        var builder = builder(configuration);
+    protected <T> io.nats.client.api.ConsumerConfiguration createConsumerConfiguration(final String name,
+            final PushConsumerConfiguration configuration) {
+        var builder = builder(name, configuration);
         builder = configuration.flowControl().map(builder::flowControl).orElse(builder);
         builder = configuration.idleHeartbeat().map(builder::idleHeartbeat).orElse(builder);
         builder = configuration.rateLimit().map(builder::rateLimit).orElse(builder);
@@ -33,13 +33,13 @@ public abstract class AbstractConsumer {
         return builder.build();
     }
 
-    private <T> io.nats.client.api.ConsumerConfiguration.Builder builder(final ConsumerConfiguration<T> configuration) {
+    private <T> io.nats.client.api.ConsumerConfiguration.Builder builder(final String name, final ConsumerConfiguration configuration) {
         var builder = io.nats.client.api.ConsumerConfiguration.builder();
         if (configuration.durable()) {
-            builder = builder.durable(configuration.name());
+            builder = builder.durable(name);
         }
         builder = builder.filterSubjects(List.of(configuration.subject()));
-        builder = builder.name(configuration.name());
+        builder = builder.name(name);
         builder = builder.ackPolicy(AckPolicy.Explicit);
         builder = configuration.ackWait().map(builder::ackWait).orElse(builder);
         builder = builder.deliverPolicy(configuration.deliverPolicy());
@@ -53,7 +53,9 @@ public abstract class AbstractConsumer {
         builder = builder.numReplicas(configuration.replicas());
         builder = configuration.memoryStorage().map(builder::memStorage).orElse(builder);
         builder = configuration.sampleFrequency().map(builder::sampleFrequency).orElse(builder);
-        builder = configuration.metadata().map(builder::metadata).orElse(builder);
+        if (!configuration.metadata().isEmpty()) {
+            builder = builder.metadata(configuration.metadata());
+        }
         builder = configuration.backoff().map(backoff -> backoff.toArray(new Duration[0]))
                 .map(builder::backoff).orElse(builder);
         builder = configuration.pauseUntil().map(builder::pauseUntil).orElse(builder);

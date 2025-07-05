@@ -2,11 +2,11 @@ package io.quarkiverse.reactive.messaging.nats.jetstream.client;
 
 import io.smallrye.mutiny.Uni;
 
-public interface KeyValueStore<T> {
+public interface KeyValueStore {
 
-    Uni<T> get(String key, Class<T> valueType);
+    <T> Uni<T> get(String key, Class<T> valueType);
 
-    Uni<Void> put(String key, T value);
+    <T> Uni<Void> put(String key, T value);
 
     Uni<Void> delete(String key);
 

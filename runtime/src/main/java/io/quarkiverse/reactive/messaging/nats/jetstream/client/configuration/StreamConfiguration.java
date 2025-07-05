@@ -1,10 +1,7 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration;
 
 import java.time.Duration;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 import io.nats.client.api.CompressionOption;
 import io.nats.client.api.DiscardPolicy;
@@ -131,15 +128,13 @@ public interface StreamConfiguration {
     Optional<Long> firstSequence();
 
     /**
-     * Consumer configurations.
+     * Consumer configurations. The map key is the name of the consumer.
      */
-    ConsumerConfiguration<?>[] consumers();
+    Map<String, ConsumerConfiguration> consumers();
 
     default Set<String> allSubjects() {
         final var subjects = subjects().map(HashSet::new).orElseGet(HashSet::new);
-        for (ConsumerConfiguration<?> consumerConfiguration : consumers()) {
-            subjects.add(escape(consumerConfiguration.subject()));
-        }
+        consumers().values().forEach(consumer -> subjects.add(escape(consumer.subject())));
         return subjects;
     }
 

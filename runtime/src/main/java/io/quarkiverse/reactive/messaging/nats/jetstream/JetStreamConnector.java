@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Flow;
 
-import io.quarkiverse.reactive.messaging.nats.jetstream.configuration.ConfigurationException;
 import jakarta.annotation.Priority;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.context.BeforeDestroyed;
@@ -19,6 +18,7 @@ import org.eclipse.microprofile.reactive.messaging.Message;
 import org.eclipse.microprofile.reactive.messaging.spi.Connector;
 import org.jboss.logging.Logger;
 
+import io.quarkiverse.reactive.messaging.nats.jetstream.configuration.ConfigurationException;
 import io.quarkiverse.reactive.messaging.nats.jetstream.processors.MessageProcessor;
 import io.quarkiverse.reactive.messaging.nats.jetstream.processors.publisher.MessagePublisherProcessorFactory;
 import io.quarkiverse.reactive.messaging.nats.jetstream.processors.subscriber.MessageSubscriberProcessorFactory;
@@ -55,8 +55,10 @@ public class JetStreamConnector implements InboundConnector, OutboundConnector, 
     public Flow.Publisher<? extends Message<?>> getPublisher(Config config) {
         final var configuration = new JetStreamConnectorIncomingConfiguration(config);
         final var channel = configuration.getChannel();
-        final var stream = configuration.getStream().orElseThrow(() -> new ConfigurationException("The 'stream' attribute must be set for the JetStream connector."));
-        final var consumer = configuration.getConsumer().orElseThrow(() -> new ConfigurationException("The 'consumer' attribute must be set for the JetStream connector."));
+        final var stream = configuration.getStream().orElseThrow(
+                () -> new ConfigurationException("The 'stream' attribute must be set for the JetStream connector."));
+        final var consumer = configuration.getConsumer().orElseThrow(
+                () -> new ConfigurationException("The 'consumer' attribute must be set for the JetStream connector."));
         final var retryBackoff = Duration.ofMillis(configuration.getRetryBackoff());
         final var processor = messagePublisherProcessorFactory.create(channel, stream, consumer, retryBackoff);
         processors.add(processor);
@@ -67,8 +69,10 @@ public class JetStreamConnector implements InboundConnector, OutboundConnector, 
     public Flow.Subscriber<? extends Message<?>> getSubscriber(Config config) {
         final var configuration = new JetStreamConnectorOutgoingConfiguration(config);
         final var channel = configuration.getChannel();
-        final var stream = configuration.getStream().orElseThrow(() -> new ConfigurationException("The 'stream' attribute must be set for the JetStream connector."));
-        final var subject = configuration.getSubject().orElseThrow(() -> new ConfigurationException("The 'subject' attribute must be set for the JetStream connector."));
+        final var stream = configuration.getStream().orElseThrow(
+                () -> new ConfigurationException("The 'stream' attribute must be set for the JetStream connector."));
+        final var subject = configuration.getSubject().orElseThrow(
+                () -> new ConfigurationException("The 'subject' attribute must be set for the JetStream connector."));
         final var processor = messageSubscriberProcessorFactory.create(channel, stream, subject);
         processors.add(processor);
         return processor.subscriber();

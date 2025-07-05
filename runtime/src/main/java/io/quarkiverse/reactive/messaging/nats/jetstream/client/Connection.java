@@ -10,28 +10,28 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.*;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 
-public interface Connection<T> extends AutoCloseable {
+public interface Connection extends AutoCloseable {
     int DEFAULT_MAX_RECONNECT = -1;
 
     boolean isConnected();
 
     List<ConnectionListener> listeners();
 
-    Uni<Message<T>> publish(Message<T> message, String stream, String subject);
+    Uni<Message<?>> publish(Message<?> message, String stream, String subject);
 
-    Uni<Consumer> addConsumer(String stream, ConsumerConfiguration<T> configuration);
+    Uni<Consumer> addConsumer(String stream, String name, ConsumerConfiguration configuration);
 
-    Uni<Message<T>> next(String stream, ConsumerConfiguration<T> configuration, Duration timeout);
+    Uni<Message<?>> next(String stream, String consumer, ConsumerConfiguration configuration, Duration timeout);
 
-    Multi<Message<T>> fetch(String stream, FetchConsumerConfiguration<T> configuration);
+    Multi<Message<?>> fetch(String stream, String consumer, FetchConsumerConfiguration configuration);
 
-    Uni<Message<T>> resolve(String stream, long sequence);
+    Uni<Message<?>> resolve(String stream, long sequence);
 
-    Uni<Subscription<T>> subscribe(String stream, PushConsumerConfiguration<T> configuration);
+    Uni<Subscription> subscribe(String stream, String consumer, PushConsumerConfiguration configuration);
 
-    Uni<Subscription<T>> subscribe(String stream, PullConsumerConfiguration<T> configuration);
+    Uni<Subscription> subscribe(String stream, String consumer, PullConsumerConfiguration configuration);
 
-    Uni<KeyValueStore<T>> keyValueStore(String bucketName);
+    Uni<KeyValueStore> keyValueStore(String bucketName);
 
     Uni<StreamManagement> streamManagement();
 

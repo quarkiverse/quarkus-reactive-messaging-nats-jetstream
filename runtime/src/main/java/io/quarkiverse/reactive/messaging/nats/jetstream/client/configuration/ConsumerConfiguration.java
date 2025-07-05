@@ -10,18 +10,13 @@ import io.nats.client.api.DeliverPolicy;
 import io.nats.client.api.ReplayPolicy;
 import io.smallrye.config.WithDefault;
 
-public interface ConsumerConfiguration<T> {
+public interface ConsumerConfiguration {
 
     /**
      * The type of the consumer, either Pull, Push, or Fetch.
      */
     @WithDefault("Pull")
     ConsumerType type();
-
-    /**
-     * The name of the consumer
-     */
-    String name();
 
     /**
      * Set to true if the consumer should be durable.
@@ -44,7 +39,7 @@ public interface ConsumerConfiguration<T> {
      * The point in the stream to receive messages from, either DeliverAll, DeliverLast, DeliverNew, DeliverByStartSequence,
      * DeliverByStartTime, or DeliverLastPerSubject
      */
-    @WithDefault("DeliverAll")
+    @WithDefault("all")
     DeliverPolicy deliverPolicy();
 
     /**
@@ -81,9 +76,9 @@ public interface ConsumerConfiguration<T> {
      * If the policy is ReplayOriginal, the messages in the stream will be pushed to the client at the same rate that
      * they were originally received, simulating the original timing of messages. If the policy is
      * ReplayInstant (the default), the messages will be pushed to the client as fast as possible while adhering to the
-     * Ack Policy, Max Ack Pending and the client's ability to consume those messages
+     * Ack Policy, Max Ack Pending, and the client's ability to consume those messages
      */
-    @WithDefault("ReplayInstant")
+    @WithDefault("instant")
     ReplayPolicy replayPolicy();
 
     /**
@@ -107,7 +102,7 @@ public interface ConsumerConfiguration<T> {
     /**
      * The consumer metadata
      */
-    Optional<Map<String, String>> metadata();
+    Map<String, String> metadata();
 
     /**
      * The timing of re-deliveries as a comma-separated list of durations
@@ -122,7 +117,7 @@ public interface ConsumerConfiguration<T> {
     /**
      * The payload type
      */
-    Optional<Class<T>> payloadType();
+    Optional<Class<?>> payloadType();
 
     /**
      * The duration to wait for an ack confirmation

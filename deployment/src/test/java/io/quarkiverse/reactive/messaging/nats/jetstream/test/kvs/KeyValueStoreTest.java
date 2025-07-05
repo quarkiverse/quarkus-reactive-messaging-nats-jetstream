@@ -21,10 +21,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkiverse.reactive.messaging.nats.jetstream.configuration.JetStreamConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.Connection;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.ConnectionFactory;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.DefaultConnectionListener;
+import io.quarkiverse.reactive.messaging.nats.jetstream.configuration.JetStreamConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.test.TestSpanExporter;
 import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
@@ -125,7 +125,7 @@ public class KeyValueStoreTest {
     static class KeyValueStoreResource {
         private final ConnectionFactory connectionFactory;
         private final JetStreamConfiguration jetStreamConfiguration;
-        private final AtomicReference<Connection<io.quarkiverse.reactive.messaging.nats.jetstream.test.resources.Data>> connection;
+        private final AtomicReference<Connection> connection;
 
         @Inject
         public KeyValueStoreResource(ConnectionFactory connectionFactory, JetStreamConfiguration jetStreamConfiguration) {
@@ -169,7 +169,7 @@ public class KeyValueStoreTest {
         }
 
         private Uni<io.quarkiverse.reactive.messaging.nats.jetstream.test.resources.Data> getValue(
-                Connection<io.quarkiverse.reactive.messaging.nats.jetstream.test.resources.Data> connection, String key) {
+                Connection connection, String key) {
             return connection.keyValueStore("test")
                     .onItem()
                     .transformToUni(keyValueStore -> keyValueStore.get(key,
@@ -178,19 +178,19 @@ public class KeyValueStoreTest {
                     .onFailure().transform(failure -> new NotFoundException(failure.getMessage()));
         }
 
-        public Uni<Void> putValue(Connection<io.quarkiverse.reactive.messaging.nats.jetstream.test.resources.Data> connection,
+        public Uni<Void> putValue(Connection connection,
                 String key, io.quarkiverse.reactive.messaging.nats.jetstream.test.resources.Data data) {
             return connection.keyValueStore("test")
                     .onItem().transformToUni(keyValueStore -> keyValueStore.put(key, data));
         }
 
         public Uni<Void> deleteValue(
-                Connection<io.quarkiverse.reactive.messaging.nats.jetstream.test.resources.Data> connection, String key) {
+                Connection connection, String key) {
             return connection.keyValueStore("test")
                     .onItem().transformToUni(keyValueStore -> keyValueStore.delete(key));
         }
 
-        private Uni<Connection<io.quarkiverse.reactive.messaging.nats.jetstream.test.resources.Data>> getOrEstablishConnection() {
+        private Uni<Connection> getOrEstablishConnection() {
             return Uni.createFrom().item(() -> Optional.ofNullable(connection.get())
                     .filter(Connection::isConnected)
                     .orElse(null))

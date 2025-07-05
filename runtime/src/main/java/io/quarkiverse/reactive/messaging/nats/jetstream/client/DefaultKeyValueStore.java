@@ -11,14 +11,14 @@ import io.vertx.mutiny.core.Vertx;
 import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
-public class DefaultKeyValueStore<T> implements KeyValueStore<T> {
+public class DefaultKeyValueStore implements KeyValueStore {
     private final String bucketName;
     private final io.nats.client.Connection connection;
     private final PayloadMapper payloadMapper;
     private final Vertx vertx;
 
     @Override
-    public Uni<T> get(String key, Class<T> valueType) {
+    public <T> Uni<T> get(String key, Class<T> valueType) {
         return context().executeBlocking(Uni.createFrom().item(Unchecked.supplier(() -> {
             try {
                 final var keyValue = connection.keyValue(bucketName);
@@ -32,7 +32,7 @@ public class DefaultKeyValueStore<T> implements KeyValueStore<T> {
     }
 
     @Override
-    public Uni<Void> put(String key, T value) {
+    public <T> Uni<Void> put(String key, T value) {
         return context().executeBlocking(Uni.createFrom().item(Unchecked.supplier(() -> {
             try {
                 KeyValue keyValue = connection.keyValue(bucketName);

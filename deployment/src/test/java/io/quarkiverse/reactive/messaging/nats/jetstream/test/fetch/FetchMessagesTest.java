@@ -1,22 +1,6 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.test.fetch;
 
-import io.nats.client.api.DeliverPolicy;
-import io.nats.client.api.ReplayPolicy;
-import io.quarkiverse.reactive.messaging.nats.jetstream.configuration.JetStreamConfiguration;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.ConnectionFactory;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.DefaultConnectionListener;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.StreamManagement;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.FetchConsumerConfiguration;
-import io.quarkiverse.reactive.messaging.nats.jetstream.test.TestSpanExporter;
-import io.quarkus.test.QuarkusUnitTest;
-import io.smallrye.mutiny.Uni;
-import jakarta.inject.Inject;
-import org.eclipse.microprofile.reactive.messaging.Message;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.Duration;
 import java.time.ZonedDateTime;
@@ -24,7 +8,25 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import jakarta.inject.Inject;
+
+import org.eclipse.microprofile.reactive.messaging.Message;
+import org.jboss.shrinkwrap.api.ShrinkWrap;
+import org.jboss.shrinkwrap.api.spec.JavaArchive;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+
+import io.nats.client.api.DeliverPolicy;
+import io.nats.client.api.ReplayPolicy;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.ConnectionFactory;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.DefaultConnectionListener;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.StreamManagement;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.FetchConsumerConfiguration;
+import io.quarkiverse.reactive.messaging.nats.jetstream.configuration.JetStreamConfiguration;
+import io.quarkiverse.reactive.messaging.nats.jetstream.test.TestSpanExporter;
+import io.quarkus.test.QuarkusUnitTest;
+import io.smallrye.mutiny.Uni;
 
 public class FetchMessagesTest {
 
@@ -169,11 +171,11 @@ public class FetchMessagesTest {
     }
 
     private void publish(Data data, String subject) throws Exception {
-        try (final var connection = connectionFactory.<Data>create(jetStreamConfiguration.connection(),
+        try (final var connection = connectionFactory.<Data> create(jetStreamConfiguration.connection(),
                 new DefaultConnectionListener()).await().atMost(Duration.ofSeconds(30))) {
             final var consumerConfiguration = createFetchConsumerConfiguration(subject);
 
-            connection.addConsumer("fetch-test", consumerConfiguration).await().atMost(Duration.ofSeconds(30));
+            connection.addConsumer("fetch-test", "fetch-consumer", consumerConfiguration).await().atMost(Duration.ofSeconds(30));
 
             connection.publish(Message.of(data), "fetch-test", subject)
                     .await()
@@ -182,35 +184,35 @@ public class FetchMessagesTest {
     }
 
     private Data next(String subject, boolean ack) throws Exception {
-        try (final var connection = connectionFactory.<Data>create(jetStreamConfiguration.connection(),
+        try (final var connection = connectionFactory.<Data> create(jetStreamConfiguration.connection(),
                 new DefaultConnectionListener()).await().atMost(Duration.ofSeconds(30))) {
             final var consumerConfiguration = createFetchConsumerConfiguration(subject);
-            final var received = connection.next("fetch-test", consumerConfiguration, Duration.ofSeconds(30))
+            final var received = connection.next("fetch-test", "fetch-consumer", consumerConfiguration, Duration.ofSeconds(30))
                     .await().atMost(Duration.ofSeconds(30));
             if (ack) {
                 Uni.createFrom().completionStage(received.ack()).await().atMost(Duration.ofSeconds(30));
             } else {
                 Uni.createFrom().completionStage(received.nack(new RuntimeException())).await().atMost(Duration.ofSeconds(30));
             }
-            return received.getPayload();
+            return (Data) received.getPayload();
         }
     }
 
     private List<Data> fetch(String subject) throws Exception {
-        try (final var connection = connectionFactory.<Data>create(jetStreamConfiguration.connection(),
+        try (final var connection = connectionFactory.<Data> create(jetStreamConfiguration.connection(),
                 new DefaultConnectionListener()).await().atMost(Duration.ofSeconds(30))) {
             final var consumerConfiguration = createFetchConsumerConfiguration(subject);
-            final var received = connection.fetch("fetch-test", consumerConfiguration)
+            final var received = connection.fetch("fetch-test", "fetch-consumer", consumerConfiguration)
                     .onItem().transformToUniAndMerge(message -> Uni.createFrom().completionStage(message.ack())
                             .onItem().transform(ignored -> message))
                     .collect().asList()
                     .await().atMost(Duration.ofSeconds(30));
-            return received.stream().map(Message::getPayload).toList();
+            return received.stream().map(Message::getPayload).map(payload -> (Data) payload).toList();
         }
     }
 
-    private FetchConsumerConfiguration<Data> createFetchConsumerConfiguration(String subject) {
-        return new FetchConsumerConfiguration<>() {
+    private FetchConsumerConfiguration createFetchConsumerConfiguration(String subject) {
+        return new FetchConsumerConfiguration() {
 
             @Override
             public Optional<Duration> timeout() {
@@ -220,11 +222,6 @@ public class FetchMessagesTest {
             @Override
             public Integer batchSize() {
                 return 10;
-            }
-
-            @Override
-            public String name() {
-                return "fetch-consumer";
             }
 
             @Override
@@ -298,8 +295,8 @@ public class FetchMessagesTest {
             }
 
             @Override
-            public Optional<Map<String, String>> metadata() {
-                return Optional.empty();
+            public Map<String, String> metadata() {
+                return Map.of();
             }
 
             @Override
@@ -313,7 +310,7 @@ public class FetchMessagesTest {
             }
 
             @Override
-            public Optional<Class<Data>> payloadType() {
+            public Optional<Class<?>> payloadType() {
                 return Optional.empty();
             }
 

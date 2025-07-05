@@ -13,10 +13,10 @@ import org.eclipse.microprofile.reactive.messaging.Incoming;
 import org.eclipse.microprofile.reactive.messaging.Message;
 import org.jboss.logging.Logger;
 
-import io.quarkiverse.reactive.messaging.nats.jetstream.configuration.JetStreamConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.Connection;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.ConnectionFactory;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.DefaultConnectionListener;
+import io.quarkiverse.reactive.messaging.nats.jetstream.configuration.JetStreamConfiguration;
 import io.smallrye.mutiny.Uni;
 
 @ApplicationScoped
@@ -24,7 +24,7 @@ public class DeadLetterConsumingBean {
     private final static Logger logger = Logger.getLogger(DeadLetterConsumingBean.class);
 
     private final AtomicReference<Data> lastData;
-    private final AtomicReference<Connection<Data>> connection;
+    private final AtomicReference<Connection> connection;
     private final JetStreamConfiguration jetStreamConfiguration;
     private final ConnectionFactory connectionFactory;
 
@@ -67,16 +67,16 @@ public class DeadLetterConsumingBean {
         }
     }
 
-    public Uni<Void> deadLetter(Connection<Data> connection, Message<Advisory> message) {
+    public Uni<Void> deadLetter(Connection connection, Message<Advisory> message) {
         logger.infof("Received dead letter on dead-letter-consumer channel: %s", message);
         final var advisory = message.getPayload();
         return connection.<Data> resolve(advisory.stream(), advisory.stream_seq())
-                .onItem().invoke(dataMessage -> lastData.set(dataMessage.getPayload()))
+                .onItem().invoke(dataMessage -> lastData.set((Data) dataMessage.getPayload()))
                 .onItem().transformToUni(m -> Uni.createFrom().completionStage(message.ack()))
                 .onFailure().recoverWithUni(throwable -> Uni.createFrom().completionStage(message.nack(throwable)));
     }
 
-    private Uni<Connection<Data>> getOrEstablishConnection() {
+    private Uni<Connection> getOrEstablishConnection() {
         return Uni.createFrom().item(() -> Optional.ofNullable(connection.get())
                 .filter(Connection::isConnected)
                 .orElse(null))

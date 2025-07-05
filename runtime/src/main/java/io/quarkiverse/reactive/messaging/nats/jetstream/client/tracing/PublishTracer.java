@@ -19,7 +19,7 @@ import io.smallrye.mutiny.unchecked.Unchecked;
 import io.smallrye.reactive.messaging.TracingMetadata;
 import io.smallrye.reactive.messaging.tracing.TracingUtils;
 
-public class PublishTracer<T> implements Tracer<T> {
+public class PublishTracer implements Tracer {
     private final boolean enabled;
     private final Instrumenter<PublishMessageMetadata, Void> instrumenter;
 
@@ -29,7 +29,7 @@ public class PublishTracer<T> implements Tracer<T> {
     }
 
     @Override
-    public Uni<Message<T>> withTrace(Message<T> message, TraceSupplier<T> traceSupplier) {
+    public Uni<Message<?>> withTrace(Message<?> message, TraceSupplier traceSupplier) {
         if (enabled) {
             return addTracingMetadata(message)
                     .onItem().transformToUni(msg -> Uni.createFrom().item(Unchecked.supplier(() -> {
@@ -48,7 +48,7 @@ public class PublishTracer<T> implements Tracer<T> {
      * Reactive messaging outbound connectors, if tracing is supported, will use that context as parent span to trace outbound
      * message transmission.
      */
-    private Uni<Message<T>> addTracingMetadata(final Message<T> message) {
+    private Uni<Message<?>> addTracingMetadata(final Message<?> message) {
         return Uni.createFrom().item(Unchecked.supplier(() -> {
             if (message.getMetadata(TracingMetadata.class).isEmpty()) {
                 var otelContext = QuarkusContextStorage.INSTANCE.current();

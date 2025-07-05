@@ -7,7 +7,7 @@ import io.nats.client.api.StorageType;
 import lombok.Builder;
 
 import java.time.Duration;
-import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -34,5 +34,5 @@ public record DefaultStreamConfiguration(Optional<String> description,
         Optional<Boolean> denyPurge,
         Optional<Boolean> discardNewPerSubject,
         Optional<Long> firstSequence,
-        ConsumerConfiguration<?>[] consumers) implements StreamConfiguration {
+        Map<String, ConsumerConfiguration> consumers) implements StreamConfiguration {
 }

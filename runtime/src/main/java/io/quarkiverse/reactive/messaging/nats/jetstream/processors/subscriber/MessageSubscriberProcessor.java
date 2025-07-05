@@ -19,7 +19,7 @@ import io.smallrye.reactive.messaging.providers.helpers.MultiUtils;
 import lombok.extern.jbosslog.JBossLog;
 
 @JBossLog
-public class MessageSubscriberProcessor<T> implements MessageProcessor, ConnectionListener {
+public class MessageSubscriberProcessor implements MessageProcessor, ConnectionListener {
     private final String channel;
     private final String stream;
     private final String subject;
@@ -27,7 +27,7 @@ public class MessageSubscriberProcessor<T> implements MessageProcessor, Connecti
     private final ConnectionFactory connectionFactory;
 
     private final AtomicReference<Status> status;
-    private final AtomicReference<Connection<T>> connection;
+    private final AtomicReference<Connection> connection;
 
     public MessageSubscriberProcessor(final String channel,
             final String stream,
@@ -43,11 +43,11 @@ public class MessageSubscriberProcessor<T> implements MessageProcessor, Connecti
         this.connection = new AtomicReference<>();
     }
 
-    public Flow.Subscriber<Message<T>> subscriber() {
+    public Flow.Subscriber<Message<?>> subscriber() {
         return MultiUtils.via(this::subscribe);
     }
 
-    private Multi<Message<T>> subscribe(Multi<Message<T>> subscription) {
+    private Multi<Message<?>> subscribe(Multi<Message<?>> subscription) {
         return subscription.onItem().transformToUniAndConcatenate(this::publish);
     }
 
@@ -89,7 +89,7 @@ public class MessageSubscriberProcessor<T> implements MessageProcessor, Connecti
         this.status.set(Status.builder().healthy(true).message(message).event(event).build());
     }
 
-    private Uni<Message<T>> publish(final Message<T> message) {
+    private Uni<Message<?>> publish(final Message<?> message) {
         return getOrEstablishConnection()
                 .onItem()
                 .transformToUni(connection -> connection.publish(message, stream, subject))
@@ -98,7 +98,7 @@ public class MessageSubscriberProcessor<T> implements MessageProcessor, Connecti
                 .onFailure().recoverWithUni(() -> recover(message));
     }
 
-    private Uni<Message<T>> recover(final Message<T> message) {
+    private Uni<Message<?>> recover(final Message<?> message) {
         return Uni.createFrom().<Void> item(() -> {
             close();
             return null;
@@ -106,7 +106,7 @@ public class MessageSubscriberProcessor<T> implements MessageProcessor, Connecti
                 .onItem().transformToUni(v -> publish(message));
     }
 
-    private Uni<? extends Connection<T>> getOrEstablishConnection() {
+    private Uni<? extends Connection> getOrEstablishConnection() {
         return Uni.createFrom().item(() -> Optional.ofNullable(connection.get())
                 .filter(Connection::isConnected)
                 .orElse(null))

@@ -3,7 +3,7 @@ package io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration;
 import java.time.Duration;
 import java.util.Optional;
 
-public interface PullConsumerConfiguration<T> extends ConsumerConfiguration<T> {
+public interface PullConsumerConfiguration extends ConsumerConfiguration {
 
     @Override
     default ConsumerType type() {

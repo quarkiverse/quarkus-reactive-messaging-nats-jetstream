@@ -1,26 +1,5 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.test.resources;
 
-import io.nats.client.api.DeliverPolicy;
-import io.nats.client.api.ReplayPolicy;
-import io.quarkiverse.reactive.messaging.nats.jetstream.configuration.JetStreamConfiguration;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.Connection;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.ConnectionFactory;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.StreamManagement;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.PublishMessageMetadata;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.StreamState;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ConsumerConfiguration;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ConsumerType;
-import io.smallrye.mutiny.Uni;
-import jakarta.annotation.Priority;
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.context.BeforeDestroyed;
-import jakarta.enterprise.context.RequestScoped;
-import jakarta.enterprise.event.Observes;
-import jakarta.enterprise.event.Reception;
-import jakarta.ws.rs.*;
-import org.eclipse.microprofile.reactive.messaging.Message;
-import org.eclipse.microprofile.reactive.messaging.Metadata;
-
 import java.time.Duration;
 import java.time.ZonedDateTime;
 import java.util.List;
@@ -29,6 +8,29 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 
+import jakarta.annotation.Priority;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.BeforeDestroyed;
+import jakarta.enterprise.context.RequestScoped;
+import jakarta.enterprise.event.Observes;
+import jakarta.enterprise.event.Reception;
+import jakarta.ws.rs.*;
+
+import org.eclipse.microprofile.reactive.messaging.Message;
+import org.eclipse.microprofile.reactive.messaging.Metadata;
+
+import io.nats.client.api.DeliverPolicy;
+import io.nats.client.api.ReplayPolicy;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.Connection;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.ConnectionFactory;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.StreamManagement;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.PublishMessageMetadata;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.StreamState;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ConsumerConfiguration;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ConsumerType;
+import io.quarkiverse.reactive.messaging.nats.jetstream.configuration.JetStreamConfiguration;
+import io.smallrye.mutiny.Uni;
+
 @Path("/request-reply")
 @Produces("application/json")
 @RequestScoped
@@ -36,7 +38,7 @@ public class RequestReplyResource {
     private final ConnectionFactory connectionFactory;
     private final JetStreamConfiguration jetStreamConfiguration;
     private final String streamName;
-    private final AtomicReference<Connection<Data>> messageConnection;
+    private final AtomicReference<Connection> messageConnection;
 
     public RequestReplyResource(ConnectionFactory connectionFactory,
             JetStreamConfiguration jetStreamConfiguration) {
@@ -104,7 +106,7 @@ public class RequestReplyResource {
         }
     }
 
-    private Uni<Connection<Data>> getOrEstablishMessageConnection() {
+    private Uni<Connection> getOrEstablishMessageConnection() {
         return Uni.createFrom().item(() -> Optional.ofNullable(messageConnection.get())
                 .filter(Connection::isConnected)
                 .orElse(null))
@@ -113,26 +115,26 @@ public class RequestReplyResource {
                 .onItem().invoke(this.messageConnection::set);
     }
 
-    private Uni<Void> produceData(Connection<Data> connection, String subject, String id, String data, String messageId) {
-        return connection.addConsumer(streamName, getConsumerConfiguration(subject))
+    private Uni<Void> produceData(Connection connection, String subject, String id, String data, String messageId) {
+        return connection.addConsumer(streamName, subject, getConsumerConfiguration(subject))
                 .onItem().transformToUni(consumer -> connection.publish(
                         Message.of(new Data(data, id, messageId), Metadata.of(PublishMessageMetadata.of(messageId))),
                         streamName,
-                         "events." + subject))
+                        "events." + subject))
                 .onItem().transformToUni(m -> Uni.createFrom().voidItem());
     }
 
-    public Uni<Data> consumeData(Connection<Data> connection, String subject) {
-        return connection.next(streamName, getConsumerConfiguration(subject), Duration.ofSeconds(10))
+    public Uni<Data> consumeData(Connection connection, String subject) {
+        return connection.next(streamName, subject, getConsumerConfiguration(subject), Duration.ofSeconds(10))
                 .map(message -> {
                     message.ack();
-                    return message.getPayload();
+                    return (Data) message.getPayload();
                 })
                 .onFailure().recoverWithUni(Uni.createFrom().failure(NotFoundException::new));
     }
 
-    private ConsumerConfiguration<Data> getConsumerConfiguration(String subject) {
-        return new ConsumerConfiguration<>() {
+    private ConsumerConfiguration getConsumerConfiguration(String subject) {
+        return new ConsumerConfiguration() {
 
             @Override
             public ConsumerType type() {
@@ -150,12 +152,7 @@ public class RequestReplyResource {
             }
 
             @Override
-            public String name() {
-                return subject;
-            }
-
-            @Override
-            public Optional<Class<Data>> payloadType() {
+            public Optional<Class<?>> payloadType() {
                 return Optional.empty();
             }
 
@@ -225,8 +222,8 @@ public class RequestReplyResource {
             }
 
             @Override
-            public Optional<Map<String, String>> metadata() {
-                return Optional.empty();
+            public Map<String, String> metadata() {
+                return Map.of();
             }
 
             @Override

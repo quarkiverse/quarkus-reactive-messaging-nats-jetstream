@@ -16,10 +16,10 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.nats.client.api.DeliverPolicy;
 import io.nats.client.api.ReplayPolicy;
-import io.quarkiverse.reactive.messaging.nats.jetstream.configuration.JetStreamConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.ConnectionFactory;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.DefaultConnectionListener;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.PullConsumerConfiguration;
+import io.quarkiverse.reactive.messaging.nats.jetstream.configuration.JetStreamConfiguration;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class PullSubscribeConnectionTest {
@@ -42,11 +42,11 @@ public class PullSubscribeConnectionTest {
         try (final var connection = connectionFactory.create(jetStreamConfiguration.connection()).await()
                 .atMost(Duration.ofSeconds(30))) {
             logger.info("Connected to NATS");
-            connection.subscribe("reader-test", consumerConfiguration).await().atMost(Duration.ofSeconds(30));
+            connection.subscribe("reader-test", "reader-data-consumer", consumerConfiguration).await().atMost(Duration.ofSeconds(30));
             final var consumer = connection.streamManagement()
                     .onItem()
                     .transformToUni(streamManagement -> streamManagement.getConsumer("reader-test",
-                            consumerConfiguration.name()))
+                            "reader-data-consumer"))
                     .await().atMost(Duration.ofSeconds(30));
             assertThat(consumer).isNotNull();
             assertThat(consumer.configuration().backoff()).isEqualTo(List.of(Duration.ofSeconds(10)));
@@ -57,12 +57,12 @@ public class PullSubscribeConnectionTest {
                 List.of(Duration.ofSeconds(10), Duration.ofSeconds(30)), 3L);
         try (final var connection = connectionFactory.create(jetStreamConfiguration.connection(),
                 new DefaultConnectionListener()).await().atMost(Duration.ofSeconds(30))) {
-            connection.subscribe("reader-test", updatedConsumerConfiguration).await().atMost(Duration.ofSeconds(30));
+            connection.subscribe("reader-test", "reader-data-consumer", updatedConsumerConfiguration).await().atMost(Duration.ofSeconds(30));
             logger.info("Connected to NATS");
             final var consumer = connection.streamManagement()
                     .onItem()
                     .transformToUni(streamManagement -> streamManagement.getConsumer("reader-test",
-                            updatedConsumerConfiguration.name()))
+                            "reader-data-consumer"))
                     .await().atMost(Duration.ofSeconds(30));
             assertThat(consumer).isNotNull();
             assertThat(consumer.configuration().backoff())
@@ -71,8 +71,8 @@ public class PullSubscribeConnectionTest {
         }
     }
 
-    private PullConsumerConfiguration<Object> createConsumerConfiguration(List<Duration> backoff, Long maxDeliver) {
-        return new PullConsumerConfiguration<Object>() {
+    private PullConsumerConfiguration createConsumerConfiguration(List<Duration> backoff, Long maxDeliver) {
+        return new PullConsumerConfiguration() {
 
             @Override
             public Duration maxExpires() {
@@ -92,11 +92,6 @@ public class PullSubscribeConnectionTest {
             @Override
             public Optional<Integer> maxWaiting() {
                 return Optional.empty();
-            }
-
-            @Override
-            public String name() {
-                return "reader-data-consumer";
             }
 
             @Override
@@ -170,8 +165,8 @@ public class PullSubscribeConnectionTest {
             }
 
             @Override
-            public Optional<Map<String, String>> metadata() {
-                return Optional.empty();
+            public Map<String, String> metadata() {
+                return Map.of();
             }
 
             @Override
@@ -185,7 +180,7 @@ public class PullSubscribeConnectionTest {
             }
 
             @Override
-            public Optional<Class<Object>> payloadType() {
+            public Optional<Class<?>> payloadType() {
                 return Optional.of(Object.class);
             }
 

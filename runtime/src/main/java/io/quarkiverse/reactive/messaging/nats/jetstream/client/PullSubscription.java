@@ -22,9 +22,9 @@ import lombok.extern.jbosslog.JBossLog;
 
 @RequiredArgsConstructor
 @JBossLog
-public class PullSubscription<T> implements Subscription<T> {
+public class PullSubscription implements Subscription {
     private final String stream;
-    private final PullConsumerConfiguration<T> consumerConfiguration;
+    private final PullConsumerConfiguration consumerConfiguration;
     private final ConsumerContext consumerContext;
     private final MessageMapper messageMapper;
     private final TracerFactory tracerFactory;
@@ -32,9 +32,9 @@ public class PullSubscription<T> implements Subscription<T> {
 
     @SuppressWarnings("ReactiveStreamsUnusedPublisher")
     @Override
-    public Multi<Message<T>> subscribe() {
-        Class<T> payloadType = consumerConfiguration.payloadType().orElse(null);
-        final var tracer = tracerFactory.<T> create(TracerType.Subscribe);
+    public Multi<Message<?>> subscribe() {
+        Class<?> payloadType = consumerConfiguration.payloadType().orElse(null);
+        final var tracer = tracerFactory.create(TracerType.Subscribe);
         ExecutorService pullExecutor = Executors.newSingleThreadExecutor(JetstreamWorkerThread::new);
         return Multi.createBy().repeating()
                 .uni(this::readNextMessage)
@@ -75,8 +75,8 @@ public class PullSubscription<T> implements Subscription<T> {
         });
     }
 
-    private Multi<Message<T>> createMulti(io.nats.client.Message message,
-            Class<T> payloadType, Context context) {
+    private Multi<Message<?>> createMulti(io.nats.client.Message message,
+            Class<?> payloadType, Context context) {
         if (message == null || message.getData() == null) {
             return Multi.createFrom().empty();
         } else {

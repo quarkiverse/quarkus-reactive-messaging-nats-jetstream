@@ -19,9 +19,10 @@ import io.vertx.mutiny.core.Context;
 import lombok.extern.jbosslog.JBossLog;
 
 @JBossLog
-public class PushSubscription<T> extends AbstractConsumer implements Subscription<T> {
+public class PushSubscription extends AbstractConsumer implements Subscription {
     private final String stream;
-    private final PushConsumerConfiguration<T> configuration;
+    private final String consumer;
+    private final PushConsumerConfiguration configuration;
     private final Connection connection;
     private final MessageMapper messageMapper;
     private final TracerFactory tracerFactory;
@@ -32,12 +33,14 @@ public class PushSubscription<T> extends AbstractConsumer implements Subscriptio
 
     PushSubscription(final Connection connection,
             final String stream,
-            final PushConsumerConfiguration<T> configuration,
+            final String consumer,
+            final PushConsumerConfiguration configuration,
             final MessageMapper messageMapper,
             final TracerFactory tracerFactory,
             final Context context) {
         this.connection = connection;
         this.stream = stream;
+        this.consumer = consumer;
         this.configuration = configuration;
         this.messageMapper = messageMapper;
         this.tracerFactory = tracerFactory;
@@ -45,10 +48,10 @@ public class PushSubscription<T> extends AbstractConsumer implements Subscriptio
     }
 
     @Override
-    public Multi<Message<T>> subscribe() {
-        final Class<T> payloadType = configuration.payloadType().orElse(null);
+    public Multi<Message<?>> subscribe() {
+        final Class<?> payloadType = configuration.payloadType().orElse(null);
         final var subject = configuration.subject();
-        final var tracer = tracerFactory.<T> create(TracerType.Subscribe);
+        final var tracer = tracerFactory.create(TracerType.Subscribe);
         return Multi.createFrom().<io.nats.client.Message> emitter(emitter -> {
             try {
                 final var jetStream = connection.jetStream();
@@ -93,7 +96,7 @@ public class PushSubscription<T> extends AbstractConsumer implements Subscriptio
         }
     }
 
-    private Message<T> transformMessage(io.nats.client.Message message, Class<T> payloadType, Context context,
+    private Message<?> transformMessage(io.nats.client.Message message, Class<?> payloadType, Context context,
             Duration timeout) {
         return messageMapper.of(message, payloadType, context, timeout);
     }
@@ -103,10 +106,10 @@ public class PushSubscription<T> extends AbstractConsumer implements Subscriptio
         builder = configuration.ordered().map(builder::ordered).orElse(builder);
         builder = configuration.deliverGroup().map(builder::deliverGroup).orElse(builder);
         if (configuration.durable()) {
-            builder = builder.durable(configuration.name());
+            builder = builder.durable(consumer);
         }
         builder = builder.stream(stream);
-        builder = builder.configuration(createConsumerConfiguration(configuration));
+        builder = builder.configuration(createConsumerConfiguration(consumer, configuration));
         return builder.build();
     }
 }

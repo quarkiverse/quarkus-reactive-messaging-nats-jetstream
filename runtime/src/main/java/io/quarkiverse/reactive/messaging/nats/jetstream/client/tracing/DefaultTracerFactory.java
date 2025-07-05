@@ -13,11 +13,11 @@ public class DefaultTracerFactory implements TracerFactory {
     private final JetStreamConfiguration configuration;
     private final Instance<OpenTelemetry> openTelemetryInstance;
 
-    public <T> Tracer<T> create(TracerType tracerType) {
+    public Tracer create(TracerType tracerType) {
         final boolean enabled = configuration.trace();
         return switch (tracerType) {
-            case Subscribe -> new SubscribeTracer<>(enabled, openTelemetryInstance);
-            case Publish -> new PublishTracer<>(enabled, openTelemetryInstance);
+            case Subscribe -> new SubscribeTracer(enabled, openTelemetryInstance);
+            case Publish -> new PublishTracer(enabled, openTelemetryInstance);
         };
     }
 }

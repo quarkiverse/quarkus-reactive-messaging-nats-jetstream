@@ -5,7 +5,7 @@ import java.util.Optional;
 
 import io.smallrye.config.WithDefault;
 
-public interface FetchConsumerConfiguration<T> extends ConsumerConfiguration<T> {
+public interface FetchConsumerConfiguration extends ConsumerConfiguration {
 
     @Override
     default ConsumerType type() {
