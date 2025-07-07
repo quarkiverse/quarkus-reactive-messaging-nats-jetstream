@@ -10,6 +10,7 @@ import io.nats.client.Connection;
 import io.nats.client.Dispatcher;
 import io.nats.client.JetStreamSubscription;
 import io.nats.client.PushSubscribeOptions;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.PushConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.PushConsumerConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.tracing.TracerFactory;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.tracing.TracerType;
@@ -49,8 +50,8 @@ public class PushSubscription extends AbstractConsumer implements Subscription {
 
     @Override
     public Multi<Message<?>> subscribe() {
-        final Class<?> payloadType = configuration.payloadType().orElse(null);
-        final var subject = configuration.subject();
+        final Class<?> payloadType = configuration.consumerConfiguration().payloadType().orElse(null);
+        final var subject = configuration.consumerConfiguration().subject();
         final var tracer = tracerFactory.create(TracerType.Subscribe);
         return Multi.createFrom().<io.nats.client.Message> emitter(emitter -> {
             try {
@@ -74,7 +75,7 @@ public class PushSubscription extends AbstractConsumer implements Subscription {
         })
                 .emitOn(context::runOnContext)
                 .map(message -> transformMessage(message, payloadType, context,
-                        configuration.acknowledgeTimeout().orElse(DEFAULT_ACK_TIMEOUT)))
+                        configuration.consumerConfiguration().acknowledgeTimeout().orElse(DEFAULT_ACK_TIMEOUT)))
                 .onItem().transformToUniAndMerge(message -> tracer.withTrace(message, msg -> msg));
     }
 
@@ -103,9 +104,10 @@ public class PushSubscription extends AbstractConsumer implements Subscription {
 
     private PushSubscribeOptions createPushSubscribeOptions() {
         var builder = PushSubscribeOptions.builder();
-        builder = configuration.ordered().map(builder::ordered).orElse(builder);
-        builder = configuration.deliverGroup().map(builder::deliverGroup).orElse(builder);
-        if (configuration.durable()) {
+        builder = configuration.pushConfiguration().flatMap(PushConfiguration::ordered).map(builder::ordered).orElse(builder);
+        builder = configuration.pushConfiguration().flatMap(PushConfiguration::deliverGroup).map(builder::deliverGroup)
+                .orElse(builder);
+        if (configuration.consumerConfiguration().durable()) {
             builder = builder.durable(consumer);
         }
         builder = builder.stream(stream);

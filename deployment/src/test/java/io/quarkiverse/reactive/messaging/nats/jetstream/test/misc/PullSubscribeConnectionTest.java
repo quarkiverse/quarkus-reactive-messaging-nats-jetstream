@@ -18,6 +18,8 @@ import io.nats.client.api.DeliverPolicy;
 import io.nats.client.api.ReplayPolicy;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.ConnectionFactory;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.DefaultConnectionListener;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ConsumerConfiguration;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.PullConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.PullConsumerConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.configuration.JetStreamConfiguration;
 import io.quarkus.test.QuarkusUnitTest;
@@ -42,7 +44,8 @@ public class PullSubscribeConnectionTest {
         try (final var connection = connectionFactory.create(jetStreamConfiguration.connection()).await()
                 .atMost(Duration.ofSeconds(30))) {
             logger.info("Connected to NATS");
-            connection.subscribe("reader-test", "reader-data-consumer", consumerConfiguration).await().atMost(Duration.ofSeconds(30));
+            connection.subscribe("reader-test", "reader-data-consumer", consumerConfiguration).await()
+                    .atMost(Duration.ofSeconds(30));
             final var consumer = connection.streamManagement()
                     .onItem()
                     .transformToUni(streamManagement -> streamManagement.getConsumer("reader-test",
@@ -57,7 +60,8 @@ public class PullSubscribeConnectionTest {
                 List.of(Duration.ofSeconds(10), Duration.ofSeconds(30)), 3L);
         try (final var connection = connectionFactory.create(jetStreamConfiguration.connection(),
                 new DefaultConnectionListener()).await().atMost(Duration.ofSeconds(30))) {
-            connection.subscribe("reader-test", "reader-data-consumer", updatedConsumerConfiguration).await().atMost(Duration.ofSeconds(30));
+            connection.subscribe("reader-test", "reader-data-consumer", updatedConsumerConfiguration).await()
+                    .atMost(Duration.ofSeconds(30));
             logger.info("Connected to NATS");
             final var consumer = connection.streamManagement()
                     .onItem()
@@ -75,119 +79,130 @@ public class PullSubscribeConnectionTest {
         return new PullConsumerConfiguration() {
 
             @Override
-            public Duration maxExpires() {
-                return Duration.ofSeconds(3);
+            public ConsumerConfiguration consumerConfiguration() {
+                return new ConsumerConfiguration() {
+                    @Override
+                    public Boolean durable() {
+                        return true;
+                    }
+
+                    @Override
+                    public String subject() {
+                        return "reader-data";
+                    }
+
+                    @Override
+                    public Optional<Duration> ackWait() {
+                        return Optional.empty();
+                    }
+
+                    @Override
+                    public DeliverPolicy deliverPolicy() {
+                        return DeliverPolicy.All;
+                    }
+
+                    @Override
+                    public Optional<Long> startSequence() {
+                        return Optional.empty();
+                    }
+
+                    @Override
+                    public Optional<ZonedDateTime> startTime() {
+                        return Optional.empty();
+                    }
+
+                    @Override
+                    public Optional<String> description() {
+                        return Optional.empty();
+                    }
+
+                    @Override
+                    public Optional<Duration> inactiveThreshold() {
+                        return Optional.empty();
+                    }
+
+                    @Override
+                    public Optional<Long> maxAckPending() {
+                        return Optional.empty();
+                    }
+
+                    @Override
+                    public Optional<Long> maxDeliver() {
+                        return Optional.of(maxDeliver);
+                    }
+
+                    @Override
+                    public ReplayPolicy replayPolicy() {
+                        return ReplayPolicy.Instant;
+                    }
+
+                    @Override
+                    public Integer replicas() {
+                        return 1;
+                    }
+
+                    @Override
+                    public Optional<Boolean> memoryStorage() {
+                        return Optional.empty();
+                    }
+
+                    @Override
+                    public Optional<String> sampleFrequency() {
+                        return Optional.empty();
+                    }
+
+                    @Override
+                    public Map<String, String> metadata() {
+                        return Map.of();
+                    }
+
+                    @Override
+                    public Optional<List<Duration>> backoff() {
+                        return Optional.of(backoff);
+                    }
+
+                    @Override
+                    public Optional<ZonedDateTime> pauseUntil() {
+                        return Optional.empty();
+                    }
+
+                    @Override
+                    public Optional<Class<?>> payloadType() {
+                        return Optional.of(Object.class);
+                    }
+
+                    @Override
+                    public Optional<Duration> acknowledgeTimeout() {
+                        return Optional.of(Duration.ofMillis(1000));
+                    }
+                };
             }
 
             @Override
-            public Integer batchSize() {
-                return 100;
+            public PullConfiguration pullConfiguration() {
+                return new PullConfiguration() {
+                    @Override
+                    public Duration maxExpires() {
+                        return Duration.ofSeconds(3);
+                    }
+
+                    @Override
+                    public Integer batchSize() {
+                        return 100;
+                    }
+
+                    @Override
+                    public Optional<Integer> rePullAt() {
+                        return Optional.empty();
+                    }
+
+                    @Override
+                    public Optional<Integer> maxWaiting() {
+                        return Optional.empty();
+                    }
+                };
             }
 
-            @Override
-            public Optional<Integer> rePullAt() {
-                return Optional.empty();
-            }
-
-            @Override
-            public Optional<Integer> maxWaiting() {
-                return Optional.empty();
-            }
-
-            @Override
-            public Boolean durable() {
-                return true;
-            }
-
-            @Override
-            public String subject() {
-                return "reader-data";
-            }
-
-            @Override
-            public Optional<Duration> ackWait() {
-                return Optional.empty();
-            }
-
-            @Override
-            public DeliverPolicy deliverPolicy() {
-                return DeliverPolicy.All;
-            }
-
-            @Override
-            public Optional<Long> startSequence() {
-                return Optional.empty();
-            }
-
-            @Override
-            public Optional<ZonedDateTime> startTime() {
-                return Optional.empty();
-            }
-
-            @Override
-            public Optional<String> description() {
-                return Optional.empty();
-            }
-
-            @Override
-            public Optional<Duration> inactiveThreshold() {
-                return Optional.empty();
-            }
-
-            @Override
-            public Optional<Long> maxAckPending() {
-                return Optional.empty();
-            }
-
-            @Override
-            public Optional<Long> maxDeliver() {
-                return Optional.of(maxDeliver);
-            }
-
-            @Override
-            public ReplayPolicy replayPolicy() {
-                return ReplayPolicy.Instant;
-            }
-
-            @Override
-            public Integer replicas() {
-                return 1;
-            }
-
-            @Override
-            public Optional<Boolean> memoryStorage() {
-                return Optional.empty();
-            }
-
-            @Override
-            public Optional<String> sampleFrequency() {
-                return Optional.empty();
-            }
-
-            @Override
-            public Map<String, String> metadata() {
-                return Map.of();
-            }
-
-            @Override
-            public Optional<List<Duration>> backoff() {
-                return Optional.of(backoff);
-            }
-
-            @Override
-            public Optional<ZonedDateTime> pauseUntil() {
-                return Optional.empty();
-            }
-
-            @Override
-            public Optional<Class<?>> payloadType() {
-                return Optional.of(Object.class);
-            }
-
-            @Override
-            public Optional<Duration> acknowledgeTimeout() {
-                return Optional.of(Duration.ofMillis(1000));
-            }
         };
     }
 }

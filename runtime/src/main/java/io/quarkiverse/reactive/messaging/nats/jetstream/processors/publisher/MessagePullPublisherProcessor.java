@@ -1,14 +1,15 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.processors.publisher;
 
+import java.time.Duration;
+
+import org.eclipse.microprofile.reactive.messaging.Message;
+
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.Connection;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.ConnectionFactory;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.Subscription;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ConnectionConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.PullConsumerConfiguration;
 import io.smallrye.mutiny.Multi;
-import org.eclipse.microprofile.reactive.messaging.Message;
-
-import java.time.Duration;
 
 public class MessagePullPublisherProcessor extends MessagePublisherProcessor {
     private final PullConsumerConfiguration configuration;

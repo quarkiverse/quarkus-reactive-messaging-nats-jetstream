@@ -13,12 +13,6 @@ import io.smallrye.config.WithDefault;
 public interface ConsumerConfiguration {
 
     /**
-     * The type of the consumer, either Pull, Push, or Fetch.
-     */
-    @WithDefault("Pull")
-    ConsumerType type();
-
-    /**
      * Set to true if the consumer should be durable.
      */
     @WithDefault("false")

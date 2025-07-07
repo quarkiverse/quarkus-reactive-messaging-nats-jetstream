@@ -27,7 +27,6 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.client.StreamManagement;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.PublishMessageMetadata;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.StreamState;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ConsumerConfiguration;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ConsumerType;
 import io.quarkiverse.reactive.messaging.nats.jetstream.configuration.JetStreamConfiguration;
 import io.smallrye.mutiny.Uni;
 
@@ -135,11 +134,6 @@ public class RequestReplyResource {
 
     private ConsumerConfiguration getConsumerConfiguration(String subject) {
         return new ConsumerConfiguration() {
-
-            @Override
-            public ConsumerType type() {
-                return ConsumerType.Plain;
-            }
 
             @Override
             public Optional<Long> startSequence() {

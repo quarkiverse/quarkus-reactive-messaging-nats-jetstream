@@ -114,7 +114,8 @@ class DefaultConnection extends AbstractConsumer implements Connection {
     }
 
     @Override
-    public Uni<Message<?>> next(final String stream, final String consumer, ConsumerConfiguration configuration, final Duration timeout) {
+    public Uni<Message<?>> next(final String stream, final String consumer, ConsumerConfiguration configuration,
+            final Duration timeout) {
         final var context = context();
         return context.executeBlocking(getConsumerContext(stream, consumer)
                 .onItem()
@@ -156,26 +157,29 @@ class DefaultConnection extends AbstractConsumer implements Connection {
     }
 
     @Override
-    public Uni<Subscription> subscribe(final String stream, final String consumer, final PushConsumerConfiguration configuration) {
+    public Uni<Subscription> subscribe(final String stream, final String consumer,
+            final PushConsumerConfiguration configuration) {
         final var context = context();
         return context.executeBlocking(Uni.createFrom().<Subscription> item(Unchecked.supplier(() -> {
-            final var subscription = new PushSubscription(connection, stream, consumer, configuration, messageMapper, tracerFactory,
+            final var subscription = new PushSubscription(connection, stream, consumer, configuration, messageMapper,
+                    tracerFactory,
                     context);
-            subscriptions.put(configuration.subject(), subscription);
+            subscriptions.put(configuration.consumerConfiguration().subject(), subscription);
             return subscription;
         })))
                 .onFailure().transform(SubscribeException::new);
     }
 
     @Override
-    public Uni<Subscription> subscribe(final String stream, final String consumer, final PullConsumerConfiguration configuration) {
+    public Uni<Subscription> subscribe(final String stream, final String consumer,
+            final PullConsumerConfiguration configuration) {
         final var context = context();
-        return context.executeBlocking(addOrUpdateConsumer(stream, consumer, configuration))
+        return context.executeBlocking(addOrUpdateConsumer(stream, consumer, configuration.consumerConfiguration()))
                 .onItem()
                 .transform(consumerContext -> new PullSubscription(stream, configuration, consumerContext, messageMapper,
                         tracerFactory, context))
                 .onItem().<Subscription> transform(subscription -> {
-                    subscriptions.put(configuration.subject(), subscription);
+                    subscriptions.put(configuration.consumerConfiguration().subject(), subscription);
                     return subscription;
                 })
                 .onFailure().transform(SubscribeException::new);
@@ -278,19 +282,19 @@ class DefaultConnection extends AbstractConsumer implements Connection {
                 .runSubscriptionOn(executor)
                 .emitOn(context::runOnContext)
                 .onItem()
-                .transformToUniAndMerge(message -> transformMessage(message, configuration, context));
+                .transformToUniAndMerge(message -> transformMessage(message, configuration.consumerConfiguration(), context));
     }
 
     private FetchConsumer fetchConsumer(final ConsumerContext consumerContext,
             final FetchConsumerConfiguration configuration)
             throws IOException, JetStreamApiException {
-        if (configuration.timeout().isEmpty()) {
+        if (configuration.fetchConfiguration().timeout().isEmpty()) {
             return consumerContext.fetch(
-                    FetchConsumeOptions.builder().maxMessages(configuration.batchSize()).noWait().build());
+                    FetchConsumeOptions.builder().maxMessages(configuration.fetchConfiguration().batchSize()).noWait().build());
         } else {
             return consumerContext
-                    .fetch(FetchConsumeOptions.builder().maxMessages(configuration.batchSize())
-                            .expiresIn(configuration.timeout().get().toMillis()).build());
+                    .fetch(FetchConsumeOptions.builder().maxMessages(configuration.fetchConfiguration().batchSize())
+                            .expiresIn(configuration.fetchConfiguration().timeout().get().toMillis()).build());
         }
     }
 
@@ -301,7 +305,8 @@ class DefaultConnection extends AbstractConsumer implements Connection {
                         configuration.acknowledgeTimeout().orElse(DEFAULT_ACK_TIMEOUT))));
     }
 
-    private Uni<ConsumerContext> addOrUpdateConsumer(final String stream, final String name, final ConsumerConfiguration configuration) {
+    private Uni<ConsumerContext> addOrUpdateConsumer(final String stream, final String name,
+            final ConsumerConfiguration configuration) {
         return Uni.createFrom().item(Unchecked.supplier(() -> {
             try {
                 final var consumerConfiguration = createConsumerConfiguration(name, configuration);
@@ -345,7 +350,7 @@ class DefaultConnection extends AbstractConsumer implements Connection {
             throws Exception {
         final var optionsBuilder = new Options.Builder();
         final var servers = configuration.servers();
-        optionsBuilder.servers(servers.split(","));
+        optionsBuilder.servers(servers.toArray(new String[0]));
         optionsBuilder.maxReconnects(configuration.connectionAttempts());
         optionsBuilder.connectionTimeout(configuration.connectionBackoff().orElse(DEFAULT_RECONNECT_WAIT));
         if (connectionListener != null) {

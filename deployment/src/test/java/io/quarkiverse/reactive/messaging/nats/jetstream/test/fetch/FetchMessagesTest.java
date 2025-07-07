@@ -22,6 +22,8 @@ import io.nats.client.api.ReplayPolicy;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.ConnectionFactory;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.DefaultConnectionListener;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.StreamManagement;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ConsumerConfiguration;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.FetchConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.FetchConsumerConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.configuration.JetStreamConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.test.TestSpanExporter;
@@ -171,11 +173,12 @@ public class FetchMessagesTest {
     }
 
     private void publish(Data data, String subject) throws Exception {
-        try (final var connection = connectionFactory.<Data> create(jetStreamConfiguration.connection(),
+        try (final var connection = connectionFactory.create(jetStreamConfiguration.connection(),
                 new DefaultConnectionListener()).await().atMost(Duration.ofSeconds(30))) {
             final var consumerConfiguration = createFetchConsumerConfiguration(subject);
 
-            connection.addConsumer("fetch-test", "fetch-consumer", consumerConfiguration).await().atMost(Duration.ofSeconds(30));
+            connection.addConsumer("fetch-test", "fetch-consumer", consumerConfiguration.consumerConfiguration()).await()
+                    .atMost(Duration.ofSeconds(30));
 
             connection.publish(Message.of(data), "fetch-test", subject)
                     .await()
@@ -184,10 +187,11 @@ public class FetchMessagesTest {
     }
 
     private Data next(String subject, boolean ack) throws Exception {
-        try (final var connection = connectionFactory.<Data> create(jetStreamConfiguration.connection(),
+        try (final var connection = connectionFactory.create(jetStreamConfiguration.connection(),
                 new DefaultConnectionListener()).await().atMost(Duration.ofSeconds(30))) {
             final var consumerConfiguration = createFetchConsumerConfiguration(subject);
-            final var received = connection.next("fetch-test", "fetch-consumer", consumerConfiguration, Duration.ofSeconds(30))
+            final var received = connection
+                    .next("fetch-test", "fetch-consumer", consumerConfiguration.consumerConfiguration(), Duration.ofSeconds(30))
                     .await().atMost(Duration.ofSeconds(30));
             if (ack) {
                 Uni.createFrom().completionStage(received.ack()).await().atMost(Duration.ofSeconds(30));
@@ -199,7 +203,7 @@ public class FetchMessagesTest {
     }
 
     private List<Data> fetch(String subject) throws Exception {
-        try (final var connection = connectionFactory.<Data> create(jetStreamConfiguration.connection(),
+        try (final var connection = connectionFactory.create(jetStreamConfiguration.connection(),
                 new DefaultConnectionListener()).await().atMost(Duration.ofSeconds(30))) {
             final var consumerConfiguration = createFetchConsumerConfiguration(subject);
             final var received = connection.fetch("fetch-test", "fetch-consumer", consumerConfiguration)
@@ -215,109 +219,120 @@ public class FetchMessagesTest {
         return new FetchConsumerConfiguration() {
 
             @Override
-            public Optional<Duration> timeout() {
-                return Optional.of(Duration.ofSeconds(3));
+            public ConsumerConfiguration consumerConfiguration() {
+                return new ConsumerConfiguration() {
+                    @Override
+                    public Boolean durable() {
+                        return true;
+                    }
+
+                    @Override
+                    public String subject() {
+                        return subject;
+                    }
+
+                    @Override
+                    public Optional<Duration> ackWait() {
+                        return Optional.empty();
+                    }
+
+                    @Override
+                    public DeliverPolicy deliverPolicy() {
+                        return DeliverPolicy.All;
+                    }
+
+                    @Override
+                    public Optional<Long> startSequence() {
+                        return Optional.empty();
+                    }
+
+                    @Override
+                    public Optional<ZonedDateTime> startTime() {
+                        return Optional.empty();
+                    }
+
+                    @Override
+                    public Optional<String> description() {
+                        return Optional.empty();
+                    }
+
+                    @Override
+                    public Optional<Duration> inactiveThreshold() {
+                        return Optional.empty();
+                    }
+
+                    @Override
+                    public Optional<Long> maxAckPending() {
+                        return Optional.empty();
+                    }
+
+                    @Override
+                    public Optional<Long> maxDeliver() {
+                        return Optional.empty();
+                    }
+
+                    @Override
+                    public ReplayPolicy replayPolicy() {
+                        return ReplayPolicy.Instant;
+                    }
+
+                    @Override
+                    public Integer replicas() {
+                        return 1;
+                    }
+
+                    @Override
+                    public Optional<Boolean> memoryStorage() {
+                        return Optional.empty();
+                    }
+
+                    @Override
+                    public Optional<String> sampleFrequency() {
+                        return Optional.empty();
+                    }
+
+                    @Override
+                    public Map<String, String> metadata() {
+                        return Map.of();
+                    }
+
+                    @Override
+                    public Optional<List<Duration>> backoff() {
+                        return Optional.empty();
+                    }
+
+                    @Override
+                    public Optional<ZonedDateTime> pauseUntil() {
+                        return Optional.empty();
+                    }
+
+                    @Override
+                    public Optional<Class<?>> payloadType() {
+                        return Optional.empty();
+                    }
+
+                    @Override
+                    public Optional<Duration> acknowledgeTimeout() {
+                        return Optional.of(Duration.ofMillis(1000));
+                    }
+                };
             }
 
             @Override
-            public Integer batchSize() {
-                return 10;
+            public FetchConfiguration fetchConfiguration() {
+                return new FetchConfiguration() {
+                    @Override
+                    public Optional<Duration> timeout() {
+                        return Optional.of(Duration.ofSeconds(3));
+                    }
+
+                    @Override
+                    public Integer batchSize() {
+                        return 10;
+                    }
+                };
             }
 
-            @Override
-            public Boolean durable() {
-                return true;
-            }
-
-            @Override
-            public String subject() {
-                return subject;
-            }
-
-            @Override
-            public Optional<Duration> ackWait() {
-                return Optional.empty();
-            }
-
-            @Override
-            public DeliverPolicy deliverPolicy() {
-                return DeliverPolicy.All;
-            }
-
-            @Override
-            public Optional<Long> startSequence() {
-                return Optional.empty();
-            }
-
-            @Override
-            public Optional<ZonedDateTime> startTime() {
-                return Optional.empty();
-            }
-
-            @Override
-            public Optional<String> description() {
-                return Optional.empty();
-            }
-
-            @Override
-            public Optional<Duration> inactiveThreshold() {
-                return Optional.empty();
-            }
-
-            @Override
-            public Optional<Long> maxAckPending() {
-                return Optional.empty();
-            }
-
-            @Override
-            public Optional<Long> maxDeliver() {
-                return Optional.empty();
-            }
-
-            @Override
-            public ReplayPolicy replayPolicy() {
-                return ReplayPolicy.Instant;
-            }
-
-            @Override
-            public Integer replicas() {
-                return 1;
-            }
-
-            @Override
-            public Optional<Boolean> memoryStorage() {
-                return Optional.empty();
-            }
-
-            @Override
-            public Optional<String> sampleFrequency() {
-                return Optional.empty();
-            }
-
-            @Override
-            public Map<String, String> metadata() {
-                return Map.of();
-            }
-
-            @Override
-            public Optional<List<Duration>> backoff() {
-                return Optional.empty();
-            }
-
-            @Override
-            public Optional<ZonedDateTime> pauseUntil() {
-                return Optional.empty();
-            }
-
-            @Override
-            public Optional<Class<?>> payloadType() {
-                return Optional.empty();
-            }
-
-            @Override
-            public Optional<Duration> acknowledgeTimeout() {
-                return Optional.of(Duration.ofMillis(1000));
-            }
         };
     }
 

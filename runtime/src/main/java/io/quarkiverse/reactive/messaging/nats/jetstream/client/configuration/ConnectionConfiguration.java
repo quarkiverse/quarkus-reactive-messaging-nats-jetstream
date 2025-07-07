@@ -1,6 +1,7 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration;
 
 import java.time.Duration;
+import java.util.List;
 import java.util.Optional;
 
 import io.nats.client.AuthHandler;
@@ -14,7 +15,7 @@ public interface ConnectionConfiguration {
     /**
      * A comma separated list of URI's nats://{host}:{port} to use for establishing the initial connection to the NATS cluster.
      */
-    String servers();
+    List<String> servers();
 
     /**
      * The username to connect to the NATS server

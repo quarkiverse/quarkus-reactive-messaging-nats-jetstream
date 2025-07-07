@@ -33,7 +33,7 @@ public class PullSubscription implements Subscription {
     @SuppressWarnings("ReactiveStreamsUnusedPublisher")
     @Override
     public Multi<Message<?>> subscribe() {
-        Class<?> payloadType = consumerConfiguration.payloadType().orElse(null);
+        Class<?> payloadType = consumerConfiguration.consumerConfiguration().payloadType().orElse(null);
         final var tracer = tracerFactory.create(TracerType.Subscribe);
         ExecutorService pullExecutor = Executors.newSingleThreadExecutor(JetstreamWorkerThread::new);
         return Multi.createBy().repeating()
@@ -53,7 +53,7 @@ public class PullSubscription implements Subscription {
     private Uni<Optional<io.nats.client.Message>> readNextMessage() {
         return Uni.createFrom().emitter(emitter -> {
             try {
-                var maxExpires = consumerConfiguration.maxExpires();
+                var maxExpires = consumerConfiguration.pullConfiguration().maxExpires();
                 if (maxExpires != null) {
                     emitter.complete(Optional
                             .ofNullable(consumerContext.next(maxExpires)));
@@ -82,7 +82,7 @@ public class PullSubscription implements Subscription {
         } else {
             return Multi.createFrom()
                     .item(() -> messageMapper.of(message, payloadType, context,
-                            consumerConfiguration.acknowledgeTimeout().orElse(DEFAULT_ACK_TIMEOUT)));
+                            consumerConfiguration.consumerConfiguration().acknowledgeTimeout().orElse(DEFAULT_ACK_TIMEOUT)));
         }
     }
 }

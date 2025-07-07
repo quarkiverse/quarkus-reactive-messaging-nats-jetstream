@@ -1,15 +1,15 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration;
 
+import java.time.Duration;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+
 import io.nats.client.api.CompressionOption;
 import io.nats.client.api.DiscardPolicy;
 import io.nats.client.api.RetentionPolicy;
 import io.nats.client.api.StorageType;
 import lombok.Builder;
-
-import java.time.Duration;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
 
 @Builder
 public record DefaultStreamConfiguration(Optional<String> description,
@@ -34,5 +34,6 @@ public record DefaultStreamConfiguration(Optional<String> description,
         Optional<Boolean> denyPurge,
         Optional<Boolean> discardNewPerSubject,
         Optional<Long> firstSequence,
-        Map<String, ConsumerConfiguration> consumers) implements StreamConfiguration {
+        Map<String, PullConsumerConfiguration> pullConsumers,
+        Map<String, PushConsumerConfiguration> pushConsumers) implements StreamConfiguration {
 }

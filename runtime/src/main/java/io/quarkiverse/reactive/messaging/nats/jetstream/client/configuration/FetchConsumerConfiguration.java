@@ -1,25 +1,15 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration;
 
-import java.time.Duration;
-import java.util.Optional;
-
-import io.smallrye.config.WithDefault;
-
-public interface FetchConsumerConfiguration extends ConsumerConfiguration {
-
-    @Override
-    default ConsumerType type() {
-        return ConsumerType.Fetch;
-    }
+public interface FetchConsumerConfiguration {
 
     /**
-     * The timeout for fetching messages.
+     * The consumer configuration.
      */
-    Optional<Duration> timeout();
+    ConsumerConfiguration consumerConfiguration();
 
     /**
-     * The maximum number of messages to fetch in a single batch.
+     * The fetch configuration.
      */
-    @WithDefault("1")
-    Integer batchSize();
+    FetchConfiguration fetchConfiguration();
+
 }

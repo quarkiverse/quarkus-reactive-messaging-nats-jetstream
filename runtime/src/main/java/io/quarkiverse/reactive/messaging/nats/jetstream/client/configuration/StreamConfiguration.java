@@ -128,13 +128,23 @@ public interface StreamConfiguration {
     Optional<Long> firstSequence();
 
     /**
-     * Consumer configurations. The map key is the name of the consumer.
+     * Pull consumer configurations. The map key is the name of the consumer.
      */
-    Map<String, ConsumerConfiguration> consumers();
+    Map<String, PullConsumerConfiguration> pullConsumers();
+
+    /**
+     * Push consumer configurations. The map key is the name of the consumer.
+     */
+    Map<String, PushConsumerConfiguration> pushConsumers();
 
     default Set<String> allSubjects() {
         final var subjects = subjects().map(HashSet::new).orElseGet(HashSet::new);
-        consumers().values().forEach(consumer -> subjects.add(escape(consumer.subject())));
+        pullConsumers().values().stream()
+                .map(PullConsumerConfiguration::consumerConfiguration)
+                .forEach(consumer -> subjects.add(escape(consumer.subject())));
+        pushConsumers().values().stream()
+                .map(PushConsumerConfiguration::consumerConfiguration)
+                .forEach(consumer -> subjects.add(escape(consumer.subject())));
         return subjects;
     }
 

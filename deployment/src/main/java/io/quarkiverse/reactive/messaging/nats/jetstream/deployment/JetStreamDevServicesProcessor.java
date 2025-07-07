@@ -135,11 +135,6 @@ public class JetStreamDevServicesProcessor {
             JetStreamDevServiceCfg config,
             LaunchModeBuildItem launchMode,
             Optional<Duration> timeout) {
-        if (!config.devServicesEnabled) {
-            // explicitly disabled
-            logger.debug("Not starting Dev Services for NATS JetStream, as it has been disabled in the config.");
-            return null;
-        }
 
         if (!dockerStatusBuildItem.isContainerRuntimeAvailable()) {
             logger.warn("Docker isn't working, please configure the NATS JetStream broker location.");
