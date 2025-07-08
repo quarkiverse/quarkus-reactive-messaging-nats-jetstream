@@ -1,5 +1,25 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.test.misc;
 
+import io.nats.client.api.DeliverPolicy;
+import io.nats.client.api.ReplayPolicy;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.Connection;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.ConnectionFactory;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.StreamManagement;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.StreamState;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ConsumerConfiguration;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.RequestReplyConsumerConfiguration;
+import io.quarkiverse.reactive.messaging.nats.jetstream.configuration.JetStreamConfiguration;
+import io.quarkiverse.reactive.messaging.nats.jetstream.test.MessageConsumer;
+import io.smallrye.mutiny.Uni;
+import jakarta.annotation.Priority;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.BeforeDestroyed;
+import jakarta.enterprise.context.RequestScoped;
+import jakarta.enterprise.event.Observes;
+import jakarta.enterprise.event.Reception;
+import jakarta.ws.rs.*;
+import org.eclipse.microprofile.reactive.messaging.Message;
+
 import java.time.Duration;
 import java.time.ZonedDateTime;
 import java.util.List;
@@ -8,42 +28,18 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 
-import jakarta.annotation.Priority;
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.context.BeforeDestroyed;
-import jakarta.enterprise.context.RequestScoped;
-import jakarta.enterprise.event.Observes;
-import jakarta.enterprise.event.Reception;
-import jakarta.ws.rs.*;
-
-import org.eclipse.microprofile.reactive.messaging.Message;
-import org.eclipse.microprofile.reactive.messaging.Metadata;
-
-import io.nats.client.api.DeliverPolicy;
-import io.nats.client.api.ReplayPolicy;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.Connection;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.ConnectionFactory;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.StreamManagement;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.PublishMessageMetadata;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.StreamState;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ConsumerConfiguration;
-import io.quarkiverse.reactive.messaging.nats.jetstream.configuration.JetStreamConfiguration;
-import io.smallrye.mutiny.Uni;
-
 @Path("/request-reply")
 @Produces("application/json")
 @RequestScoped
-public class RequestReplyResource {
+public class RequestReplyResource implements MessageConsumer<Data> {
     private final ConnectionFactory connectionFactory;
     private final JetStreamConfiguration jetStreamConfiguration;
-    private final String streamName;
     private final AtomicReference<Connection> messageConnection;
 
     public RequestReplyResource(ConnectionFactory connectionFactory,
             JetStreamConfiguration jetStreamConfiguration) {
         this.connectionFactory = connectionFactory;
         this.jetStreamConfiguration = jetStreamConfiguration;
-        this.streamName = "request-reply";
         this.messageConnection = new AtomicReference<>();
     }
 
@@ -80,18 +76,17 @@ public class RequestReplyResource {
     }
 
     @POST
-    @Path("/subjects/{subject}/{id}/{data}")
-    public Uni<Void> produceData(@PathParam("subject") String subject, @PathParam("id") String id,
-            @PathParam("data") String data) {
+    @Path("/request/{id}/{data}")
+    public Uni<Data> request(@PathParam("id") String id, @PathParam("data") String data) {
         return getOrEstablishMessageConnection()
                 .onItem()
-                .transformToUni(connection -> produceData(connection, subject, id, data, UUID.randomUUID().toString()));
+                .transformToUni(connection -> connection.<Data, Data>request(Message.of(new Data(data,id,UUID.randomUUID().toString())), getRequestReplyConfiguration(id)))
+                .onItem().transformToUni(this::acknowledgeData);
     }
 
-    @GET
-    @Path("/subjects/{subject}")
-    public Uni<Data> consumeData(@PathParam("subject") String subject) {
-        return getOrEstablishMessageConnection().onItem().transformToUni(connection -> consumeData(connection, subject));
+    private Uni<Data> acknowledgeData(Message<Data> response) {
+        return acknowledge(response)
+                .onItem().transform(v -> response.getPayload());
     }
 
     public void terminate(
@@ -114,25 +109,33 @@ public class RequestReplyResource {
                 .onItem().invoke(this.messageConnection::set);
     }
 
-    private Uni<Void> produceData(Connection connection, String subject, String id, String data, String messageId) {
-        return connection.addConsumer(streamName, subject, getConsumerConfiguration(subject))
-                .onItem().transformToUni(consumer -> connection.publish(
-                        Message.of(new Data(data, id, messageId), Metadata.of(PublishMessageMetadata.of(messageId))),
-                        streamName,
-                        "events." + subject))
-                .onItem().transformToUni(m -> Uni.createFrom().voidItem());
+
+    private RequestReplyConsumerConfiguration getRequestReplyConfiguration(String dataId) {
+        return new RequestReplyConsumerConfiguration() {
+
+            @Override
+            public String name() {
+                return dataId;
+            }
+
+            @Override
+            public String stream() {
+                return "request-reply";
+            }
+
+            @Override
+            public ConsumerConfiguration consumerConfiguration() {
+                return getConsumerConfiguration(dataId);
+            }
+
+            @Override
+            public Duration timeout() {
+                return Duration.ofSeconds(5);
+            }
+        };
     }
 
-    public Uni<Data> consumeData(Connection connection, String subject) {
-        return connection.next(streamName, subject, getConsumerConfiguration(subject), Duration.ofSeconds(10))
-                .map(message -> {
-                    message.ack();
-                    return (Data) message.getPayload();
-                })
-                .onFailure().recoverWithUni(Uni.createFrom().failure(NotFoundException::new));
-    }
-
-    private ConsumerConfiguration getConsumerConfiguration(String subject) {
+    private ConsumerConfiguration getConsumerConfiguration(String dataId) {
         return new ConsumerConfiguration() {
 
             @Override
@@ -167,12 +170,12 @@ public class RequestReplyResource {
 
             @Override
             public Boolean durable() {
-                return true;
+                return false;
             }
 
             @Override
             public String subject() {
-                return "events." + subject;
+                return "responses." + dataId;
             }
 
             @Override

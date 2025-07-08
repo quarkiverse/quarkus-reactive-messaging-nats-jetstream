@@ -38,4 +38,7 @@ public interface Connection extends AutoCloseable {
     Uni<KeyValueStoreManagement> keyValueStoreManagement();
 
     void nativeConnection(java.util.function.Consumer<io.nats.client.Connection> connection);
+
+    <Request, Reply> Uni<Message<Reply>> request(Message<Request> message, RequestReplyConsumerConfiguration configuration);
+
 }

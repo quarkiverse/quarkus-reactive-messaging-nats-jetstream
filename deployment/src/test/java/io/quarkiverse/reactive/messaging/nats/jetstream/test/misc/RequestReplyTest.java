@@ -3,6 +3,7 @@ package io.quarkiverse.reactive.messaging.nats.jetstream.test.misc;
 import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.quarkiverse.reactive.messaging.nats.jetstream.test.MessageConsumer;
 import jakarta.inject.Inject;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
@@ -25,7 +26,7 @@ public class RequestReplyTest {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
             () -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(TestSpanExporter.class, Data.class, RequestReplyResource.class, StreamInfo.class))
+                    .addClasses(TestSpanExporter.class, Data.class, RequestReplyResource.class, StreamInfo.class, RequestConsumer.class, MessageConsumer.class))
             .withConfigurationResource("application-request-reply.properties");
 
     @Inject
@@ -41,15 +42,17 @@ public class RequestReplyTest {
     public void requestReply() {
         final var id = "b41b2f79-118b-47c0-ba14-ae1a55ebf1e1";
         final var data = "N6cXzMdfaf";
-        final var subject = "a65583a4-7c17-4caf-855d-de5a55aaeb6d";
 
-        given()
+        final var result = given()
                 .filters(new RequestLoggingFilter(), new ResponseLoggingFilter())
-                .pathParam("subject", subject)
                 .pathParam("id", id)
                 .pathParam("data", data)
-                .post("/request-reply/subjects/{subject}/{id}/{data}")
-                .then().statusCode(204);
+                .post("/request-reply/request/{id}/{data}")
+                .then().statusCode(200).extract().as(Data.class);
+
+        assertThat(result).isNotNull();
+        assertThat(result.resourceId()).isEqualTo(id);
+        assertThat(result.data()).isEqualTo(data);
 
         final var streams = given()
                 .filters(new RequestLoggingFilter(), new ResponseLoggingFilter())
@@ -62,14 +65,14 @@ public class RequestReplyTest {
                 .pathParam("stream", "request-reply")
                 .get("/request-reply/streams/{stream}/subjects")
                 .then().statusCode(200).extract().as(String[].class);
-        assertThat(subjects).contains("events.>");
+        assertThat(subjects).contains("responses.*", "requests");
 
         final var consumers = given()
                 .filters(new RequestLoggingFilter(), new ResponseLoggingFilter())
                 .pathParam("stream", "request-reply")
                 .get("/request-reply/streams/{stream}/consumers")
                 .then().statusCode(200).extract().as(String[].class);
-        assertThat(consumers).contains(subject);
+        assertThat(consumers).contains(id);
 
         final var streamState = given()
                 .filters(new RequestLoggingFilter(), new ResponseLoggingFilter())
@@ -78,16 +81,5 @@ public class RequestReplyTest {
                 .then().statusCode(200).extract().as(StreamState.class);
 
         assertThat(streamState).isNotNull();
-        assertThat(streamState.subjectStates().stream().map(SubjectState::name)).contains("events." + subject);
-
-        final var result = given()
-                .filters(new RequestLoggingFilter(), new ResponseLoggingFilter())
-                .pathParam("subject", subject)
-                .get("/request-reply/subjects/{subject}")
-                .then().statusCode(200).extract().as(Data.class);
-
-        assertThat(result).isNotNull();
-        assertThat(result.resourceId()).isEqualTo(id);
-        assertThat(result.data()).isEqualTo(data);
     }
 }
