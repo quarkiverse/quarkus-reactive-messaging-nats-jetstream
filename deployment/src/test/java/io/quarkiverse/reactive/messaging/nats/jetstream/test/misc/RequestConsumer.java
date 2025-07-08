@@ -28,8 +28,10 @@ public class RequestConsumer implements MessageConsumer<Data> {
     @Incoming("request-consumer")
     public Uni<Void> data(final Message<Data> message) {
         return getOrEstablishConnection()
-                .onItem().transform(connection -> connection.publish(Message.of(message.getPayload()), "request-reply", "responses." + message.getPayload().resourceId()))
-                .onItem().transform(m -> null);
+                .onItem().transformToUni(connection -> connection.publish(Message.of(message.getPayload()), "request-reply", "responses." + message.getPayload().resourceId()))
+                .onItem().transform(m -> null)
+                .onFailure().recoverWithUni(throwable -> notAcknowledge(message, throwable))
+                .onItem().transform(v -> null);
     }
 
     private Uni<Connection> getOrEstablishConnection() {

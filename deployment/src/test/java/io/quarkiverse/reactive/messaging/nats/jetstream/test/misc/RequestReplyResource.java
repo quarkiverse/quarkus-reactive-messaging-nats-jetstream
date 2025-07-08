@@ -124,6 +124,11 @@ public class RequestReplyResource implements MessageConsumer<Data> {
             }
 
             @Override
+            public String subject() {
+                return "requests";
+            }
+
+            @Override
             public ConsumerConfiguration consumerConfiguration() {
                 return getConsumerConfiguration(dataId);
             }
@@ -190,12 +195,12 @@ public class RequestReplyResource implements MessageConsumer<Data> {
 
             @Override
             public Optional<Duration> inactiveThreshold() {
-                return Optional.empty();
+                return Optional.of(Duration.ofSeconds(30));
             }
 
             @Override
             public Optional<Long> maxDeliver() {
-                return Optional.empty();
+                return Optional.of(1L);
             }
 
             @Override

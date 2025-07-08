@@ -1,25 +1,22 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.test.misc;
 
-import static io.restassured.RestAssured.given;
-import static org.assertj.core.api.Assertions.assertThat;
-
-import io.quarkiverse.reactive.messaging.nats.jetstream.test.MessageConsumer;
-import jakarta.inject.Inject;
-
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
-
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.StreamState;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.SubjectState;
+import io.quarkiverse.reactive.messaging.nats.jetstream.test.MessageConsumer;
 import io.quarkiverse.reactive.messaging.nats.jetstream.test.TestSpanExporter;
 import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
 import io.restassured.filter.log.RequestLoggingFilter;
 import io.restassured.filter.log.ResponseLoggingFilter;
 import io.restassured.parsing.Parser;
+import jakarta.inject.Inject;
+import org.jboss.shrinkwrap.api.ShrinkWrap;
+import org.jboss.shrinkwrap.api.spec.JavaArchive;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+
+import static io.restassured.RestAssured.given;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class RequestReplyTest {
 

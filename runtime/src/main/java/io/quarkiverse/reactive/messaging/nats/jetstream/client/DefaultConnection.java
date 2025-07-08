@@ -194,7 +194,8 @@ class DefaultConnection extends AbstractConsumer implements Connection {
     @Override
     public <Request, Reply> Uni<Message<Reply>> request(Message<Request> message, RequestReplyConsumerConfiguration configuration) {
         return context().executeBlocking(addOrUpdateConsumer(configuration.stream(), configuration.name(), configuration.consumerConfiguration())
-                .onItem().transformToUni(consumerContext -> publishRequest(message, configuration.stream(), configuration.consumerConfiguration().subject(), consumerContext))
+                .onItem().transformToUni(ignore -> publishInternal(message, configuration.stream(), configuration.subject()))
+                .onItem().transformToUni(ignore -> getConsumerContext(configuration.stream(), configuration.name()))
                 .onItem().transformToUni(consumerContext -> next(consumerContext, configuration.consumerConfiguration(), configuration.timeout()))
                 .onItem().transform(reply -> (Message<Reply>) reply));
     }
@@ -397,10 +398,5 @@ class DefaultConnection extends AbstractConsumer implements Connection {
                 .onItem().transformToUni(this::acknowledge)
                 .onFailure().recoverWithUni(failure -> notAcknowledge(message, failure))
                 .onFailure().transform(failure -> new PublishException(failure.getMessage(), failure));
-    }
-
-    private Uni<ConsumerContext> publishRequest(final Message<?> message, final String stream, final String subject, final ConsumerContext consumerContext) {
-        return publishInternal(message, stream, subject)
-                .onItem().transform(m -> consumerContext);
     }
 }
