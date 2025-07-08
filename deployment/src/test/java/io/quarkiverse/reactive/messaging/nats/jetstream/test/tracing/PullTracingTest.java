@@ -82,9 +82,9 @@ public class PullTracingTest {
 
         @GET
         @Path("/last")
-        public io.quarkiverse.reactive.messaging.nats.jetstream.test.resources.Data getLast() {
+        public io.quarkiverse.reactive.messaging.nats.jetstream.test.misc.Data getLast() {
             return bean.getLast().orElseGet(
-                    () -> new io.quarkiverse.reactive.messaging.nats.jetstream.test.resources.Data(null, null, null));
+                    () -> new io.quarkiverse.reactive.messaging.nats.jetstream.test.misc.Data(null, null, null));
         }
 
         @POST
@@ -109,10 +109,10 @@ public class PullTracingTest {
         private final static Logger logger = Logger
                 .getLogger(io.quarkiverse.reactive.messaging.nats.jetstream.test.resources.DataConsumingBean.class);
 
-        private final Emitter<io.quarkiverse.reactive.messaging.nats.jetstream.test.resources.Data> dataEmitter;
+        private final Emitter<io.quarkiverse.reactive.messaging.nats.jetstream.test.misc.Data> dataEmitter;
 
         public DataConsumingBean(
-                @Channel("data-emitter") Emitter<io.quarkiverse.reactive.messaging.nats.jetstream.test.resources.Data> dataEmitter) {
+                @Channel("data-emitter") Emitter<io.quarkiverse.reactive.messaging.nats.jetstream.test.misc.Data> dataEmitter) {
             this.dataEmitter = dataEmitter;
         }
 
@@ -135,7 +135,7 @@ public class PullTracingTest {
                         .transformToUni(tuple -> Uni.createFrom()
                                 .completionStage(
                                         dataEmitter
-                                                .send(new io.quarkiverse.reactive.messaging.nats.jetstream.test.resources.Data(
+                                                .send(new io.quarkiverse.reactive.messaging.nats.jetstream.test.misc.Data(
                                                         message.getPayload(), tuple.getItem1(), tuple.getItem2()))))
                         .onItem().transform(ignore -> message);
             } catch (Exception e) {
@@ -146,14 +146,14 @@ public class PullTracingTest {
 
     @ApplicationScoped
     static class DataCollectorBean
-            implements MessageConsumer<io.quarkiverse.reactive.messaging.nats.jetstream.test.resources.Data> {
+            implements MessageConsumer<io.quarkiverse.reactive.messaging.nats.jetstream.test.misc.Data> {
         private final static Logger logger = Logger
                 .getLogger(io.quarkiverse.reactive.messaging.nats.jetstream.test.resources.DataCollectorBean.class);
 
-        private final AtomicReference<io.quarkiverse.reactive.messaging.nats.jetstream.test.resources.Data> lastData = new AtomicReference<>();
+        private final AtomicReference<io.quarkiverse.reactive.messaging.nats.jetstream.test.misc.Data> lastData = new AtomicReference<>();
 
         @Incoming("data-collector")
-        public Uni<Void> data(Message<io.quarkiverse.reactive.messaging.nats.jetstream.test.resources.Data> message) {
+        public Uni<Void> data(Message<io.quarkiverse.reactive.messaging.nats.jetstream.test.misc.Data> message) {
             return Uni.createFrom().item(message)
                     .onItem().invoke(m -> logger.infof("Received message: %s", message))
                     .onItem().transformToUni(this::setLast)
@@ -161,15 +161,15 @@ public class PullTracingTest {
                     .onFailure().recoverWithUni(throwable -> notAcknowledge(message, throwable));
         }
 
-        private Uni<Message<io.quarkiverse.reactive.messaging.nats.jetstream.test.resources.Data>> setLast(
-                Message<io.quarkiverse.reactive.messaging.nats.jetstream.test.resources.Data> message) {
+        private Uni<Message<io.quarkiverse.reactive.messaging.nats.jetstream.test.misc.Data>> setLast(
+                Message<io.quarkiverse.reactive.messaging.nats.jetstream.test.misc.Data> message) {
             return Uni.createFrom().item(() -> {
                 lastData.set(message.getPayload());
                 return message;
             });
         }
 
-        public Optional<io.quarkiverse.reactive.messaging.nats.jetstream.test.resources.Data> getLast() {
+        public Optional<io.quarkiverse.reactive.messaging.nats.jetstream.test.misc.Data> getLast() {
             return Optional.ofNullable(lastData.get());
         }
 

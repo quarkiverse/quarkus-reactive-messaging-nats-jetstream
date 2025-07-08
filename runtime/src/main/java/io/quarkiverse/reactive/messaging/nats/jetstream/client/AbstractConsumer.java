@@ -39,7 +39,7 @@ public abstract class AbstractConsumer {
         return builder.build();
     }
 
-    private <T> io.nats.client.api.ConsumerConfiguration.Builder builder(final String name,
+    private io.nats.client.api.ConsumerConfiguration.Builder builder(final String name,
             final ConsumerConfiguration configuration) {
         var builder = io.nats.client.api.ConsumerConfiguration.builder();
         if (configuration.durable()) {

@@ -1,5 +1,6 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.test.resources;
 
+import io.quarkiverse.reactive.messaging.nats.jetstream.test.misc.Data;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 

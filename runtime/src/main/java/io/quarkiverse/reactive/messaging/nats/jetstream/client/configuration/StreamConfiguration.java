@@ -138,7 +138,8 @@ public interface StreamConfiguration {
     Map<String, PushConsumerConfiguration> pushConsumers();
 
     default Set<String> allSubjects() {
-        final var subjects = subjects().map(HashSet::new).orElseGet(HashSet::new);
+        final var subjects = new HashSet<String>();
+        subjects().ifPresent(streamSubjects -> streamSubjects.forEach(subject -> subjects.add(escape(subject))));
         pullConsumers().values().stream()
                 .map(PullConsumerConfiguration::consumerConfiguration)
                 .forEach(consumer -> subjects.add(escape(consumer.subject())));

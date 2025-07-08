@@ -1,4 +1,4 @@
-package io.quarkiverse.reactive.messaging.nats.jetstream.test.resources;
+package io.quarkiverse.reactive.messaging.nats.jetstream.test.misc;
 
 import java.util.List;
 

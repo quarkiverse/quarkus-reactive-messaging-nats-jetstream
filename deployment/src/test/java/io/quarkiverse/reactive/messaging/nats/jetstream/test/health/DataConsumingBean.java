@@ -1,6 +1,5 @@
-package io.quarkiverse.reactive.messaging.nats.jetstream.test.resources;
+package io.quarkiverse.reactive.messaging.nats.jetstream.test.health;
 
-import io.quarkiverse.reactive.messaging.nats.jetstream.test.misc.Data;
 import jakarta.enterprise.context.ApplicationScoped;
 
 import org.eclipse.microprofile.reactive.messaging.Channel;
@@ -20,7 +19,8 @@ public class DataConsumingBean implements MessageConsumer<String> {
 
     private final Emitter<Data> dataEmitter;
 
-    public DataConsumingBean(@Channel("data-emitter") Emitter<Data> dataEmitter) {
+    public DataConsumingBean(
+            @Channel("data-emitter") Emitter<Data> dataEmitter) {
         this.dataEmitter = dataEmitter;
     }
 
@@ -42,7 +42,9 @@ public class DataConsumingBean implements MessageConsumer<String> {
                     .onItem()
                     .transformToUni(tuple -> Uni.createFrom()
                             .completionStage(
-                                    dataEmitter.send(new Data(message.getPayload(), tuple.getItem1(), tuple.getItem2()))))
+                                    dataEmitter
+                                            .send(new Data(
+                                                    message.getPayload(), tuple.getItem1(), tuple.getItem2()))))
                     .onItem().transform(ignore -> message);
         } catch (Exception e) {
             return Uni.createFrom().failure(e);

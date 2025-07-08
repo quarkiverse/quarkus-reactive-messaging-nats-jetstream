@@ -6,6 +6,8 @@ import static org.awaitility.Awaitility.await;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
+import io.quarkiverse.reactive.messaging.nats.jetstream.test.Advisory;
+import io.quarkiverse.reactive.messaging.nats.jetstream.test.misc.Data;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.BeforeEach;

@@ -336,6 +336,4 @@ public class FetchMessagesTest {
         };
     }
 
-    record Data(String data, String resourceId, String messageId) {
-    }
 }

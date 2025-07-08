@@ -1,9 +1,8 @@
-package io.quarkiverse.reactive.messaging.nats.jetstream.test.resources;
+package io.quarkiverse.reactive.messaging.nats.jetstream.test.health;
 
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
-import io.quarkiverse.reactive.messaging.nats.jetstream.test.misc.Data;
 import jakarta.enterprise.context.ApplicationScoped;
 
 import org.eclipse.microprofile.reactive.messaging.Incoming;
@@ -28,7 +27,8 @@ public class DataCollectorBean implements MessageConsumer<Data> {
                 .onFailure().recoverWithUni(throwable -> notAcknowledge(message, throwable));
     }
 
-    private Uni<Message<Data>> setLast(Message<Data> message) {
+    private Uni<Message<Data>> setLast(
+            Message<Data> message) {
         return Uni.createFrom().item(() -> {
             lastData.set(message.getPayload());
             return message;

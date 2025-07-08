@@ -1,9 +1,8 @@
-package io.quarkiverse.reactive.messaging.nats.jetstream.test.resources;
+package io.quarkiverse.reactive.messaging.nats.jetstream.test.health;
 
 import java.util.HashMap;
 import java.util.List;
 
-import io.quarkiverse.reactive.messaging.nats.jetstream.test.misc.Data;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 
@@ -28,7 +27,8 @@ public class DataResource {
     @GET
     @Path("/last")
     public Data getLast() {
-        return bean.getLast().orElseGet(() -> new Data(null, null, null));
+        return bean.getLast().orElseGet(
+                () -> new Data(null, null, null));
     }
 
     @POST

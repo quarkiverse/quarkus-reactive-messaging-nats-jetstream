@@ -3,6 +3,8 @@ package io.quarkiverse.reactive.messaging.nats.jetstream.test.resources;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
+import io.quarkiverse.reactive.messaging.nats.jetstream.test.Advisory;
+import io.quarkiverse.reactive.messaging.nats.jetstream.test.misc.Data;
 import jakarta.annotation.Priority;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.context.BeforeDestroyed;
