@@ -48,7 +48,7 @@ public class PublishTracer<T> implements Tracer<T> {
      * Reactive messaging outbound connectors, if tracing is supported, will use that context as parent span to trace outbound
      * message transmission.
      */
-    private <T> Uni<Message<T>> addTracingMetadata(final Message<T> message) {
+    private Uni<Message<T>> addTracingMetadata(final Message<T> message) {
         return Uni.createFrom().item(Unchecked.supplier(() -> {
             if (message.getMetadata(TracingMetadata.class).isEmpty()) {
                 var otelContext = QuarkusContextStorage.INSTANCE.current();

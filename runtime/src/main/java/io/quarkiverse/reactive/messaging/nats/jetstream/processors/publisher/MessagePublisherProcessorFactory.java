@@ -22,10 +22,11 @@ public class MessagePublisherProcessorFactory {
         this.connectionFactory = connectionFactory;
     }
 
-    public MessagePublisherProcessor create(String channel, String stream, String consumer, Duration retryBackoff) {
+    @SuppressWarnings("unchecked")
+    public <T> MessagePublisherProcessor<T> create(String channel, String stream, String consumer, Duration retryBackoff) {
         final var streamConfiguration = Optional.ofNullable(configuration.streams().get(stream))
                 .orElseThrow(() -> new ConfigurationException("Stream configuration not found for stream: " + stream));
-        return findPullConsumerConfiguration(streamConfiguration, consumer)
+        return (MessagePublisherProcessor<T>) findPullConsumerConfiguration(streamConfiguration, consumer)
                 .map(pullConsumerConfiguration -> create(channel, stream, consumer, retryBackoff, pullConsumerConfiguration))
                 .orElseGet(() -> findPushConsumerConfiguration(streamConfiguration, consumer)
                         .map(pushConsumerConfiguration -> create(channel, stream, consumer, retryBackoff,
@@ -35,15 +36,15 @@ public class MessagePublisherProcessorFactory {
 
     }
 
-    private MessagePublisherProcessor create(String channel, String stream, String consumer, Duration retryBackoff,
+    private <T> MessagePublisherProcessor<T> create(String channel, String stream, String consumer, Duration retryBackoff,
             PullConsumerConfiguration pullConsumerConfiguration) {
-        return new MessagePullPublisherProcessor(channel, stream, consumer, connectionFactory, configuration.connection(),
+        return new MessagePullPublisherProcessor<>(channel, stream, consumer, connectionFactory, configuration.connection(),
                 pullConsumerConfiguration, retryBackoff);
     }
 
-    private MessagePublisherProcessor create(String channel, String stream, String consumer, Duration retryBackoff,
+    private <T> MessagePublisherProcessor<T> create(String channel, String stream, String consumer, Duration retryBackoff,
             PushConsumerConfiguration pushConsumerConfiguration) {
-        return new MessagePushPublisherProcessor(channel, stream, consumer, connectionFactory, configuration.connection(),
+        return new MessagePushPublisherProcessor<>(channel, stream, consumer, connectionFactory, configuration.connection(),
                 pushConsumerConfiguration, retryBackoff);
     }
 

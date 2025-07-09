@@ -46,7 +46,7 @@ class DefaultConnection extends AbstractConsumer implements Connection {
     private final PayloadMapper payloadMapper;
     private final TracerFactory tracerFactory;
     private final Vertx vertx;
-    private final ConcurrentHashMap<String, Subscription> subscriptions;
+    private final ConcurrentHashMap<String, Subscription<?>> subscriptions;
 
     DefaultConnection(final ConnectionConfiguration configuration,
             final List<ConnectionListener> listeners,

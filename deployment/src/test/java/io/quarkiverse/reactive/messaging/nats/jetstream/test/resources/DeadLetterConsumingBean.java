@@ -44,9 +44,7 @@ public class DeadLetterConsumingBean {
     @Incoming("unstable-data-consumer")
     public Uni<Void> durableConsumer(Message<Data> message) {
         return Uni.createFrom().item(message)
-                .onItem().invoke(() -> {
-                    logger.infof("Received message on unstable-data-consumer channel: %s", message);
-                })
+                .onItem().invoke(() -> logger.infof("Received message on unstable-data-consumer channel: %s", message))
                 .onItem()
                 .transformToUni(m -> Uni.createFrom().completionStage(m.nack(new RuntimeException("Failed to deliver"))))
                 .onFailure().recoverWithUni(e -> Uni.createFrom().completionStage(message.nack(e)));
@@ -73,7 +71,7 @@ public class DeadLetterConsumingBean {
         logger.infof("Received dead letter on dead-letter-consumer channel: %s", message);
         final var advisory = message.getPayload();
         return connection.<Data> resolve(advisory.stream(), advisory.stream_seq())
-                .onItem().invoke(dataMessage -> lastData.set((Data) dataMessage.getPayload()))
+                .onItem().invoke(dataMessage -> lastData.set(dataMessage.getPayload()))
                 .onItem().transformToUni(m -> Uni.createFrom().completionStage(message.ack()))
                 .onFailure().recoverWithUni(throwable -> Uni.createFrom().completionStage(message.nack(throwable)));
     }
