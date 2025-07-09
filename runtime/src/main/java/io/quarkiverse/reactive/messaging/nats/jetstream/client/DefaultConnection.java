@@ -49,14 +49,14 @@ class DefaultConnection extends AbstractConsumer implements Connection {
     private final ConcurrentHashMap<String, Subscription> subscriptions;
 
     DefaultConnection(final ConnectionConfiguration configuration,
-                      final List<ConnectionListener> listeners,
-                      final MessageMapper messageMapper,
-                      final PayloadMapper payloadMapper,
-                      final ConsumerMapper consumerMapper,
-                      final StreamStateMapper streamStateMapper,
-                      final TracerFactory tracerFactory,
-                      final Vertx vertx,
-                      final TlsConfigurationRegistry tlsConfigurationRegistry) throws ConnectionException {
+            final List<ConnectionListener> listeners,
+            final MessageMapper messageMapper,
+            final PayloadMapper payloadMapper,
+            final ConsumerMapper consumerMapper,
+            final StreamStateMapper streamStateMapper,
+            final TracerFactory tracerFactory,
+            final Vertx vertx,
+            final TlsConfigurationRegistry tlsConfigurationRegistry) throws ConnectionException {
         this.connection = connect(configuration, tlsConfigurationRegistry);
         this.listeners = listeners;
         this.streamStateMapper = streamStateMapper;
@@ -96,21 +96,21 @@ class DefaultConnection extends AbstractConsumer implements Connection {
     }
 
     @Override
-    public Uni<Message<?>> publish(final Message<?> message, final String stream, final String subject) {
+    public <T> Uni<Message<T>> publish(final Message<T> message, final String stream, final String subject) {
         return context().executeBlocking(publishInternal(message, stream, subject));
     }
 
     @Override
     public Uni<Consumer> addConsumer(final String stream, String name, final ConsumerConfiguration configuration) {
         return context().executeBlocking(addOrUpdateConsumer(stream, name, configuration)
-                        .onItem()
-                        .transform(Unchecked.function(consumerContext -> consumerMapper.of(consumerContext.getConsumerInfo()))))
+                .onItem()
+                .transform(Unchecked.function(consumerContext -> consumerMapper.of(consumerContext.getConsumerInfo()))))
                 .onFailure().transform(SystemException::new);
     }
 
     @Override
-    public Uni<Message<?>> next(final String stream, final String consumer, ConsumerConfiguration configuration,
-                                final Duration timeout) {
+    public <T> Uni<Message<T>> next(final String stream, final String consumer, ConsumerConfiguration configuration,
+            final Duration timeout) {
         final var context = context();
         return context.executeBlocking(getConsumerContext(stream, consumer)
                 .onItem()
@@ -119,49 +119,50 @@ class DefaultConnection extends AbstractConsumer implements Connection {
 
     @SuppressWarnings("ReactiveStreamsUnusedPublisher")
     @Override
-    public Multi<Message<?>> fetch(final String stream, final String consumer, final FetchConsumerConfiguration configuration) {
+    public <T> Multi<Message<T>> fetch(final String stream, final String consumer,
+            final FetchConsumerConfiguration configuration) {
         final var context = context();
         return getConsumerContext(stream, consumer)
-                .onItem().transformToMulti(consumerContext -> fetchMessages(consumerContext, configuration, context))
-                .onItem().transformToUniAndMerge(message -> tracerFactory.create(TracerType.Subscribe).withTrace(message,
-                        new AttachContextTraceSupplier()))
+                .onItem().<Message<T>>transformToMulti(consumerContext -> fetchMessages(consumerContext, configuration, context))
+                .onItem().transformToUniAndMerge(message -> tracerFactory.<T> create(TracerType.Subscribe).withTrace(message,
+                        new AttachContextTraceSupplier<>()))
                 .onFailure().transform(FetchException::new);
     }
 
     @Override
-    public Uni<Message<?>> resolve(String streamName, long sequence) {
-        return context().executeBlocking(Uni.createFrom().<Message<?>>item(Unchecked.supplier(() -> {
-                    final var jetStream = connection.jetStream();
-                    final var streamContext = jetStream.getStreamContext(streamName);
-                    final var messageInfo = streamContext.getMessage(sequence);
-                    return new ResolvedMessage<>(messageInfo, payloadMapper.of(messageInfo).orElse(null));
-                })))
+    public <T> Uni<Message<T>> resolve(String streamName, long sequence) {
+        return context().executeBlocking(Uni.createFrom().<Message<T>> item(Unchecked.supplier(() -> {
+            final var jetStream = connection.jetStream();
+            final var streamContext = jetStream.getStreamContext(streamName);
+            final var messageInfo = streamContext.getMessage(sequence);
+            return new ResolvedMessage<T>(messageInfo, payloadMapper.<T> of(messageInfo).orElse(null));
+        })))
                 .onFailure().transform(ResolveException::new);
     }
 
     @Override
-    public Uni<Subscription> subscribe(final String stream, final String consumer,
-                                       final PushConsumerConfiguration configuration) {
+    public <T> Uni<Subscription<T>> subscribe(final String stream, final String consumer,
+            final PushConsumerConfiguration configuration) {
         final var context = context();
-        return context.executeBlocking(Uni.createFrom().<Subscription>item(Unchecked.supplier(() -> {
-                    final var subscription = new PushSubscription(connection, stream, consumer, configuration, messageMapper,
-                            tracerFactory,
-                            context);
-                    subscriptions.put(configuration.consumerConfiguration().subject(), subscription);
-                    return subscription;
-                })))
+        return context.executeBlocking(Uni.createFrom().<Subscription<T>> item(Unchecked.supplier(() -> {
+            final var subscription = new PushSubscription<T>(connection, stream, consumer, configuration, messageMapper,
+                    tracerFactory,
+                    context);
+            subscriptions.put(configuration.consumerConfiguration().subject(), subscription);
+            return subscription;
+        })))
                 .onFailure().transform(SubscribeException::new);
     }
 
     @Override
-    public Uni<Subscription> subscribe(final String stream, final String consumer,
-                                       final PullConsumerConfiguration configuration) {
+    public <T> Uni<Subscription<T>> subscribe(final String stream, final String consumer,
+            final PullConsumerConfiguration configuration) {
         final var context = context();
         return context.executeBlocking(addOrUpdateConsumer(stream, consumer, configuration.consumerConfiguration()))
                 .onItem()
-                .transform(consumerContext -> new PullSubscription(stream, configuration, consumerContext, messageMapper,
+                .transform(consumerContext -> new PullSubscription<T>(stream, configuration, consumerContext, messageMapper,
                         tracerFactory, context))
-                .onItem().<Subscription>transform(subscription -> {
+                .onItem().<Subscription<T>> transform(subscription -> {
                     subscriptions.put(configuration.consumerConfiguration().subject(), subscription);
                     return subscription;
                 })
@@ -192,12 +193,18 @@ class DefaultConnection extends AbstractConsumer implements Connection {
 
     @SuppressWarnings("unchecked")
     @Override
-    public <Request, Reply> Uni<Message<Reply>> request(Message<Request> message, RequestReplyConsumerConfiguration configuration) {
-        return context().executeBlocking(addOrUpdateConsumer(configuration.stream(), configuration.name(), configuration.consumerConfiguration())
-                .onItem().transformToUni(ignore -> publishInternal(message, configuration.stream(), configuration.subject()))
-                .onItem().transformToUni(ignore -> getConsumerContext(configuration.stream(), configuration.name()))
-                .onItem().transformToUni(consumerContext -> next(consumerContext, configuration.consumerConfiguration(), configuration.timeout()))
-                .onItem().transform(reply -> (Message<Reply>) reply));
+    public <Request, Reply> Uni<Message<Reply>> request(Message<Request> message,
+            RequestReplyConsumerConfiguration configuration) {
+        return context().executeBlocking(
+                addOrUpdateConsumer(configuration.stream(), configuration.name(), configuration.consumerConfiguration())
+                        .onItem()
+                        .transformToUni(consumerContext -> publishInternal(message, configuration.stream(),
+                                configuration.requestSubject())
+                                .onItem().transform(ignore -> consumerContext))
+                        .onItem()
+                        .transformToUni(consumerContext -> next(consumerContext, configuration.consumerConfiguration(),
+                                configuration.timeout()))
+                        .onItem().transform(reply -> (Message<Reply>) reply));
     }
 
     private PublishOptions createPublishOptions(final String messageId, final String streamName) {
@@ -207,12 +214,12 @@ class DefaultConnection extends AbstractConsumer implements Connection {
                 .build();
     }
 
-    private Uni<Message<?>> acknowledge(final Message<?> message) {
+    private <T> Uni<Message<T>> acknowledge(final Message<T> message) {
         return Uni.createFrom().completionStage(message.ack())
                 .onItem().transform(v -> message);
     }
 
-    private Uni<Message<?>> notAcknowledge(final Message<?> message, final Throwable throwable) {
+    private <T> Uni<Message<T>> notAcknowledge(final Message<T> message, final Throwable throwable) {
         return Uni.createFrom().completionStage(message.nack(throwable))
                 .onItem().invoke(() -> log.warnf(throwable, "Message not acknowledged: %s", throwable.getMessage()))
                 .onItem().transformToUni(v -> Uni.createFrom().item(message));
@@ -224,7 +231,7 @@ class DefaultConnection extends AbstractConsumer implements Connection {
         return result;
     }
 
-    private Uni<Message<?>> publishMessage(final Message<?> message) {
+    private <T> Uni<Message<T>> publishMessage(final Message<T> message) {
         return getJetStream()
                 .onItem().transformToUni(jetStream -> getMetadata(message).onItem()
                         .transformToUni(metadata -> Uni.createFrom().item(Unchecked.supplier(() -> jetStream.publish(
@@ -236,7 +243,7 @@ class DefaultConnection extends AbstractConsumer implements Connection {
                         .onItem().transform(ignore -> message));
     }
 
-    private Uni<PublishMessageMetadata> getMetadata(final Message<?> message) {
+    private <T> Uni<PublishMessageMetadata> getMetadata(final Message<T> message) {
         return Uni.createFrom().item(() -> message.getMetadata(PublishMessageMetadata.class).orElse(null))
                 .onItem().ifNull().failWith(() -> new RuntimeException("Metadata not found"));
     }
@@ -245,8 +252,8 @@ class DefaultConnection extends AbstractConsumer implements Connection {
         return Uni.createFrom().item(Unchecked.supplier(connection::jetStream));
     }
 
-    private Uni<Message<?>> addPublishMetadata(final Message<?> message, final String stream,
-                                               final String subject) {
+    private <T> Uni<Message<T>> addPublishMetadata(final Message<T> message, final String stream,
+            final String subject) {
         return Uni.createFrom().item(Unchecked.supplier(() -> {
             final var publishMetadata = PublishMessageMetadata.of(message, stream, subject,
                     payloadMapper.of(message.getPayload()));
@@ -255,23 +262,23 @@ class DefaultConnection extends AbstractConsumer implements Connection {
         }));
     }
 
-    private Multi<Message<?>> fetchMessages(ConsumerContext consumerContext, FetchConsumerConfiguration configuration,
-                                            Context context) {
+    private <T> Multi<Message<T>> fetchMessages(ConsumerContext consumerContext, FetchConsumerConfiguration configuration,
+            Context context) {
         ExecutorService executor = Executors.newSingleThreadExecutor(JetstreamWorkerThread::new);
-        return Multi.createFrom().<io.nats.client.Message>emitter(emitter -> {
-                    try {
-                        try (final var fetchConsumer = fetchConsumer(consumerContext, configuration)) {
-                            var message = fetchConsumer.nextMessage();
-                            while (message != null) {
-                                emitter.emit(message);
-                                message = fetchConsumer.nextMessage();
-                            }
-                            emitter.complete();
-                        }
-                    } catch (Exception failure) {
-                        emitter.fail(new FetchException(failure));
+        return Multi.createFrom().<io.nats.client.Message> emitter(emitter -> {
+            try {
+                try (final var fetchConsumer = fetchConsumer(consumerContext, configuration)) {
+                    var message = fetchConsumer.nextMessage();
+                    while (message != null) {
+                        emitter.emit(message);
+                        message = fetchConsumer.nextMessage();
                     }
-                })
+                    emitter.complete();
+                }
+            } catch (Exception failure) {
+                emitter.fail(new FetchException(failure));
+            }
+        })
                 .runSubscriptionOn(executor)
                 .emitOn(context::runOnContext)
                 .onItem()
@@ -279,7 +286,7 @@ class DefaultConnection extends AbstractConsumer implements Connection {
     }
 
     private FetchConsumer fetchConsumer(final ConsumerContext consumerContext,
-                                        final FetchConsumerConfiguration configuration)
+            final FetchConsumerConfiguration configuration)
             throws IOException, JetStreamApiException {
         if (configuration.fetchConfiguration().timeout().isEmpty()) {
             return consumerContext.fetch(
@@ -291,15 +298,17 @@ class DefaultConnection extends AbstractConsumer implements Connection {
         }
     }
 
-    private Uni<Message<?>> transformMessage(io.nats.client.Message message, ConsumerConfiguration configuration,
-                                             Context context) {
+    @SuppressWarnings("unchecked")
+    private <T> Uni<Message<T>> transformMessage(io.nats.client.Message message,
+                                                 ConsumerConfiguration configuration,
+                                                 Context context) {
         return Uni.createFrom()
-                .item(Unchecked.supplier(() -> messageMapper.of(message, configuration.payloadType().orElse(null), context,
+                .item(Unchecked.supplier(() -> (Message<T>) messageMapper.of(message, configuration.payloadType().orElse(null), context,
                         configuration.acknowledgeTimeout().orElse(DEFAULT_ACK_TIMEOUT))));
     }
 
-    private Uni<ConsumerContext> addOrUpdateConsumer(final String stream, final String name,
-                                                     final ConsumerConfiguration configuration) {
+    private <T> Uni<ConsumerContext> addOrUpdateConsumer(final String stream, final String name,
+            final ConsumerConfiguration configuration) {
         return Uni.createFrom().item(Unchecked.supplier(() -> {
             try {
                 final var consumerConfiguration = createConsumerConfiguration(name, configuration);
@@ -327,7 +336,7 @@ class DefaultConnection extends AbstractConsumer implements Connection {
     }
 
     private io.nats.client.Connection connect(ConnectionConfiguration configuration,
-                                              TlsConfigurationRegistry tlsConfigurationRegistry) throws ConnectionException {
+            TlsConfigurationRegistry tlsConfigurationRegistry) throws ConnectionException {
         try {
             final var options = createConnectionOptions(configuration, new InternalConnectionListener(this),
                     tlsConfigurationRegistry);
@@ -338,8 +347,8 @@ class DefaultConnection extends AbstractConsumer implements Connection {
     }
 
     public Options createConnectionOptions(final ConnectionConfiguration configuration,
-                                           final io.nats.client.ConnectionListener connectionListener,
-                                           final TlsConfigurationRegistry tlsConfigurationRegistry)
+            final io.nats.client.ConnectionListener connectionListener,
+            final TlsConfigurationRegistry tlsConfigurationRegistry)
             throws Exception {
         final var optionsBuilder = new Options.Builder();
         final var servers = configuration.servers();
@@ -377,12 +386,13 @@ class DefaultConnection extends AbstractConsumer implements Connection {
                 () -> new IllegalStateException("No Quarkus TLS configuration found for NATS JetStream connection"));
     }
 
-    private Uni<Message<?>> next(final ConsumerContext consumerContext, ConsumerConfiguration configuration, final Duration timeout) {
+    private <T> Uni<Message<T>> next(final ConsumerContext consumerContext, ConsumerConfiguration configuration,
+            final Duration timeout) {
         return Uni.createFrom().item(Unchecked.supplier(() -> consumerContext.next(timeout)))
                 .onItem().ifNull().failWith(MessageNotFoundException::new)
-                .onItem().ifNotNull().transformToUni(message -> transformMessage(message, configuration, context()))
-                .onItem().transformToUni(message -> tracerFactory.create(TracerType.Subscribe).withTrace(message,
-                        new AttachContextTraceSupplier()))
+                .onItem().ifNotNull().<Message<T>>transformToUni(message -> transformMessage(message, configuration, context()))
+                .onItem().transformToUni(message -> tracerFactory.<T> create(TracerType.Subscribe).withTrace(message,
+                        new AttachContextTraceSupplier<>()))
                 .onFailure().transform(failure -> {
                     if (failure instanceof MessageNotFoundException) {
                         return failure;
@@ -391,9 +401,9 @@ class DefaultConnection extends AbstractConsumer implements Connection {
                 });
     }
 
-    private Uni<Message<?>> publishInternal(final Message<?> message, final String stream, final String subject) {
+    private <T> Uni<Message<T>> publishInternal(final Message<T> message, final String stream, final String subject) {
         return addPublishMetadata(message, stream, subject)
-                .onItem().transformToUni(msg -> tracerFactory.create(TracerType.Publish).withTrace(msg, m -> m))
+                .onItem().transformToUni(msg -> tracerFactory.<T> create(TracerType.Publish).withTrace(msg, m -> m))
                 .onItem().transformToUni(this::publishMessage)
                 .onItem().transformToUni(this::acknowledge)
                 .onFailure().recoverWithUni(failure -> notAcknowledge(message, failure))

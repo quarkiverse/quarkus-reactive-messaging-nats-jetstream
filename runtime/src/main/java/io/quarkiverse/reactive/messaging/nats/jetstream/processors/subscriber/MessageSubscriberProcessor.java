@@ -19,7 +19,7 @@ import io.smallrye.reactive.messaging.providers.helpers.MultiUtils;
 import lombok.extern.jbosslog.JBossLog;
 
 @JBossLog
-public class MessageSubscriberProcessor implements MessageProcessor, ConnectionListener {
+public class MessageSubscriberProcessor<T> implements MessageProcessor, ConnectionListener {
     private final String channel;
     private final String stream;
     private final String subject;
@@ -43,11 +43,11 @@ public class MessageSubscriberProcessor implements MessageProcessor, ConnectionL
         this.connection = new AtomicReference<>();
     }
 
-    public Flow.Subscriber<Message<?>> subscriber() {
+    public Flow.Subscriber<Message<T>> subscriber() {
         return MultiUtils.via(this::subscribe);
     }
 
-    private Multi<Message<?>> subscribe(Multi<Message<?>> subscription) {
+    private Multi<Message<T>> subscribe(Multi<Message<T>> subscription) {
         return subscription.onItem().transformToUniAndConcatenate(this::publish);
     }
 
@@ -89,7 +89,7 @@ public class MessageSubscriberProcessor implements MessageProcessor, ConnectionL
         this.status.set(Status.builder().healthy(true).message(message).event(event).build());
     }
 
-    private Uni<Message<?>> publish(final Message<?> message) {
+    private Uni<Message<T>> publish(final Message<T> message) {
         return getOrEstablishConnection()
                 .onItem()
                 .transformToUni(connection -> connection.publish(message, stream, subject))
@@ -98,7 +98,7 @@ public class MessageSubscriberProcessor implements MessageProcessor, ConnectionL
                 .onFailure().recoverWithUni(() -> recover(message));
     }
 
-    private Uni<Message<?>> recover(final Message<?> message) {
+    private Uni<Message<T>> recover(final Message<T> message) {
         return Uni.createFrom().<Void> item(() -> {
             close();
             return null;

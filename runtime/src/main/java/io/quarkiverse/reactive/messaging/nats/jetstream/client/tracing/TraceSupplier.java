@@ -2,8 +2,8 @@ package io.quarkiverse.reactive.messaging.nats.jetstream.client.tracing;
 
 import org.eclipse.microprofile.reactive.messaging.Message;
 
-public interface TraceSupplier {
+public interface TraceSupplier<T> {
 
-    Message<?> get(Message<?> message);
+    Message<T> get(Message<T> message);
 
 }

@@ -1,5 +1,16 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.test.misc;
 
+import static io.restassured.RestAssured.given;
+import static org.assertj.core.api.Assertions.assertThat;
+
+import jakarta.inject.Inject;
+
+import org.jboss.shrinkwrap.api.ShrinkWrap;
+import org.jboss.shrinkwrap.api.spec.JavaArchive;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.StreamState;
 import io.quarkiverse.reactive.messaging.nats.jetstream.test.MessageConsumer;
 import io.quarkiverse.reactive.messaging.nats.jetstream.test.TestSpanExporter;
@@ -8,22 +19,14 @@ import io.restassured.RestAssured;
 import io.restassured.filter.log.RequestLoggingFilter;
 import io.restassured.filter.log.ResponseLoggingFilter;
 import io.restassured.parsing.Parser;
-import jakarta.inject.Inject;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
-
-import static io.restassured.RestAssured.given;
-import static org.assertj.core.api.Assertions.assertThat;
 
 public class RequestReplyTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
             () -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(TestSpanExporter.class, Data.class, RequestReplyResource.class, StreamInfo.class, RequestConsumer.class, MessageConsumer.class))
+                    .addClasses(TestSpanExporter.class, Data.class, RequestReplyResource.class, StreamInfo.class,
+                            RequestConsumer.class, MessageConsumer.class))
             .withConfigurationResource("application-request-reply.properties");
 
     @Inject

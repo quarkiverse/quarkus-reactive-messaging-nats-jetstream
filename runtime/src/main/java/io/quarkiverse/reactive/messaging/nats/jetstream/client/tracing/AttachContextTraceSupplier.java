@@ -13,10 +13,10 @@ import io.smallrye.reactive.messaging.providers.locals.LocalContextMetadata;
  * Consumer methods will be called on this duplicated context, so the OpenTelemetry context associated with the incoming
  * message will be propagated.
  */
-public class AttachContextTraceSupplier implements TraceSupplier {
+public class AttachContextTraceSupplier<T> implements TraceSupplier<T> {
 
     @Override
-    public Message<?> get(Message<?> message) {
+    public Message<T> get(Message<T> message) {
         var messageContext = message.getMetadata(LocalContextMetadata.class)
                 .map(LocalContextMetadata::context)
                 .orElse(null);

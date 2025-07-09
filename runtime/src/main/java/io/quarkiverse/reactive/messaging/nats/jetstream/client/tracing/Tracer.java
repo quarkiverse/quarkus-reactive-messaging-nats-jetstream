@@ -4,8 +4,8 @@ import org.eclipse.microprofile.reactive.messaging.Message;
 
 import io.smallrye.mutiny.Uni;
 
-public interface Tracer {
+public interface Tracer<T> {
 
-    Uni<Message<?>> withTrace(Message<?> message, TraceSupplier traceSupplier);
+    Uni<Message<T>> withTrace(Message<T> message, TraceSupplier<T> traceSupplier);
 
 }

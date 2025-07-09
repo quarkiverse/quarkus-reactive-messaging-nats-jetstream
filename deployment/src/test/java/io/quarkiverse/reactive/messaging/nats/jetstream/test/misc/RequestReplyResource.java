@@ -1,5 +1,23 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.test.misc;
 
+import java.time.Duration;
+import java.time.ZonedDateTime;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReference;
+
+import jakarta.annotation.Priority;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.BeforeDestroyed;
+import jakarta.enterprise.context.RequestScoped;
+import jakarta.enterprise.event.Observes;
+import jakarta.enterprise.event.Reception;
+import jakarta.ws.rs.*;
+
+import org.eclipse.microprofile.reactive.messaging.Message;
+
 import io.nats.client.api.DeliverPolicy;
 import io.nats.client.api.ReplayPolicy;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.Connection;
@@ -11,22 +29,6 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.Req
 import io.quarkiverse.reactive.messaging.nats.jetstream.configuration.JetStreamConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.test.MessageConsumer;
 import io.smallrye.mutiny.Uni;
-import jakarta.annotation.Priority;
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.context.BeforeDestroyed;
-import jakarta.enterprise.context.RequestScoped;
-import jakarta.enterprise.event.Observes;
-import jakarta.enterprise.event.Reception;
-import jakarta.ws.rs.*;
-import org.eclipse.microprofile.reactive.messaging.Message;
-
-import java.time.Duration;
-import java.time.ZonedDateTime;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
-import java.util.concurrent.atomic.AtomicReference;
 
 @Path("/request-reply")
 @Produces("application/json")
@@ -80,7 +82,8 @@ public class RequestReplyResource implements MessageConsumer<Data> {
     public Uni<Data> request(@PathParam("id") String id, @PathParam("data") String data) {
         return getOrEstablishMessageConnection()
                 .onItem()
-                .transformToUni(connection -> connection.<Data, Data>request(Message.of(new Data(data,id,UUID.randomUUID().toString())), getRequestReplyConfiguration(id)))
+                .<Message<Data>>transformToUni(connection -> connection.request(
+                        Message.of(new Data(data, id, UUID.randomUUID().toString())), getRequestReplyConfiguration(id)))
                 .onItem().transformToUni(this::acknowledgeData);
     }
 
@@ -109,7 +112,6 @@ public class RequestReplyResource implements MessageConsumer<Data> {
                 .onItem().invoke(this.messageConnection::set);
     }
 
-
     private RequestReplyConsumerConfiguration getRequestReplyConfiguration(String dataId) {
         return new RequestReplyConsumerConfiguration() {
 
@@ -124,7 +126,7 @@ public class RequestReplyResource implements MessageConsumer<Data> {
             }
 
             @Override
-            public String subject() {
+            public String requestSubject() {
                 return "requests";
             }
 

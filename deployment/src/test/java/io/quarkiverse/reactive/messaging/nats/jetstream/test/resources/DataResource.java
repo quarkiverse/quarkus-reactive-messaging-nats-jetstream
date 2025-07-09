@@ -3,7 +3,6 @@ package io.quarkiverse.reactive.messaging.nats.jetstream.test.resources;
 import java.util.HashMap;
 import java.util.List;
 
-import io.quarkiverse.reactive.messaging.nats.jetstream.test.misc.Data;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 
@@ -13,6 +12,7 @@ import org.eclipse.microprofile.reactive.messaging.Message;
 import org.eclipse.microprofile.reactive.messaging.Metadata;
 
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.PublishMessageMetadata;
+import io.quarkiverse.reactive.messaging.nats.jetstream.test.misc.Data;
 import io.smallrye.mutiny.Uni;
 
 @Path("/data")

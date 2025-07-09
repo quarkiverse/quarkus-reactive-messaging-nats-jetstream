@@ -20,7 +20,7 @@ import io.vertx.mutiny.core.Context;
 import lombok.extern.jbosslog.JBossLog;
 
 @JBossLog
-public class PushSubscription extends AbstractConsumer implements Subscription {
+public class PushSubscription<T> extends AbstractConsumer implements Subscription<T> {
     private final String stream;
     private final String consumer;
     private final PushConsumerConfiguration configuration;
@@ -48,11 +48,12 @@ public class PushSubscription extends AbstractConsumer implements Subscription {
         this.context = context;
     }
 
+    @SuppressWarnings("unchecked")
     @Override
-    public Multi<Message<?>> subscribe() {
-        final Class<?> payloadType = configuration.consumerConfiguration().payloadType().orElse(null);
+    public Multi<Message<T>> subscribe() {
+        final Class<T> payloadType = (Class<T>) configuration.consumerConfiguration().payloadType().orElse(null);
         final var subject = configuration.consumerConfiguration().subject();
-        final var tracer = tracerFactory.create(TracerType.Subscribe);
+        final var tracer = tracerFactory.<T> create(TracerType.Subscribe);
         return Multi.createFrom().<io.nats.client.Message> emitter(emitter -> {
             try {
                 final var jetStream = connection.jetStream();
@@ -97,7 +98,7 @@ public class PushSubscription extends AbstractConsumer implements Subscription {
         }
     }
 
-    private Message<?> transformMessage(io.nats.client.Message message, Class<?> payloadType, Context context,
+    private Message<T> transformMessage(io.nats.client.Message message, Class<T> payloadType, Context context,
             Duration timeout) {
         return messageMapper.of(message, payloadType, context, timeout);
     }

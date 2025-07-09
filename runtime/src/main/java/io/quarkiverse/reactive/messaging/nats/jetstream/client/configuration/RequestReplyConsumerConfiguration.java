@@ -17,7 +17,7 @@ public interface RequestReplyConsumerConfiguration {
     /**
      * The subject to publish request to.
      */
-    String subject();
+    String requestSubject();
 
     /**
      * The configuration for the consumer.

@@ -168,7 +168,7 @@ public class PullSubscribeConnectionTest {
 
                     @Override
                     public Optional<Class<?>> payloadType() {
-                        return Optional.of(Object.class);
+                        return Optional.of(Data.class);
                     }
 
                     @Override

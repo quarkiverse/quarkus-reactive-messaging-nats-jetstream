@@ -18,7 +18,7 @@ import io.smallrye.mutiny.Uni;
 import lombok.extern.jbosslog.JBossLog;
 
 @JBossLog
-public abstract class MessagePublisherProcessor implements MessageProcessor, ConnectionListener {
+public abstract class MessagePublisherProcessor<T> implements MessageProcessor, ConnectionListener {
     private final String channel;
     private final String stream;
     private final String consumer;
@@ -77,7 +77,7 @@ public abstract class MessagePublisherProcessor implements MessageProcessor, Con
         close(this.connection.getAndSet(null));
     }
 
-    public Multi<org.eclipse.microprofile.reactive.messaging.Message<?>> publisher() {
+    public Multi<org.eclipse.microprofile.reactive.messaging.Message<T>> publisher() {
         return subscribe()
                 .onFailure()
                 .invoke(failure -> log.errorf(failure, "Failed to subscribe with message: %s", failure.getMessage()))
@@ -99,14 +99,14 @@ public abstract class MessagePublisherProcessor implements MessageProcessor, Con
         }
     }
 
-    protected abstract Multi<Message<?>> subscription(Connection connection);
+    protected abstract Multi<Message<T>> subscription(Connection connection);
 
-    private Multi<org.eclipse.microprofile.reactive.messaging.Message<?>> recover(Throwable failure) {
+    private Multi<org.eclipse.microprofile.reactive.messaging.Message<T>> recover(Throwable failure) {
         log.errorf(failure, "Failed to subscribe with message: %s", failure.getMessage());
         return subscribe();
     }
 
-    private Multi<org.eclipse.microprofile.reactive.messaging.Message<?>> subscribe() {
+    private Multi<org.eclipse.microprofile.reactive.messaging.Message<T>> subscribe() {
         return getOrEstablishConnection()
                 .onItem().transformToMulti(this::subscription)
                 .onSubscription().invoke(() -> log.infof("Subscribed to channel %s", channel));

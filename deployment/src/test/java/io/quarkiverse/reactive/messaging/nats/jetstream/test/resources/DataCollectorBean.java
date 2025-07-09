@@ -3,7 +3,6 @@ package io.quarkiverse.reactive.messaging.nats.jetstream.test.resources;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
-import io.quarkiverse.reactive.messaging.nats.jetstream.test.misc.Data;
 import jakarta.enterprise.context.ApplicationScoped;
 
 import org.eclipse.microprofile.reactive.messaging.Incoming;
@@ -11,6 +10,7 @@ import org.eclipse.microprofile.reactive.messaging.Message;
 import org.jboss.logging.Logger;
 
 import io.quarkiverse.reactive.messaging.nats.jetstream.test.MessageConsumer;
+import io.quarkiverse.reactive.messaging.nats.jetstream.test.misc.Data;
 import io.smallrye.mutiny.Uni;
 
 @ApplicationScoped

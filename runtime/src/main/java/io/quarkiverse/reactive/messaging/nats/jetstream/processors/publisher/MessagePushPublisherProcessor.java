@@ -11,7 +11,7 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.Con
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.PushConsumerConfiguration;
 import io.smallrye.mutiny.Multi;
 
-public class MessagePushPublisherProcessor extends MessagePublisherProcessor {
+public class MessagePushPublisherProcessor<T> extends MessagePublisherProcessor<T> {
     private final PushConsumerConfiguration configuration;
 
     public MessagePushPublisherProcessor(final String channel,
@@ -26,8 +26,8 @@ public class MessagePushPublisherProcessor extends MessagePublisherProcessor {
     }
 
     @Override
-    protected Multi<Message<?>> subscription(Connection connection) {
-        return connection.subscribe(stream(), consumer(), configuration)
+    protected Multi<Message<T>> subscription(Connection connection) {
+        return connection.<T>subscribe(stream(), consumer(), configuration)
                 .onItem().transformToMulti(Subscription::subscribe);
     }
 }

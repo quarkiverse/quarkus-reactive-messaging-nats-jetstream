@@ -17,19 +17,19 @@ public interface Connection extends AutoCloseable {
 
     List<ConnectionListener> listeners();
 
-    Uni<Message<?>> publish(Message<?> message, String stream, String subject);
+    <T> Uni<Message<T>> publish(Message<T> message, String stream, String subject);
 
     Uni<Consumer> addConsumer(String stream, String name, ConsumerConfiguration configuration);
 
-    Uni<Message<?>> next(String stream, String consumer, ConsumerConfiguration configuration, Duration timeout);
+    <T> Uni<Message<T>> next(String stream, String consumer, ConsumerConfiguration configuration, Duration timeout);
 
-    Multi<Message<?>> fetch(String stream, String consumer, FetchConsumerConfiguration configuration);
+    <T> Multi<Message<T>> fetch(String stream, String consumer, FetchConsumerConfiguration configuration);
 
-    Uni<Message<?>> resolve(String stream, long sequence);
+    <T> Uni<Message<T>> resolve(String stream, long sequence);
 
-    Uni<Subscription> subscribe(String stream, String consumer, PushConsumerConfiguration configuration);
+    <T> Uni<Subscription<T>> subscribe(String stream, String consumer, PushConsumerConfiguration configuration);
 
-    Uni<Subscription> subscribe(String stream, String consumer, PullConsumerConfiguration configuration);
+    <T> Uni<Subscription<T>> subscribe(String stream, String consumer, PullConsumerConfiguration configuration);
 
     Uni<KeyValueStore> keyValueStore(String bucketName);
 
@@ -39,6 +39,7 @@ public interface Connection extends AutoCloseable {
 
     void nativeConnection(java.util.function.Consumer<io.nats.client.Connection> connection);
 
-    <Request, Reply> Uni<Message<Reply>> request(Message<Request> message, RequestReplyConsumerConfiguration configuration);
+    <Request, Reply> Uni<Message<Reply>> request(Message<Request> message,
+            RequestReplyConsumerConfiguration configuration);
 
 }

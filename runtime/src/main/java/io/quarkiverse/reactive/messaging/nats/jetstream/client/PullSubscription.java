@@ -22,7 +22,7 @@ import lombok.extern.jbosslog.JBossLog;
 
 @RequiredArgsConstructor
 @JBossLog
-public class PullSubscription implements Subscription {
+public class PullSubscription<T> implements Subscription<T> {
     private final String stream;
     private final PullConsumerConfiguration consumerConfiguration;
     private final ConsumerContext consumerContext;
@@ -30,11 +30,11 @@ public class PullSubscription implements Subscription {
     private final TracerFactory tracerFactory;
     private final Context context;
 
-    @SuppressWarnings("ReactiveStreamsUnusedPublisher")
+    @SuppressWarnings({"ReactiveStreamsUnusedPublisher", "unchecked"})
     @Override
-    public Multi<Message<?>> subscribe() {
-        Class<?> payloadType = consumerConfiguration.consumerConfiguration().payloadType().orElse(null);
-        final var tracer = tracerFactory.create(TracerType.Subscribe);
+    public Multi<Message<T>> subscribe() {
+        Class<T> payloadType = (Class<T>) consumerConfiguration.consumerConfiguration().payloadType().orElse(null);
+        final var tracer = tracerFactory.<T> create(TracerType.Subscribe);
         ExecutorService pullExecutor = Executors.newSingleThreadExecutor(JetstreamWorkerThread::new);
         return Multi.createBy().repeating()
                 .uni(this::readNextMessage)
@@ -75,13 +75,13 @@ public class PullSubscription implements Subscription {
         });
     }
 
-    private Multi<Message<?>> createMulti(io.nats.client.Message message,
-            Class<?> payloadType, Context context) {
+    private Multi<Message<T>> createMulti(io.nats.client.Message message,
+            Class<T> payloadType, Context context) {
         if (message == null || message.getData() == null) {
             return Multi.createFrom().empty();
         } else {
             return Multi.createFrom()
-                    .item(() -> messageMapper.of(message, payloadType, context,
+                    .item(() -> messageMapper.<T> of(message, payloadType, context,
                             consumerConfiguration.consumerConfiguration().acknowledgeTimeout().orElse(DEFAULT_ACK_TIMEOUT)));
         }
     }

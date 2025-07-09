@@ -20,7 +20,7 @@ import io.smallrye.reactive.messaging.tracing.TracingUtils;
 import lombok.extern.jbosslog.JBossLog;
 
 @JBossLog
-public class SubscribeTracer implements Tracer {
+public class SubscribeTracer<T> implements Tracer<T> {
     private final boolean enabled;
     private final Instrumenter<SubscribeMessageMetadata, Void> instrumenter;
 
@@ -30,7 +30,7 @@ public class SubscribeTracer implements Tracer {
     }
 
     @Override
-    public Uni<Message<?>> withTrace(Message<?> message, TraceSupplier traceSupplier) {
+    public Uni<Message<T>> withTrace(Message<T> message, TraceSupplier<T> traceSupplier) {
         log.debugf("Adding trace on thread: %s", Thread.currentThread().getName());
         if (enabled) {
             return Uni.createFrom().item(Unchecked.supplier(() -> {
