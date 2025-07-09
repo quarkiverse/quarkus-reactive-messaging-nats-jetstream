@@ -1,4 +1,4 @@
-package io.quarkiverse.reactive.messaging.nats.jetstream.test.resources;
+package io.quarkiverse.reactive.messaging.nats.jetstream.test.subscription;
 
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
@@ -6,7 +6,6 @@ import jakarta.ws.rs.*;
 import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.eclipse.microprofile.reactive.messaging.Emitter;
 
-import io.quarkiverse.reactive.messaging.nats.jetstream.test.misc.Data;
 import io.smallrye.mutiny.Uni;
 
 @Path("/dead-letter")

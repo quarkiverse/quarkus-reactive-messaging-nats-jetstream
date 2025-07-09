@@ -1,4 +1,4 @@
-package io.quarkiverse.reactive.messaging.nats.jetstream.test.resources;
+package io.quarkiverse.reactive.messaging.nats.jetstream.test.subscription;
 
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
@@ -10,7 +10,6 @@ import org.eclipse.microprofile.reactive.messaging.Message;
 import org.jboss.logging.Logger;
 
 import io.quarkiverse.reactive.messaging.nats.jetstream.test.MessageConsumer;
-import io.quarkiverse.reactive.messaging.nats.jetstream.test.misc.Data;
 import io.smallrye.mutiny.Uni;
 
 @ApplicationScoped

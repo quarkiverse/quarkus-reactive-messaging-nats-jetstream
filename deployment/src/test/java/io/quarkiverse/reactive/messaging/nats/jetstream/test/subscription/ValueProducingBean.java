@@ -1,4 +1,4 @@
-package io.quarkiverse.reactive.messaging.nats.jetstream.test.resources;
+package io.quarkiverse.reactive.messaging.nats.jetstream.test.subscription;
 
 import java.time.Duration;
 import java.util.concurrent.Flow;
@@ -13,6 +13,7 @@ import io.smallrye.mutiny.Uni;
 @ApplicationScoped
 public class ValueProducingBean {
 
+    @SuppressWarnings("ReactiveStreamsUnusedPublisher")
     @Outgoing("source")
     public Flow.Publisher<Long> generate() {
         return Multi.createFrom().range(1, 11)

@@ -1,4 +1,4 @@
-package io.quarkiverse.reactive.messaging.nats.jetstream.test.resources;
+package io.quarkiverse.reactive.messaging.nats.jetstream.test.subscription;
 
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
@@ -18,7 +18,6 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.client.ConnectionFactory
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.DefaultConnectionListener;
 import io.quarkiverse.reactive.messaging.nats.jetstream.configuration.JetStreamConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.test.Advisory;
-import io.quarkiverse.reactive.messaging.nats.jetstream.test.misc.Data;
 import io.smallrye.mutiny.Uni;
 
 @ApplicationScoped
