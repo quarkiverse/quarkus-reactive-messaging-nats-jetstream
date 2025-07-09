@@ -135,7 +135,7 @@ class DefaultConnection extends AbstractConsumer implements Connection {
             final var jetStream = connection.jetStream();
             final var streamContext = jetStream.getStreamContext(streamName);
             final var messageInfo = streamContext.getMessage(sequence);
-            return new ResolvedMessage<T>(messageInfo, payloadMapper.<T> of(messageInfo).orElse(null));
+            return new ResolvedMessage<>(messageInfo, payloadMapper.<T> of(messageInfo).orElse(null));
         })))
                 .onFailure().transform(ResolveException::new);
     }
@@ -307,7 +307,7 @@ class DefaultConnection extends AbstractConsumer implements Connection {
                         configuration.acknowledgeTimeout().orElse(DEFAULT_ACK_TIMEOUT))));
     }
 
-    private <T> Uni<ConsumerContext> addOrUpdateConsumer(final String stream, final String name,
+    private Uni<ConsumerContext> addOrUpdateConsumer(final String stream, final String name,
             final ConsumerConfiguration configuration) {
         return Uni.createFrom().item(Unchecked.supplier(() -> {
             try {

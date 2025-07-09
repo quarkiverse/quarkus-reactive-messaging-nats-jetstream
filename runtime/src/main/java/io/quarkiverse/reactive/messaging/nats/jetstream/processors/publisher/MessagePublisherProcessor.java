@@ -101,11 +101,6 @@ public abstract class MessagePublisherProcessor<T> implements MessageProcessor, 
 
     protected abstract Multi<Message<T>> subscription(Connection connection);
 
-    private Multi<org.eclipse.microprofile.reactive.messaging.Message<T>> recover(Throwable failure) {
-        log.errorf(failure, "Failed to subscribe with message: %s", failure.getMessage());
-        return subscribe();
-    }
-
     private Multi<org.eclipse.microprofile.reactive.messaging.Message<T>> subscribe() {
         return getOrEstablishConnection()
                 .onItem().transformToMulti(this::subscription)
