@@ -15,8 +15,8 @@ public class MessageSubscriberProcessorFactory {
         this.connectionFactory = connectionFactory;
     }
 
-    public MessageSubscriberProcessor create(String channel, String stream, String subject) {
-        return new MessageSubscriberProcessor(channel, stream, subject, configuration.connection(), connectionFactory);
+    public <T> MessageSubscriberProcessor<T> create(String channel, String stream, String subject) {
+        return new MessageSubscriberProcessor<>(channel, stream, subject, configuration.connection(), connectionFactory);
     }
 
 }

@@ -16,13 +16,14 @@ public interface PullConfiguration {
     /**
      * The size of batch of messages to be pulled in pull mode
      */
-    @WithDefault("1")
+    @WithDefault("100")
     Integer batchSize();
 
     /**
      * The point in the current batch to tell the server to start the next batch
      */
-    Optional<Integer> rePullAt();
+    @WithDefault("50")
+    Integer rePullAt();
 
     /**
      * The maximum number of waiting pull requests.

@@ -192,8 +192,8 @@ public class PullSubscribeConnectionTest {
                     }
 
                     @Override
-                    public Optional<Integer> rePullAt() {
-                        return Optional.empty();
+                    public Integer rePullAt() {
+                        return 50;
                     }
 
                     @Override
