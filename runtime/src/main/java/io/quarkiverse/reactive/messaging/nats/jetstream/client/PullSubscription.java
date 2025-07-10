@@ -23,16 +23,17 @@ import lombok.extern.jbosslog.JBossLog;
 @RequiredArgsConstructor
 @JBossLog
 public class PullSubscription<T> implements Subscription<T> {
-    private final PullConsumerConfiguration<T> consumerConfiguration;
+    private final String stream;
+    private final PullConsumerConfiguration consumerConfiguration;
     private final ConsumerContext consumerContext;
     private final MessageMapper messageMapper;
     private final TracerFactory tracerFactory;
     private final Context context;
 
-    @SuppressWarnings("ReactiveStreamsUnusedPublisher")
+    @SuppressWarnings({ "ReactiveStreamsUnusedPublisher", "unchecked" })
     @Override
     public Multi<Message<T>> subscribe() {
-        Class<T> payloadType = consumerConfiguration.consumerConfiguration().payloadType().orElse(null);
+        Class<T> payloadType = (Class<T>) consumerConfiguration.consumerConfiguration().payloadType().orElse(null);
         final var tracer = tracerFactory.<T> create(TracerType.Subscribe);
         ExecutorService pullExecutor = Executors.newSingleThreadExecutor(JetstreamWorkerThread::new);
         return Multi.createBy().repeating()
@@ -52,7 +53,7 @@ public class PullSubscription<T> implements Subscription<T> {
     private Uni<Optional<io.nats.client.Message>> readNextMessage() {
         return Uni.createFrom().emitter(emitter -> {
             try {
-                var maxExpires = consumerConfiguration.maxExpires();
+                var maxExpires = consumerConfiguration.pullConfiguration().maxExpires();
                 if (maxExpires != null) {
                     emitter.complete(Optional
                             .ofNullable(consumerContext.next(maxExpires)));
@@ -66,10 +67,10 @@ public class PullSubscription<T> implements Subscription<T> {
                 emitter.complete(Optional.empty());
             } catch (InterruptedException e) {
                 emitter.fail(new PullException(String.format("The reader was interrupted for stream: %s",
-                        consumerConfiguration.consumerConfiguration().stream()), e));
+                        stream), e));
             } catch (Exception exception) {
                 emitter.fail(new PullException(String.format("Error reading next message from stream: %s",
-                        consumerConfiguration.consumerConfiguration().stream()), exception));
+                        stream), exception));
             }
         });
     }

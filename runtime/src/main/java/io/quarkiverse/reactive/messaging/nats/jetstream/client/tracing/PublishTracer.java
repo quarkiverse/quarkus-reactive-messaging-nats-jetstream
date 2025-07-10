@@ -12,7 +12,6 @@ import io.opentelemetry.instrumentation.api.instrumenter.Instrumenter;
 import io.opentelemetry.instrumentation.api.instrumenter.InstrumenterBuilder;
 import io.opentelemetry.instrumentation.api.instrumenter.messaging.MessagingAttributesExtractor;
 import io.opentelemetry.instrumentation.api.instrumenter.messaging.MessagingSpanNameExtractor;
-import io.quarkiverse.reactive.messaging.nats.jetstream.JetStreamConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.PublishMessageMetadata;
 import io.quarkus.opentelemetry.runtime.QuarkusContextStorage;
 import io.smallrye.mutiny.Uni;
@@ -21,17 +20,17 @@ import io.smallrye.reactive.messaging.TracingMetadata;
 import io.smallrye.reactive.messaging.tracing.TracingUtils;
 
 public class PublishTracer<T> implements Tracer<T> {
-    private final JetStreamConfiguration configuration;
+    private final boolean enabled;
     private final Instrumenter<PublishMessageMetadata, Void> instrumenter;
 
-    public PublishTracer(JetStreamConfiguration configuration, Instance<OpenTelemetry> openTelemetryInstance) {
-        this.configuration = configuration;
+    public PublishTracer(boolean enabled, Instance<OpenTelemetry> openTelemetryInstance) {
+        this.enabled = enabled;
         this.instrumenter = instrumenter(openTelemetryInstance);
     }
 
     @Override
     public Uni<Message<T>> withTrace(Message<T> message, TraceSupplier<T> traceSupplier) {
-        if (configuration.trace()) {
+        if (enabled) {
             return addTracingMetadata(message)
                     .onItem().transformToUni(msg -> Uni.createFrom().item(Unchecked.supplier(() -> {
                         msg.getMetadata(PublishMessageMetadata.class)

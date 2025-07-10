@@ -1,15 +1,15 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration;
 
-import java.time.Duration;
-import java.util.Optional;
+public interface PullConsumerConfiguration {
 
-public interface PullConsumerConfiguration<T> {
+    /**
+     * The consumer configuration.
+     */
+    ConsumerConfiguration consumerConfiguration();
 
-    Duration maxExpires();
+    /**
+     * The pull configuration.
+     */
+    PullConfiguration pullConfiguration();
 
-    Integer batchSize();
-
-    Optional<Integer> maxWaiting();
-
-    ConsumerConfiguration<T> consumerConfiguration();
 }

@@ -19,14 +19,25 @@ import lombok.extern.jbosslog.JBossLog;
 
 @JBossLog
 public abstract class MessagePublisherProcessor<T> implements MessageProcessor, ConnectionListener {
+    private final String channel;
+    private final String stream;
+    private final String consumer;
     private final AtomicReference<Status> readiness;
     private final AtomicReference<Status> liveness;
-    private final AtomicReference<Connection<T>> connection;
+    private final AtomicReference<Connection> connection;
     private final ConnectionFactory connectionFactory;
     private final ConnectionConfiguration connectionConfiguration;
+    private final Duration retryBackoff;
 
-    public MessagePublisherProcessor(final ConnectionFactory connectionFactory,
-            final ConnectionConfiguration connectionConfiguration) {
+    public MessagePublisherProcessor(final String channel,
+            final String stream,
+            final String consumer,
+            final ConnectionFactory connectionFactory,
+            final ConnectionConfiguration connectionConfiguration,
+            final Duration retryBackoff) {
+        this.channel = channel;
+        this.stream = stream;
+        this.consumer = consumer;
         this.readiness = new AtomicReference<>(
                 Status.builder().event(ConnectionEvent.Closed).message("Publish processor inactive").healthy(false).build());
         this.liveness = new AtomicReference<>(
@@ -34,11 +45,21 @@ public abstract class MessagePublisherProcessor<T> implements MessageProcessor, 
         this.connection = new AtomicReference<>();
         this.connectionFactory = connectionFactory;
         this.connectionConfiguration = connectionConfiguration;
+        this.retryBackoff = retryBackoff;
     }
 
     @Override
     public String channel() {
-        return configuration().channel();
+        return channel;
+    }
+
+    @Override
+    public String stream() {
+        return stream;
+    }
+
+    public String consumer() {
+        return consumer;
     }
 
     @Override
@@ -60,12 +81,12 @@ public abstract class MessagePublisherProcessor<T> implements MessageProcessor, 
         return subscribe()
                 .onFailure()
                 .invoke(failure -> log.errorf(failure, "Failed to subscribe with message: %s", failure.getMessage()))
-                .onFailure().retry().withBackOff(retryBackoff()).indefinitely();
+                .onFailure().retry().withBackOff(retryBackoff).indefinitely();
     }
 
     @Override
     public void onEvent(ConnectionEvent event, String message) {
-        log.infof("Event: %s, message: %s, channel: %s", event, message, configuration().channel());
+        log.infof("Event: %s, message: %s, channel: %s", event, message, channel);
         switch (event) {
             case Connected -> {
                 this.readiness.set(Status.builder().event(event).message(message).healthy(true).build());
@@ -78,24 +99,15 @@ public abstract class MessagePublisherProcessor<T> implements MessageProcessor, 
         }
     }
 
-    protected abstract MessagePublisherConfiguration configuration();
-
-    protected abstract Multi<Message<T>> subscription(Connection<T> connection);
-
-    protected abstract Duration retryBackoff();
-
-    private Multi<org.eclipse.microprofile.reactive.messaging.Message<T>> recover(Throwable failure) {
-        log.errorf(failure, "Failed to subscribe with message: %s", failure.getMessage());
-        return subscribe();
-    }
+    protected abstract Multi<Message<T>> subscription(Connection connection);
 
     private Multi<org.eclipse.microprofile.reactive.messaging.Message<T>> subscribe() {
         return getOrEstablishConnection()
                 .onItem().transformToMulti(this::subscription)
-                .onSubscription().invoke(() -> log.infof("Subscribed to channel %s", configuration().channel()));
+                .onSubscription().invoke(() -> log.infof("Subscribed to channel %s", channel));
     }
 
-    private Uni<Connection<T>> getOrEstablishConnection() {
+    private Uni<Connection> getOrEstablishConnection() {
         return Uni.createFrom().item(() -> Optional.ofNullable(connection.get())
                 .filter(Connection::isConnected)
                 .orElse(null))
@@ -103,11 +115,11 @@ public abstract class MessagePublisherProcessor<T> implements MessageProcessor, 
                 .onItem().invoke(this.connection::set);
     }
 
-    private Uni<Connection<T>> connect() {
+    private Uni<Connection> connect() {
         return connectionFactory.create(connectionConfiguration, this);
     }
 
-    private void close(Connection<T> connection) {
+    private void close(Connection connection) {
         try {
             if (connection != null) {
                 connection.close();

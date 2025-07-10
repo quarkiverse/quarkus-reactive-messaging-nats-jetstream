@@ -29,36 +29,30 @@ public class DefaultConnectionFactory implements ConnectionFactory {
     private final TlsConfigurationRegistry tlsConfigurationRegistry;
 
     @Override
-    public <T> Uni<Connection<T>> create(final ConnectionConfiguration connectionConfiguration) {
+    public Uni<Connection> create(final ConnectionConfiguration connectionConfiguration) {
         return create(connectionConfiguration, List.of());
     }
 
     @Override
-    public <T> Uni<Connection<T>> create(ConnectionConfiguration connectionConfiguration,
+    public Uni<Connection> create(ConnectionConfiguration connectionConfiguration,
             ConnectionListener connectionListener) {
         return create(connectionConfiguration, List.of(connectionListener));
     }
 
-    public <T> Uni<Connection<T>> create(ConnectionConfiguration connectionConfiguration,
+    public Uni<Connection> create(ConnectionConfiguration connectionConfiguration,
             List<ConnectionListener> connectionListeners) {
         final var vertx = getVertx();
         final var context = vertx.getOrCreateContext();
-        if (connectionConfiguration.connectionAttempts().isEmpty()) {
-            return context.<Connection<T>> executeBlocking(connect(connectionConfiguration, connectionListeners, vertx))
-                    .onFailure().retry().withBackOff(connectionConfiguration.connectionBackoff().orElse(DEFAULT_BACKOFF))
-                    .indefinitely();
-        } else {
-            return context.<Connection<T>> executeBlocking(connect(connectionConfiguration, connectionListeners, vertx))
-                    .onFailure().retry().withBackOff(connectionConfiguration.connectionBackoff().orElse(DEFAULT_BACKOFF))
-                    .atMost(connectionConfiguration.connectionAttempts().get());
-        }
+        return context.executeBlocking(connect(connectionConfiguration, connectionListeners, vertx))
+                .onFailure().retry().withBackOff(connectionConfiguration.connectionBackoff().orElse(DEFAULT_BACKOFF))
+                .atMost(connectionConfiguration.connectionAttempts());
     }
 
-    private <T> Uni<Connection<T>> connect(final ConnectionConfiguration connectionConfiguration,
+    private Uni<Connection> connect(final ConnectionConfiguration connectionConfiguration,
             final List<ConnectionListener> connectionListeners,
             final Vertx vertx) {
         return Uni.createFrom().item(
-                Unchecked.supplier(() -> new DefaultConnection<>(connectionConfiguration, connectionListeners,
+                Unchecked.supplier(() -> new DefaultConnection(connectionConfiguration, connectionListeners,
                         messageMapper, payloadMapper, consumerMapper, streamStateMapper, tracerFactory, vertx,
                         tlsConfigurationRegistry)));
     }

@@ -10,34 +10,36 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.*;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 
-public interface Connection<T> extends AutoCloseable {
+public interface Connection extends AutoCloseable {
+    int DEFAULT_MAX_RECONNECT = -1;
 
     boolean isConnected();
 
     List<ConnectionListener> listeners();
 
-    Uni<Message<T>> publish(Message<T> message, PublishConfiguration publishConfiguration);
+    <T> Uni<Message<T>> publish(Message<T> message, String stream, String subject);
 
-    Uni<Message<T>> publish(Message<T> message, PublishConfiguration publishConfiguration,
-            ConsumerConfiguration<T> consumerConfiguration);
+    Uni<Consumer> addConsumer(String stream, String name, ConsumerConfiguration configuration);
 
-    Uni<Consumer> addConsumer(ConsumerConfiguration<T> configuration);
+    <T> Uni<Message<T>> next(String stream, String consumer, ConsumerConfiguration configuration, Duration timeout);
 
-    Uni<Message<T>> next(ConsumerConfiguration<T> configuration, Duration timeout);
+    <T> Multi<Message<T>> fetch(String stream, String consumer, FetchConsumerConfiguration configuration);
 
-    Multi<Message<T>> fetch(FetchConsumerConfiguration<T> configuration);
+    <T> Uni<Message<T>> resolve(String stream, long sequence);
 
-    Uni<Message<T>> resolve(String streamName, long sequence);
+    <T> Uni<Subscription<T>> subscribe(String stream, String consumer, PushConsumerConfiguration configuration);
 
-    Uni<Subscription<T>> subscribe(PushConsumerConfiguration<T> configuration);
+    <T> Uni<Subscription<T>> subscribe(String stream, String consumer, PullConsumerConfiguration configuration);
 
-    Uni<Subscription<T>> subscribe(PullConsumerConfiguration<T> configuration);
-
-    Uni<KeyValueStore<T>> keyValueStore(String bucketName);
+    Uni<KeyValueStore> keyValueStore(String bucketName);
 
     Uni<StreamManagement> streamManagement();
 
     Uni<KeyValueStoreManagement> keyValueStoreManagement();
 
     void nativeConnection(java.util.function.Consumer<io.nats.client.Connection> connection);
+
+    <Request, Reply> Uni<Message<Reply>> request(Message<Request> message,
+            RequestReplyConsumerConfiguration configuration);
+
 }

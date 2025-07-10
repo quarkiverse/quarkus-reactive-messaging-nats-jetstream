@@ -1,25 +1,17 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration;
 
-import java.time.Duration;
 import java.util.Optional;
 
-public interface PushConsumerConfiguration<T> {
+public interface PushConsumerConfiguration {
 
-    Optional<Boolean> ordered();
+    /**
+     * The consumer configuration.
+     */
+    ConsumerConfiguration consumerConfiguration();
 
-    Optional<Duration> flowControl();
+    /**
+     * The push configuration.
+     */
+    Optional<PushConfiguration> pushConfiguration();
 
-    Optional<Duration> idleHeartbeat();
-
-    Optional<Long> rateLimit();
-
-    Optional<Boolean> headersOnly();
-
-    Optional<String> deliverGroup();
-
-    Optional<String> deliverSubject();
-
-    ConsumerConfiguration<T> consumerConfiguration();
-
-    String subject();
 }

@@ -20,19 +20,25 @@ import lombok.extern.jbosslog.JBossLog;
 
 @JBossLog
 public class MessageSubscriberProcessor<T> implements MessageProcessor, ConnectionListener {
+    private final String channel;
+    private final String stream;
+    private final String subject;
     private final ConnectionConfiguration connectionConfiguration;
-    private final MessageSubscriberConfiguration configuration;
     private final ConnectionFactory connectionFactory;
-    private final AtomicReference<Status> status;
-    private final AtomicReference<Connection<T>> connection;
 
-    public MessageSubscriberProcessor(
+    private final AtomicReference<Status> status;
+    private final AtomicReference<Connection> connection;
+
+    public MessageSubscriberProcessor(final String channel,
+            final String stream,
+            final String subject,
             final ConnectionConfiguration connectionConfiguration,
-            final ConnectionFactory connectionFactory,
-            final MessageSubscriberConfiguration configuration) {
+            final ConnectionFactory connectionFactory) {
+        this.channel = channel;
+        this.stream = stream;
+        this.subject = subject;
         this.connectionConfiguration = connectionConfiguration;
         this.connectionFactory = connectionFactory;
-        this.configuration = configuration;
         this.status = new AtomicReference<>(new Status(true, "Subscriber processor inactive", ConnectionEvent.Closed));
         this.connection = new AtomicReference<>();
     }
@@ -47,7 +53,12 @@ public class MessageSubscriberProcessor<T> implements MessageProcessor, Connecti
 
     @Override
     public String channel() {
-        return configuration.channel();
+        return channel;
+    }
+
+    @Override
+    public String stream() {
+        return stream;
     }
 
     @Override
@@ -74,14 +85,14 @@ public class MessageSubscriberProcessor<T> implements MessageProcessor, Connecti
 
     @Override
     public void onEvent(ConnectionEvent event, String message) {
-        log.infof("Event: %s, message: %s, channel: %s", event, message, configuration.channel());
+        log.infof("Event: %s, message: %s, channel: %s", event, message, channel);
         this.status.set(Status.builder().healthy(true).message(message).event(event).build());
     }
 
     private Uni<Message<T>> publish(final Message<T> message) {
         return getOrEstablishConnection()
                 .onItem()
-                .transformToUni(connection -> connection.publish(message, configuration))
+                .transformToUni(connection -> connection.publish(message, stream, subject))
                 .onFailure()
                 .invoke(failure -> log.errorf(failure, "Failed to publish with message: %s", failure.getMessage()))
                 .onFailure().recoverWithUni(() -> recover(message));
@@ -95,7 +106,7 @@ public class MessageSubscriberProcessor<T> implements MessageProcessor, Connecti
                 .onItem().transformToUni(v -> publish(message));
     }
 
-    private Uni<? extends Connection<T>> getOrEstablishConnection() {
+    private Uni<? extends Connection> getOrEstablishConnection() {
         return Uni.createFrom().item(() -> Optional.ofNullable(connection.get())
                 .filter(Connection::isConnected)
                 .orElse(null))

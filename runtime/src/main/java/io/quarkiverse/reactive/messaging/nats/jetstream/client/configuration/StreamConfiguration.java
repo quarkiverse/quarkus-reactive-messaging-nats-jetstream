@@ -1,18 +1,15 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration;
 
 import java.time.Duration;
-import java.util.HashSet;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
-import io.nats.client.api.*;
-import io.quarkiverse.reactive.messaging.nats.jetstream.JetStreamConfiguration;
+import io.nats.client.api.CompressionOption;
+import io.nats.client.api.DiscardPolicy;
+import io.nats.client.api.RetentionPolicy;
+import io.nats.client.api.StorageType;
+import io.smallrye.config.WithDefault;
 
 public interface StreamConfiguration {
-    /**
-     * Name of stream
-     */
-    String name();
 
     /**
      * Description of stream
@@ -22,27 +19,32 @@ public interface StreamConfiguration {
     /**
      * Stream subjects
      */
-    Set<String> subjects();
+    Optional<Set<String>> subjects();
 
     /**
-     * The number of replicas a message must be stored. Default value is 1.
+     * The number of replicas. Default is 1.
      */
+    @WithDefault("1")
     Integer replicas();
 
     /**
-     * The storage type for stream data (File or Memory).
+     * The storage type for stream data (File or Memory). The default is File.
      */
+    @WithDefault("File")
     StorageType storageType();
 
     /**
      * Declares the retention policy for the stream. @see
      * <a href="https://docs.nats.io/jetstream/concepts/streams#retention-policies">Retention Policy</a>
+     * Default is Interest.
      */
+    @WithDefault("Interest")
     RetentionPolicy retentionPolicy();
 
     /**
-     * The compression option for this stream
+     * The compression option for this stream. The default is NONE.
      */
+    @WithDefault("NONE")
     CompressionOption compressionOption();
 
     /**
@@ -125,59 +127,60 @@ public interface StreamConfiguration {
      */
     Optional<Long> firstSequence();
 
-    static StreamConfiguration of(JetStreamConfiguration.Stream stream) {
-        return DefaultStreamConfiguration.builder()
-                .name(stream.name())
-                .description(stream.description().orElse(null))
-                .subjects(stream.subjects())
-                .replicas(stream.replicas())
-                .storageType(stream.storageType())
-                .retentionPolicy(stream.retentionPolicy())
-                .compressionOption(stream.compressionOption())
-                .maximumConsumers(stream.maximumConsumers().orElse(null))
-                .maximumMessages(stream.maximumMessages().orElse(null))
-                .maximumMessagesPerSubject(stream.maximumMessagesPerSubject().orElse(null))
-                .maximumBytes(stream.maximumBytes().orElse(null))
-                .maximumAge(stream.maximumAge().orElse(null))
-                .maximumMessageSize(stream.maximumMessageSize().orElse(null))
-                .templateOwner(stream.templateOwner().orElse(null))
-                .discardPolicy(stream.discardPolicy().orElse(null))
-                .duplicateWindow(stream.duplicateWindow().orElse(null))
-                .allowRollup(stream.allowRollup().orElse(null))
-                .allowDirect(stream.allowDirect().orElse(null))
-                .mirrorDirect(stream.mirrorDirect().orElse(null))
-                .denyDelete(stream.denyDelete().orElse(null))
-                .denyPurge(stream.denyPurge().orElse(null))
-                .discardNewPerSubject(stream.discardNewPerSubject().orElse(null))
-                .firstSequence(stream.firstSequence().orElse(null))
-                .build();
+    /**
+     * Pull consumer configurations. The map key is the name of the consumer.
+     */
+    Map<String, PullConsumerConfiguration> pullConsumers();
+
+    /**
+     * Push consumer configurations. The map key is the name of the consumer.
+     */
+    Map<String, PushConsumerConfiguration> pushConsumers();
+
+    default Set<String> allSubjects() {
+        final var subjects = new HashSet<String>();
+        subjects().ifPresent(streamSubjects -> streamSubjects.forEach(subject -> subjects.add(escape(subject))));
+        pullConsumers().values().stream()
+                .map(PullConsumerConfiguration::consumerConfiguration)
+                .forEach(consumer -> subjects.addAll(consumer.filterSubjects().stream().map(this::escape).toList()));
+        pushConsumers().values().stream()
+                .map(PushConsumerConfiguration::consumerConfiguration)
+                .forEach(consumer -> subjects.addAll(consumer.filterSubjects().stream().map(this::escape).toList()));
+        return subjects;
+    }
+
+    private String escape(String subject) {
+        if (subject.endsWith(".>")) {
+            return subject.substring(0, subject.length() - 2);
+        } else {
+            return subject;
+        }
     }
 
     static StreamConfiguration of(io.nats.client.api.StreamConfiguration configuration) {
         return DefaultStreamConfiguration.builder()
-                .name(configuration.getName())
-                .description(configuration.getDescription())
-                .subjects(new HashSet<>(configuration.getSubjects()))
+                .description(Optional.ofNullable(configuration.getDescription()))
+                .subjects(Optional.of(new HashSet<>(configuration.getSubjects())))
                 .replicas(configuration.getReplicas())
                 .storageType(configuration.getStorageType())
                 .retentionPolicy(configuration.getRetentionPolicy())
                 .compressionOption(configuration.getCompressionOption())
-                .maximumConsumers(configuration.getMaxConsumers())
-                .maximumMessages((long) configuration.getMaximumMessageSize())
-                .maximumMessagesPerSubject(configuration.getMaxMsgsPerSubject())
-                .maximumBytes(configuration.getMaxBytes())
-                .maximumAge(configuration.getMaxAge())
-                .maximumMessageSize(configuration.getMaximumMessageSize())
-                .templateOwner(configuration.getTemplateOwner())
-                .discardPolicy(configuration.getDiscardPolicy())
-                .duplicateWindow(configuration.getDuplicateWindow())
-                .allowRollup(configuration.getAllowRollup())
-                .allowDirect(configuration.getAllowDirect())
-                .mirrorDirect(configuration.getMirrorDirect())
-                .denyDelete(configuration.getDenyDelete())
-                .denyPurge(configuration.getDenyPurge())
-                .discardNewPerSubject(configuration.isDiscardNewPerSubject())
-                .firstSequence(configuration.getFirstSequence())
+                .maximumConsumers(Optional.of(configuration.getMaxConsumers()))
+                .maximumMessages(Optional.of((long) configuration.getMaximumMessageSize()))
+                .maximumMessagesPerSubject(Optional.of(configuration.getMaxMsgsPerSubject()))
+                .maximumBytes(Optional.of(configuration.getMaxBytes()))
+                .maximumAge(Optional.of(configuration.getMaxAge()))
+                .maximumMessageSize(Optional.of(configuration.getMaximumMessageSize()))
+                .templateOwner(Optional.ofNullable(configuration.getTemplateOwner()))
+                .discardPolicy(Optional.ofNullable(configuration.getDiscardPolicy()))
+                .duplicateWindow(Optional.ofNullable(configuration.getDuplicateWindow()))
+                .allowRollup(Optional.of(configuration.getAllowRollup()))
+                .allowDirect(Optional.of(configuration.getAllowDirect()))
+                .mirrorDirect(Optional.of(configuration.getMirrorDirect()))
+                .denyDelete(Optional.of(configuration.getDenyDelete()))
+                .discardNewPerSubject(Optional.of(configuration.isDiscardNewPerSubject()))
+                .firstSequence(Optional.of(configuration.getFirstSequence()))
                 .build();
     }
+
 }

@@ -7,10 +7,10 @@ import io.smallrye.mutiny.Uni;
 
 public interface ConnectionFactory {
 
-    <T> Uni<Connection<T>> create(ConnectionConfiguration connectionConfiguration);
+    Uni<Connection> create(ConnectionConfiguration connectionConfiguration);
 
-    <T> Uni<Connection<T>> create(ConnectionConfiguration connectionConfiguration, ConnectionListener connectionListener);
+    Uni<Connection> create(ConnectionConfiguration connectionConfiguration, ConnectionListener connectionListener);
 
-    <T> Uni<Connection<T>> create(ConnectionConfiguration connectionConfiguration,
+    Uni<Connection> create(ConnectionConfiguration connectionConfiguration,
             List<ConnectionListener> connectionListeners);
 }

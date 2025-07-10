@@ -1,12 +1,15 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client;
 
-import java.util.List;
+import java.util.Map;
 
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.KeyValueSetupConfiguration;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.KeyValueStoreConfiguration;
 import io.smallrye.mutiny.Uni;
 
 public interface KeyValueStoreManagement {
 
-    Uni<Void> addKeyValueStores(List<KeyValueSetupConfiguration> keyValueConfigurations);
+    /**
+     * Add key values stores. The map key is the name of the bucket
+     */
+    Uni<Void> addKeyValueStores(Map<String, ? extends KeyValueStoreConfiguration> keyValueConfigurations);
 
 }

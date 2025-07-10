@@ -2,21 +2,19 @@ package io.quarkiverse.reactive.messaging.nats.jetstream.client;
 
 import java.io.IOException;
 import java.time.ZonedDateTime;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 import io.nats.client.JetStreamApiException;
 import io.nats.client.JetStreamManagement;
-import io.nats.client.api.StreamInfo;
-import io.nats.client.api.StreamInfoOptions;
+import io.nats.client.api.*;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.*;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.StreamState;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.StreamConfiguration;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.StreamConfigurationFactory;
 import io.quarkiverse.reactive.messaging.nats.jetstream.mapper.ConsumerMapper;
 import io.quarkiverse.reactive.messaging.nats.jetstream.mapper.StreamStateMapper;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.tuples.Tuple2;
 import io.smallrye.mutiny.unchecked.Unchecked;
 import io.vertx.mutiny.core.Context;
 import io.vertx.mutiny.core.Vertx;
@@ -99,7 +97,7 @@ class DefaultStreamManagement implements StreamManagement {
     }
 
     @Override
-    public Uni<List<String>> getStreams() {
+    public Uni<List<String>> getStreamNames() {
         return context().executeBlocking(getJetStreamManagement()
                 .onItem().transformToUni(jsm -> Uni.createFrom().item(Unchecked.supplier((jsm::getStreamNames)))));
     }
@@ -167,22 +165,15 @@ class DefaultStreamManagement implements StreamManagement {
     }
 
     @Override
-    public Uni<List<PurgeResult>> purgeAllStreams() {
-        return context().executeBlocking(getStreams()
-                .onItem().transformToUni(this::purgeAllStreams));
+    public Multi<PurgeResult> purgeAllStreams() {
+        return getStreamNames()
+                .onItem().transformToMulti(this::purgeAllStreams);
     }
 
-    @SuppressWarnings("ReactiveStreamsUnusedPublisher")
     @Override
-    public Uni<List<StreamResult>> addStreams(List<StreamSetupConfiguration> streamConfigurations) {
-        return context().executeBlocking(getJetStreamManagement()
-                .onItem()
-                .transformToMulti(jetStreamManagement -> Multi.createFrom()
-                        .items(streamConfigurations.stream()
-                                .map(streamConfiguration -> StreamSetupConfigurationTuple.builder()
-                                        .jetStreamManagement(jetStreamManagement).configuration(streamConfiguration).build())))
-                .onItem().transformToUniAndMerge(tuple -> addOrUpdateStream(tuple.jetStreamManagement(), tuple.configuration()))
-                .collect().asList());
+    public Uni<StreamResult> addStream(String name, StreamConfiguration configuration) {
+        return getJetStreamManagement()
+                .onItem().transformToUni(jsm -> addStream(jsm, name, configuration));
     }
 
     @Override
@@ -244,20 +235,21 @@ class DefaultStreamManagement implements StreamManagement {
         });
     }
 
-    private Uni<StreamResult> addOrUpdateStream(final JetStreamManagement jsm,
-            final StreamSetupConfiguration setupConfiguration) {
-        return getStreamInfo(jsm, setupConfiguration.configuration().name())
+    private Uni<StreamResult> addStream(final JetStreamManagement jetStreamManagement, String name,
+            StreamConfiguration configuration) {
+        return getStreamInfo(jetStreamManagement, name)
                 .onItem()
-                .transformToUni(tuple -> updateStream(tuple.jetStreamManagement(), tuple.streamInfo(), setupConfiguration))
-                .onFailure().recoverWithUni(failure -> createStream(jsm, setupConfiguration.configuration()));
+                .transformToUni(tuple -> updateStream(tuple.jetStreamManagement(), tuple.streamInfo(), name, configuration))
+                .onFailure().recoverWithUni(failure -> createStream(jetStreamManagement, name, configuration));
+
     }
 
     private Uni<StreamResult> createStream(final JetStreamManagement jsm,
+            final String name,
             final StreamConfiguration streamConfiguration) {
         return Uni.createFrom().item(Unchecked.supplier(() -> {
             try {
-                final var factory = new StreamConfigurationFactory();
-                final var streamConfig = factory.create(streamConfiguration);
+                final var streamConfig = createStreamConfiguration(name, streamConfiguration);
                 jsm.addStream(streamConfig);
                 return StreamResult.builder()
                         .configuration(streamConfiguration)
@@ -265,73 +257,58 @@ class DefaultStreamManagement implements StreamManagement {
                         .build();
             } catch (Exception failure) {
                 throw new SetupException(String.format("Unable to create stream: %s with message: %s",
-                        streamConfiguration.name(), failure.getMessage()), failure);
+                        name, failure.getMessage()), failure);
             }
         }));
     }
 
     private Uni<StreamResult> updateStream(final JetStreamManagement jsm,
             final StreamInfo streamInfo,
-            final StreamSetupConfiguration setupConfiguration) {
+            final String name,
+            final StreamConfiguration setupConfiguration) {
         return Uni.createFrom().item(Unchecked.supplier(() -> {
             try {
                 final var currentConfiguration = streamInfo.getConfiguration();
-                final var factory = new StreamConfigurationFactory();
-                final var configuration = factory.create(currentConfiguration, setupConfiguration.configuration());
+                final var configuration = createStreamConfiguration(currentConfiguration, name, setupConfiguration);
                 if (configuration.isPresent()) {
-                    log.debugf("Updating stream %s", setupConfiguration.configuration().name());
+                    log.debugf("Updating stream %s", name);
                     jsm.updateStream(configuration.get());
-                    return StreamResult.builder().configuration(setupConfiguration.configuration())
+                    return StreamResult.builder().name(name).configuration(setupConfiguration)
                             .status(StreamStatus.Updated).build();
                 } else {
-                    return StreamResult.builder().configuration(setupConfiguration.configuration())
+                    return StreamResult.builder().name(name).configuration(setupConfiguration)
                             .status(StreamStatus.NotModified).build();
                 }
             } catch (Exception failure) {
                 log.errorf(failure, "message: %s", failure.getMessage());
                 throw new SetupException(String.format("Unable to update stream: %s with message: %s",
-                        setupConfiguration.configuration().name(), failure.getMessage()), failure);
-            }
-        }))
-                .onFailure().recoverWithUni(failure -> {
-                    if (failure.getCause() instanceof JetStreamApiException && setupConfiguration.overwrite()) {
-                        return deleteStream(jsm, setupConfiguration.configuration().name())
-                                .onItem().transformToUni(v -> createStream(jsm, setupConfiguration.configuration()));
-                    }
-                    return Uni.createFrom().failure(failure);
-                });
-    }
-
-    private Uni<Void> deleteStream(final JetStreamManagement jsm, final String streamName) {
-        return Uni.createFrom().item(Unchecked.supplier(() -> {
-            try {
-                jsm.deleteStream(streamName);
-                return null;
-            } catch (IOException | JetStreamApiException failure) {
-                throw new SetupException(String.format("Unable to delete stream: %s with message: %s", streamName,
-                        failure.getMessage()), failure);
+                        name, failure.getMessage()), failure);
             }
         }));
     }
 
-    private Optional<PurgeResult> purgeStream(JetStreamManagement jetStreamManagement, String streamName) {
-        try {
-            final var response = jetStreamManagement.purgeStream(streamName);
-            return Optional.of(PurgeResult.builder()
-                    .streamName(streamName)
-                    .success(response.isSuccess())
-                    .purgeCount(response.getPurged()).build());
-        } catch (IOException | JetStreamApiException e) {
-            log.warnf(e, "Unable to purge stream %s with message: %s", streamName, e.getMessage());
-            return Optional.empty();
-        }
+    private Uni<PurgeResult> purgeStream(JetStreamManagement jetStreamManagement, String streamName) {
+        return Uni.createFrom().item(Unchecked.supplier(() -> {
+            try {
+                final var response = jetStreamManagement.purgeStream(streamName);
+                return PurgeResult.builder()
+                        .streamName(streamName)
+                        .success(response.isSuccess())
+                        .purgeCount(response.getPurged()).build();
+            } catch (IOException | JetStreamApiException e) {
+                log.warnf(e, "Unable to purge stream %s with message: %s", streamName, e.getMessage());
+                return new PurgeResult(streamName, false, 0);
+            }
+        }));
     }
 
-    private Uni<List<PurgeResult>> purgeAllStreams(List<String> streams) {
+    @SuppressWarnings("ReactiveStreamsUnusedPublisher")
+    private Multi<PurgeResult> purgeAllStreams(List<String> streams) {
         return getJetStreamManagement()
-                .onItem().transformToUni(jsm -> Uni.createFrom().item(
-                        Unchecked.supplier(
-                                () -> streams.stream().flatMap(streamName -> purgeStream(jsm, streamName).stream()).toList())));
+                .onItem()
+                .transformToMulti(jetStreamManagement -> Multi.createFrom()
+                        .items(streams.stream().map(streamName -> Tuple2.of(jetStreamManagement, streamName))))
+                .onItem().<PurgeResult> transformToUniAndMerge(tuple -> purgeStream(tuple.getItem1(), tuple.getItem2()));
     }
 
     private Uni<JetStreamManagement> getJetStreamManagement() {
@@ -342,9 +319,48 @@ class DefaultStreamManagement implements StreamManagement {
         return vertx.getOrCreateContext();
     }
 
-    @Builder
-    private record StreamSetupConfigurationTuple(StreamSetupConfiguration configuration,
-            JetStreamManagement jetStreamManagement) {
+    public io.nats.client.api.StreamConfiguration createStreamConfiguration(String name,
+            StreamConfiguration streamConfiguration) {
+        var builder = io.nats.client.api.StreamConfiguration.builder()
+                .name(name)
+                .storageType(streamConfiguration.storageType())
+                .retentionPolicy(streamConfiguration.retentionPolicy())
+                .replicas(streamConfiguration.replicas())
+                .subjects(streamConfiguration.allSubjects())
+                .compressionOption(streamConfiguration.compressionOption());
+
+        builder = streamConfiguration.description().map(builder::description).orElse(builder);
+        builder = streamConfiguration.maximumConsumers().map(builder::maxConsumers).orElse(builder);
+        builder = streamConfiguration.maximumMessages().map(builder::maxMessages).orElse(builder);
+        builder = streamConfiguration.maximumMessagesPerSubject().map(builder::maxMessagesPerSubject)
+                .orElse(builder);
+        builder = streamConfiguration.maximumBytes().map(builder::maxBytes).orElse(builder);
+        builder = streamConfiguration.maximumAge().map(builder::maxAge).orElse(builder);
+        builder = streamConfiguration.maximumMessageSize().map(builder::maximumMessageSize).orElse(builder);
+        builder = streamConfiguration.templateOwner().map(builder::templateOwner).orElse(builder);
+        builder = streamConfiguration.discardPolicy().map(builder::discardPolicy).orElse(builder);
+        builder = streamConfiguration.duplicateWindow().map(builder::duplicateWindow).orElse(builder);
+        builder = streamConfiguration.allowRollup().map(builder::allowRollup).orElse(builder);
+        builder = streamConfiguration.allowDirect().map(builder::allowDirect).orElse(builder);
+        builder = streamConfiguration.mirrorDirect().map(builder::mirrorDirect).orElse(builder);
+        builder = streamConfiguration.denyDelete().map(builder::denyDelete).orElse(builder);
+        builder = streamConfiguration.denyPurge().map(builder::denyPurge).orElse(builder);
+        builder = streamConfiguration.discardNewPerSubject().map(builder::discardNewPerSubject).orElse(builder);
+        builder = streamConfiguration.firstSequence().map(builder::firstSequence).orElse(builder);
+
+        return builder.build();
+    }
+
+    private Optional<io.nats.client.api.StreamConfiguration> createStreamConfiguration(
+            io.nats.client.api.StreamConfiguration current,
+            String name,
+            StreamConfiguration streamConfiguration) {
+        var currentConfiguration = StreamConfiguration.of(current);
+        if (currentConfiguration.equals(streamConfiguration)) {
+            return Optional.empty();
+        } else {
+            return Optional.of(createStreamConfiguration(name, streamConfiguration));
+        }
     }
 
     @Builder

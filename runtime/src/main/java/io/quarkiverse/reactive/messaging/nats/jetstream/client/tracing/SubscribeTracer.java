@@ -13,7 +13,6 @@ import io.opentelemetry.instrumentation.api.instrumenter.InstrumenterBuilder;
 import io.opentelemetry.instrumentation.api.instrumenter.messaging.MessagingAttributesExtractor;
 import io.opentelemetry.instrumentation.api.instrumenter.messaging.MessagingAttributesGetter;
 import io.opentelemetry.instrumentation.api.instrumenter.messaging.MessagingSpanNameExtractor;
-import io.quarkiverse.reactive.messaging.nats.jetstream.JetStreamConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.SubscribeMessageMetadata;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.unchecked.Unchecked;
@@ -22,18 +21,18 @@ import lombok.extern.jbosslog.JBossLog;
 
 @JBossLog
 public class SubscribeTracer<T> implements Tracer<T> {
-    private final JetStreamConfiguration configuration;
+    private final boolean enabled;
     private final Instrumenter<SubscribeMessageMetadata, Void> instrumenter;
 
-    public SubscribeTracer(JetStreamConfiguration configuration, Instance<OpenTelemetry> openTelemetryInstance) {
-        this.configuration = configuration;
+    public SubscribeTracer(boolean enabled, Instance<OpenTelemetry> openTelemetryInstance) {
+        this.enabled = enabled;
         this.instrumenter = instrumenter(openTelemetryInstance);
     }
 
     @Override
     public Uni<Message<T>> withTrace(Message<T> message, TraceSupplier<T> traceSupplier) {
         log.debugf("Adding trace on thread: %s", Thread.currentThread().getName());
-        if (configuration.trace()) {
+        if (enabled) {
             return Uni.createFrom().item(Unchecked.supplier(() -> {
                 message.getMetadata(SubscribeMessageMetadata.class)
                         .ifPresent(metadata -> TracingUtils.traceIncoming(instrumenter, message, metadata));

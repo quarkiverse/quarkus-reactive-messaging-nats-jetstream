@@ -8,31 +8,26 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.client.Connection;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.ConnectionFactory;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.Subscription;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ConnectionConfiguration;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.PushConsumerConfiguration;
 import io.smallrye.mutiny.Multi;
 
 public class MessagePushPublisherProcessor<T> extends MessagePublisherProcessor<T> {
-    private final MessagePushPublisherConfiguration<T> configuration;
+    private final PushConsumerConfiguration configuration;
 
-    public MessagePushPublisherProcessor(final ConnectionFactory connectionFactory,
+    public MessagePushPublisherProcessor(final String channel,
+            final String stream,
+            final String consumer,
+            final ConnectionFactory connectionFactory,
             final ConnectionConfiguration connectionConfiguration,
-            final MessagePushPublisherConfiguration<T> configuration) {
-        super(connectionFactory, connectionConfiguration);
+            final PushConsumerConfiguration configuration,
+            final Duration retryBackoff) {
+        super(channel, stream, consumer, connectionFactory, connectionConfiguration, retryBackoff);
         this.configuration = configuration;
     }
 
     @Override
-    protected MessagePublisherConfiguration configuration() {
-        return configuration;
-    }
-
-    @Override
-    protected Multi<Message<T>> subscription(Connection<T> connection) {
-        return connection.subscribe(configuration)
+    protected Multi<Message<T>> subscription(Connection connection) {
+        return connection.<T> subscribe(stream(), consumer(), configuration)
                 .onItem().transformToMulti(Subscription::subscribe);
-    }
-
-    @Override
-    protected Duration retryBackoff() {
-        return configuration.retryBackoff();
     }
 }
