@@ -19,7 +19,7 @@ import io.smallrye.reactive.messaging.providers.locals.LocalContextMetadata;
 import io.vertx.mutiny.core.Context;
 
 public class SubscribeMessage<T> implements JetStreamMessage<T> {
-    public static Duration DEFAULT_ACK_TIMEOUT = Duration.ofSeconds(5);
+    public static final Duration DEFAULT_ACK_TIMEOUT = Duration.ofSeconds(5);
 
     private final Message message;
     private Metadata metadata;
@@ -62,14 +62,6 @@ public class SubscribeMessage<T> implements JetStreamMessage<T> {
 
     public String getStream() {
         return subscribeMessageMetadata.stream();
-    }
-
-    public Long getStreamSequence() {
-        return subscribeMessageMetadata.streamSequence();
-    }
-
-    public Long getConsumerSequence() {
-        return subscribeMessageMetadata.consumerSequence();
     }
 
     public String getConsumer() {
