@@ -10,8 +10,10 @@ import io.vertx.mutiny.core.Context;
 public interface MessageMapper {
 
     <T> List<SubscribeMessage<T>> of(List<Message> messages,
-            Class<T> payloadType, Context context, Duration timeout);
+            Class<T> payloadType, Context context, Duration timeout,
+            List<Duration> backoff);
 
     <T> SubscribeMessage<T> of(Message message,
-            Class<T> payloadType, Context context, Duration timeout);
+            Class<T> payloadType, Context context, Duration timeout,
+            List<Duration> backoff);
 }
