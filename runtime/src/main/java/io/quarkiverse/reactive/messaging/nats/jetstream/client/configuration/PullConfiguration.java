@@ -16,7 +16,7 @@ public interface PullConfiguration {
     /**
      * The size of batch of messages to be pulled in pull mode
      */
-    @WithDefault("1000")
+    @WithDefault("100")
     Integer batchSize();
 
     /**
