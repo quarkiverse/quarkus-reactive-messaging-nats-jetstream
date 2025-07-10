@@ -162,8 +162,7 @@ class DefaultConnection extends AbstractConsumer implements Connection {
         final var context = context();
         return context.executeBlocking(addOrUpdateConsumer(stream, consumer, configuration.consumerConfiguration()))
                 .onItem()
-                .transform(consumerContext -> new PullSubscription<T>(stream, configuration, consumerContext, messageMapper,
-                        tracerFactory, context))
+                .<Subscription<T>> transformToUni(ignore -> createPullSubscription(stream, consumer, configuration))
                 .onItem().<Subscription<T>> transform(subscription -> {
                     subscriptions.put(consumer, subscription);
                     return subscription;
@@ -413,5 +412,11 @@ class DefaultConnection extends AbstractConsumer implements Connection {
                 .onItem().transformToUni(this::acknowledge)
                 .onFailure().recoverWithUni(failure -> notAcknowledge(message, failure))
                 .onFailure().transform(failure -> new PublishException(failure.getMessage(), failure));
+    }
+
+    private <T> Uni<Subscription<T>> createPullSubscription(
+            final String stream, final String consumer, final PullConsumerConfiguration configuration) {
+        return Uni.createFrom().item(Unchecked.supplier(() -> new PullSubscription<>(stream, consumer, configuration,
+                messageMapper, tracerFactory, connection.jetStream(), context())));
     }
 }
