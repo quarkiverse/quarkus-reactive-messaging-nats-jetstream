@@ -1,7 +1,6 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client;
 
 import java.time.Duration;
-import java.util.List;
 
 import io.nats.client.api.AckPolicy;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ConsumerConfiguration;
@@ -45,7 +44,7 @@ public abstract class AbstractConsumer {
         if (configuration.durable()) {
             builder = builder.durable(name);
         }
-        builder = builder.filterSubjects(List.of(configuration.subject()));
+        builder = builder.filterSubjects(configuration.filterSubjects());
         builder = builder.name(name);
         builder = builder.ackPolicy(AckPolicy.Explicit);
         builder = configuration.ackWait().map(builder::ackWait).orElse(builder);

@@ -87,8 +87,8 @@ public class PullSubscribeConnectionTest {
                     }
 
                     @Override
-                    public String subject() {
-                        return "reader-data";
+                    public List<String> filterSubjects() {
+                        return List.of("reader-data");
                     }
 
                     @Override

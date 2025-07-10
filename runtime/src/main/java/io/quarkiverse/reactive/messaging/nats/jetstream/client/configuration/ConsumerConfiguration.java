@@ -19,9 +19,9 @@ public interface ConsumerConfiguration {
     Boolean durable();
 
     /**
-     * The subject to subscribe or publish messages to
+     * A list of subjects that overlap with the subjects bound to the stream to filter delivery to subscribers
      */
-    String subject();
+    List<String> filterSubjects();
 
     /**
      * The duration that the server will wait for an ack for any individual message once it has been delivered to a consumer.

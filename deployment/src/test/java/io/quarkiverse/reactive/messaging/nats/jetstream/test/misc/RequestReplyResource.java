@@ -181,8 +181,8 @@ public class RequestReplyResource implements MessageConsumer<Data> {
             }
 
             @Override
-            public String subject() {
-                return "responses." + dataId;
+            public List<String> filterSubjects() {
+                return List.of("responses." + dataId);
             }
 
             @Override

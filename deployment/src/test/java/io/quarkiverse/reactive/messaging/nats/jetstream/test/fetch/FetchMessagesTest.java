@@ -271,8 +271,8 @@ public class FetchMessagesTest {
             }
 
             @Override
-            public String subject() {
-                return subject;
+            public List<String> filterSubjects() {
+                return List.of(subject);
             }
 
             @Override

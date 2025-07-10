@@ -142,10 +142,10 @@ public interface StreamConfiguration {
         subjects().ifPresent(streamSubjects -> streamSubjects.forEach(subject -> subjects.add(escape(subject))));
         pullConsumers().values().stream()
                 .map(PullConsumerConfiguration::consumerConfiguration)
-                .forEach(consumer -> subjects.add(escape(consumer.subject())));
+                .forEach(consumer -> subjects.addAll(consumer.filterSubjects().stream().map(this::escape).toList()));
         pushConsumers().values().stream()
                 .map(PushConsumerConfiguration::consumerConfiguration)
-                .forEach(consumer -> subjects.add(escape(consumer.subject())));
+                .forEach(consumer -> subjects.addAll(consumer.filterSubjects().stream().map(this::escape).toList()));
         return subjects;
     }
 

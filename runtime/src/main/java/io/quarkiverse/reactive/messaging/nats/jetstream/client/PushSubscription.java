@@ -52,7 +52,6 @@ public class PushSubscription<T> extends AbstractConsumer implements Subscriptio
     @Override
     public Multi<Message<T>> subscribe() {
         final Class<T> payloadType = (Class<T>) configuration.consumerConfiguration().payloadType().orElse(null);
-        final var subject = configuration.consumerConfiguration().subject();
         final var tracer = tracerFactory.<T> create(TracerType.Subscribe);
         return Multi.createFrom().<io.nats.client.Message> emitter(emitter -> {
             try {
@@ -60,16 +59,16 @@ public class PushSubscription<T> extends AbstractConsumer implements Subscriptio
                 dispatcher = connection.createDispatcher();
                 final var pushOptions = createPushSubscribeOptions();
                 subscription = jetStream.subscribe(
-                        subject, dispatcher,
+                        null, dispatcher,
                         emitter::emit,
                         false,
                         pushOptions);
             } catch (Exception e) {
                 log.errorf(
                         e,
-                        "Failed subscribing to stream: %s, subject: %s with message: %s",
+                        "Failed subscribing to stream: %s, subjects: %s with message: %s",
                         stream,
-                        subject,
+                        configuration.consumerConfiguration().filterSubjects(),
                         e.getMessage());
                 emitter.fail(e);
             }

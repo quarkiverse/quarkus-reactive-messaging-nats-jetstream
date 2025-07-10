@@ -81,11 +81,12 @@ class DefaultConnection extends AbstractConsumer implements Connection {
 
     @Override
     public void close() {
-        subscriptions.forEach((subject, subscription) -> {
+        subscriptions.forEach((consumer, subscription) -> {
             try {
                 subscription.close();
             } catch (Exception failure) {
-                log.warnf(failure, "Error closing subscription to subject: %s with message: %s", subject, failure.getMessage());
+                log.warnf(failure, "Error closing subscription to consumer: %s with message: %s", consumer,
+                        failure.getMessage());
             }
         });
         try {
@@ -149,7 +150,7 @@ class DefaultConnection extends AbstractConsumer implements Connection {
             final var subscription = new PushSubscription<T>(connection, stream, consumer, configuration, messageMapper,
                     tracerFactory,
                     context);
-            subscriptions.put(configuration.consumerConfiguration().subject(), subscription);
+            subscriptions.put(consumer, subscription);
             return subscription;
         })))
                 .onFailure().transform(SubscribeException::new);
@@ -164,7 +165,7 @@ class DefaultConnection extends AbstractConsumer implements Connection {
                 .transform(consumerContext -> new PullSubscription<T>(stream, configuration, consumerContext, messageMapper,
                         tracerFactory, context))
                 .onItem().<Subscription<T>> transform(subscription -> {
-                    subscriptions.put(configuration.consumerConfiguration().subject(), subscription);
+                    subscriptions.put(consumer, subscription);
                     return subscription;
                 })
                 .onFailure().transform(SubscribeException::new);
