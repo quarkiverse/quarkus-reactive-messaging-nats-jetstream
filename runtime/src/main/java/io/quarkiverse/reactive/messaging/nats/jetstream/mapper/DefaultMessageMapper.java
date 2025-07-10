@@ -23,21 +23,24 @@ public class DefaultMessageMapper implements MessageMapper {
             Message message,
             Class<T> payloadType,
             Context context,
-            Duration timeout) {
+            Duration timeout,
+            List<Duration> backoff) {
         try {
             return payloadType != null
-                    ? new SubscribeMessage<>(message, payloadMapper.of(message, payloadType), context, timeout)
+                    ? new SubscribeMessage<>(message, payloadMapper.of(message, payloadType), context, timeout, backoff)
                     : new SubscribeMessage<>(message,
                             (T) payloadMapper.of(message).orElseGet(message::getData),
                             context,
-                            timeout);
+                            timeout,
+                            backoff);
         } catch (ClassCastException e) {
             throw new RuntimeException(e);
         }
     }
 
     @Override
-    public <T> List<SubscribeMessage<T>> of(List<Message> messages, Class<T> payloadType, Context context, Duration timeout) {
-        return messages.stream().map(message -> of(message, payloadType, context, timeout)).toList();
+    public <T> List<SubscribeMessage<T>> of(List<Message> messages, Class<T> payloadType, Context context, Duration timeout,
+            List<Duration> backoff) {
+        return messages.stream().map(message -> of(message, payloadType, context, timeout, backoff)).toList();
     }
 }

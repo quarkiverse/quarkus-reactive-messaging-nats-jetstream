@@ -27,17 +27,20 @@ public class SubscribeMessage<T> implements JetStreamMessage<T> {
     private final T payload;
     private final Context context;
     private final Duration timeout;
+    private final List<Duration> backoff;
 
     public SubscribeMessage(final Message message,
             final T payload,
             final Context context,
-            final Duration timeout) {
+            final Duration timeout,
+            final List<Duration> backoff) {
         this.message = message;
         this.subscribeMessageMetadata = SubscribeMessageMetadata.of(message);
         this.metadata = captureContextMetadata(subscribeMessageMetadata);
         this.payload = payload;
         this.context = context;
         this.timeout = timeout;
+        this.backoff = backoff;
     }
 
     @Override
@@ -107,7 +110,7 @@ public class SubscribeMessage<T> implements JetStreamMessage<T> {
     public CompletionStage<Void> nack(Throwable reason, Metadata metadata) {
         return VertxContext.runOnContext(context.getDelegate(), f -> {
             try {
-                message.nak();
+                getBackoff().ifPresentOrElse(message::nakWithDelay, message::nak);
                 this.runOnMessageContext(() -> f.complete(null));
             } catch (Exception e) {
                 this.runOnMessageContext(() -> f.completeExceptionally(e));
@@ -154,5 +157,13 @@ public class SubscribeMessage<T> implements JetStreamMessage<T> {
                 "metadata=" + subscribeMessageMetadata +
                 ", payload=" + payload +
                 '}';
+    }
+
+    private Optional<Duration> getBackoff() {
+        if (backoff.isEmpty()) {
+            return Optional.empty();
+        }
+        final var index = getDeliveredCount() > backoff.size() ? backoff.size() - 1 : getDeliveredCount().intValue();
+        return Optional.of(backoff.get(index));
     }
 }

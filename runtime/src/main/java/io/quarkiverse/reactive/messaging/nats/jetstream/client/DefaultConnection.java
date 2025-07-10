@@ -307,7 +307,8 @@ class DefaultConnection extends AbstractConsumer implements Connection {
         return Uni.createFrom()
                 .item(Unchecked.supplier(
                         () -> (Message<T>) messageMapper.of(message, configuration.payloadType().orElse(null), context,
-                                configuration.acknowledgeTimeout().orElse(DEFAULT_ACK_TIMEOUT))));
+                                configuration.acknowledgeTimeout().orElse(DEFAULT_ACK_TIMEOUT),
+                                configuration.backoff().orElseGet(List::of))));
     }
 
     private Uni<ConsumerContext> addOrUpdateConsumer(final String stream, final String name,

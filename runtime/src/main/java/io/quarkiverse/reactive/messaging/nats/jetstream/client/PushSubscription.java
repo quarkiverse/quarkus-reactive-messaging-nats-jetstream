@@ -3,6 +3,7 @@ package io.quarkiverse.reactive.messaging.nats.jetstream.client;
 import static io.quarkiverse.reactive.messaging.nats.jetstream.client.api.SubscribeMessage.DEFAULT_ACK_TIMEOUT;
 
 import java.time.Duration;
+import java.util.List;
 
 import org.eclipse.microprofile.reactive.messaging.Message;
 
@@ -99,7 +100,8 @@ public class PushSubscription<T> extends AbstractConsumer implements Subscriptio
 
     private Message<T> transformMessage(io.nats.client.Message message, Class<T> payloadType, Context context,
             Duration timeout) {
-        return messageMapper.of(message, payloadType, context, timeout);
+        return messageMapper.of(message, payloadType, context, timeout,
+                configuration.consumerConfiguration().backoff().orElseGet(List::of));
     }
 
     private PushSubscribeOptions createPushSubscribeOptions() {
