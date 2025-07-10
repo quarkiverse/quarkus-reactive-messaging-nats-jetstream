@@ -58,9 +58,13 @@ public class FetchMessagesTest {
     @Test
     void fetchOneMessage() throws Exception {
         final var data = new Data("test", "52b13992-749a-4943-ab8f-2403c734c648", "46c818c9-8915-48a6-9378-b8f540b0afe2");
+
+        final var consumerConfiguration = createConsumerConfiguration("fetch-data");
+        addConsumer("fetch-data-consumer", consumerConfiguration);
+
         publish(data, "fetch-data");
 
-        final var received = next("fetch-data", true);
+        final var received = next("fetch-data-consumer", "fetch-data", true);
         assertThat(received).isEqualTo(data);
     }
 
@@ -69,13 +73,16 @@ public class FetchMessagesTest {
         final var data1 = new Data("test1", "ea030796-4692-40f1-9ce5-a9cf04b5fe53", "3bd00e71-7bc3-45c3-a1aa-8f8679ff7373");
         final var data2 = new Data("test2", "4d76e337-97f8-41b9-9030-b19d4ba824be", "58707f28-74c5-45fd-b59a-be0286bb8490");
 
+        final var consumerConfiguration = createConsumerConfiguration("fetch-data");
+        addConsumer("fetch-data-consumer", consumerConfiguration);
+
         publish(data1, "fetch-data");
         publish(data2, "fetch-data");
 
-        final var received1 = next("fetch-data", true);
+        final var received1 = next("fetch-data-consumer", "fetch-data", true);
         assertThat(received1).isEqualTo(data1);
 
-        final var received2 = next("fetch-data", true);
+        final var received2 = next("fetch-data-consumer", "fetch-data", true);
         assertThat(received2).isEqualTo(data2);
     }
 
@@ -84,13 +91,16 @@ public class FetchMessagesTest {
         final var data1 = new Data("test1", "ea030796-4692-40f1-9ce5-a9cf04b5fe53", "3bd00e71-7bc3-45c3-a1aa-8f8679ff7373");
         final var data2 = new Data("test2", "4d76e337-97f8-41b9-9030-b19d4ba824be", "58707f28-74c5-45fd-b59a-be0286bb8490");
 
+        final var consumerConfiguration = createConsumerConfiguration("fetch-data");
+        addConsumer("fetch-data-consumer", consumerConfiguration);
+
         publish(data1, "fetch-data");
         publish(data2, "fetch-data");
 
-        final var received1 = next("fetch-data", false);
+        final var received1 = next("fetch-data-consumer", "fetch-data", false);
         assertThat(received1).isEqualTo(data1);
 
-        final var received2 = next("fetch-data", true);
+        final var received2 = next("fetch-data-consumer", "fetch-data", true);
         assertThat(received2).isEqualTo(data1);
     }
 
@@ -101,21 +111,26 @@ public class FetchMessagesTest {
         final var data3 = new Data("test3", "14e9aaaf-0d42-42a8-a93a-ebe37ff6a742", "974932c1-90b8-4b79-b10a-b508d7badc04");
         final var data4 = new Data("test4", "5246354a-2342-4422-9268-af95862b51fb", "1325e196-4186-47ab-8b30-5047cae77d7e");
 
+        addConsumer(data1.resourceId(), createConsumerConfiguration("resources." + data1.resourceId()));
+        addConsumer(data2.resourceId(), createConsumerConfiguration("resources." + data2.resourceId()));
+        addConsumer(data3.resourceId(), createConsumerConfiguration("resources." + data3.resourceId()));
+        addConsumer(data4.resourceId(), createConsumerConfiguration("resources." + data4.resourceId()));
+
         publish(data1, "resources." + data1.resourceId());
         publish(data2, "resources." + data2.resourceId());
         publish(data3, "resources." + data3.resourceId());
         publish(data4, "resources." + data4.resourceId());
 
-        final var received1 = next("resources." + data1.resourceId(), true);
+        final var received1 = next(data1.resourceId(), "resources." + data1.resourceId(), true);
         assertThat(received1).isEqualTo(data1);
 
-        final var received2 = next("resources." + data2.resourceId(), true);
+        final var received2 = next(data2.resourceId(), "resources." + data2.resourceId(), true);
         assertThat(received2).isEqualTo(data2);
 
-        final var received3 = next("resources." + data3.resourceId(), true);
+        final var received3 = next(data3.resourceId(), "resources." + data3.resourceId(), true);
         assertThat(received3).isEqualTo(data3);
 
-        final var received4 = next("resources." + data4.resourceId(), true);
+        final var received4 = next(data4.resourceId(), "resources." + data4.resourceId(), true);
         assertThat(received4).isEqualTo(data4);
     }
 
@@ -127,13 +142,16 @@ public class FetchMessagesTest {
         addSubject(data1.resourceId());
         addSubject(data2.resourceId());
 
+        addConsumer(data1.resourceId(), createConsumerConfiguration(data1.resourceId()));
+        addConsumer(data2.resourceId(), createConsumerConfiguration(data2.resourceId()));
+
         publish(data1, data1.resourceId());
         publish(data2, data2.resourceId());
 
-        final var received1 = next(data1.resourceId(), true);
+        final var received1 = next(data1.resourceId(), data1.resourceId(), true);
         assertThat(received1).isEqualTo(data1);
 
-        final var received2 = next(data2.resourceId(), true);
+        final var received2 = next(data2.resourceId(), data2.resourceId(), true);
         assertThat(received2).isEqualTo(data2);
 
         removeSubject(data1.resourceId());
@@ -147,10 +165,12 @@ public class FetchMessagesTest {
 
         addSubject(data1.resourceId());
 
+        addConsumer(data1.resourceId(), createConsumerConfiguration(data1.resourceId()));
+
         publish(data1, data1.resourceId());
         publish(data2, data2.resourceId());
 
-        final var received = fetch(data1.resourceId());
+        final var received = fetch(data1.resourceId(), data1.resourceId());
         assertThat(received).containsExactly(data1, data2);
     }
 
@@ -160,6 +180,13 @@ public class FetchMessagesTest {
             connection.streamManagement()
                     .onItem().transformToUni(streamManagement -> streamManagement.addSubject("fetch-test", subject))
                     .await().atMost(Duration.ofSeconds(30));
+        }
+    }
+
+    private void addConsumer(String name, ConsumerConfiguration configuration) throws Exception {
+        try (final var connection = connectionFactory.create(jetStreamConfiguration.connection(),
+                new DefaultConnectionListener()).await().atMost(Duration.ofSeconds(30))) {
+            connection.addConsumer("fetch-test", name, configuration).await().atMost(Duration.ofSeconds(30));
         }
     }
 
@@ -175,23 +202,18 @@ public class FetchMessagesTest {
     private void publish(Data data, String subject) throws Exception {
         try (final var connection = connectionFactory.create(jetStreamConfiguration.connection(),
                 new DefaultConnectionListener()).await().atMost(Duration.ofSeconds(30))) {
-            final var consumerConfiguration = createFetchConsumerConfiguration(subject);
-
-            connection.addConsumer("fetch-test", "fetch-consumer", consumerConfiguration.consumerConfiguration()).await()
-                    .atMost(Duration.ofSeconds(30));
-
             connection.publish(Message.of(data), "fetch-test", subject)
                     .await()
                     .atMost(Duration.ofSeconds(30));
         }
     }
 
-    private Data next(String subject, boolean ack) throws Exception {
+    private Data next(String consumer, String subject, boolean ack) throws Exception {
         try (final var connection = connectionFactory.create(jetStreamConfiguration.connection(),
                 new DefaultConnectionListener()).await().atMost(Duration.ofSeconds(30))) {
-            final var consumerConfiguration = createFetchConsumerConfiguration(subject);
+            final var consumerConfiguration = createConsumerConfiguration(subject);
             final var received = connection
-                    .next("fetch-test", "fetch-consumer", consumerConfiguration.consumerConfiguration(), Duration.ofSeconds(30))
+                    .next("fetch-test", consumer, consumerConfiguration, Duration.ofSeconds(30))
                     .await().atMost(Duration.ofSeconds(30));
             if (ack) {
                 Uni.createFrom().completionStage(received.ack()).await().atMost(Duration.ofSeconds(30));
@@ -202,11 +224,11 @@ public class FetchMessagesTest {
         }
     }
 
-    private List<Data> fetch(String subject) throws Exception {
+    private List<Data> fetch(String consumer, String subject) throws Exception {
         try (final var connection = connectionFactory.create(jetStreamConfiguration.connection(),
                 new DefaultConnectionListener()).await().atMost(Duration.ofSeconds(30))) {
             final var consumerConfiguration = createFetchConsumerConfiguration(subject);
-            final var received = connection.fetch("fetch-test", "fetch-consumer", consumerConfiguration)
+            final var received = connection.fetch("fetch-test", consumer, consumerConfiguration)
                     .onItem().transformToUniAndMerge(message -> Uni.createFrom().completionStage(message.ack())
                             .onItem().transform(ignored -> message))
                     .collect().asList()
@@ -220,102 +242,7 @@ public class FetchMessagesTest {
 
             @Override
             public ConsumerConfiguration consumerConfiguration() {
-                return new ConsumerConfiguration() {
-                    @Override
-                    public Boolean durable() {
-                        return true;
-                    }
-
-                    @Override
-                    public String subject() {
-                        return subject;
-                    }
-
-                    @Override
-                    public Optional<Duration> ackWait() {
-                        return Optional.empty();
-                    }
-
-                    @Override
-                    public DeliverPolicy deliverPolicy() {
-                        return DeliverPolicy.All;
-                    }
-
-                    @Override
-                    public Optional<Long> startSequence() {
-                        return Optional.empty();
-                    }
-
-                    @Override
-                    public Optional<ZonedDateTime> startTime() {
-                        return Optional.empty();
-                    }
-
-                    @Override
-                    public Optional<String> description() {
-                        return Optional.empty();
-                    }
-
-                    @Override
-                    public Optional<Duration> inactiveThreshold() {
-                        return Optional.empty();
-                    }
-
-                    @Override
-                    public Optional<Long> maxAckPending() {
-                        return Optional.empty();
-                    }
-
-                    @Override
-                    public Optional<Long> maxDeliver() {
-                        return Optional.empty();
-                    }
-
-                    @Override
-                    public ReplayPolicy replayPolicy() {
-                        return ReplayPolicy.Instant;
-                    }
-
-                    @Override
-                    public Integer replicas() {
-                        return 1;
-                    }
-
-                    @Override
-                    public Optional<Boolean> memoryStorage() {
-                        return Optional.empty();
-                    }
-
-                    @Override
-                    public Optional<String> sampleFrequency() {
-                        return Optional.empty();
-                    }
-
-                    @Override
-                    public Map<String, String> metadata() {
-                        return Map.of();
-                    }
-
-                    @Override
-                    public Optional<List<Duration>> backoff() {
-                        return Optional.empty();
-                    }
-
-                    @Override
-                    public Optional<ZonedDateTime> pauseUntil() {
-                        return Optional.empty();
-                    }
-
-                    @Override
-                    public Optional<Class<?>> payloadType() {
-                        return Optional.empty();
-                    }
-
-                    @Override
-                    public Optional<Duration> acknowledgeTimeout() {
-                        return Optional.of(Duration.ofMillis(1000));
-                    }
-                };
+                return createConsumerConfiguration(subject);
             }
 
             @Override
@@ -333,6 +260,105 @@ public class FetchMessagesTest {
                 };
             }
 
+        };
+    }
+
+    private ConsumerConfiguration createConsumerConfiguration(String subject) {
+        return new ConsumerConfiguration() {
+            @Override
+            public Boolean durable() {
+                return true;
+            }
+
+            @Override
+            public String subject() {
+                return subject;
+            }
+
+            @Override
+            public Optional<Duration> ackWait() {
+                return Optional.empty();
+            }
+
+            @Override
+            public DeliverPolicy deliverPolicy() {
+                return DeliverPolicy.All;
+            }
+
+            @Override
+            public Optional<Long> startSequence() {
+                return Optional.empty();
+            }
+
+            @Override
+            public Optional<ZonedDateTime> startTime() {
+                return Optional.empty();
+            }
+
+            @Override
+            public Optional<String> description() {
+                return Optional.empty();
+            }
+
+            @Override
+            public Optional<Duration> inactiveThreshold() {
+                return Optional.empty();
+            }
+
+            @Override
+            public Optional<Long> maxAckPending() {
+                return Optional.empty();
+            }
+
+            @Override
+            public Optional<Long> maxDeliver() {
+                return Optional.empty();
+            }
+
+            @Override
+            public ReplayPolicy replayPolicy() {
+                return ReplayPolicy.Instant;
+            }
+
+            @Override
+            public Integer replicas() {
+                return 1;
+            }
+
+            @Override
+            public Optional<Boolean> memoryStorage() {
+                return Optional.empty();
+            }
+
+            @Override
+            public Optional<String> sampleFrequency() {
+                return Optional.empty();
+            }
+
+            @Override
+            public Map<String, String> metadata() {
+                return Map.of();
+            }
+
+            @Override
+            public Optional<List<Duration>> backoff() {
+                return Optional.empty();
+            }
+
+            @Override
+            public Optional<ZonedDateTime> pauseUntil() {
+                return Optional.empty();
+            }
+
+            @Override
+            public Optional<Class<?>> payloadType() {
+                return Optional.empty();
+            }
+
+            @Override
+            public Optional<Duration> acknowledgeTimeout() {
+                return Optional.of(Duration.ofMillis(1000));
+            }
         };
     }
 

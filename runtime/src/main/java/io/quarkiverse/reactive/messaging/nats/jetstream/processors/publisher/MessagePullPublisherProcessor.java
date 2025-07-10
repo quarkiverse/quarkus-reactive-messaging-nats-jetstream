@@ -27,7 +27,7 @@ public class MessagePullPublisherProcessor<T> extends MessagePublisherProcessor<
 
     @Override
     protected Multi<Message<T>> subscription(Connection connection) {
-        return connection.<T>subscribe(stream(), consumer(), configuration)
+        return connection.<T> subscribe(stream(), consumer(), configuration)
                 .onItem().transformToMulti(Subscription::subscribe);
     }
 }

@@ -123,7 +123,8 @@ class DefaultConnection extends AbstractConsumer implements Connection {
             final FetchConsumerConfiguration configuration) {
         final var context = context();
         return getConsumerContext(stream, consumer)
-                .onItem().<Message<T>>transformToMulti(consumerContext -> fetchMessages(consumerContext, configuration, context))
+                .onItem()
+                .<Message<T>> transformToMulti(consumerContext -> fetchMessages(consumerContext, configuration, context))
                 .onItem().transformToUniAndMerge(message -> tracerFactory.<T> create(TracerType.Subscribe).withTrace(message,
                         new AttachContextTraceSupplier<>()))
                 .onFailure().transform(FetchException::new);
@@ -300,11 +301,12 @@ class DefaultConnection extends AbstractConsumer implements Connection {
 
     @SuppressWarnings("unchecked")
     private <T> Uni<Message<T>> transformMessage(io.nats.client.Message message,
-                                                 ConsumerConfiguration configuration,
-                                                 Context context) {
+            ConsumerConfiguration configuration,
+            Context context) {
         return Uni.createFrom()
-                .item(Unchecked.supplier(() -> (Message<T>) messageMapper.of(message, configuration.payloadType().orElse(null), context,
-                        configuration.acknowledgeTimeout().orElse(DEFAULT_ACK_TIMEOUT))));
+                .item(Unchecked.supplier(
+                        () -> (Message<T>) messageMapper.of(message, configuration.payloadType().orElse(null), context,
+                                configuration.acknowledgeTimeout().orElse(DEFAULT_ACK_TIMEOUT))));
     }
 
     private Uni<ConsumerContext> addOrUpdateConsumer(final String stream, final String name,
@@ -390,7 +392,8 @@ class DefaultConnection extends AbstractConsumer implements Connection {
             final Duration timeout) {
         return Uni.createFrom().item(Unchecked.supplier(() -> consumerContext.next(timeout)))
                 .onItem().ifNull().failWith(MessageNotFoundException::new)
-                .onItem().ifNotNull().<Message<T>>transformToUni(message -> transformMessage(message, configuration, context()))
+                .onItem().ifNotNull()
+                .<Message<T>> transformToUni(message -> transformMessage(message, configuration, context()))
                 .onItem().transformToUni(message -> tracerFactory.<T> create(TracerType.Subscribe).withTrace(message,
                         new AttachContextTraceSupplier<>()))
                 .onFailure().transform(failure -> {

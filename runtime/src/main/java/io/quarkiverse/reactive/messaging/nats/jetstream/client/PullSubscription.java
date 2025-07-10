@@ -30,7 +30,7 @@ public class PullSubscription<T> implements Subscription<T> {
     private final TracerFactory tracerFactory;
     private final Context context;
 
-    @SuppressWarnings({"ReactiveStreamsUnusedPublisher", "unchecked"})
+    @SuppressWarnings({ "ReactiveStreamsUnusedPublisher", "unchecked" })
     @Override
     public Multi<Message<T>> subscribe() {
         Class<T> payloadType = (Class<T>) consumerConfiguration.consumerConfiguration().payloadType().orElse(null);

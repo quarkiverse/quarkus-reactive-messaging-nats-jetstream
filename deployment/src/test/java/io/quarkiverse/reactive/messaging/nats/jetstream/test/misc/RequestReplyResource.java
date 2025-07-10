@@ -82,7 +82,7 @@ public class RequestReplyResource implements MessageConsumer<Data> {
     public Uni<Data> request(@PathParam("id") String id, @PathParam("data") String data) {
         return getOrEstablishMessageConnection()
                 .onItem()
-                .<Message<Data>>transformToUni(connection -> connection.request(
+                .<Message<Data>> transformToUni(connection -> connection.request(
                         Message.of(new Data(data, id, UUID.randomUUID().toString())), getRequestReplyConfiguration(id)))
                 .onItem().transformToUni(this::acknowledgeData);
     }
