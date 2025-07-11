@@ -162,8 +162,9 @@ class DefaultConnection extends AbstractConsumer implements Connection {
         final var context = context();
         return context.executeBlocking(addOrUpdateConsumer(stream, consumer, configuration.consumerConfiguration()))
                 .onItem()
-                .<Subscription<T>> transformToUni(ignore -> createPullSubscription(stream, consumer, configuration))
-                .onItem().<Subscription<T>> transform(subscription -> {
+                .<Subscription<T>> transformToUni(
+                        consumerContext -> createPullSubscription(stream, consumer, consumerContext, configuration))
+                .onItem().transform(subscription -> {
                     subscriptions.put(consumer, subscription);
                     return subscription;
                 })
@@ -303,9 +304,10 @@ class DefaultConnection extends AbstractConsumer implements Connection {
     private <T> Uni<Message<T>> transformMessage(io.nats.client.Message message,
             ConsumerConfiguration configuration,
             Context context) {
+        Class<T> payloadType = (Class<T>) configuration.payloadType().orElse(null);
         return Uni.createFrom()
-                .item(Unchecked.supplier(
-                        () -> (Message<T>) messageMapper.of(message, configuration.payloadType().orElse(null), context,
+                .item(Unchecked.<Message<T>> supplier(
+                        () -> messageMapper.of(message, payloadType, context,
                                 configuration.acknowledgeTimeout().orElse(DEFAULT_ACK_TIMEOUT),
                                 configuration.backoff().orElseGet(List::of))));
     }
@@ -415,8 +417,18 @@ class DefaultConnection extends AbstractConsumer implements Connection {
     }
 
     private <T> Uni<Subscription<T>> createPullSubscription(
-            final String stream, final String consumer, final PullConsumerConfiguration configuration) {
-        return Uni.createFrom().item(Unchecked.supplier(() -> new PullSubscription<>(stream, consumer, configuration,
-                messageMapper, tracerFactory, connection.jetStream(), context())));
+            final String stream, final String consumer, ConsumerContext consumerContext,
+            final PullConsumerConfiguration configuration) {
+        if (configuration.pullConfiguration().batchSize() <= 1) {
+            return Uni.createFrom().item(Unchecked.supplier(
+                    () -> new PullSubscription<>(
+                            new PullMessageConsumer(stream, configuration, consumerContext),
+                            configuration, messageMapper, tracerFactory, context())));
+        } else {
+            return Uni.createFrom().item(Unchecked.supplier(
+                    () -> new PullSubscription<>(
+                            new PullMessageReader(connection.jetStream(), stream, consumer, configuration),
+                            configuration, messageMapper, tracerFactory, context())));
+        }
     }
 }
