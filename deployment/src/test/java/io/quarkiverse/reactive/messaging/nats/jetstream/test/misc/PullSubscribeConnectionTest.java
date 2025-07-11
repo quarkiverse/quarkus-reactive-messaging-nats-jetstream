@@ -11,6 +11,8 @@ import java.util.Optional;
 import jakarta.inject.Inject;
 
 import org.jboss.logging.Logger;
+import org.jboss.shrinkwrap.api.ShrinkWrap;
+import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -22,13 +24,16 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.Con
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.PullConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.PullConsumerConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.configuration.JetStreamConfiguration;
+import io.quarkiverse.reactive.messaging.nats.jetstream.test.TestSpanExporter;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class PullSubscribeConnectionTest {
     private final static Logger logger = Logger.getLogger(PullSubscribeConnectionTest.class);
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
+    static QuarkusUnitTest runner = new QuarkusUnitTest().setArchiveProducer(
+            () -> ShrinkWrap.create(JavaArchive.class)
+                    .addClasses(TestSpanExporter.class, Data.class))
             .withConfigurationResource("application-reader.properties");
 
     @Inject

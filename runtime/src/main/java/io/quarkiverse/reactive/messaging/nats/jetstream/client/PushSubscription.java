@@ -21,7 +21,7 @@ import io.vertx.mutiny.core.Context;
 import lombok.extern.jbosslog.JBossLog;
 
 @JBossLog
-public class PushSubscription<T> extends AbstractConsumer implements Subscription<T> {
+class PushSubscription<T> extends AbstractConsumer implements Subscription<T> {
     private final String stream;
     private final String consumer;
     private final PushConsumerConfiguration configuration;
