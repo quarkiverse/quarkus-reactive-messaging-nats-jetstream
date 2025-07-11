@@ -5,7 +5,8 @@ import java.util.List;
 
 import jakarta.enterprise.context.ApplicationScoped;
 
-import io.nats.client.Message;
+import org.eclipse.microprofile.reactive.messaging.Message;
+
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.SubscribeMessage;
 import io.quarkus.arc.DefaultBean;
 import io.vertx.mutiny.core.Context;
@@ -19,8 +20,8 @@ public class DefaultMessageMapper implements MessageMapper {
 
     @SuppressWarnings("unchecked")
     @Override
-    public <T> SubscribeMessage<T> of(
-            Message message,
+    public <T> Message<T> of(
+            io.nats.client.Message message,
             Class<T> payloadType,
             Context context,
             Duration timeout,
@@ -39,7 +40,8 @@ public class DefaultMessageMapper implements MessageMapper {
     }
 
     @Override
-    public <T> List<SubscribeMessage<T>> of(List<Message> messages, Class<T> payloadType, Context context, Duration timeout,
+    public <T> List<Message<T>> of(List<io.nats.client.Message> messages, Class<T> payloadType, Context context,
+            Duration timeout,
             List<Duration> backoff) {
         return messages.stream().map(message -> of(message, payloadType, context, timeout, backoff)).toList();
     }

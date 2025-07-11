@@ -3,17 +3,17 @@ package io.quarkiverse.reactive.messaging.nats.jetstream.mapper;
 import java.time.Duration;
 import java.util.List;
 
-import io.nats.client.Message;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.SubscribeMessage;
+import org.eclipse.microprofile.reactive.messaging.Message;
+
 import io.vertx.mutiny.core.Context;
 
 public interface MessageMapper {
 
-    <T> List<SubscribeMessage<T>> of(List<Message> messages,
+    <T> List<Message<T>> of(List<io.nats.client.Message> messages,
             Class<T> payloadType, Context context, Duration timeout,
             List<Duration> backoff);
 
-    <T> SubscribeMessage<T> of(Message message,
+    <T> Message<T> of(io.nats.client.Message message,
             Class<T> payloadType, Context context, Duration timeout,
             List<Duration> backoff);
 }
