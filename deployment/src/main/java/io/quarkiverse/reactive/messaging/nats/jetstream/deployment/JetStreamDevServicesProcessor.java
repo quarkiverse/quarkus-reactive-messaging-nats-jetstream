@@ -61,7 +61,7 @@ public class JetStreamDevServicesProcessor {
             LoggingSetupBuildItem loggingSetupBuildItem,
             DevServicesConfig devServicesConfig) {
 
-        JetStreamDevServiceCfg configuration = new JetStreamDevServiceCfg(devServicesBuildTimeConfig, devServicesConfig);
+        JetStreamDevServiceCfg configuration = new JetStreamDevServiceCfg(devServicesBuildTimeConfig);
 
         if (devService != null) {
             boolean shouldShutdownTheBroker = !configuration.equals(cfg);
@@ -136,6 +136,12 @@ public class JetStreamDevServicesProcessor {
             LaunchModeBuildItem launchMode,
             Optional<Duration> timeout) {
 
+        if (!config.devServicesEnabled) {
+            // explicitly disabled
+            logger.debug("Not starting Dev Services for NATS JetStream, as it has been disabled in the config.");
+            return null;
+        }
+
         if (!dockerStatusBuildItem.isContainerRuntimeAvailable()) {
             logger.warn("Docker isn't working, please configure the NATS JetStream broker location.");
             return null;
@@ -180,9 +186,8 @@ public class JetStreamDevServicesProcessor {
         private final boolean shared;
         private final String serviceName;
 
-        public JetStreamDevServiceCfg(JetStreamDevServicesBuildTimeConfig jetStreamDevServicesConfig,
-                DevServicesConfig devServicesConfig) {
-            this.devServicesEnabled = devServicesConfig.enabled();
+        public JetStreamDevServiceCfg(JetStreamDevServicesBuildTimeConfig jetStreamDevServicesConfig) {
+            this.devServicesEnabled = jetStreamDevServicesConfig.enabled();
             this.imageName = jetStreamDevServicesConfig.imageName();
             this.fixedExposedPort = jetStreamDevServicesConfig.port().orElse(0);
             this.shared = jetStreamDevServicesConfig.shared();

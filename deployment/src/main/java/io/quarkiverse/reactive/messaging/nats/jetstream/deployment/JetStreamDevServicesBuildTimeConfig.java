@@ -12,6 +12,13 @@ import io.smallrye.config.WithDefault;
 public interface JetStreamDevServicesBuildTimeConfig {
 
     /**
+     * If Dev Services for NATS JetStream has been explicitly enabled or disabled. Dev Services are generally enabled
+     * by default, unless there is an existing configuration present.
+     */
+    @WithDefault(value = "true")
+    Boolean enabled();
+
+    /**
      * Optional fixed port the dev service will listen to.
      * <p>
      * If not defined, the port will be chosen randomly.
