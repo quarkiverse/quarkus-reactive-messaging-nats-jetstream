@@ -186,7 +186,7 @@ public class FetchMessagesTest {
     private void addConsumer(String name, ConsumerConfiguration configuration) throws Exception {
         try (final var connection = connectionFactory.create(jetStreamConfiguration.connection(),
                 new DefaultConnectionListener()).await().atMost(Duration.ofSeconds(30))) {
-            connection.addConsumer("fetch-test", name, configuration).await().atMost(Duration.ofSeconds(30));
+            connection.addConsumerIfAbsent("fetch-test", name, configuration).await().atMost(Duration.ofSeconds(30));
         }
     }
 

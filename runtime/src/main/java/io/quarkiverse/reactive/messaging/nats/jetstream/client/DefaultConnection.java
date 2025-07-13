@@ -102,8 +102,8 @@ class DefaultConnection extends AbstractConsumer implements Connection {
     }
 
     @Override
-    public Uni<Consumer> addConsumer(final String stream, String name, final ConsumerConfiguration configuration) {
-        return context().executeBlocking(addOrUpdateConsumer(stream, name, configuration)
+    public Uni<Consumer> addConsumerIfAbsent(final String stream, String name, final ConsumerConfiguration configuration) {
+        return context().executeBlocking(addConsumerIfAbsentInternal(stream, name, configuration)
                 .onItem()
                 .transform(Unchecked.function(consumerContext -> consumerMapper.of(consumerContext.getConsumerInfo()))))
                 .onFailure().transform(SystemException::new);
@@ -112,10 +112,9 @@ class DefaultConnection extends AbstractConsumer implements Connection {
     @Override
     public <T> Uni<Message<T>> next(final String stream, final String consumer, ConsumerConfiguration configuration,
             final Duration timeout) {
-        final var context = context();
-        return context.executeBlocking(getConsumerContext(stream, consumer)
-                .onItem()
-                .transformToUni(consumerContext -> next(consumerContext, configuration, timeout)));
+        return context().executeBlocking(getConsumerContext(stream, consumer)
+                .onItem().ifNull().failWith(() -> new ConsumerNotFoundException(stream, consumer))
+                .onItem().transformToUni(consumerContext -> next(consumerContext, configuration, timeout)));
     }
 
     @SuppressWarnings("ReactiveStreamsUnusedPublisher")
@@ -124,9 +123,11 @@ class DefaultConnection extends AbstractConsumer implements Connection {
             final FetchConsumerConfiguration configuration) {
         final var context = context();
         return getConsumerContext(stream, consumer)
+                .onItem().ifNull().failWith(() -> new ConsumerNotFoundException(stream, consumer))
                 .onItem()
                 .<Message<T>> transformToMulti(consumerContext -> fetchMessages(consumerContext, configuration, context))
-                .onItem().transformToUniAndMerge(message -> tracerFactory.<T> create(TracerType.Subscribe).withTrace(message,
+                .onItem()
+                .transformToUniAndMerge(message -> tracerFactory.<T> create(TracerType.Subscribe).withTrace(message,
                         new AttachContextTraceSupplier<>()))
                 .onFailure().transform(FetchException::new);
     }
@@ -159,8 +160,7 @@ class DefaultConnection extends AbstractConsumer implements Connection {
     @Override
     public <T> Uni<Subscription<T>> subscribe(final String stream, final String consumer,
             final PullConsumerConfiguration configuration) {
-        final var context = context();
-        return context.executeBlocking(addOrUpdateConsumer(stream, consumer, configuration.consumerConfiguration()))
+        return context().executeBlocking(addConsumerIfAbsentInternal(stream, consumer, configuration.consumerConfiguration()))
                 .onItem()
                 .<Subscription<T>> transformToUni(
                         consumerContext -> createPullSubscription(stream, consumer, consumerContext, configuration))
@@ -198,9 +198,8 @@ class DefaultConnection extends AbstractConsumer implements Connection {
     public <Request, Reply> Uni<Message<Reply>> request(Message<Request> message,
             RequestReplyConsumerConfiguration configuration) {
         return context().executeBlocking(
-                addOrUpdateConsumer(configuration.stream(), configuration.name(), configuration.consumerConfiguration())
-                        .onItem()
-                        .transformToUni(consumerContext -> publishInternal(message, configuration.stream(),
+                addConsumerIfAbsentInternal(configuration.stream(), configuration.name(), configuration.consumerConfiguration())
+                        .onItem().transformToUni(consumerContext -> publishInternal(message, configuration.stream(),
                                 configuration.requestSubject())
                                 .onItem().transform(ignore -> consumerContext))
                         .onItem()
@@ -312,17 +311,18 @@ class DefaultConnection extends AbstractConsumer implements Connection {
                                 configuration.backoff().orElseGet(List::of))));
     }
 
-    private Uni<ConsumerContext> addOrUpdateConsumer(final String stream, final String name,
+    private Uni<ConsumerContext> addConsumerIfAbsentInternal(final String stream, final String name,
             final ConsumerConfiguration configuration) {
-        return Uni.createFrom().item(Unchecked.supplier(() -> {
-            try {
-                final var consumerConfiguration = createConsumerConfiguration(name, configuration);
-                final var streamContext = connection.getStreamContext(stream);
-                return streamContext.createOrUpdateConsumer(consumerConfiguration);
-            } catch (Exception failure) {
-                throw new SystemException(failure);
-            }
-        }));
+        return getConsumerContext(stream, name)
+                .onItem().ifNull().switchTo(() -> Uni.createFrom().item(Unchecked.supplier(() -> {
+                    try {
+                        final var consumerConfiguration = createConsumerConfiguration(name, configuration);
+                        final var streamContext = connection.getStreamContext(stream);
+                        return streamContext.createOrUpdateConsumer(consumerConfiguration);
+                    } catch (Exception failure) {
+                        throw new SystemException(failure);
+                    }
+                })));
     }
 
     private Uni<ConsumerContext> getConsumerContext(final String stream, final String consumer) {
@@ -330,8 +330,10 @@ class DefaultConnection extends AbstractConsumer implements Connection {
             try {
                 final var streamContext = connection.getStreamContext(stream);
                 return streamContext.getConsumerContext(consumer);
-            } catch (Exception failure) {
+            } catch (IOException failure) {
                 throw new SystemException(failure);
+            } catch (JetStreamApiException failure) {
+                return null; // Consumer does not exist
             }
         }));
     }
@@ -420,15 +422,17 @@ class DefaultConnection extends AbstractConsumer implements Connection {
             final String stream, final String consumer, ConsumerContext consumerContext,
             final PullConsumerConfiguration configuration) {
         if (configuration.pullConfiguration().batchSize() <= 1) {
-            return Uni.createFrom().item(Unchecked.supplier(
+            return Uni.createFrom().<Subscription<T>> item(Unchecked.supplier(
                     () -> new PullSubscription<>(
                             new PullMessageConsumer(stream, configuration, consumerContext),
-                            configuration, messageMapper, tracerFactory, context())));
+                            configuration, messageMapper, tracerFactory, context())))
+                    .onFailure().transform(SystemException::new);
         } else {
-            return Uni.createFrom().item(Unchecked.supplier(
+            return Uni.createFrom().<Subscription<T>> item(Unchecked.supplier(
                     () -> new PullSubscription<>(
                             new PullMessageReader(connection.jetStream(), stream, consumer, configuration),
-                            configuration, messageMapper, tracerFactory, context())));
+                            configuration, messageMapper, tracerFactory, context())))
+                    .onFailure().transform(SystemException::new);
         }
     }
 }

@@ -121,7 +121,7 @@ quarkus.messaging.nats.streams.[stream-name].discard-new-per-subject, Whether di
 quarkus.messaging.nats.streams.[stream-name].first-sequence, The first sequence used in the stream
 quarkus.messaging.nats.streams.[stream-name].pull-consumers.[consumer-name].consumer-configuration.description, "Description of pull consumer"
 quarkus.messaging.nats.streams.[stream-name].pull-consumers.[consumer-name].consumer-configuration.payload-type, "The class name of the payload type"
-quarkus.messaging.nats.streams.[stream-name].pull-consumers.[consumer-name].consumer-configuration.durable, "Sets the durable for the consumer"
+quarkus.messaging.nats.streams.[stream-name].pull-consumers.[consumer-name].consumer-configuration.durable, "Set to true if the consumer should be durable"
 quarkus.messaging.nats.streams.[stream-name].pull-consumers.[consumer-name].consumer-configuration.filter-subjects, "A list of subjects that overlap with the subjects bound to the stream to filter delivery to subscribers"
 quarkus.messaging.nats.streams.[stream-name].pull-consumers.[consumer-name].consumer-configuration.ack-wait, "The duration that the server will wait for an ack for any individual message once it has been delivered to a consumer. If an ack is not received in time, the message will be redelivered"
 quarkus.messaging.nats.streams.[stream-name].pull-consumers.[consumer-name].consumer-configuration.deliver-policy, "The point in the stream to receive messages from, either All, Last, New, ByStartSequence, ByStartTime or LastPerSubject"
@@ -135,6 +135,11 @@ quarkus.messaging.nats.streams.[stream-name].pull-consumers.[consumer-name].cons
 quarkus.messaging.nats.streams.[stream-name].pull-consumers.[consumer-name].consumer-configuration.back-off, The timing of re-deliveries as a comma-separated list of durations
 quarkus.messaging.nats.streams.[stream-name].pull-consumers.[consumer-name].consumer-configuration.retry-backoff, The retry backoff in milliseconds for retry publishing messages
 quarkus.messaging.nats.streams.[stream-name].pull-consumers.[consumer-name].consumer-configuration.acknowledge-timeout, The duration in milliseconds to wait for an ack confirmation
+quarkus.messaging.nats.streams.[stream-name].pull-consumers.[consumer-name].consumer-configuration.start-sequence, The start sequence
+quarkus.messaging.nats.streams.[stream-name].pull-consumers.[consumer-name].consumer-configuration.start-time, The start time
+quarkus.messaging.nats.streams.[stream-name].pull-consumers.[consumer-name].consumer-configuration.sample-frequency, The sample frequency
+quarkus.messaging.nats.streams.[stream-name].pull-consumers.[consumer-name].consumer-configuration.meta-data, The consumer metadata
+quarkus.messaging.nats.streams.[stream-name].pull-consumers.[consumer-name].consumer-configuration.pause-until, The pause until
 quarkus.messaging.nats.streams.[stream-name].pull-consumers.[consumer-name].pull-configuration.pull.batch-size, The size of batch of messages to be pulled in pull mode
 quarkus.messaging.nats.streams.[stream-name].pull-consumers.[consumer-name].pull-configuration.max-waiting, The maximum number of waiting pull requests
 quarkus.messaging.nats.streams.[stream-name].pull-consumers.[consumer-name].pull-configuration.max-expires, The maximum duration a single pull request will wait for messages to be available to pull. NATS require this to be 1000ms or above. Default is 3000ms.
@@ -154,6 +159,11 @@ quarkus.messaging.nats.streams.[stream-name].push-consumers.[consumer-name].cons
 quarkus.messaging.nats.streams.[stream-name].push-consumers.[consumer-name].consumer-configuration.back-off, The timing of re-deliveries as a comma-separated list of durations
 quarkus.messaging.nats.streams.[stream-name].push-consumers.[consumer-name].consumer-configuration.retry-backoff, The retry backoff in milliseconds for retry publishing messages
 quarkus.messaging.nats.streams.[stream-name].push-consumers.[consumer-name].consumer-configuration.acknowledge-timeout, The duration in milliseconds to wait for an ack confirmation
+quarkus.messaging.nats.streams.[stream-name].push-consumers.[consumer-name].consumer-configuration.start-sequence, The start sequence
+quarkus.messaging.nats.streams.[stream-name].push-consumers.[consumer-name].consumer-configuration.start-time, The start time
+quarkus.messaging.nats.streams.[stream-name].push-consumers.[consumer-name].consumer-configuration.sample-frequency, The sample frequency
+quarkus.messaging.nats.streams.[stream-name].push-consumers.[consumer-name].consumer-configuration.meta-data, The consumer metadata
+quarkus.messaging.nats.streams.[stream-name].push-consumers.[consumer-name].consumer-configuration.pause-until, The pause until
 quarkus.messaging.nats.streams.[stream-name].push-consumers.[consumer-name].push-configuration.push.ordered, Flag indicating whether this subscription should be ordered
 quarkus.messaging.nats.streams.[stream-name].push-consumers.[consumer-name].push-configuration.deliver-group, The optional deliver group to join
 quarkus.messaging.nats.streams.[stream-name].push-consumers.[consumer-name].push-configuration.flow-control, Enables per-subscription flow control using a sliding-window protocol. This protocol relies on the server and client exchanging messages to regulate when and how many messages are pushed to the client. This one-to-one flow control mechanism works in tandem with the one-to-many flow control imposed by MaxAckPending across all subscriptions bound to a consumer.
@@ -185,6 +195,7 @@ mp.messaging.outgoing.[channel-name].subject, The subject to subscribe messages 
 |======
 mp.messaging.incoming.[channel-name].stream, The stream to publish messages from
 mp.messaging.incoming.[channel-name].consumer, The name of the consumer to use
+mp.messaging.incoming.[channel-name].retry-backoff, The retry backoff in milliseconds for retry publishing messagess
 |======
 
 === Dev service configuration
