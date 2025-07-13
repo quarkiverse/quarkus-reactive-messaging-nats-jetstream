@@ -1,6 +1,7 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.test.misc;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.time.Duration;
 import java.time.ZonedDateTime;
@@ -20,6 +21,7 @@ import io.nats.client.api.DeliverPolicy;
 import io.nats.client.api.ReplayPolicy;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.ConnectionFactory;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.DefaultConnectionListener;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.SubscribeException;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ConsumerConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.PullConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.PullConsumerConfiguration;
@@ -43,7 +45,7 @@ public class PullSubscribeConnectionTest {
     ConnectionFactory connectionFactory;
 
     @Test
-    void createConnectionWithModifiedConfiguration() throws Exception {
+    void createConnectionWithModifiedConfigurationIsFailingWithSystemException() throws Exception {
         final var consumerConfiguration = createConsumerConfiguration(List.of(Duration.ofSeconds(10)), 2L);
 
         try (final var connection = connectionFactory.create(jetStreamConfiguration.connection()).await()
@@ -65,18 +67,9 @@ public class PullSubscribeConnectionTest {
                 List.of(Duration.ofSeconds(10), Duration.ofSeconds(30)), 3L);
         try (final var connection = connectionFactory.create(jetStreamConfiguration.connection(),
                 new DefaultConnectionListener()).await().atMost(Duration.ofSeconds(30))) {
-            connection.subscribe("reader-test", "reader-data-consumer", updatedConsumerConfiguration).await()
-                    .atMost(Duration.ofSeconds(30));
-            logger.info("Connected to NATS");
-            final var consumer = connection.streamManagement()
-                    .onItem()
-                    .transformToUni(streamManagement -> streamManagement.getConsumer("reader-test",
-                            "reader-data-consumer"))
-                    .await().atMost(Duration.ofSeconds(30));
-            assertThat(consumer).isNotNull();
-            assertThat(consumer.configuration().backoff())
-                    .isEqualTo(List.of(Duration.ofSeconds(10), Duration.ofSeconds(30)));
-            assertThat(consumer.configuration().maxDeliver()).isEqualTo(3L);
+            assertThrows(SubscribeException.class,
+                    () -> connection.subscribe("reader-test", "reader-data-consumer", updatedConsumerConfiguration).await()
+                            .atMost(Duration.ofSeconds(30)));
         }
     }
 

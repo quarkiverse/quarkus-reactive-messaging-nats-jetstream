@@ -19,7 +19,7 @@ public interface Connection extends AutoCloseable {
 
     <T> Uni<Message<T>> publish(Message<T> message, String stream, String subject);
 
-    Uni<Consumer> addConsumer(String stream, String name, ConsumerConfiguration configuration);
+    Uni<Consumer> addConsumerIfAbsent(String stream, String name, ConsumerConfiguration configuration);
 
     <T> Uni<Message<T>> next(String stream, String consumer, ConsumerConfiguration configuration, Duration timeout);
 
