@@ -44,7 +44,7 @@ public interface StreamConfiguration {
     /**
      * The compression option for this stream. The default is NONE.
      */
-    @WithDefault("NONE")
+    @WithDefault("None")
     CompressionOption compressionOption();
 
     /**
