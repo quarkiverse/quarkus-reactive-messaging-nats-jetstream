@@ -72,7 +72,7 @@ public interface ConsumerConfiguration {
      * ReplayInstant (the default), the messages will be pushed to the client as fast as possible while adhering to the
      * Ack Policy, Max Ack Pending, and the client's ability to consume those messages
      */
-    @WithDefault("instant")
+    @WithDefault("Instant")
     ReplayPolicy replayPolicy();
 
     /**
