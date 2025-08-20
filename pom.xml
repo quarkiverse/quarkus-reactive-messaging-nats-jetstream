@@ -27,7 +27,7 @@
         <maven.compiler.release>17</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <quarkus.version>3.25.2</quarkus.version>
+        <quarkus.version>3.26.0</quarkus.version>
 
         <jnats.version>2.21.5</jnats.version>
         <smallrye-connector-attribute-processor.version>4.28.0</smallrye-connector-attribute-processor.version>
