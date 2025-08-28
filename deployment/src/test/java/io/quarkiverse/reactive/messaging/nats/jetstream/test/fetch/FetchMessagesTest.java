@@ -1,6 +1,7 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.test.fetch;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.time.Duration;
 import java.time.ZonedDateTime;
@@ -8,9 +9,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import jakarta.annotation.Nullable;
 import jakarta.inject.Inject;
 
 import org.eclipse.microprofile.reactive.messaging.Message;
+import org.eclipse.microprofile.reactive.messaging.Metadata;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.BeforeEach;
@@ -21,7 +24,9 @@ import io.nats.client.api.DeliverPolicy;
 import io.nats.client.api.ReplayPolicy;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.ConnectionFactory;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.DefaultConnectionListener;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.MessageNotFoundException;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.StreamManagement;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.NackMetadata;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ConsumerConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.FetchConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.FetchConsumerConfiguration;
@@ -100,6 +105,27 @@ public class FetchMessagesTest {
         final var received1 = next("fetch-data-consumer", "fetch-data", false);
         assertThat(received1).isEqualTo(data1);
 
+        final var received2 = next("fetch-data-consumer", "fetch-data", true);
+        assertThat(received2).isEqualTo(data1);
+    }
+
+    @Test
+    void fetchOneNotAcknowledgedWithDelayMessage() throws Exception {
+        final var data1 = new Data("test1", "ea030796-4692-40f1-9ce5-a9cf04b5fe53", "3bd00e71-7bc3-45c3-a1aa-8f8679ff7373");
+
+        final var consumerConfiguration = createConsumerConfiguration("fetch-data");
+        addConsumer("fetch-data-consumer", consumerConfiguration);
+
+        publish(data1, "fetch-data");
+
+        final var received1 = next("fetch-data-consumer", "fetch-data", false, Duration.ofSeconds(35L));
+        assertThat(received1).isEqualTo(data1);
+
+        // The message should not be available immediately after a nack with delay
+        assertThatThrownBy(() -> next("fetch-data-consumer", "fetch-data", true))
+                .isInstanceOf(MessageNotFoundException.class);
+
+        // Attempt to fetch the message until it is available again
         final var received2 = next("fetch-data-consumer", "fetch-data", true);
         assertThat(received2).isEqualTo(data1);
     }
@@ -209,6 +235,10 @@ public class FetchMessagesTest {
     }
 
     private Data next(String consumer, String subject, boolean ack) throws Exception {
+        return next(consumer, subject, ack, null);
+    }
+
+    private Data next(String consumer, String subject, boolean ack, @Nullable Duration waitDelay) throws Exception {
         try (final var connection = connectionFactory.create(jetStreamConfiguration.connection(),
                 new DefaultConnectionListener()).await().atMost(Duration.ofSeconds(30))) {
             final var consumerConfiguration = createConsumerConfiguration(subject);
@@ -218,7 +248,15 @@ public class FetchMessagesTest {
             if (ack) {
                 Uni.createFrom().completionStage(received.ack()).await().atMost(Duration.ofSeconds(30));
             } else {
-                Uni.createFrom().completionStage(received.nack(new RuntimeException())).await().atMost(Duration.ofSeconds(30));
+                if (waitDelay != null) {
+                    Uni.createFrom()
+                            .completionStage(received.nack(new RuntimeException(),
+                                    Metadata.of(NackMetadata.builder().delayWait(waitDelay).build())))
+                            .await().atMost(Duration.ofSeconds(30));
+                } else {
+                    Uni.createFrom().completionStage(received.nack(new RuntimeException())).await()
+                            .atMost(Duration.ofSeconds(30));
+                }
             }
             return (Data) received.getPayload();
         }
