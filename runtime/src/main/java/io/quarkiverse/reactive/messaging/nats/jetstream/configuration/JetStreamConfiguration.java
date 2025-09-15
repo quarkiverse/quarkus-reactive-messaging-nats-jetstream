@@ -20,18 +20,17 @@ public interface JetStreamConfiguration {
     ConnectionConfiguration connection();
 
     /**
-     * Automatically configure streams, consumers and key value stores.
-     * If a stream or a consumer already exists and the configuration does not match the existing configuration, then an
-     * exception is thrown.
-     */
-    @WithDefault("true")
-    Boolean autoConfigure();
-
-    /**
      * Enable tracing for JetStream
      */
     @WithDefault("true")
     Boolean trace();
+
+    /**
+     * Whether the streams and key value stores should be automatically configured.
+     * If the artifacts already exist, they are left untouched.
+     */
+    @WithDefault("true")
+    Boolean autoConfiguration();
 
     /**
      * The stream configurations. The map key is the name of the stream.

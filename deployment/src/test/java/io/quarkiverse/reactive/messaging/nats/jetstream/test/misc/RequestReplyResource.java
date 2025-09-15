@@ -8,6 +8,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.Client;
 import jakarta.annotation.Priority;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.context.BeforeDestroyed;
@@ -20,9 +21,8 @@ import org.eclipse.microprofile.reactive.messaging.Message;
 
 import io.nats.client.api.DeliverPolicy;
 import io.nats.client.api.ReplayPolicy;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.Connection;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.ConnectionFactory;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.StreamManagement;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.ClientFactory;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.stream.StreamContext;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.StreamState;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ConsumerConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.RequestReplyConsumerConfiguration;
@@ -34,13 +34,13 @@ import io.smallrye.mutiny.Uni;
 @Produces("application/json")
 @RequestScoped
 public class RequestReplyResource implements MessageConsumer<Data> {
-    private final ConnectionFactory connectionFactory;
+    private final ClientFactory clientFactory;
     private final JetStreamConfiguration jetStreamConfiguration;
-    private final AtomicReference<Connection> messageConnection;
+    private final AtomicReference<Client> messageConnection;
 
-    public RequestReplyResource(ConnectionFactory connectionFactory,
-            JetStreamConfiguration jetStreamConfiguration) {
-        this.connectionFactory = connectionFactory;
+    public RequestReplyResource(ClientFactory clientFactory,
+                                JetStreamConfiguration jetStreamConfiguration) {
+        this.clientFactory = clientFactory;
         this.jetStreamConfiguration = jetStreamConfiguration;
         this.messageConnection = new AtomicReference<>();
     }
@@ -49,15 +49,15 @@ public class RequestReplyResource implements MessageConsumer<Data> {
     @Path("/streams")
     public Uni<List<String>> getStreams() {
         return getOrEstablishMessageConnection()
-                .onItem().transformToUni(Connection::streamManagement)
-                .onItem().transformToUni(StreamManagement::getStreamNames);
+                .onItem().transformToUni(Client::streamManagement)
+                .onItem().transformToUni(StreamContext::streamNames);
     }
 
     @GET
     @Path("/streams/{stream}/consumers")
     public Uni<List<String>> getConsumers(@PathParam("stream") String stream) {
         return getOrEstablishMessageConnection()
-                .onItem().transformToUni(Connection::streamManagement)
+                .onItem().transformToUni(Client::streamManagement)
                 .onItem().transformToUni(streamManagement -> streamManagement.getConsumerNames(stream));
     }
 
@@ -65,7 +65,7 @@ public class RequestReplyResource implements MessageConsumer<Data> {
     @Path("/streams/{stream}/subjects")
     public Uni<List<String>> getSubjects(@PathParam("stream") String stream) {
         return getOrEstablishMessageConnection()
-                .onItem().transformToUni(Connection::streamManagement)
+                .onItem().transformToUni(Client::streamManagement)
                 .onItem().transformToUni(streamManagement -> streamManagement.getSubjects(stream));
     }
 
@@ -73,7 +73,7 @@ public class RequestReplyResource implements MessageConsumer<Data> {
     @Path("/streams/{stream}/state")
     public Uni<StreamState> getStreamState(@PathParam("stream") String stream) {
         return getOrEstablishMessageConnection()
-                .onItem().transformToUni(Connection::streamManagement)
+                .onItem().transformToUni(Client::streamManagement)
                 .onItem().transformToUni(streamManagement -> streamManagement.getStreamState(stream));
     }
 
@@ -103,12 +103,12 @@ public class RequestReplyResource implements MessageConsumer<Data> {
         }
     }
 
-    private Uni<Connection> getOrEstablishMessageConnection() {
+    private Uni<Client> getOrEstablishMessageConnection() {
         return Uni.createFrom().item(() -> Optional.ofNullable(messageConnection.get())
-                .filter(Connection::isConnected)
+                .filter(Client::isConnected)
                 .orElse(null))
                 .onItem().ifNull()
-                .switchTo(() -> connectionFactory.create(jetStreamConfiguration.connection()))
+                .switchTo(() -> clientFactory.create(jetStreamConfiguration.connection()))
                 .onItem().invoke(this.messageConnection::set);
     }
 

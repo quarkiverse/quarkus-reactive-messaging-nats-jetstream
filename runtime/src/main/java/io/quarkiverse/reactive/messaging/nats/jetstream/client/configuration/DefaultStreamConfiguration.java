@@ -34,6 +34,6 @@ public record DefaultStreamConfiguration(Optional<String> description,
         Optional<Boolean> denyPurge,
         Optional<Boolean> discardNewPerSubject,
         Optional<Long> firstSequence,
-        Map<String, PullConsumerConfiguration> pullConsumers,
-        Map<String, PushConsumerConfiguration> pushConsumers) implements StreamConfiguration {
+        Map<String, PullConsumerConfiguration<?>> pullConsumers,
+        Map<String, PushConsumerConfiguration<?>> pushConsumers) implements StreamConfiguration {
 }

@@ -81,32 +81,24 @@ public class JetStreamConnector implements InboundConnector, OutboundConnector, 
     @Override
     public HealthReport getReadiness() {
         final HealthReport.HealthReportBuilder builder = HealthReport.builder();
-        processors.forEach(client -> builder.add(new HealthReport.ChannelInfo(
-                client.channel(),
-                client.readiness().healthy(),
-                client.readiness().message())));
+        processors.forEach(processor -> builder.add(new HealthReport.ChannelInfo(
+                processor.channel(),
+                processor.health().healthy(),
+                processor.health().message())));
         return builder.build();
     }
 
     @Override
     public HealthReport getLiveness() {
         final HealthReport.HealthReportBuilder builder = HealthReport.builder();
-        processors.forEach(client -> builder.add(new HealthReport.ChannelInfo(
-                client.channel(),
-                client.liveness().healthy(),
-                client.liveness().message())));
+        processors.forEach(processor -> builder.add(new HealthReport.ChannelInfo(
+                processor.channel(),
+                processor.health().healthy(),
+                processor.health().message())));
         return builder.build();
     }
 
     public void terminate(
             @Observes(notifyObserver = Reception.IF_EXISTS) @Priority(50) @BeforeDestroyed(ApplicationScoped.class) Object ignored) {
-        this.processors.forEach(processor -> {
-            try {
-                processor.close();
-            } catch (Exception failure) {
-                logger.warnf(failure, "Failed to close the processor: %s", failure.getMessage());
-            }
-        });
-        this.processors.clear();
     }
 }

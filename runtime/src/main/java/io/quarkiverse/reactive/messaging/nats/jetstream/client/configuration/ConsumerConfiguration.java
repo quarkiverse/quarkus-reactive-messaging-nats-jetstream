@@ -10,7 +10,7 @@ import io.nats.client.api.DeliverPolicy;
 import io.nats.client.api.ReplayPolicy;
 import io.smallrye.config.WithDefault;
 
-public interface ConsumerConfiguration {
+public interface ConsumerConfiguration<T> {
 
     /**
      * Set to true if the consumer should be durable.
@@ -111,10 +111,11 @@ public interface ConsumerConfiguration {
     /**
      * The payload type
      */
-    Optional<Class<?>> payloadType();
+    Optional<Class<T>> payloadType();
 
     /**
      * The duration to wait for an ack confirmation
      */
-    Optional<Duration> acknowledgeTimeout();
+    @WithDefault("5s")
+    Duration acknowledgeTimeout();
 }

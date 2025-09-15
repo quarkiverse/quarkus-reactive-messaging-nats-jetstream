@@ -1,14 +1,13 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration;
 
-import java.time.Duration;
-import java.util.List;
-import java.util.Optional;
-
 import io.nats.client.AuthHandler;
 import io.nats.client.ErrorListener;
 import io.nats.client.support.SSLUtils;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.Connection;
 import io.smallrye.config.WithDefault;
+
+import java.time.Duration;
+import java.util.List;
+import java.util.Optional;
 
 public interface ConnectionConfiguration {
 
@@ -50,7 +49,6 @@ public interface ConnectionConfiguration {
     /**
      * The maximum number of attempts to attempt to re-connect to NATS.
      * The default is -1 that means unlimited.
-     * {@value Connection#DEFAULT_MAX_RECONNECT}
      */
     @WithDefault("-1")
     Integer connectionAttempts();

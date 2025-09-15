@@ -1,6 +1,6 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client.api;
 
-import static io.quarkiverse.reactive.messaging.nats.jetstream.mapper.HeaderMapper.toMessageHeaders;
+import static io.quarkiverse.reactive.messaging.nats.jetstream.client.mapper.HeaderMapper.toMessageHeaders;
 import static io.smallrye.reactive.messaging.providers.locals.ContextAwareMessage.captureContextMetadata;
 
 import java.util.List;

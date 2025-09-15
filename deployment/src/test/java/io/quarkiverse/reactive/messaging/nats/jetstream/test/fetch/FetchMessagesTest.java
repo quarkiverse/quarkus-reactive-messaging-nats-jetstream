@@ -19,9 +19,8 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.nats.client.api.DeliverPolicy;
 import io.nats.client.api.ReplayPolicy;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.ConnectionFactory;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.DefaultConnectionListener;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.StreamManagement;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.ClientFactory;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.stream.StreamContext;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ConsumerConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.FetchConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.FetchConsumerConfiguration;
@@ -43,13 +42,13 @@ public class FetchMessagesTest {
     JetStreamConfiguration jetStreamConfiguration;
 
     @Inject
-    ConnectionFactory connectionFactory;
+    ClientFactory clientFactory;
 
     @BeforeEach
     public void setup() throws Exception {
-        try (final var connection = connectionFactory.create(jetStreamConfiguration.connection(),
+        try (final var connection = clientFactory.create(jetStreamConfiguration.connection(),
                 new DefaultConnectionListener()).await().atMost(Duration.ofSeconds(30))) {
-            connection.streamManagement().onItem().transformToMulti(StreamManagement::purgeAllStreams)
+            connection.streamManagement().onItem().transformToMulti(StreamContext::purgeAll)
                     .collect().asList()
                     .await().atMost(Duration.ofSeconds(30));
         }
@@ -175,7 +174,7 @@ public class FetchMessagesTest {
     }
 
     private void addSubject(String subject) throws Exception {
-        try (final var connection = connectionFactory.create(jetStreamConfiguration.connection(),
+        try (final var connection = clientFactory.create(jetStreamConfiguration.connection(),
                 new DefaultConnectionListener()).await().atMost(Duration.ofSeconds(30))) {
             connection.streamManagement()
                     .onItem().transformToUni(streamManagement -> streamManagement.addSubject("fetch-test", subject))
@@ -184,14 +183,14 @@ public class FetchMessagesTest {
     }
 
     private void addConsumer(String name, ConsumerConfiguration configuration) throws Exception {
-        try (final var connection = connectionFactory.create(jetStreamConfiguration.connection(),
+        try (final var connection = clientFactory.create(jetStreamConfiguration.connection(),
                 new DefaultConnectionListener()).await().atMost(Duration.ofSeconds(30))) {
             connection.addConsumerIfAbsent("fetch-test", name, configuration).await().atMost(Duration.ofSeconds(30));
         }
     }
 
     private void removeSubject(String subject) throws Exception {
-        try (final var connection = connectionFactory.create(jetStreamConfiguration.connection()).await()
+        try (final var connection = clientFactory.create(jetStreamConfiguration.connection()).await()
                 .atMost(Duration.ofSeconds(30))) {
             connection.streamManagement()
                     .onItem().transformToUni(streamManagement -> streamManagement.removeSubject("fetch-test", subject))
@@ -200,7 +199,7 @@ public class FetchMessagesTest {
     }
 
     private void publish(Data data, String subject) throws Exception {
-        try (final var connection = connectionFactory.create(jetStreamConfiguration.connection(),
+        try (final var connection = clientFactory.create(jetStreamConfiguration.connection(),
                 new DefaultConnectionListener()).await().atMost(Duration.ofSeconds(30))) {
             connection.publish(Message.of(data), "fetch-test", subject)
                     .await()
@@ -209,7 +208,7 @@ public class FetchMessagesTest {
     }
 
     private Data next(String consumer, String subject, boolean ack) throws Exception {
-        try (final var connection = connectionFactory.create(jetStreamConfiguration.connection(),
+        try (final var connection = clientFactory.create(jetStreamConfiguration.connection(),
                 new DefaultConnectionListener()).await().atMost(Duration.ofSeconds(30))) {
             final var consumerConfiguration = createConsumerConfiguration(subject);
             final var received = connection
@@ -225,7 +224,7 @@ public class FetchMessagesTest {
     }
 
     private List<Data> fetch(String consumer, String subject) throws Exception {
-        try (final var connection = connectionFactory.create(jetStreamConfiguration.connection(),
+        try (final var connection = clientFactory.create(jetStreamConfiguration.connection(),
                 new DefaultConnectionListener()).await().atMost(Duration.ofSeconds(30))) {
             final var consumerConfiguration = createFetchConsumerConfiguration(subject);
             final var received = connection.fetch("fetch-test", consumer, consumerConfiguration)

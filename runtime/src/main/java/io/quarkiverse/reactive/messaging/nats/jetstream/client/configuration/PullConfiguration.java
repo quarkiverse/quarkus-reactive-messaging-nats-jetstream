@@ -1,6 +1,7 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration;
 
 import java.time.Duration;
+import java.util.List;
 import java.util.Optional;
 
 import io.smallrye.config.WithDefault;
@@ -29,5 +30,4 @@ public interface PullConfiguration {
      * The maximum number of waiting pull requests.
      */
     Optional<Integer> maxWaiting();
-
 }

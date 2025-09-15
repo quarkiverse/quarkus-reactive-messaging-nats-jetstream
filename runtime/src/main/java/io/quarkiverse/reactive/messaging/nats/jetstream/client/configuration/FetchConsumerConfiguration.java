@@ -1,11 +1,11 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration;
 
-public interface FetchConsumerConfiguration {
+public interface FetchConsumerConfiguration<T> {
 
     /**
      * The consumer configuration.
      */
-    ConsumerConfiguration consumerConfiguration();
+    ConsumerConfiguration<T> consumerConfiguration();
 
     /**
      * The fetch configuration.

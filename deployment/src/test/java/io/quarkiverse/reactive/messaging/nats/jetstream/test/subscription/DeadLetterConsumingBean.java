@@ -3,6 +3,7 @@ package io.quarkiverse.reactive.messaging.nats.jetstream.test.subscription;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.Client;
 import jakarta.annotation.Priority;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.context.BeforeDestroyed;
@@ -13,9 +14,7 @@ import org.eclipse.microprofile.reactive.messaging.Incoming;
 import org.eclipse.microprofile.reactive.messaging.Message;
 import org.jboss.logging.Logger;
 
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.Connection;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.ConnectionFactory;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.DefaultConnectionListener;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.ClientFactory;
 import io.quarkiverse.reactive.messaging.nats.jetstream.configuration.JetStreamConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.test.Advisory;
 import io.smallrye.mutiny.Uni;
@@ -25,14 +24,14 @@ public class DeadLetterConsumingBean {
     private final static Logger logger = Logger.getLogger(DeadLetterConsumingBean.class);
 
     private final AtomicReference<Data> lastData;
-    private final AtomicReference<Connection> connection;
+    private final AtomicReference<Client> connection;
     private final JetStreamConfiguration jetStreamConfiguration;
-    private final ConnectionFactory connectionFactory;
+    private final ClientFactory clientFactory;
 
-    public DeadLetterConsumingBean(JetStreamConfiguration jetStreamConfiguration, ConnectionFactory connectionFactory) {
+    public DeadLetterConsumingBean(JetStreamConfiguration jetStreamConfiguration, ClientFactory clientFactory) {
         this.connection = new AtomicReference<>();
         this.jetStreamConfiguration = jetStreamConfiguration;
-        this.connectionFactory = connectionFactory;
+        this.clientFactory = clientFactory;
         this.lastData = new AtomicReference<>();
     }
 
@@ -66,21 +65,21 @@ public class DeadLetterConsumingBean {
         }
     }
 
-    public Uni<Void> deadLetter(Connection connection, Message<Advisory> message) {
+    public Uni<Void> deadLetter(Client client, Message<Advisory> message) {
         logger.infof("Received dead letter on dead-letter-consumer channel: %s", message);
         final var advisory = message.getPayload();
-        return connection.<Data> resolve(advisory.stream(), advisory.stream_seq())
+        return client.<Data> resolve(advisory.stream(), advisory.stream_seq())
                 .onItem().invoke(dataMessage -> lastData.set(dataMessage.getPayload()))
                 .onItem().transformToUni(m -> Uni.createFrom().completionStage(message.ack()))
                 .onFailure().recoverWithUni(throwable -> Uni.createFrom().completionStage(message.nack(throwable)));
     }
 
-    private Uni<Connection> getOrEstablishConnection() {
+    private Uni<Client> getOrEstablishConnection() {
         return Uni.createFrom().item(() -> Optional.ofNullable(connection.get())
-                .filter(Connection::isConnected)
+                .filter(Client::isConnected)
                 .orElse(null))
                 .onItem().ifNull()
-                .switchTo(() -> connectionFactory.create(jetStreamConfiguration.connection(),
+                .switchTo(() -> clientFactory.create(jetStreamConfiguration.connection(),
                         new DefaultConnectionListener()))
                 .onItem().invoke(this.connection::set);
     }

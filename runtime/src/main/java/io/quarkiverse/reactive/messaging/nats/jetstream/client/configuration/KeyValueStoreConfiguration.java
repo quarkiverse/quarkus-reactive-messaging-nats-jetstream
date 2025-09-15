@@ -4,6 +4,7 @@ import java.time.Duration;
 import java.util.Optional;
 
 import io.nats.client.api.StorageType;
+import io.smallrye.config.WithDefault;
 
 public interface KeyValueStoreConfiguration {
 

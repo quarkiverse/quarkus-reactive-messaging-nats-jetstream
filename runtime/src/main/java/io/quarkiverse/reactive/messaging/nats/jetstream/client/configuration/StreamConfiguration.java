@@ -130,12 +130,12 @@ public interface StreamConfiguration {
     /**
      * Pull consumer configurations. The map key is the name of the consumer.
      */
-    Map<String, PullConsumerConfiguration> pullConsumers();
+    Map<String, PullConsumerConfiguration<?>> pullConsumers();
 
     /**
      * Push consumer configurations. The map key is the name of the consumer.
      */
-    Map<String, PushConsumerConfiguration> pushConsumers();
+    Map<String, PushConsumerConfiguration<?>> pushConsumers();
 
     default Set<String> allSubjects() {
         final var subjects = new HashSet<String>();

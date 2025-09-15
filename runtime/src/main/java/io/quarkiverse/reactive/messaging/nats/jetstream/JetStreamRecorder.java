@@ -1,10 +1,8 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream;
 
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.Client;
 import jakarta.enterprise.inject.spi.CDI;
 
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.ConnectionFactory;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.DefaultConnectionListener;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.SetupException;
 import io.quarkiverse.reactive.messaging.nats.jetstream.configuration.JetStreamConfiguration;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
@@ -18,22 +16,15 @@ public class JetStreamRecorder {
     }
 
     public void setup() {
-        if (natsConfiguration.getValue().autoConfigure()) {
-            final var connectionFactory = CDI.current().select(ConnectionFactory.class).get();
-            try (final var connection = connectionFactory
-                    .create(natsConfiguration.getValue().connection(), new DefaultConnectionListener())
-                    .await().indefinitely()) {
-                natsConfiguration.getValue().streams().forEach((key, value) -> connection.streamManagement()
-                        .onItem()
-                        .transformToUni(streamManagement -> streamManagement.addStream(key, value))
-                        .await().indefinitely());
-                connection.keyValueStoreManagement()
-                        .onItem()
-                        .transformToUni(keyValueStoreManagement -> keyValueStoreManagement
-                                .addKeyValueStores(natsConfiguration.getValue().keyValueStores()))
-                        .await().indefinitely();
+        if (natsConfiguration.getValue().autoConfiguration()) {
+            try  {
+                final var client = CDI.current().select(Client.class).get();
+                natsConfiguration.getValue().streams()
+                        .forEach((key, value) -> client.withStreamContext(streamContext -> streamContext.addIfAbsent(key, value)).await().indefinitely());
+                natsConfiguration.getValue().keyValueStores()
+                                .forEach((key, value) -> client.withKeyValueStoreContext(keyValueStoreContext -> keyValueStoreContext.addIfAbsent(key, value)).await().indefinitely());
             } catch (Exception failure) {
-                throw new SetupException(
+                throw new RuntimeException(
                         String.format("Unable to configure streams and key value stores: %s", failure.getMessage()),
                         failure);
             }

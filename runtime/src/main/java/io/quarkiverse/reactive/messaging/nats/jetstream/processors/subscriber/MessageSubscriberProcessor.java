@@ -4,43 +4,36 @@ import java.util.Optional;
 import java.util.concurrent.Flow;
 import java.util.concurrent.atomic.AtomicReference;
 
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.Client;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.publisher.PublishListener;
 import org.eclipse.microprofile.reactive.messaging.Message;
 
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.Connection;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.ConnectionEvent;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.ConnectionFactory;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.ConnectionListener;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ConnectionConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.processors.MessageProcessor;
-import io.quarkiverse.reactive.messaging.nats.jetstream.processors.Status;
+import io.quarkiverse.reactive.messaging.nats.jetstream.processors.Health;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.reactive.messaging.providers.helpers.MultiUtils;
 import lombok.extern.jbosslog.JBossLog;
+import org.jspecify.annotations.NonNull;
 
 @JBossLog
-public class MessageSubscriberProcessor<T> implements MessageProcessor, ConnectionListener {
+public class MessageSubscriberProcessor<T> implements MessageProcessor, PublishListener {
     private final String channel;
     private final String stream;
     private final String subject;
-    private final ConnectionConfiguration connectionConfiguration;
-    private final ConnectionFactory connectionFactory;
+    private final Client client;
 
-    private final AtomicReference<Status> status;
-    private final AtomicReference<Connection> connection;
+    private final AtomicReference<Health> health;
 
     public MessageSubscriberProcessor(final String channel,
             final String stream,
             final String subject,
-            final ConnectionConfiguration connectionConfiguration,
-            final ConnectionFactory connectionFactory) {
+            final Client client) {
         this.channel = channel;
         this.stream = stream;
         this.subject = subject;
-        this.connectionConfiguration = connectionConfiguration;
-        this.connectionFactory = connectionFactory;
-        this.status = new AtomicReference<>(new Status(true, "Subscriber processor inactive", ConnectionEvent.Closed));
-        this.connection = new AtomicReference<>();
+        this.client = client;
+        this.health = new AtomicReference<>(new Health(true, "Subscriber processor inactive"));
     }
 
     public Flow.Subscriber<Message<T>> subscriber() {
@@ -62,31 +55,23 @@ public class MessageSubscriberProcessor<T> implements MessageProcessor, Connecti
     }
 
     @Override
-    public Status readiness() {
-        return status.get();
+    public Health health() {
+        return health.get();
     }
 
     @Override
-    public Status liveness() {
-        return status.get();
+    public void onConnected(@NonNull String stream, @NonNull String subject) {
+        this.health.set(Health.builder().healthy(true).message(String.format("Processor connected to NATS for stream: %s and subject: %s", stream, subject)).build());
     }
 
     @Override
-    public void close() {
-        try {
-            final var connection = this.connection.getAndSet(null);
-            if (connection != null) {
-                connection.close();
-            }
-        } catch (Throwable failure) {
-            log.warnf(failure, "Failed to close connection with message: %s", failure.getMessage());
-        }
+    public void onPublished(@NonNull String stream, @NonNull String subject, @NonNull Long sequence) {
+
     }
 
     @Override
-    public void onEvent(ConnectionEvent event, String message) {
-        log.infof("Event: %s, message: %s, channel: %s", event, message, channel);
-        this.status.set(Status.builder().healthy(true).message(message).event(event).build());
+    public void onError(@NonNull String stream, @NonNull String subject, @NonNull Throwable throwable) {
+
     }
 
     private Uni<Message<T>> publish(final Message<T> message) {
@@ -106,11 +91,11 @@ public class MessageSubscriberProcessor<T> implements MessageProcessor, Connecti
                 .onItem().transformToUni(v -> publish(message));
     }
 
-    private Uni<? extends Connection> getOrEstablishConnection() {
+    private Uni<? extends Client> getOrEstablishConnection() {
         return Uni.createFrom().item(() -> Optional.ofNullable(connection.get())
-                .filter(Connection::isConnected)
+                .filter(Client::isConnected)
                 .orElse(null))
-                .onItem().ifNull().switchTo(() -> connectionFactory.create(connectionConfiguration, this))
+                .onItem().ifNull().switchTo(() -> clientFactory.create(connectionConfiguration, this))
                 .onItem().invoke(this.connection::set);
     }
 }

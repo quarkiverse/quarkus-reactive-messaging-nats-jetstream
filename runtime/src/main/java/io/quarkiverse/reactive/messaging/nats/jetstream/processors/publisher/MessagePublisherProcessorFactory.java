@@ -3,9 +3,9 @@ package io.quarkiverse.reactive.messaging.nats.jetstream.processors.publisher;
 import java.time.Duration;
 import java.util.Optional;
 
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.Client;
 import jakarta.enterprise.context.ApplicationScoped;
 
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.ConnectionFactory;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.PullConsumerConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.PushConsumerConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.StreamConfiguration;
@@ -15,11 +15,11 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.configuration.JetStreamC
 @ApplicationScoped
 public class MessagePublisherProcessorFactory {
     private final JetStreamConfiguration configuration;
-    private final ConnectionFactory connectionFactory;
+    private final Client client;
 
-    public MessagePublisherProcessorFactory(JetStreamConfiguration configuration, ConnectionFactory connectionFactory) {
+    public MessagePublisherProcessorFactory(JetStreamConfiguration configuration, Client client) {
         this.configuration = configuration;
-        this.connectionFactory = connectionFactory;
+        this.client = client;
     }
 
     @SuppressWarnings("unchecked")
@@ -38,13 +38,13 @@ public class MessagePublisherProcessorFactory {
 
     private <T> MessagePublisherProcessor<T> create(String channel, String stream, String consumer, Duration retryBackoff,
             PullConsumerConfiguration pullConsumerConfiguration) {
-        return new MessagePullPublisherProcessor<>(channel, stream, consumer, connectionFactory, configuration.connection(),
+        return new MessagePullPublisherProcessor<>(channel, stream, consumer, client, configuration.connection(),
                 pullConsumerConfiguration, retryBackoff);
     }
 
     private <T> MessagePublisherProcessor<T> create(String channel, String stream, String consumer, Duration retryBackoff,
             PushConsumerConfiguration pushConsumerConfiguration) {
-        return new MessagePushPublisherProcessor<>(channel, stream, consumer, connectionFactory, configuration.connection(),
+        return new MessagePushPublisherProcessor<>(channel, stream, consumer, client, configuration.connection(),
                 pushConsumerConfiguration, retryBackoff);
     }
 

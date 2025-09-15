@@ -4,9 +4,9 @@ import java.time.Duration;
 
 import org.eclipse.microprofile.reactive.messaging.Message;
 
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.Connection;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.ConnectionFactory;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.Subscription;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.Client;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.ClientFactory;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer.Subscription;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ConnectionConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.PushConsumerConfiguration;
 import io.smallrye.mutiny.Multi;
@@ -17,17 +17,17 @@ public class MessagePushPublisherProcessor<T> extends MessagePublisherProcessor<
     public MessagePushPublisherProcessor(final String channel,
             final String stream,
             final String consumer,
-            final ConnectionFactory connectionFactory,
+            final ClientFactory clientFactory,
             final ConnectionConfiguration connectionConfiguration,
             final PushConsumerConfiguration configuration,
             final Duration retryBackoff) {
-        super(channel, stream, consumer, connectionFactory, connectionConfiguration, retryBackoff);
+        super(channel, stream, consumer, clientFactory, connectionConfiguration, retryBackoff);
         this.configuration = configuration;
     }
 
     @Override
-    protected Multi<Message<T>> subscription(Connection connection) {
-        return connection.<T> subscribe(stream(), consumer(), configuration)
+    protected Multi<Message<T>> subscription(Client client) {
+        return client.<T> subscribe(stream(), consumer(), configuration)
                 .onItem().transformToMulti(Subscription::subscribe);
     }
 }

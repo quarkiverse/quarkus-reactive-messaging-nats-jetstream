@@ -3,6 +3,7 @@ package io.quarkiverse.reactive.messaging.nats.jetstream.test.kvs;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.Client;
 import jakarta.annotation.Priority;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.context.BeforeDestroyed;
@@ -12,9 +13,7 @@ import jakarta.enterprise.event.Reception;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.Connection;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.ConnectionFactory;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.DefaultConnectionListener;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.ClientFactory;
 import io.quarkiverse.reactive.messaging.nats.jetstream.configuration.JetStreamConfiguration;
 import io.smallrye.mutiny.Uni;
 
@@ -22,13 +21,13 @@ import io.smallrye.mutiny.Uni;
 @Produces("application/json")
 @RequestScoped
 class KeyValueStoreResource {
-    private final ConnectionFactory connectionFactory;
+    private final ClientFactory clientFactory;
     private final JetStreamConfiguration jetStreamConfiguration;
-    private final AtomicReference<Connection> connection;
+    private final AtomicReference<Client> connection;
 
     @Inject
-    public KeyValueStoreResource(ConnectionFactory connectionFactory, JetStreamConfiguration jetStreamConfiguration) {
-        this.connectionFactory = connectionFactory;
+    public KeyValueStoreResource(ClientFactory clientFactory, JetStreamConfiguration jetStreamConfiguration) {
+        this.clientFactory = clientFactory;
         this.jetStreamConfiguration = jetStreamConfiguration;
         this.connection = new AtomicReference<>();
     }
@@ -68,8 +67,8 @@ class KeyValueStoreResource {
     }
 
     private Uni<Data> getValue(
-            Connection connection, String key) {
-        return connection.keyValueStore("test")
+            Client client, String key) {
+        return client.keyValueStore("test")
                 .onItem()
                 .transformToUni(keyValueStore -> keyValueStore.get(key,
                         Data.class))
@@ -77,24 +76,24 @@ class KeyValueStoreResource {
                 .onFailure().transform(failure -> new NotFoundException(failure.getMessage()));
     }
 
-    public Uni<Void> putValue(Connection connection,
-            String key, Data data) {
-        return connection.keyValueStore("test")
+    public Uni<Void> putValue(Client client,
+                              String key, Data data) {
+        return client.keyValueStore("test")
                 .onItem().transformToUni(keyValueStore -> keyValueStore.put(key, data));
     }
 
     public Uni<Void> deleteValue(
-            Connection connection, String key) {
-        return connection.keyValueStore("test")
+            Client client, String key) {
+        return client.keyValueStore("test")
                 .onItem().transformToUni(keyValueStore -> keyValueStore.delete(key));
     }
 
-    private Uni<Connection> getOrEstablishConnection() {
+    private Uni<Client> getOrEstablishConnection() {
         return Uni.createFrom().item(() -> Optional.ofNullable(connection.get())
-                .filter(Connection::isConnected)
+                .filter(Client::isConnected)
                 .orElse(null))
                 .onItem().ifNull()
-                .switchTo(() -> connectionFactory.create(jetStreamConfiguration.connection(),
+                .switchTo(() -> clientFactory.create(jetStreamConfiguration.connection(),
                         new DefaultConnectionListener()))
                 .onItem().invoke(this.connection::set);
     }

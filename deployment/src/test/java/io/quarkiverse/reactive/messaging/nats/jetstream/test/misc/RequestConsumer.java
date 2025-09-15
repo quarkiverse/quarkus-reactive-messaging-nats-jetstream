@@ -3,26 +3,25 @@ package io.quarkiverse.reactive.messaging.nats.jetstream.test.misc;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.Client;
 import jakarta.enterprise.context.ApplicationScoped;
 
 import org.eclipse.microprofile.reactive.messaging.Incoming;
 import org.eclipse.microprofile.reactive.messaging.Message;
 
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.Connection;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.ConnectionFactory;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.DefaultConnectionListener;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.ClientFactory;
 import io.quarkiverse.reactive.messaging.nats.jetstream.configuration.JetStreamConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.test.MessageConsumer;
 import io.smallrye.mutiny.Uni;
 
 @ApplicationScoped
 public class RequestConsumer implements MessageConsumer<Data> {
-    private final ConnectionFactory connectionFactory;
+    private final ClientFactory clientFactory;
     private final JetStreamConfiguration jetStreamConfiguration;
-    private final AtomicReference<Connection> connection;
+    private final AtomicReference<Client> connection;
 
-    public RequestConsumer(ConnectionFactory connectionFactory, JetStreamConfiguration jetStreamConfiguration) {
-        this.connectionFactory = connectionFactory;
+    public RequestConsumer(ClientFactory clientFactory, JetStreamConfiguration jetStreamConfiguration) {
+        this.clientFactory = clientFactory;
         this.jetStreamConfiguration = jetStreamConfiguration;
         this.connection = new AtomicReference<>();
     }
@@ -38,12 +37,12 @@ public class RequestConsumer implements MessageConsumer<Data> {
                 .onItem().transform(v -> null);
     }
 
-    private Uni<Connection> getOrEstablishConnection() {
+    private Uni<Client> getOrEstablishConnection() {
         return Uni.createFrom().item(() -> Optional.ofNullable(connection.get())
-                .filter(Connection::isConnected)
+                .filter(Client::isConnected)
                 .orElse(null))
                 .onItem().ifNull()
-                .switchTo(() -> connectionFactory.create(jetStreamConfiguration.connection(),
+                .switchTo(() -> clientFactory.create(jetStreamConfiguration.connection(),
                         new DefaultConnectionListener()))
                 .onItem().invoke(this.connection::set);
     }

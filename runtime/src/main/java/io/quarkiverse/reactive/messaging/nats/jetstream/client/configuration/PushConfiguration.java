@@ -1,5 +1,7 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration;
 
+import io.smallrye.config.WithDefault;
+
 import java.time.Duration;
 import java.util.Optional;
 
@@ -8,7 +10,13 @@ public interface PushConfiguration {
     /**
      * Flag indicating whether this subscription should be ordered
      */
-    Optional<Boolean> ordered();
+    @WithDefault("true")
+    Boolean ordered();
+
+    /**
+     * The subject
+     */
+    String deliverSubject();
 
     /**
      * Enables per-subscription flow control using a sliding-window protocol. This protocol relies on the server and
