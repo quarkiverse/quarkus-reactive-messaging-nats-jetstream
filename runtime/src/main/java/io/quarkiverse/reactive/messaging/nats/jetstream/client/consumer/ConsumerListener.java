@@ -1,10 +1,11 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer;
 
-import org.jspecify.annotations.NonNull;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.ErrorListener;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.connection.ConnectionListener;
+import org.eclipse.microprofile.reactive.messaging.Message;
 
-public interface ConsumerListener<T> {
+public interface ConsumerListener<T> extends ConnectionListener, ErrorListener {
 
-    void onConnected(@NonNull String stream, @NonNull String subject);
+    void onMessage(Message<T> message);
 
-    void onError(@NonNull String stream, @NonNull String consumer, @NonNull Throwable throwable);
 }

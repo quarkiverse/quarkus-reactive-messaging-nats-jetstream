@@ -55,7 +55,7 @@ class JetStreamProcessor {
         buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(ExecutionHolder.class));
         buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(Client.class));
         buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(DefaultPayloadMapper.class));
-        buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(DefaultMessageMapper.class));
+        buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(MessageMapper.class));
         buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(ConsumerMapperImpl.class));
         buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(StreamStateMapperImpl.class));
         buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(MessagePublisherProcessorFactory.class));

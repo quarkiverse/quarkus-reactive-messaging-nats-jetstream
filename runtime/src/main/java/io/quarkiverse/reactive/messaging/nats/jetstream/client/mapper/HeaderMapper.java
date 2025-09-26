@@ -5,10 +5,12 @@ import java.util.List;
 import java.util.Map;
 
 import io.nats.client.impl.Headers;
+import org.mapstruct.Mapper;
 
-public class HeaderMapper {
+@Mapper(componentModel = "cdi")
+public interface HeaderMapper {
 
-    public static Map<String, List<String>> toMessageHeaders(Headers headers) {
+    default Map<String, List<String>> map(Headers headers) {
         final var result = new HashMap<String, List<String>>();
         if (headers != null) {
             headers.entrySet().forEach(entry -> result.put(entry.getKey(), entry.getValue()));

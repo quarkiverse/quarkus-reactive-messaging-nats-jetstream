@@ -2,13 +2,12 @@ package io.quarkiverse.reactive.messaging.nats.jetstream.client.context;
 
 import io.smallrye.reactive.messaging.providers.connectors.ExecutionHolder;
 import io.vertx.mutiny.core.Vertx;
-import org.jspecify.annotations.NonNull;
 
 import java.util.Optional;
 
 public interface ContextAware {
 
-    @NonNull ExecutionHolder executionHolder();
+    ExecutionHolder executionHolder();
 
     default <T> T withContext(ContextConsumer<T> context) {
         return context.accept(getVertx().getOrCreateContext());

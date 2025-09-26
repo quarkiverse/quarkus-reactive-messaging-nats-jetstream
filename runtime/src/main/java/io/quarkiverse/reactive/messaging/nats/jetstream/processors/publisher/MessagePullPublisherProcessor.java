@@ -5,8 +5,6 @@ import java.time.Duration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.Client;
 import org.eclipse.microprofile.reactive.messaging.Message;
 
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.ClientFactory;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer.Subscription;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ConnectionConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.PullConsumerConfiguration;
 import io.smallrye.mutiny.Multi;

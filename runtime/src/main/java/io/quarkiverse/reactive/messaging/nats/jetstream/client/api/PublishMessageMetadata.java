@@ -4,8 +4,10 @@ import static io.quarkiverse.reactive.messaging.nats.jetstream.client.api.JetStr
 
 import java.util.*;
 
+import lombok.Builder;
 import org.eclipse.microprofile.reactive.messaging.Message;
 
+@Builder
 public record PublishMessageMetadata(String stream,
         String subject,
         byte[] payload,
@@ -78,52 +80,5 @@ public record PublishMessageMetadata(String stream,
     @SuppressWarnings("unchecked")
     private static <P> Class<P> getType(Message<P> message) {
         return message.getPayload() != null ? (Class<P>) message.getPayload().getClass() : null;
-    }
-
-    public static Builder builder() {
-        return new Builder();
-    }
-
-    public static class Builder {
-        private String stream;
-        private String subject;
-        private byte[] payload;
-        private Class<?> type;
-        private String messageId;
-        private Map<String, List<String>> headers;
-
-        public Builder stream(String stream) {
-            this.stream = stream;
-            return this;
-        }
-
-        public Builder subject(String subject) {
-            this.subject = subject;
-            return this;
-        }
-
-        public Builder payload(byte[] payload) {
-            this.payload = payload;
-            return this;
-        }
-
-        public Builder type(Class<?> type) {
-            this.type = type;
-            return this;
-        }
-
-        public Builder messageId(String messageId) {
-            this.messageId = messageId;
-            return this;
-        }
-
-        public Builder headers(Map<String, List<String>> headers) {
-            this.headers = headers;
-            return this;
-        }
-
-        public PublishMessageMetadata build() {
-            return new PublishMessageMetadata(stream, subject, payload, type, messageId, headers);
-        }
     }
 }

@@ -3,10 +3,7 @@ package io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.ClientException;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.Consumer;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.ResolvedMessage;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ConsumerConfiguration;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.FetchConsumerConfiguration;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.PullConsumerConfiguration;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.PushConsumerConfiguration;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.*;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.connection.ConnectionAware;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.connection.ConnectionFactory;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.context.ContextAware;
@@ -23,7 +20,6 @@ import io.smallrye.mutiny.unchecked.Unchecked;
 import io.smallrye.reactive.messaging.providers.connectors.ExecutionHolder;
 import io.vertx.mutiny.core.Context;
 import org.eclipse.microprofile.reactive.messaging.Message;
-import org.jspecify.annotations.NonNull;
 
 import java.time.Duration;
 import java.time.ZonedDateTime;
@@ -56,32 +52,32 @@ public class DefaultConsumerContext implements ConsumerContext, ConnectionAware,
     }
 
     @Override
-    public @NonNull ExecutionHolder executionHolder() {
+    public ExecutionHolder executionHolder() {
         return executionHolder;
     }
 
     @Override
-    public @NonNull ConnectionFactory connectionFactory() {
+    public ConnectionFactory connectionFactory() {
         return connectionFactory;
     }
 
     @Override
-    public @NonNull Uni<Consumer> addIfAbsent(@NonNull String stream, @NonNull String name, @NonNull ConsumerConfiguration configuration) {
-        return addIfAbsent(stream, name, consumerConfigurationMapper.of(name, configuration));
+    public <T> Uni<Consumer> addIfAbsent(String stream, String name, ConsumerConfiguration<T> configuration) {
+        return addIfAbsent(stream, name, consumerConfigurationMapper.map(name, configuration));
     }
 
     @Override
-    public @NonNull Uni<Consumer> addIfAbsent(@NonNull String stream, @NonNull String name, @NonNull PushConsumerConfiguration configuration) {
-        return addIfAbsent(stream, name, consumerConfigurationMapper.of(name, configuration));
+    public <T> Uni<Consumer> addIfAbsent(String stream, String name, PushConsumerConfiguration<T> configuration) {
+        return addIfAbsent(stream, name, consumerConfigurationMapper.map(name, configuration));
     }
 
     @Override
-    public @NonNull Uni<Consumer> addIfAbsent(@NonNull String stream, @NonNull String name, @NonNull PullConsumerConfiguration configuration) {
-        return addIfAbsent(stream, name, consumerConfigurationMapper.of(name, configuration));
+    public <T> Uni<Consumer> addIfAbsent(String stream, String name, PullConsumerConfiguration<T> configuration) {
+        return addIfAbsent(stream, name, consumerConfigurationMapper.map(name, configuration));
     }
 
     @Override
-    public @NonNull Uni<Consumer> get(@NonNull final String stream, @NonNull final String consumerName) {
+    public Uni<Consumer> get(final String stream, final String consumerName) {
         return withContext(context -> context.executeBlocking(withConnection(connection ->
                 connection.consumerInfo(stream, consumerName)
                         .onItem().transform(consumerMapper::of)
@@ -89,27 +85,27 @@ public class DefaultConsumerContext implements ConsumerContext, ConnectionAware,
     }
 
     @Override
-    public @NonNull Multi<String> names(@NonNull final String streamName) {
+    public Multi<String> names(final String streamName) {
         return withSubscriberConnection(connection -> connection.consumerNames(streamName))
                 .onFailure().transform(ClientException::new);
     }
 
     @Override
-    public @NonNull Uni<Void> delete(@NonNull final String streamName, @NonNull final String consumerName) {
+    public Uni<Void> delete(final String streamName, final String consumerName) {
         return withContext(context -> context.executeBlocking(withConnection(connection -> connection.deleteConsumer(streamName, consumerName)
                 .onItem().transformToUni(deleted -> deleted ? Uni.createFrom().voidItem() : Uni.createFrom().failure(new ConsumerNotDeletedException(streamName, consumerName)))
                 .onFailure().transform(ClientException::new))));
     }
 
     @Override
-    public @NonNull Uni<Void> pause(@NonNull final String streamName, @NonNull final String consumerName, @NonNull final ZonedDateTime pauseUntil) {
+    public Uni<Void> pause(final String streamName, final String consumerName, final ZonedDateTime pauseUntil) {
         return withContext(context -> context.executeBlocking(withConnection(connection -> connection.pauseConsumer(streamName, consumerName, pauseUntil)
                 .onItem().transformToUni(response -> response.isPaused() ? Uni.createFrom().voidItem() : Uni.createFrom().failure(() -> new ClientException(String.format("Unable to pause consumer %s in stream %s", consumerName, streamName))))
                 .onFailure().transform(ClientException::new))));
     }
 
     @Override
-    public @NonNull Uni<Void> resume(@NonNull final String streamName, @NonNull final String consumerName) {
+    public Uni<Void> resume(final String streamName, final String consumerName) {
         return withContext(context -> context.executeBlocking(withConnection(connection -> connection.resumeConsumer(streamName, consumerName)
                 .onItem().transformToUni(response -> response ? Uni.createFrom().voidItem() : Uni.createFrom().failure(() -> new ClientException(String.format("Unable to resume consumer %s in stream %s", consumerName, streamName))))
                 .onFailure().transform(ClientException::new))));
@@ -117,7 +113,7 @@ public class DefaultConsumerContext implements ConsumerContext, ConnectionAware,
 
     @SuppressWarnings("unchecked")
     @Override
-    public @NonNull <T> Uni<Message<T>> next(@NonNull final String stream, @NonNull final String consumer, @NonNull final ConsumerConfiguration configuration, @NonNull final Duration timeout) {
+    public <T> Uni<Message<T>> next(final String stream, final String consumer, final ConsumerConfiguration configuration, final Duration timeout) {
         return withContext(context -> context.executeBlocking(withConnection(connection -> connection.next(stream, consumer, timeout)
                 .onItem().ifNull().failWith(MessageNotFoundException::new)
                 .onItem().ifNotNull().transformToUni(message -> transformMessage(message, configuration, context))
@@ -132,10 +128,9 @@ public class DefaultConsumerContext implements ConsumerContext, ConnectionAware,
                 }))));
     }
 
+    @SuppressWarnings("resource")
     @Override
-    public <T> @NonNull Multi<Message<T>> fetch(@NonNull final String stream,
-                                                @NonNull final String consumer,
-                                                @NonNull final FetchConsumerConfiguration configuration) {
+    public <T> Multi<Message<T>> fetch(String stream, String consumer, FetchConsumerConfiguration<T> configuration) {
         ExecutorService executor = Executors.newSingleThreadExecutor(ConsumerWorkerThread::new);
         return withContext(context -> withSubscriberConnection(connection ->
                 connection.fetch(stream, consumer, configuration.fetchConfiguration())
@@ -149,15 +144,15 @@ public class DefaultConsumerContext implements ConsumerContext, ConnectionAware,
     }
 
     @Override
-    public <T> @NonNull Uni<Message<T>> resolve(@NonNull String streamName, long sequence) {
+    public <T> Uni<Message<T>> resolve(String streamName, long sequence) {
         return withContext(context -> withConnection(connection -> connection.resolve(streamName, sequence)
                 .onItem().<Message<T>>transform(messageInfo -> new ResolvedMessage<>(messageInfo, payloadMapper.<T>of(messageInfo).orElse(null)))))
                 .onFailure().transform(ClientException::new);
     }
 
     @Override
-    public @NonNull <T> Multi<Message<T>> subscribe(@NonNull String stream, @NonNull String consumer, @NonNull PullConsumerConfiguration configuration) {
-        final var tracer = tracerFactory.<T> create(TracerType.Subscribe);
+    public <T> Multi<Message<T>> subscribe(String stream, String consumer, PullConsumerConfiguration configuration) {
+        final var tracer = tracerFactory.<T>create(TracerType.Subscribe);
         ExecutorService pullExecutor = Executors.newSingleThreadExecutor(ConsumerWorkerThread::new);
         return withContext(context -> withSubscriberConnection(connection ->
                 connection.subscribe(stream, consumer, configuration.pullConfiguration())
@@ -170,17 +165,17 @@ public class DefaultConsumerContext implements ConsumerContext, ConnectionAware,
 
     @SuppressWarnings("unchecked")
     @Override
-    public @NonNull <T> Multi<Message<T>> subscribe(@NonNull String stream, @NonNull String consumer, @NonNull PushConsumerConfiguration configuration) {
-        final var tracer = tracerFactory.<T> create(TracerType.Subscribe);
+    public <T> Multi<Message<T>> subscribe(String stream, String consumer, PushConsumerConfiguration configuration) {
+        final var tracer = tracerFactory.<T>create(TracerType.Subscribe);
         return withContext(context -> withSubscriberConnection(connection ->
                 connection.subscribe(stream, consumer, configuration.pushConfiguration())
                         .emitOn(context::runOnContext)
                         .onItem().transformToUniAndMerge(message -> transformMessage(message, configuration.consumerConfiguration(), context))
                         .onItem().transform(message -> (Message<T>) message))
-                        .onItem().transformToUniAndMerge(message -> tracer.withTrace(message, msg -> msg)));
+                .onItem().transformToUniAndMerge(message -> tracer.withTrace(message, msg -> msg)));
     }
 
-    private @NonNull Uni<Consumer> addIfAbsent(@NonNull final String stream, @NonNull final String name, final io.nats.client.api.ConsumerConfiguration configuration) {
+    private Uni<Consumer> addIfAbsent(final String stream, final String name, final io.nats.client.api.ConsumerConfiguration configuration) {
         return withContext(context -> context.executeBlocking(withConnection(connection ->
                 connection.consumerInfo(stream, name)
                         .onItem().ifNull().switchTo(() -> connection.createConsumer(stream, configuration))
@@ -189,9 +184,9 @@ public class DefaultConsumerContext implements ConsumerContext, ConnectionAware,
         )));
     }
 
-    private <T> @NonNull Uni<Message<T>> transformMessage(final io.nats.client.Message message,
-                                                          @NonNull final ConsumerConfiguration<T> configuration,
-                                                          @NonNull final Context context) {
+    private <T> Uni<Message<T>> transformMessage(final io.nats.client.Message message,
+                                                 final ConsumerConfiguration<T> configuration,
+                                                 final Context context) {
         return Uni.createFrom()
                 .item(Unchecked.supplier(
                         () -> messageMapper.of(message, configuration, context)));

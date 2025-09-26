@@ -59,20 +59,7 @@ public class MessageSubscriberProcessor<T> implements MessageProcessor, PublishL
         return health.get();
     }
 
-    @Override
-    public void onConnected(@NonNull String stream, @NonNull String subject) {
-        this.health.set(Health.builder().healthy(true).message(String.format("Processor connected to NATS for stream: %s and subject: %s", stream, subject)).build());
-    }
 
-    @Override
-    public void onPublished(@NonNull String stream, @NonNull String subject, @NonNull Long sequence) {
-
-    }
-
-    @Override
-    public void onError(@NonNull String stream, @NonNull String subject, @NonNull Throwable throwable) {
-
-    }
 
     private Uni<Message<T>> publish(final Message<T> message) {
         return getOrEstablishConnection()

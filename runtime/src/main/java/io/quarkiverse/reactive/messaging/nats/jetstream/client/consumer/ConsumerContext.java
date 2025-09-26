@@ -5,7 +5,6 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.*;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import org.eclipse.microprofile.reactive.messaging.Message;
-import org.jspecify.annotations.NonNull;
 
 import java.time.Duration;
 import java.time.ZonedDateTime;
@@ -20,30 +19,30 @@ public interface ConsumerContext {
      * @param configuration The consumer configuration
      * @return The consumer
      */
-    @NonNull Uni<Consumer> addIfAbsent(@NonNull String stream, @NonNull String name, @NonNull ConsumerConfiguration configuration);
+     <T> Uni<Consumer> addIfAbsent( String stream,  String name,  ConsumerConfiguration<T> configuration);
 
-    @NonNull Uni<Consumer> addIfAbsent(@NonNull String stream, @NonNull String name, @NonNull PushConsumerConfiguration configuration);
+     <T> Uni<Consumer> addIfAbsent( String stream,  String name,  PushConsumerConfiguration<T> configuration);
 
-    @NonNull Uni<Consumer> addIfAbsent(@NonNull String stream, @NonNull String name, @NonNull PullConsumerConfiguration configuration);
+     <T> Uni<Consumer> addIfAbsent( String stream,  String name,  PullConsumerConfiguration<T> configuration);
 
-    @NonNull Uni<Consumer> get(@NonNull String stream, @NonNull String consumerName);
+     Uni<Consumer> get( String stream,  String consumerName);
 
-    @NonNull Multi<String> names(@NonNull String streamName);
+     Multi<String> names( String streamName);
 
-    @NonNull Uni<Void> delete(@NonNull String streamName, @NonNull String consumerName);
+     Uni<Void> delete( String streamName,  String consumerName);
 
-    @NonNull Uni<Void> pause(@NonNull String streamName, @NonNull String consumerName, @NonNull ZonedDateTime pauseUntil);
+     Uni<Void> pause( String streamName,  String consumerName,  ZonedDateTime pauseUntil);
 
-    @NonNull Uni<Void> resume(@NonNull String streamName, @NonNull String consumerName);
+     Uni<Void> resume( String streamName,  String consumerName);
 
-    @NonNull <T> Uni<Message<T>> next(@NonNull String stream, @NonNull String consumer, @NonNull ConsumerConfiguration configuration, @NonNull Duration timeout);
+     <T> Uni<Message<T>> next( String stream,  String consumer,  ConsumerConfiguration<T> configuration,  Duration timeout);
 
-    @NonNull <T> Multi<Message<T>> fetch(@NonNull String stream, @NonNull String consumer, @NonNull FetchConsumerConfiguration configuration);
+     <T> Multi<Message<T>> fetch( String stream,  String consumer,  FetchConsumerConfiguration<T> configuration);
 
-    @NonNull <T> Uni<Message<T>> resolve(@NonNull String stream, long sequence);
+     <T> Uni<Message<T>> resolve( String stream, long sequence);
 
-    @NonNull <T> Multi<Message<T>> subscribe(@NonNull String stream, @NonNull String consumer, @NonNull PullConsumerConfiguration configuration);
+     <T> Multi<Message<T>> subscribe( String stream,  String consumer,  PullConsumerConfiguration<T> configuration);
 
-    @NonNull <T> Multi<Message<T>> subscribe(@NonNull String stream, @NonNull String consumer, @NonNull PushConsumerConfiguration configuration);
+     <T> Multi<Message<T>> subscribe( String stream,  String consumer,  PushConsumerConfiguration<T> configuration);
 
 }
