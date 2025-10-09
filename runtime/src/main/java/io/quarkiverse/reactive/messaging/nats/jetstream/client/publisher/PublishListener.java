@@ -1,10 +1,9 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client.publisher;
 
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.ErrorListener;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.connection.ConnectionListener;
 
-public interface PublishListener extends ConnectionListener, ErrorListener {
+public interface PublishListener extends ErrorListener {
 
-    void onPublished(String stream, String subject, Long sequence);
+    void onPublished(String messageId, Long sequence);
 
 }

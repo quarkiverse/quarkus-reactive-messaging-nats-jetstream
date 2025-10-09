@@ -4,8 +4,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import io.nats.client.impl.Headers;
 import org.mapstruct.Mapper;
+
+import io.nats.client.impl.Headers;
 
 @Mapper(componentModel = "cdi")
 public interface HeaderMapper {

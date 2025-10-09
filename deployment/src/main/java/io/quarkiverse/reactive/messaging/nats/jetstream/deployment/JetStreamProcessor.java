@@ -4,11 +4,20 @@ import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 
 import io.nats.client.Options;
 import io.quarkiverse.reactive.messaging.nats.jetstream.JetStreamConnector;
-import io.quarkiverse.reactive.messaging.nats.jetstream.JetStreamRecorder;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.Client;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.connection.DefaultConnectionFactory;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.ClientImpl;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer.ConsumerAwareImpl;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer.ConsumerConfigurationMapperImpl;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer.ConsumerMapperImpl;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.store.KeyValueConfigurationMapperImpl;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.store.KeyValueStoreAwareImpl;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.stream.StreamAwareImpl;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.stream.StreamConfigurationMapperImpl;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.stream.StreamStateMapperImpl;
+import io.quarkiverse.reactive.messaging.nats.jetstream.configuration.JetStreamRecorder;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.connection.ConnectionFactoryImpl;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.mapper.*;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.tracing.DefaultTracerFactory;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.mapper.PayloadMapperImpl;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.tracing.TracerFactoryImpl;
 import io.quarkiverse.reactive.messaging.nats.jetstream.processors.publisher.MessagePublisherProcessorFactory;
 import io.quarkiverse.reactive.messaging.nats.jetstream.processors.subscriber.MessageSubscriberProcessorFactory;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
@@ -51,19 +60,28 @@ class JetStreamProcessor {
     @BuildStep
     void createJetStreamConnector(BuildProducer<AdditionalBeanBuildItem> buildProducer) {
         buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(JetStreamConnector.class));
-        buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(DefaultTracerFactory.class));
-        buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(ExecutionHolder.class));
-        buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(Client.class));
-        buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(DefaultPayloadMapper.class));
-        buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(MessageMapper.class));
+        buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(ClientImpl.class));
+        buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(ConnectionFactoryImpl.class));
+        buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(ConsumerAwareImpl.class));
+        buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(ConsumerConfigurationMapperImpl.class));
         buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(ConsumerMapperImpl.class));
+        buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(HeaderMapperImpl.class));
+        buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(MessageMapperImpl.class));
+        buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(PayloadMapperImpl.class));
+        buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(KeyValueStoreAwareImpl.class));
+        buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(KeyValueConfigurationMapperImpl.class));
+        buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(StreamAwareImpl.class));
+        buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(StreamConfigurationMapperImpl.class));
         buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(StreamStateMapperImpl.class));
+        buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(TracerFactoryImpl.class));
         buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(MessagePublisherProcessorFactory.class));
         buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(MessageSubscriberProcessorFactory.class));
-        buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(KeyValueConfigurationMapper.class));
-        buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(StreamConfigurationMapper.class));
-        buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(DefaultConnectionFactory.class));
-        buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(DefaultConsumerConfigurationMapper.class));
+        buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(io.quarkiverse.reactive.messaging.nats.jetstream.configuration.mapper.ConsumerConfigurationMapperImpl.class));
+        buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(io.quarkiverse.reactive.messaging.nats.jetstream.configuration.mapper.KeyValueStoreConfigurationMapperImpl.class));
+        buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(io.quarkiverse.reactive.messaging.nats.jetstream.configuration.mapper.PullConsumerConfigurationMapperImpl.class));
+        buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(io.quarkiverse.reactive.messaging.nats.jetstream.configuration.mapper.PushConsumerConfigurationMapperImpl.class));
+        buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(io.quarkiverse.reactive.messaging.nats.jetstream.configuration.mapper.StreamConfigurationMapperImpl.class));
+        buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(ExecutionHolder.class));
     }
 
     @BuildStep

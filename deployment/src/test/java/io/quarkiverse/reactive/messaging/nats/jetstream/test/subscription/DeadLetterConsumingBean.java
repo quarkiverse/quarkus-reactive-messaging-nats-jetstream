@@ -15,7 +15,7 @@ import org.eclipse.microprofile.reactive.messaging.Message;
 import org.jboss.logging.Logger;
 
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.ClientFactory;
-import io.quarkiverse.reactive.messaging.nats.jetstream.configuration.JetStreamConfiguration;
+import io.quarkiverse.reactive.messaging.nats.jetstream.configuration.ConnectorConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.test.Advisory;
 import io.smallrye.mutiny.Uni;
 
@@ -25,10 +25,10 @@ public class DeadLetterConsumingBean {
 
     private final AtomicReference<Data> lastData;
     private final AtomicReference<Client> connection;
-    private final JetStreamConfiguration jetStreamConfiguration;
+    private final ConnectorConfiguration jetStreamConfiguration;
     private final ClientFactory clientFactory;
 
-    public DeadLetterConsumingBean(JetStreamConfiguration jetStreamConfiguration, ClientFactory clientFactory) {
+    public DeadLetterConsumingBean(ConnectorConfiguration jetStreamConfiguration, ClientFactory clientFactory) {
         this.connection = new AtomicReference<>();
         this.jetStreamConfiguration = jetStreamConfiguration;
         this.clientFactory = clientFactory;

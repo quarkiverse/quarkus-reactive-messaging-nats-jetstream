@@ -1,6 +1,5 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client.api;
 
-import static io.quarkiverse.reactive.messaging.nats.jetstream.client.mapper.HeaderMapper.toMessageHeaders;
 import static io.smallrye.reactive.messaging.providers.locals.ContextAwareMessage.captureContextMetadata;
 
 import java.util.List;
@@ -11,20 +10,18 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.eclipse.microprofile.reactive.messaging.Metadata;
-import org.jboss.logging.Logger;
 
 import io.nats.client.api.MessageInfo;
+import lombok.extern.jbosslog.JBossLog;
 
+@JBossLog
 public class ResolvedMessage<T> implements JetStreamMessage<T> {
-
-    private static final Logger logger = Logger.getLogger(ResolvedMessage.class);
-
     private final MessageInfo message;
     private Metadata metadata;
     private final SubscribeMessageMetadata incomingMetadata;
-    private final T payload;
+    private final Payload<T, T> payload;
 
-    public ResolvedMessage(final MessageInfo message, final T payload) {
+    public ResolvedMessage(final MessageInfo message, final Payload<T, T> payload) {
         this.message = message;
         this.incomingMetadata = SubscribeMessageMetadata.of(message);
         this.metadata = captureContextMetadata(incomingMetadata);
@@ -52,17 +49,13 @@ public class ResolvedMessage<T> implements JetStreamMessage<T> {
         return incomingMetadata.stream();
     }
 
-    public MessageInfo messageInfo() {
-        return message;
-    }
-
     public Map<String, List<String>> headers() {
-        return toMessageHeaders(message.getHeaders());
+        return payload.headers();
     }
 
     @Override
     public T getPayload() {
-        return payload;
+        return payload.data();
     }
 
     @Override
@@ -73,7 +66,7 @@ public class ResolvedMessage<T> implements JetStreamMessage<T> {
     @Override
     public CompletionStage<Void> ack() {
         return CompletableFuture.supplyAsync(() -> {
-            logger.debugf("Message with id = %s acknowledged", messageId());
+            log.debugf("Message with id = %s acknowledged", messageId());
             return null;
         });
     }
@@ -81,7 +74,7 @@ public class ResolvedMessage<T> implements JetStreamMessage<T> {
     @Override
     public CompletionStage<Void> nack(Throwable reason, Metadata metadata) {
         return CompletableFuture.supplyAsync(() -> {
-            logger.errorf(reason, "Message with id = %s not acknowledged", messageId());
+            log.errorf(reason, "Message with id = %s not acknowledged", messageId());
             throw new RuntimeException(reason);
         });
     }

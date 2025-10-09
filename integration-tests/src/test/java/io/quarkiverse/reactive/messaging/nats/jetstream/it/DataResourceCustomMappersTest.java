@@ -16,8 +16,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.quarkiverse.reactive.messaging.nats.jetstream.it.DataResourceCustomMappersTest.Profile;
-import io.quarkiverse.reactive.messaging.nats.jetstream.mapper.DefaultPayloadMapper;
-import io.quarkiverse.reactive.messaging.nats.jetstream.mapper.PayloadMapper;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.QuarkusTestProfile;
 import io.quarkus.test.junit.TestProfile;

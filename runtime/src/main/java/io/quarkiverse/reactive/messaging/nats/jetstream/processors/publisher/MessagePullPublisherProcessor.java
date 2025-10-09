@@ -3,29 +3,32 @@ package io.quarkiverse.reactive.messaging.nats.jetstream.processors.publisher;
 import java.time.Duration;
 
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.Client;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer.ConsumerConfiguration;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer.PullConfiguration;
 import org.eclipse.microprofile.reactive.messaging.Message;
 
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ConnectionConfiguration;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.PullConsumerConfiguration;
 import io.smallrye.mutiny.Multi;
 
 public class MessagePullPublisherProcessor<T> extends MessagePublisherProcessor<T> {
-    private final PullConsumerConfiguration configuration;
+    private final ConsumerConfiguration<T> configuration;
+    private final PullConfiguration pullConfiguration;
+    private final Client client;
 
     public MessagePullPublisherProcessor(final String channel,
             final String stream,
             final String consumer,
             final Client client,
-            final ConnectionConfiguration connectionConfiguration,
-            final PullConsumerConfiguration configuration,
+            final ConsumerConfiguration<T> configuration,
+            final PullConfiguration pullConfiguration,
             final Duration retryBackoff) {
-        super(channel, stream, consumer, client, connectionConfiguration, retryBackoff);
+        super(channel, stream, consumer, retryBackoff);
         this.configuration = configuration;
+        this.pullConfiguration = pullConfiguration;
+        this.client = client;
     }
 
     @Override
-    protected Multi<Message<T>> subscription(Client client) {
-        return client.<T> subscribe(stream(), consumer(), configuration)
-                .onItem().transformToMulti(Subscription::subscribe);
+    protected Multi<Message<T>> subscribe() {
+        return client.subscribe(configuration, pullConfiguration, this);
     }
 }

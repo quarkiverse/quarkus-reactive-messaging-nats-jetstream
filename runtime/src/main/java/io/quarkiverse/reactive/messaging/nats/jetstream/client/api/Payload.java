@@ -1,7 +1,16 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client.api;
 
-import lombok.Builder;
+import java.util.List;
+import java.util.Map;
 
-@Builder
-public record Payload<T>(T data, Class<T> type) {
+public interface Payload<P, T> {
+
+    String id();
+
+    P data();
+
+    Class<T> type();
+
+    Map<String, List<String>> headers();
+
 }

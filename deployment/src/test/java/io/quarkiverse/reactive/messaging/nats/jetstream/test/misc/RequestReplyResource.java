@@ -22,11 +22,11 @@ import org.eclipse.microprofile.reactive.messaging.Message;
 import io.nats.client.api.DeliverPolicy;
 import io.nats.client.api.ReplayPolicy;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.ClientFactory;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.stream.StreamContext;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.stream.StreamAware;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.StreamState;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ConsumerConfiguration;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer.ConsumerConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.RequestReplyConsumerConfiguration;
-import io.quarkiverse.reactive.messaging.nats.jetstream.configuration.JetStreamConfiguration;
+import io.quarkiverse.reactive.messaging.nats.jetstream.configuration.ConnectorConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.test.MessageConsumer;
 import io.smallrye.mutiny.Uni;
 
@@ -35,11 +35,11 @@ import io.smallrye.mutiny.Uni;
 @RequestScoped
 public class RequestReplyResource implements MessageConsumer<Data> {
     private final ClientFactory clientFactory;
-    private final JetStreamConfiguration jetStreamConfiguration;
+    private final ConnectorConfiguration jetStreamConfiguration;
     private final AtomicReference<Client> messageConnection;
 
     public RequestReplyResource(ClientFactory clientFactory,
-                                JetStreamConfiguration jetStreamConfiguration) {
+                                ConnectorConfiguration jetStreamConfiguration) {
         this.clientFactory = clientFactory;
         this.jetStreamConfiguration = jetStreamConfiguration;
         this.messageConnection = new AtomicReference<>();
@@ -50,7 +50,7 @@ public class RequestReplyResource implements MessageConsumer<Data> {
     public Uni<List<String>> getStreams() {
         return getOrEstablishMessageConnection()
                 .onItem().transformToUni(Client::streamManagement)
-                .onItem().transformToUni(StreamContext::streamNames);
+                .onItem().transformToUni(StreamAware::streamNames);
     }
 
     @GET

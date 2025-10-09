@@ -1,9 +1,9 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client.context;
 
+import java.util.Optional;
+
 import io.smallrye.reactive.messaging.providers.connectors.ExecutionHolder;
 import io.vertx.mutiny.core.Vertx;
-
-import java.util.Optional;
 
 public interface ContextAware {
 

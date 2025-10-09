@@ -10,17 +10,17 @@ import org.eclipse.microprofile.reactive.messaging.Incoming;
 import org.eclipse.microprofile.reactive.messaging.Message;
 
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.ClientFactory;
-import io.quarkiverse.reactive.messaging.nats.jetstream.configuration.JetStreamConfiguration;
+import io.quarkiverse.reactive.messaging.nats.jetstream.configuration.ConnectorConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.test.MessageConsumer;
 import io.smallrye.mutiny.Uni;
 
 @ApplicationScoped
 public class RequestConsumer implements MessageConsumer<Data> {
     private final ClientFactory clientFactory;
-    private final JetStreamConfiguration jetStreamConfiguration;
+    private final ConnectorConfiguration jetStreamConfiguration;
     private final AtomicReference<Client> connection;
 
-    public RequestConsumer(ClientFactory clientFactory, JetStreamConfiguration jetStreamConfiguration) {
+    public RequestConsumer(ClientFactory clientFactory, ConnectorConfiguration jetStreamConfiguration) {
         this.clientFactory = clientFactory;
         this.jetStreamConfiguration = jetStreamConfiguration;
         this.connection = new AtomicReference<>();

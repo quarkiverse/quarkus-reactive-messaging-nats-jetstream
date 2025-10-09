@@ -21,10 +21,10 @@ import io.nats.client.api.DeliverPolicy;
 import io.nats.client.api.ReplayPolicy;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.ClientFactory;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer.subscription.SubscribeException;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ConsumerConfiguration;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.PullConfiguration;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer.ConsumerConfiguration;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer.PullConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.PullConsumerConfiguration;
-import io.quarkiverse.reactive.messaging.nats.jetstream.configuration.JetStreamConfiguration;
+import io.quarkiverse.reactive.messaging.nats.jetstream.configuration.ConnectorConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.test.TestSpanExporter;
 import io.quarkus.test.QuarkusUnitTest;
 
@@ -38,7 +38,7 @@ public class PullSubscribeConnectionTest {
             .withConfigurationResource("application-reader.properties");
 
     @Inject
-    JetStreamConfiguration jetStreamConfiguration;
+    ConnectorConfiguration jetStreamConfiguration;
 
     @Inject
     ClientFactory clientFactory;

@@ -44,11 +44,11 @@ quarkus.messaging.nats.connection.ssl-enabled=false
 
 # Streams and subjects are auto-created by default based on channel configuration
 quarkus.messaging.nats.auto-configure=true
-quarkus.messaging.nats.streams.test.pull-consumers.data-consumer.consumer-configuration.filter-subjects=data
+quarkus.messaging.nats.streams.test.pull-consumers.data-consumerAware.consumerAware-configuration.filter-subjects=data
 
 mp.messaging.incoming.data.connector=quarkus-jetstream
 mp.messaging.incoming.data.stream=test
-mp.messaging.incoming.data.consumer=data-consumer
+mp.messaging.incoming.data.consumerAware=data-consumerAware
 ----
 
 Then, your application receives Message<Data>. You can consumes the payload directly:
@@ -121,53 +121,53 @@ If you want more examples, please take a look at the tests of the extension.
 | quarkus.messaging.nats.streams.[stream-name].deny-purge | The flag indicating if deny purge is set for the stream | Boolean |
 | quarkus.messaging.nats.streams.[stream-name].discard-new-per-subject | Whether discard policy with max message per subject is applied per subject | Boolean |
 | quarkus.messaging.nats.streams.[stream-name].first-sequence | The first sequence used in the stream | Long |
-| quarkus.messaging.nats.streams.[stream-name].pull-consumers.[consumer-name].consumer-configuration.description | Description of pull consumer | String |
-| quarkus.messaging.nats.streams.[stream-name].pull-consumers.[consumer-name].consumer-configuration.payload-type | The class name of the payload type | String |
-| quarkus.messaging.nats.streams.[stream-name].pull-consumers.[consumer-name].consumer-configuration.durable | Set to true if the consumer should be durable | Boolean | false
-| quarkus.messaging.nats.streams.[stream-name].pull-consumers.[consumer-name].consumer-configuration.filter-subjects | A comma separated list of subjects that overlap with the subjects bound to the stream to filter delivery to subscribers | String |
-| quarkus.messaging.nats.streams.[stream-name].pull-consumers.[consumer-name].consumer-configuration.ack-wait | The duration that the server will wait for an ack for any individual message once it has been delivered to a consumer. If an ack is not received in time, the message will be redelivered | Duration |
-| quarkus.messaging.nats.streams.[stream-name].pull-consumers.[consumer-name].consumer-configuration.deliver-policy | The point in the stream to receive messages from | All, Last, New, ByStartSequence, ByStartTime or LastPerSubject | All
-| quarkus.messaging.nats.streams.[stream-name].pull-consumers.[consumer-name].consumer-configuration.inactive-threshold | Duration that instructs the server to cleanup consumers that are inactive for that long | Duration |
-| quarkus.messaging.nats.streams.[stream-name].pull-consumers.[consumer-name].consumer-configuration.max-ack-pending | Defines the maximum number of messages, without an acknowledgement, that can be outstanding | Long |
-| quarkus.messaging.nats.streams.[stream-name].pull-consumers.[consumer-name].consumer-configuration.max-deliver | The maximum number of times a specific message delivery will be attempted | Long |
-| quarkus.messaging.nats.streams.[stream-name].pull-consumers.[consumer-name].consumer-configuration.replay-policy | If the policy is Original, the messages in the stream will be pushed to the client at the same rate that they were originally received, simulating the original timing of messages. If the policy is Instant (the default), the messages will be pushed to the client as fast as possible while adhering to the Ack Policy, Max Ack Pending and the client's ability to consume those messages. | Instant or Original | Instant
-| quarkus.messaging.nats.streams.[stream-name].pull-consumers.[consumer-name].consumer-configuration.replicas | Sets the number of replicas for the consumer's state. By default, when the value is set to zero, consumers inherit the number of replicas from the stream | Integer | 0
-| quarkus.messaging.nats.streams.[stream-name].pull-consumers.[consumer-name].consumer-configuration.memory-storage | If set, forces the consumer state to be kept in memory rather than inherit the storage type of the stream (file in this case). | Boolean |
-| quarkus.messaging.nats.streams.[stream-name].pull-consumers.[consumer-name].consumer-configuration.back-off | The timing of re-deliveries as a comma-separated list of durations | Duration |
-| quarkus.messaging.nats.streams.[stream-name].pull-consumers.[consumer-name].consumer-configuration.acknowledge-timeout | The duration in milliseconds to wait for an ack confirmation | Duration |
-| quarkus.messaging.nats.streams.[stream-name].pull-consumers.[consumer-name].consumer-configuration.start-sequence | The start sequence | Long |
-| quarkus.messaging.nats.streams.[stream-name].pull-consumers.[consumer-name].consumer-configuration.start-time | The start time | ZonedDateTime |
-| quarkus.messaging.nats.streams.[stream-name].pull-consumers.[consumer-name].consumer-configuration.sample-frequency | The sample frequency | String |
-| quarkus.messaging.nats.streams.[stream-name].pull-consumers.[consumer-name].consumer-configuration.meta-data | The consumer metadata | Map<String, String> |
-| quarkus.messaging.nats.streams.[stream-name].pull-consumers.[consumer-name].consumer-configuration.pause-until | The pause until | ZonedDateTime |
-| quarkus.messaging.nats.streams.[stream-name].pull-consumers.[consumer-name].pull-configuration.pull.batch-size | The size of batch of messages to be pulled in pull mode | Integer | 10
-| quarkus.messaging.nats.streams.[stream-name].pull-consumers.[consumer-name].pull-configuration.max-waiting | The maximum number of waiting pull requests | Integer |
-| quarkus.messaging.nats.streams.[stream-name].pull-consumers.[consumer-name].pull-configuration.max-expires | The maximum duration a single pull request will wait for messages to be available to pull. NATS require this to be 1000ms or above | Duration | 1s
-| quarkus.messaging.nats.streams.[stream-name].push-consumers.[consumer-name].consumer-configuration.description | Description of pull consumer | String |
-| quarkus.messaging.nats.streams.[stream-name].push-consumers.[consumer-name].consumer-configuration.payload-type | The class name of the payload type | String |
-| quarkus.messaging.nats.streams.[stream-name].push-consumers.[consumer-name].consumer-configuration.durable | Sets the durable for the consumer | Boolean | false
-| quarkus.messaging.nats.streams.[stream-name].push-consumers.[consumer-name].consumer-configuration.filter-subjects | A comma separated list of subjects that overlap with the subjects bound to the stream to filter delivery to subscribers | String |
-| quarkus.messaging.nats.streams.[stream-name].push-consumers.[consumer-name].consumer-configuration.ack-wait | The duration that the server will wait for an ack for any individual message once it has been delivered to a consumer. If an ack is not received in time, the message will be redelivered | Duration |
-| quarkus.messaging.nats.streams.[stream-name].push-consumers.[consumer-name].consumer-configuration.deliver-policy | The point in the stream to receive messages from | All, Last, New, ByStartSequence, ByStartTime or LastPerSubject | All
-| quarkus.messaging.nats.streams.[stream-name].push-consumers.[consumer-name].consumer-configuration.inactive-threshold | Duration that instructs the server to cleanup consumers that are inactive for that long | Duration |
-| quarkus.messaging.nats.streams.[stream-name].push-consumers.[consumer-name].consumer-configuration.max-ack-pending | Defines the maximum number of messages, without an acknowledgement, that can be outstanding | Long |
-| quarkus.messaging.nats.streams.[stream-name].push-consumers.[consumer-name].consumer-configuration.max-deliver | The maximum number of times a specific message delivery will be attempted | Long |
-| quarkus.messaging.nats.streams.[stream-name].push-consumers.[consumer-name].consumer-configuration.replay-policy, "If the policy is ReplayOriginal, the messages in the stream will be pushed to the client at the same rate that they were originally received, simulating the original timing of messages. If the policy is ReplayInstant (the default), the messages will be pushed to the client as fast as possible while adhering to the Ack Policy, Max Ack Pending and the client's ability to consume those messages."
-| quarkus.messaging.nats.streams.[stream-name].push-consumers.[consumer-name].consumer-configuration.replicas | Sets the number of replicas for the consumer's state. By default, when the value is set to zero, consumers inherit the number of replicas from the stream | Integer | 0
-| quarkus.messaging.nats.streams.[stream-name].push-consumers.[consumer-name].consumer-configuration.memory-storage | If set, forces the consumer state to be kept in memory rather than inherit the storage type of the stream (file in this case). | Boolean |
-| quarkus.messaging.nats.streams.[stream-name].push-consumers.[consumer-name].consumer-configuration.back-off | The timing of re-deliveries as a comma-separated list of durations | Duration |
-| quarkus.messaging.nats.streams.[stream-name].push-consumers.[consumer-name].consumer-configuration.acknowledge-timeout | The duration in milliseconds to wait for an ack confirmation | Duration |
-| quarkus.messaging.nats.streams.[stream-name].push-consumers.[consumer-name].consumer-configuration.start-sequence | The start sequence | Long |
-| quarkus.messaging.nats.streams.[stream-name].push-consumers.[consumer-name].consumer-configuration.start-time | The start time | ZonedDateTime |
-| quarkus.messaging.nats.streams.[stream-name].push-consumers.[consumer-name].consumer-configuration.sample-frequency | The sample frequency | String |
-| quarkus.messaging.nats.streams.[stream-name].push-consumers.[consumer-name].consumer-configuration.meta-data | The consumer metadata | Map<String, String> |
-| quarkus.messaging.nats.streams.[stream-name].push-consumers.[consumer-name].consumer-configuration.pause-until | The pause until | ZonedDateTime |
-| quarkus.messaging.nats.streams.[stream-name].push-consumers.[consumer-name].push-configuration.push.ordered | Flag indicating whether this subscription should be ordered | Boolean |
-| quarkus.messaging.nats.streams.[stream-name].push-consumers.[consumer-name].push-configuration.deliver-group | The optional deliver group to join | String |
-| quarkus.messaging.nats.streams.[stream-name].push-consumers.[consumer-name].push-configuration.flow-control | Enables per-subscription flow control using a sliding-window protocol. This protocol relies on the server and client exchanging messages to regulate when and how many messages are pushed to the client. This one-to-one flow control mechanism works in tandem with the one-to-many flow control imposed by MaxAckPending across all subscriptions bound to a consumer. | Duration |
-| quarkus.messaging.nats.streams.[stream-name].push-consumers.[consumer-name].push-configuration.idle-heart-beat | If the idle heartbeat period is set, the server will regularly send a status message to the client (i.e. when the period has elapsed) while there are no new messages to send. This lets the client know that the JetStream service is still up and running, even when there is no activity on the stream. The message status header will have a code of 100. Unlike FlowControl, it will have no reply to address. It may have a description such \"Idle Heartbeat\". Note that this heartbeat mechanism is all handled transparently by supported clients and does not need to be handled by the application. | Duration |
-| quarkus.messaging.nats.streams.[stream-name].push-consumers.[consumer-name].push-configuration.rate-limit | Used to throttle the delivery of messages to the consumer, in bits per second. | Long |
-| quarkus.messaging.nats.streams.[stream-name].push-consumers.[consumer-name].push-configuration.headers-only | Delivers only the headers of messages in the stream and not the bodies. Additionally adds Nats-Msg-Size header to indicate the size of the removed payload. | Boolean | false
+| quarkus.messaging.nats.streams.[stream-name].pull-consumers.[consumerAware-name].consumerAware-configuration.description | Description of pull consumerAware | String |
+| quarkus.messaging.nats.streams.[stream-name].pull-consumers.[consumerAware-name].consumerAware-configuration.payload-type | The class name of the payload type | String |
+| quarkus.messaging.nats.streams.[stream-name].pull-consumers.[consumerAware-name].consumerAware-configuration.durable | Set to true if the consumerAware should be durable | Boolean | false
+| quarkus.messaging.nats.streams.[stream-name].pull-consumers.[consumerAware-name].consumerAware-configuration.filter-subjects | A comma separated list of subjects that overlap with the subjects bound to the stream to filter delivery to subscribers | String |
+| quarkus.messaging.nats.streams.[stream-name].pull-consumers.[consumerAware-name].consumerAware-configuration.ack-wait | The duration that the server will wait for an ack for any individual message once it has been delivered to a consumerAware. If an ack is not received in time, the message will be redelivered | Duration |
+| quarkus.messaging.nats.streams.[stream-name].pull-consumers.[consumerAware-name].consumerAware-configuration.deliver-policy | The point in the stream to receive messages from | All, Last, New, ByStartSequence, ByStartTime or LastPerSubject | All
+| quarkus.messaging.nats.streams.[stream-name].pull-consumers.[consumerAware-name].consumerAware-configuration.inactive-threshold | Duration that instructs the server to cleanup consumers that are inactive for that long | Duration |
+| quarkus.messaging.nats.streams.[stream-name].pull-consumers.[consumerAware-name].consumerAware-configuration.max-ack-pending | Defines the maximum number of messages, without an acknowledgement, that can be outstanding | Long |
+| quarkus.messaging.nats.streams.[stream-name].pull-consumers.[consumerAware-name].consumerAware-configuration.max-deliver | The maximum number of times a specific message delivery will be attempted | Long |
+| quarkus.messaging.nats.streams.[stream-name].pull-consumers.[consumerAware-name].consumerAware-configuration.replay-policy | If the policy is Original, the messages in the stream will be pushed to the client at the same rate that they were originally received, simulating the original timing of messages. If the policy is Instant (the default), the messages will be pushed to the client as fast as possible while adhering to the Ack Policy, Max Ack Pending and the client's ability to consume those messages. | Instant or Original | Instant
+| quarkus.messaging.nats.streams.[stream-name].pull-consumers.[consumerAware-name].consumerAware-configuration.replicas | Sets the number of replicas for the consumerAware's state. By default, when the value is set to zero, consumers inherit the number of replicas from the stream | Integer | 0
+| quarkus.messaging.nats.streams.[stream-name].pull-consumers.[consumerAware-name].consumerAware-configuration.memory-storage | If set, forces the consumerAware state to be kept in memory rather than inherit the storage type of the stream (file in this case). | Boolean |
+| quarkus.messaging.nats.streams.[stream-name].pull-consumers.[consumerAware-name].consumerAware-configuration.back-off | The timing of re-deliveries as a comma-separated list of durations | Duration |
+| quarkus.messaging.nats.streams.[stream-name].pull-consumers.[consumerAware-name].consumerAware-configuration.acknowledge-timeout | The duration in milliseconds to wait for an ack confirmation | Duration |
+| quarkus.messaging.nats.streams.[stream-name].pull-consumers.[consumerAware-name].consumerAware-configuration.start-sequence | The start sequence | Long |
+| quarkus.messaging.nats.streams.[stream-name].pull-consumers.[consumerAware-name].consumerAware-configuration.start-time | The start time | ZonedDateTime |
+| quarkus.messaging.nats.streams.[stream-name].pull-consumers.[consumerAware-name].consumerAware-configuration.sample-frequency | The sample frequency | String |
+| quarkus.messaging.nats.streams.[stream-name].pull-consumers.[consumerAware-name].consumerAware-configuration.meta-data | The consumerAware metadata | Map<String, String> |
+| quarkus.messaging.nats.streams.[stream-name].pull-consumers.[consumerAware-name].consumerAware-configuration.pause-until | The pause until | ZonedDateTime |
+| quarkus.messaging.nats.streams.[stream-name].pull-consumers.[consumerAware-name].pull-configuration.pull.batch-size | The size of batch of messages to be pulled in pull mode | Integer | 10
+| quarkus.messaging.nats.streams.[stream-name].pull-consumers.[consumerAware-name].pull-configuration.max-waiting | The maximum number of waiting pull requests | Integer |
+| quarkus.messaging.nats.streams.[stream-name].pull-consumers.[consumerAware-name].pull-configuration.max-expires | The maximum duration a single pull request will wait for messages to be available to pull. NATS require this to be 1000ms or above | Duration | 1s
+| quarkus.messaging.nats.streams.[stream-name].push-consumers.[consumerAware-name].consumerAware-configuration.description | Description of pull consumerAware | String |
+| quarkus.messaging.nats.streams.[stream-name].push-consumers.[consumerAware-name].consumerAware-configuration.payload-type | The class name of the payload type | String |
+| quarkus.messaging.nats.streams.[stream-name].push-consumers.[consumerAware-name].consumerAware-configuration.durable | Sets the durable for the consumerAware | Boolean | false
+| quarkus.messaging.nats.streams.[stream-name].push-consumers.[consumerAware-name].consumerAware-configuration.filter-subjects | A comma separated list of subjects that overlap with the subjects bound to the stream to filter delivery to subscribers | String |
+| quarkus.messaging.nats.streams.[stream-name].push-consumers.[consumerAware-name].consumerAware-configuration.ack-wait | The duration that the server will wait for an ack for any individual message once it has been delivered to a consumerAware. If an ack is not received in time, the message will be redelivered | Duration |
+| quarkus.messaging.nats.streams.[stream-name].push-consumers.[consumerAware-name].consumerAware-configuration.deliver-policy | The point in the stream to receive messages from | All, Last, New, ByStartSequence, ByStartTime or LastPerSubject | All
+| quarkus.messaging.nats.streams.[stream-name].push-consumers.[consumerAware-name].consumerAware-configuration.inactive-threshold | Duration that instructs the server to cleanup consumers that are inactive for that long | Duration |
+| quarkus.messaging.nats.streams.[stream-name].push-consumers.[consumerAware-name].consumerAware-configuration.max-ack-pending | Defines the maximum number of messages, without an acknowledgement, that can be outstanding | Long |
+| quarkus.messaging.nats.streams.[stream-name].push-consumers.[consumerAware-name].consumerAware-configuration.max-deliver | The maximum number of times a specific message delivery will be attempted | Long |
+| quarkus.messaging.nats.streams.[stream-name].push-consumers.[consumerAware-name].consumerAware-configuration.replay-policy, "If the policy is ReplayOriginal, the messages in the stream will be pushed to the client at the same rate that they were originally received, simulating the original timing of messages. If the policy is ReplayInstant (the default), the messages will be pushed to the client as fast as possible while adhering to the Ack Policy, Max Ack Pending and the client's ability to consume those messages."
+| quarkus.messaging.nats.streams.[stream-name].push-consumers.[consumerAware-name].consumerAware-configuration.replicas | Sets the number of replicas for the consumerAware's state. By default, when the value is set to zero, consumers inherit the number of replicas from the stream | Integer | 0
+| quarkus.messaging.nats.streams.[stream-name].push-consumers.[consumerAware-name].consumerAware-configuration.memory-storage | If set, forces the consumerAware state to be kept in memory rather than inherit the storage type of the stream (file in this case). | Boolean |
+| quarkus.messaging.nats.streams.[stream-name].push-consumers.[consumerAware-name].consumerAware-configuration.back-off | The timing of re-deliveries as a comma-separated list of durations | Duration |
+| quarkus.messaging.nats.streams.[stream-name].push-consumers.[consumerAware-name].consumerAware-configuration.acknowledge-timeout | The duration in milliseconds to wait for an ack confirmation | Duration |
+| quarkus.messaging.nats.streams.[stream-name].push-consumers.[consumerAware-name].consumerAware-configuration.start-sequence | The start sequence | Long |
+| quarkus.messaging.nats.streams.[stream-name].push-consumers.[consumerAware-name].consumerAware-configuration.start-time | The start time | ZonedDateTime |
+| quarkus.messaging.nats.streams.[stream-name].push-consumers.[consumerAware-name].consumerAware-configuration.sample-frequency | The sample frequency | String |
+| quarkus.messaging.nats.streams.[stream-name].push-consumers.[consumerAware-name].consumerAware-configuration.meta-data | The consumerAware metadata | Map<String, String> |
+| quarkus.messaging.nats.streams.[stream-name].push-consumers.[consumerAware-name].consumerAware-configuration.pause-until | The pause until | ZonedDateTime |
+| quarkus.messaging.nats.streams.[stream-name].push-consumers.[consumerAware-name].push-configuration.push.ordered | Flag indicating whether this subscription should be ordered | Boolean |
+| quarkus.messaging.nats.streams.[stream-name].push-consumers.[consumerAware-name].push-configuration.deliver-group | The optional deliver group to join | String |
+| quarkus.messaging.nats.streams.[stream-name].push-consumers.[consumerAware-name].push-configuration.flow-control | Enables per-subscription flow control using a sliding-window protocol. This protocol relies on the server and client exchanging messages to regulate when and how many messages are pushed to the client. This one-to-one flow control mechanism works in tandem with the one-to-many flow control imposed by MaxAckPending across all subscriptions bound to a consumerAware. | Duration |
+| quarkus.messaging.nats.streams.[stream-name].push-consumers.[consumerAware-name].push-configuration.idle-heart-beat | If the idle heartbeat period is set, the server will regularly send a status message to the client (i.e. when the period has elapsed) while there are no new messages to send. This lets the client know that the JetStream service is still up and running, even when there is no activity on the stream. The message status header will have a code of 100. Unlike FlowControl, it will have no reply to address. It may have a description such \"Idle Heartbeat\". Note that this heartbeat mechanism is all handled transparently by supported clients and does not need to be handled by the application. | Duration |
+| quarkus.messaging.nats.streams.[stream-name].push-consumers.[consumerAware-name].push-configuration.rate-limit | Used to throttle the delivery of messages to the consumerAware, in bits per second. | Long |
+| quarkus.messaging.nats.streams.[stream-name].push-consumers.[consumerAware-name].push-configuration.headers-only | Delivers only the headers of messages in the stream and not the bodies. Additionally adds Nats-Msg-Size header to indicate the size of the removed payload. | Boolean | false
 |======
 
 === Channel configuration
@@ -185,7 +185,7 @@ If you want more examples, please take a look at the tests of the extension.
 |======
 | Property Name | Description | Type | Default Value
 | mp.messaging.incoming.[channel-name].stream | The stream to publish messages from | String |
-| mp.messaging.incoming.[channel-name].consumer | The name of the consumer to use | String |
+| mp.messaging.incoming.[channel-name].consumerAware | The name of the consumerAware to use | String |
 | mp.messaging.incoming.[channel-name].retry-backoff | The retry backoff in milliseconds for retry publishing messagess | Long | 10000
 |======
 

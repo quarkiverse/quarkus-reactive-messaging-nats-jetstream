@@ -1,23 +1,5 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream;
 
-import static io.smallrye.reactive.messaging.annotations.ConnectorAttribute.Direction.*;
-
-import java.time.Duration;
-import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.Flow;
-
-import jakarta.annotation.Priority;
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.context.BeforeDestroyed;
-import jakarta.enterprise.event.Observes;
-import jakarta.enterprise.event.Reception;
-
-import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.reactive.messaging.Message;
-import org.eclipse.microprofile.reactive.messaging.spi.Connector;
-import org.jboss.logging.Logger;
-
 import io.quarkiverse.reactive.messaging.nats.jetstream.configuration.ConfigurationException;
 import io.quarkiverse.reactive.messaging.nats.jetstream.processors.MessageProcessor;
 import io.quarkiverse.reactive.messaging.nats.jetstream.processors.publisher.MessagePublisherProcessorFactory;
@@ -27,17 +9,30 @@ import io.smallrye.reactive.messaging.connector.InboundConnector;
 import io.smallrye.reactive.messaging.connector.OutboundConnector;
 import io.smallrye.reactive.messaging.health.HealthReport;
 import io.smallrye.reactive.messaging.health.HealthReporter;
+import jakarta.annotation.Priority;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.BeforeDestroyed;
+import jakarta.enterprise.event.Observes;
+import jakarta.enterprise.event.Reception;
+import org.eclipse.microprofile.config.Config;
+import org.eclipse.microprofile.reactive.messaging.Message;
+import org.eclipse.microprofile.reactive.messaging.spi.Connector;
+
+import java.time.Duration;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.Flow;
+
+import static io.smallrye.reactive.messaging.annotations.ConnectorAttribute.Direction.*;
 
 @ApplicationScoped
 @Connector(JetStreamConnector.CONNECTOR_NAME)
 @ConnectorAttribute(name = "stream", description = "The name of the stream", direction = INCOMING_AND_OUTGOING, type = "String")
 @ConnectorAttribute(name = "subject", description = "The name of the subject", direction = OUTGOING, type = "String")
 @ConnectorAttribute(name = "consumer", description = "The name of the consumer", direction = INCOMING, type = "String")
-@ConnectorAttribute(name = "retry-backoff", description = "The retry backoff in milliseconds for retry publishing messages", direction = INCOMING, type = "Long", defaultValue = "10000")
+@ConnectorAttribute(name = "retry-backoff", description = "The retry backoff in milliseconds for retry processing messages", direction = INCOMING_AND_OUTGOING, type = "Long", defaultValue = "10000")
 public class JetStreamConnector implements InboundConnector, OutboundConnector, HealthReporter {
     public static final String CONNECTOR_NAME = "quarkus-jetstream";
-
-    private final static Logger logger = Logger.getLogger(JetStreamConnector.class);
 
     private final List<MessageProcessor> processors;
     private final MessageSubscriberProcessorFactory messageSubscriberProcessorFactory;
@@ -73,7 +68,8 @@ public class JetStreamConnector implements InboundConnector, OutboundConnector, 
                 () -> new ConfigurationException("The 'stream' attribute must be set for the JetStream connector."));
         final var subject = configuration.getSubject().orElseThrow(
                 () -> new ConfigurationException("The 'subject' attribute must be set for the JetStream connector."));
-        final var processor = messageSubscriberProcessorFactory.create(channel, stream, subject);
+        final var retryBackoff = Duration.ofMillis(configuration.getRetryBackoff());
+        final var processor = messageSubscriberProcessorFactory.create(channel, stream, subject, retryBackoff);
         processors.add(processor);
         return processor.subscriber();
     }

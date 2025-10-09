@@ -14,7 +14,7 @@ import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.ClientFactory;
-import io.quarkiverse.reactive.messaging.nats.jetstream.configuration.JetStreamConfiguration;
+import io.quarkiverse.reactive.messaging.nats.jetstream.configuration.ConnectorConfiguration;
 import io.smallrye.mutiny.Uni;
 
 @Path("/key-value")
@@ -22,11 +22,11 @@ import io.smallrye.mutiny.Uni;
 @RequestScoped
 class KeyValueStoreResource {
     private final ClientFactory clientFactory;
-    private final JetStreamConfiguration jetStreamConfiguration;
+    private final ConnectorConfiguration jetStreamConfiguration;
     private final AtomicReference<Client> connection;
 
     @Inject
-    public KeyValueStoreResource(ClientFactory clientFactory, JetStreamConfiguration jetStreamConfiguration) {
+    public KeyValueStoreResource(ClientFactory clientFactory, ConnectorConfiguration jetStreamConfiguration) {
         this.clientFactory = clientFactory;
         this.jetStreamConfiguration = jetStreamConfiguration;
         this.connection = new AtomicReference<>();

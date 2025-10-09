@@ -1,22 +1,15 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.processors.subscriber;
 
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.Client;
 import jakarta.enterprise.context.ApplicationScoped;
 
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.Client;
-import io.quarkiverse.reactive.messaging.nats.jetstream.configuration.JetStreamConfiguration;
+import java.time.Duration;
 
 @ApplicationScoped
-public class MessageSubscriberProcessorFactory {
-    private final JetStreamConfiguration configuration;
-    private final Client client;
+public record MessageSubscriberProcessorFactory(Client client) {
 
-    public MessageSubscriberProcessorFactory(JetStreamConfiguration configuration, Client client) {
-        this.configuration = configuration;
-        this.client = client;
-    }
-
-    public <T> MessageSubscriberProcessor<T> create(String channel, String stream, String subject) {
-        return new MessageSubscriberProcessor<>(channel, stream, subject, configuration.connection(), clientFactory);
+    public <T> MessageSubscriberProcessor<T> create(String channel, String stream, String subject, Duration retryBackoff) {
+        return new MessageSubscriberProcessor<>(channel, stream, subject, client, retryBackoff);
     }
 
 }
