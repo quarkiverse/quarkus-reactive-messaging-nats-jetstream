@@ -1,15 +1,17 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.test.subscription;
 
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.Client;
-import io.quarkiverse.reactive.messaging.nats.jetstream.test.Advisory;
-import io.smallrye.mutiny.Uni;
+import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
+
 import jakarta.enterprise.context.ApplicationScoped;
+
 import org.eclipse.microprofile.reactive.messaging.Incoming;
 import org.eclipse.microprofile.reactive.messaging.Message;
 import org.jboss.logging.Logger;
 
-import java.util.Optional;
-import java.util.concurrent.atomic.AtomicReference;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.Client;
+import io.quarkiverse.reactive.messaging.nats.jetstream.test.Advisory;
+import io.smallrye.mutiny.Uni;
 
 @ApplicationScoped
 public class DeadLetterConsumingBean {

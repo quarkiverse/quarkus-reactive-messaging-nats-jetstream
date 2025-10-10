@@ -1,12 +1,13 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.test.fetch;
 
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.Client;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.NackMetadata;
-import io.quarkiverse.reactive.messaging.nats.jetstream.test.TestSpanExporter;
-import io.quarkus.test.QuarkusUnitTest;
-import io.smallrye.mutiny.Uni;
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.time.Duration;
+import java.util.List;
+
 import jakarta.annotation.Nullable;
 import jakarta.inject.Inject;
+
 import org.eclipse.microprofile.reactive.messaging.Message;
 import org.eclipse.microprofile.reactive.messaging.Metadata;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
@@ -15,10 +16,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import java.time.Duration;
-import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.Client;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.NackMetadata;
+import io.quarkiverse.reactive.messaging.nats.jetstream.test.TestSpanExporter;
+import io.quarkus.test.QuarkusUnitTest;
+import io.smallrye.mutiny.Uni;
 
 public class FetchMessagesTest {
 

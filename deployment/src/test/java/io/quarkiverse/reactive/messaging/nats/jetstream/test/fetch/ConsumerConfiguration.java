@@ -1,15 +1,17 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.test.fetch;
 
-import io.nats.client.api.DeliverPolicy;
-import io.nats.client.api.ReplayPolicy;
-
 import java.time.Duration;
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-public record ConsumerConfiguration(String stream, String name, String subject) implements io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer.ConsumerConfiguration<Object> {
+import io.nats.client.api.DeliverPolicy;
+import io.nats.client.api.ReplayPolicy;
+
+public record ConsumerConfiguration(String stream, String name, String subject)
+        implements
+            io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer.ConsumerConfiguration<Object> {
 
     @Override
     public String name() {

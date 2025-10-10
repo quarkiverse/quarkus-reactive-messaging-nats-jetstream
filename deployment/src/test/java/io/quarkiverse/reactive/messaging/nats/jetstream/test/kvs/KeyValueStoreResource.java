@@ -1,10 +1,11 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.test.kvs;
 
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.Client;
-import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
+
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.Client;
+import io.smallrye.mutiny.Uni;
 
 @Path("/key-value")
 @Produces("application/json")

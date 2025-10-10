@@ -5,19 +5,19 @@ import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 import io.nats.client.Options;
 import io.quarkiverse.reactive.messaging.nats.jetstream.JetStreamConnector;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.ClientImpl;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.connection.ConnectionFactoryImpl;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer.ConsumerAwareImpl;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer.ConsumerConfigurationMapperImpl;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer.ConsumerMapperImpl;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.mapper.*;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.mapper.PayloadMapperImpl;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.store.KeyValueConfigurationMapperImpl;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.store.KeyValueStoreAwareImpl;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.stream.StreamAwareImpl;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.stream.StreamConfigurationMapperImpl;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.stream.StreamStateMapperImpl;
-import io.quarkiverse.reactive.messaging.nats.jetstream.configuration.JetStreamRecorder;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.connection.ConnectionFactoryImpl;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.mapper.*;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.mapper.PayloadMapperImpl;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.tracing.TracerFactoryImpl;
+import io.quarkiverse.reactive.messaging.nats.jetstream.configuration.JetStreamRecorder;
 import io.quarkiverse.reactive.messaging.nats.jetstream.processors.publisher.MessagePublisherProcessorFactory;
 import io.quarkiverse.reactive.messaging.nats.jetstream.processors.subscriber.MessageSubscriberProcessorFactory;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
@@ -77,11 +77,16 @@ class JetStreamProcessor {
         buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(TracerFactoryImpl.class));
         buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(MessagePublisherProcessorFactory.class));
         buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(MessageSubscriberProcessorFactory.class));
-        buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(io.quarkiverse.reactive.messaging.nats.jetstream.configuration.mapper.ConsumerConfigurationMapperImpl.class));
-        buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(io.quarkiverse.reactive.messaging.nats.jetstream.configuration.mapper.KeyValueStoreConfigurationMapperImpl.class));
-        buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(io.quarkiverse.reactive.messaging.nats.jetstream.configuration.mapper.PullConsumerConfigurationMapperImpl.class));
-        buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(io.quarkiverse.reactive.messaging.nats.jetstream.configuration.mapper.PushConsumerConfigurationMapperImpl.class));
-        buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(io.quarkiverse.reactive.messaging.nats.jetstream.configuration.mapper.StreamConfigurationMapperImpl.class));
+        buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(
+                io.quarkiverse.reactive.messaging.nats.jetstream.configuration.mapper.ConsumerConfigurationMapperImpl.class));
+        buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(
+                io.quarkiverse.reactive.messaging.nats.jetstream.configuration.mapper.KeyValueStoreConfigurationMapperImpl.class));
+        buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(
+                io.quarkiverse.reactive.messaging.nats.jetstream.configuration.mapper.PullConsumerConfigurationMapperImpl.class));
+        buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(
+                io.quarkiverse.reactive.messaging.nats.jetstream.configuration.mapper.PushConsumerConfigurationMapperImpl.class));
+        buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(
+                io.quarkiverse.reactive.messaging.nats.jetstream.configuration.mapper.StreamConfigurationMapperImpl.class));
         buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(ExecutionHolder.class));
     }
 
