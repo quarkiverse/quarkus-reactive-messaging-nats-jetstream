@@ -68,6 +68,7 @@ class JetStreamProcessor {
         buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(HeaderMapperImpl.class));
         buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(MessageMapperImpl.class));
         buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(PayloadMapperImpl.class));
+        buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(SerializerImpl.class));
         buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(KeyValueStoreAwareImpl.class));
         buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(KeyValueConfigurationMapperImpl.class));
         buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(StreamAwareImpl.class));

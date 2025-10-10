@@ -1,7 +1,8 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer;
 
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.ErrorListener;
 import org.eclipse.microprofile.reactive.messaging.Message;
+
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.ErrorListener;
 
 public interface ConsumerListener<T> extends ErrorListener {
 

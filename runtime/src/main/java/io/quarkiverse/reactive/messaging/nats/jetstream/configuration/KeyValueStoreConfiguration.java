@@ -1,9 +1,9 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.configuration;
 
-import io.nats.client.api.StorageType;
-
 import java.time.Duration;
 import java.util.Optional;
+
+import io.nats.client.api.StorageType;
 
 public interface KeyValueStoreConfiguration {
 

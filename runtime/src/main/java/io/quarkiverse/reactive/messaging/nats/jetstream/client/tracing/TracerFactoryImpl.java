@@ -12,7 +12,7 @@ public class TracerFactoryImpl implements TracerFactory {
     private final Instance<OpenTelemetry> openTelemetryInstance;
 
     public TracerFactoryImpl(ConnectorConfiguration configuration,
-                             Instance<OpenTelemetry> openTelemetryInstance) {
+            Instance<OpenTelemetry> openTelemetryInstance) {
         this.configuration = configuration;
         this.openTelemetryInstance = openTelemetryInstance;
     }

@@ -1,14 +1,15 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.processors.publisher;
 
+import java.time.Duration;
+import java.util.concurrent.atomic.AtomicReference;
+
+import org.eclipse.microprofile.reactive.messaging.Message;
+
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer.ConsumerListener;
 import io.quarkiverse.reactive.messaging.nats.jetstream.processors.Health;
 import io.quarkiverse.reactive.messaging.nats.jetstream.processors.MessageProcessor;
 import io.smallrye.mutiny.Multi;
 import lombok.extern.jbosslog.JBossLog;
-import org.eclipse.microprofile.reactive.messaging.Message;
-
-import java.time.Duration;
-import java.util.concurrent.atomic.AtomicReference;
 
 @JBossLog
 public abstract class MessagePublisherProcessor<T> implements MessageProcessor, ConsumerListener<T> {
@@ -61,8 +62,11 @@ public abstract class MessagePublisherProcessor<T> implements MessageProcessor, 
 
     public Multi<org.eclipse.microprofile.reactive.messaging.Message<T>> publisher() {
         return subscribe()
-                .onSubscription().invoke(() -> health.set(new Health(true, String.format("Publish processor healthy for channel: %s", channel()))))
-                .onFailure().invoke(failure -> log.errorf(failure, "Failed to subscribe with message: %s", failure.getMessage()))
+                .onSubscription()
+                .invoke(() -> health
+                        .set(new Health(true, String.format("Publish processor healthy for channel: %s", channel()))))
+                .onFailure()
+                .invoke(failure -> log.errorf(failure, "Failed to subscribe with message: %s", failure.getMessage()))
                 .onFailure().retry().withBackOff(retryBackoff).indefinitely();
     }
 

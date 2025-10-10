@@ -1,14 +1,16 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.configuration.mapper;
 
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer.ConsumerConfigurationImpl;
 import org.mapstruct.Mapper;
+
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer.ConsumerConfigurationImpl;
 
 @Mapper(componentModel = "cdi")
 public interface ConsumerConfigurationMapper {
 
     @SuppressWarnings("unchecked")
-    default <T> io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer.ConsumerConfiguration<T> map(String stream, String name, io.quarkiverse.reactive.messaging.nats.jetstream.configuration.ConsumerConfiguration configuration) {
-        return ConsumerConfigurationImpl.<T>builder()
+    default <T> io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer.ConsumerConfiguration<T> map(String stream,
+            String name, io.quarkiverse.reactive.messaging.nats.jetstream.configuration.ConsumerConfiguration configuration) {
+        return ConsumerConfigurationImpl.<T> builder()
                 .stream(stream)
                 .name(name)
                 .durable(configuration.durable())

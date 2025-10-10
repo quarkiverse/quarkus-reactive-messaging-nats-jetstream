@@ -1,37 +1,25 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.test.subscription;
 
-import java.util.Optional;
-import java.util.concurrent.atomic.AtomicReference;
-
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.Client;
-import jakarta.annotation.Priority;
+import io.quarkiverse.reactive.messaging.nats.jetstream.test.Advisory;
+import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.context.BeforeDestroyed;
-import jakarta.enterprise.event.Observes;
-import jakarta.enterprise.event.Reception;
-
 import org.eclipse.microprofile.reactive.messaging.Incoming;
 import org.eclipse.microprofile.reactive.messaging.Message;
 import org.jboss.logging.Logger;
 
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.ClientFactory;
-import io.quarkiverse.reactive.messaging.nats.jetstream.configuration.ConnectorConfiguration;
-import io.quarkiverse.reactive.messaging.nats.jetstream.test.Advisory;
-import io.smallrye.mutiny.Uni;
+import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 
 @ApplicationScoped
 public class DeadLetterConsumingBean {
     private final static Logger logger = Logger.getLogger(DeadLetterConsumingBean.class);
 
     private final AtomicReference<Data> lastData;
-    private final AtomicReference<Client> connection;
-    private final ConnectorConfiguration jetStreamConfiguration;
-    private final ClientFactory clientFactory;
+    private final Client client;
 
-    public DeadLetterConsumingBean(ConnectorConfiguration jetStreamConfiguration, ClientFactory clientFactory) {
-        this.connection = new AtomicReference<>();
-        this.jetStreamConfiguration = jetStreamConfiguration;
-        this.clientFactory = clientFactory;
+    public DeadLetterConsumingBean(Client client) {
+        this.client = client;
         this.lastData = new AtomicReference<>();
     }
 
@@ -51,36 +39,10 @@ public class DeadLetterConsumingBean {
     @Incoming("dead-letter-consumer")
     public Uni<Void> deadLetter(Message<Advisory> message) {
         logger.infof("Received dead letter on dead-letter-consumer channel: %s", message);
-        return getOrEstablishConnection().onItem().transformToUni(connection -> deadLetter(connection, message));
-    }
-
-    public void terminate(
-            @Observes(notifyObserver = Reception.IF_EXISTS) @Priority(50) @BeforeDestroyed(ApplicationScoped.class) Object ignored) {
-        try {
-            if (connection.get() != null) {
-                connection.get().close();
-            }
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    public Uni<Void> deadLetter(Client client, Message<Advisory> message) {
-        logger.infof("Received dead letter on dead-letter-consumer channel: %s", message);
         final var advisory = message.getPayload();
         return client.<Data> resolve(advisory.stream(), advisory.stream_seq())
                 .onItem().invoke(dataMessage -> lastData.set(dataMessage.getPayload()))
                 .onItem().transformToUni(m -> Uni.createFrom().completionStage(message.ack()))
                 .onFailure().recoverWithUni(throwable -> Uni.createFrom().completionStage(message.nack(throwable)));
-    }
-
-    private Uni<Client> getOrEstablishConnection() {
-        return Uni.createFrom().item(() -> Optional.ofNullable(connection.get())
-                .filter(Client::isConnected)
-                .orElse(null))
-                .onItem().ifNull()
-                .switchTo(() -> clientFactory.create(jetStreamConfiguration.connection(),
-                        new DefaultConnectionListener()))
-                .onItem().invoke(this.connection::set);
     }
 }

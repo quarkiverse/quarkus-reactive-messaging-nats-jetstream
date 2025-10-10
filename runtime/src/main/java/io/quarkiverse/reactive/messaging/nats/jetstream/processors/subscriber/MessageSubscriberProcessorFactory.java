@@ -1,9 +1,10 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.processors.subscriber;
 
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.Client;
+import java.time.Duration;
+
 import jakarta.enterprise.context.ApplicationScoped;
 
-import java.time.Duration;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.Client;
 
 @ApplicationScoped
 public record MessageSubscriberProcessorFactory(Client client) {

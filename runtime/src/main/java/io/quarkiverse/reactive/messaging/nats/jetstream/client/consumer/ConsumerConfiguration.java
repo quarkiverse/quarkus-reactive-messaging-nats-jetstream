@@ -17,7 +17,7 @@ public interface ConsumerConfiguration<T> {
     String name();
 
     /**
-     *  The stream name
+     * The stream name
      */
     String stream();
 

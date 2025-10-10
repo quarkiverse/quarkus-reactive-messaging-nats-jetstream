@@ -6,7 +6,6 @@ import org.mapstruct.Mapper;
 
 import io.nats.client.api.AckPolicy;
 
-
 @Mapper(componentModel = "cdi")
 public interface ConsumerConfigurationMapper {
 
@@ -14,13 +13,15 @@ public interface ConsumerConfigurationMapper {
         return toBuilder(configuration).build();
     }
 
-    default <T> io.nats.client.api.ConsumerConfiguration map(final ConsumerConfiguration<T> configuration, final PullConfiguration pullConfiguration) {
+    default <T> io.nats.client.api.ConsumerConfiguration map(final ConsumerConfiguration<T> configuration,
+            final PullConfiguration pullConfiguration) {
         var builder = toBuilder(configuration);
         builder = pullConfiguration.maxWaiting().map(builder::maxPullWaiting).orElse(builder);
         return builder.build();
     }
 
-    default <T> io.nats.client.api.ConsumerConfiguration map(final ConsumerConfiguration<T> configuration, final PushConfiguration pushConfiguration) {
+    default <T> io.nats.client.api.ConsumerConfiguration map(final ConsumerConfiguration<T> configuration,
+            final PushConfiguration pushConfiguration) {
         var builder = toBuilder(configuration);
         builder = builder.deliverSubject(pushConfiguration.deliverSubject());
         builder = pushConfiguration.flowControl().map(builder::flowControl).orElse(builder);

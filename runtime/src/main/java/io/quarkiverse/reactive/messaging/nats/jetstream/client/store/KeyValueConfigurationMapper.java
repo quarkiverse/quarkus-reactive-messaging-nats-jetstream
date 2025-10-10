@@ -1,7 +1,8 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client.store;
 
-import io.nats.client.api.KeyValueConfiguration;
 import org.mapstruct.Mapper;
+
+import io.nats.client.api.KeyValueConfiguration;
 
 @Mapper(componentModel = "cdi")
 public interface KeyValueConfigurationMapper {

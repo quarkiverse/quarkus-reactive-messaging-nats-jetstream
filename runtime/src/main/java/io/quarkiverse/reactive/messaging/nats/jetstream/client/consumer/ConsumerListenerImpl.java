@@ -1,7 +1,8 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer;
 
-import lombok.extern.jbosslog.JBossLog;
 import org.eclipse.microprofile.reactive.messaging.Message;
+
+import lombok.extern.jbosslog.JBossLog;
 
 @JBossLog
 public class ConsumerListenerImpl<T> implements ConsumerListener<T> {

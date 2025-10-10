@@ -9,20 +9,17 @@ import java.util.UUID;
 
 import jakarta.enterprise.context.ApplicationScoped;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import io.nats.client.impl.Headers;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.*;
 
 @ApplicationScoped
-public record PayloadMapperImpl(ObjectMapper objectMapper, HeaderMapper headerMapper) implements PayloadMapper {
+public record PayloadMapperImpl(Serializer serializer, HeaderMapper headerMapper) implements PayloadMapper {
 
     @Override
     public <T> SerializedPayload<T> map(Payload<T, T> payload) {
         return GenericSerializedPayload.<T> builder()
                 .id(payload.id())
-                .data(toBytes(payload.data()))
+                .data(serializer.toBytes(payload.data()))
                 .type(payload.type())
                 .headers(payload.headers())
                 .build();
@@ -33,7 +30,7 @@ public record PayloadMapperImpl(ObjectMapper objectMapper, HeaderMapper headerMa
         return GenericPayload.<T, T> builder()
                 .id(payload.id())
                 .type(payload.type())
-                .data(readValue(payload.data(), payload.type()))
+                .data(serializer.readValue(payload.data(), payload.type()))
                 .headers(payload.headers())
                 .build();
     }
@@ -46,7 +43,7 @@ public record PayloadMapperImpl(ObjectMapper objectMapper, HeaderMapper headerMa
                 .orElseThrow(
                         () -> new IllegalArgumentException("Message is missing the required header: " + MESSAGE_TYPE_HEADER));
         return GenericPayload.<T, T> builder()
-                .data(readValue(message.getData(), type))
+                .data(serializer.readValue(message.getData(), type))
                 .type(type)
                 .headers(headerMapper.map(message.getHeaders()))
                 .id(message.getHeaders().getFirst(MSG_ID_HDR))
@@ -61,7 +58,7 @@ public record PayloadMapperImpl(ObjectMapper objectMapper, HeaderMapper headerMa
                 .orElseThrow(
                         () -> new IllegalArgumentException("Message is missing the required header: " + MESSAGE_TYPE_HEADER)));
         return GenericPayload.<T, T> builder()
-                .data(readValue(message.getData(), type))
+                .data(serializer.readValue(message.getData(), type))
                 .type(type)
                 .headers(headerMapper.map(message.getHeaders()))
                 .id(message.getHeaders().getFirst(MSG_ID_HDR))
@@ -90,19 +87,11 @@ public record PayloadMapperImpl(ObjectMapper objectMapper, HeaderMapper headerMa
                 .orElseThrow(
                         () -> new IllegalArgumentException("Message is missing the required header: " + MESSAGE_TYPE_HEADER));
         return GenericPayload.<T, T> builder()
-                .data(readValue(message.getData(), type))
+                .data(serializer.readValue(message.getData(), type))
                 .type(type)
                 .headers(headerMapper.map(message.getHeaders()))
                 .id(message.getHeaders() != null ? message.getHeaders().getFirst(MSG_ID_HDR) : null)
                 .build();
-    }
-
-    private <T> T readValue(byte[] data, Class<T> type) {
-        try {
-            return objectMapper.readValue(data, type);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
     }
 
     @SuppressWarnings("unchecked")
@@ -111,20 +100,6 @@ public record PayloadMapperImpl(ObjectMapper objectMapper, HeaderMapper headerMa
             final ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
             return (Class<T>) classLoader.loadClass(type);
         } catch (ClassNotFoundException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    private <T> byte[] toBytes(T payload) {
-        try {
-            if (payload == null) {
-                return new byte[0];
-            } else if (payload instanceof byte[] bytePayload) {
-                return bytePayload;
-            } else {
-                return objectMapper.writeValueAsBytes(payload);
-            }
-        } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
     }

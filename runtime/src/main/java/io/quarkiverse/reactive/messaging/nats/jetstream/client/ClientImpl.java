@@ -1,5 +1,16 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client;
 
+import java.time.Duration;
+import java.time.ZonedDateTime;
+
+import jakarta.annotation.Priority;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.BeforeDestroyed;
+import jakarta.enterprise.event.Observes;
+import jakarta.enterprise.event.Reception;
+
+import org.eclipse.microprofile.reactive.messaging.Message;
+
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.Consumer;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.PurgeResult;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.StreamResult;
@@ -14,21 +25,12 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.client.stream.StreamAwar
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.stream.StreamConfiguration;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
-import jakarta.annotation.Priority;
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.context.BeforeDestroyed;
-import jakarta.enterprise.event.Observes;
-import jakarta.enterprise.event.Reception;
 import lombok.extern.jbosslog.JBossLog;
-import org.eclipse.microprofile.reactive.messaging.Message;
-
-import java.time.Duration;
-import java.time.ZonedDateTime;
 
 @JBossLog
 @ApplicationScoped
 public record ClientImpl(PublisherAware publisherDelegate, ConsumerAware consumerDelegate, StreamAware streamDelegate,
-                         KeyValueStoreAware keyValueStoreDelegate, Connection connection) implements Client {
+        KeyValueStoreAware keyValueStoreDelegate, Connection connection) implements Client {
 
     @Override
     public <T> Uni<Message<T>> publish(Message<T> message, String stream, String subject) {
@@ -116,12 +118,14 @@ public record ClientImpl(PublisherAware publisherDelegate, ConsumerAware consume
     }
 
     @Override
-    public <T> Multi<Message<T>> subscribe(ConsumerConfiguration<T> configuration, PullConfiguration pullConfiguration, ConsumerListener<T> listener) {
+    public <T> Multi<Message<T>> subscribe(ConsumerConfiguration<T> configuration, PullConfiguration pullConfiguration,
+            ConsumerListener<T> listener) {
         return consumerDelegate.subscribe(configuration, pullConfiguration, listener);
     }
 
     @Override
-    public <T> Multi<Message<T>> subscribe(ConsumerConfiguration<T> configuration, PushConfiguration pushConfiguration, ConsumerListener<T> listener) {
+    public <T> Multi<Message<T>> subscribe(ConsumerConfiguration<T> configuration, PushConfiguration pushConfiguration,
+            ConsumerListener<T> listener) {
         return consumerDelegate.subscribe(configuration, pushConfiguration, listener);
     }
 
@@ -200,7 +204,8 @@ public record ClientImpl(PublisherAware publisherDelegate, ConsumerAware consume
         return keyValueStoreDelegate.deleteValue(bucketName, key);
     }
 
-    public void terminate(@Observes(notifyObserver = Reception.IF_EXISTS) @Priority(50) @BeforeDestroyed(ApplicationScoped.class) Object ignored) {
+    public void terminate(
+            @Observes(notifyObserver = Reception.IF_EXISTS) @Priority(50) @BeforeDestroyed(ApplicationScoped.class) Object ignored) {
         try {
             connection.close();
         } catch (InterruptedException e) {

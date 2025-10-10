@@ -63,12 +63,14 @@ public class MessageSubscriberProcessor<T> implements MessageProcessor, PublishL
 
     @Override
     public void onPublished(String messageId, Long sequence) {
-        log.debugf("Published message with id: %s and sequence: %s to stream: %s and subject: %s", messageId, sequence, stream, subject);
+        log.debugf("Published message with id: %s and sequence: %s to stream: %s and subject: %s", messageId, sequence, stream,
+                subject);
         health.set(new Health(true, "Subscriber processor active for channel: " + channel()));
     }
 
     @Override
     public void onError(Throwable throwable) {
-        health.set(new Health(false, "Subscriber processor error for channel: " + channel() + " with message: " + throwable.getMessage()));
+        health.set(new Health(false,
+                "Subscriber processor error for channel: " + channel() + " with message: " + throwable.getMessage()));
     }
 }

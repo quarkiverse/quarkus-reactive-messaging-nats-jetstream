@@ -2,11 +2,11 @@ package io.quarkiverse.reactive.messaging.nats.jetstream.processors.publisher;
 
 import java.time.Duration;
 
+import org.eclipse.microprofile.reactive.messaging.Message;
+
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.Client;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer.ConsumerConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer.PullConfiguration;
-import org.eclipse.microprofile.reactive.messaging.Message;
-
 import io.smallrye.mutiny.Multi;
 
 public class MessagePullPublisherProcessor<T> extends MessagePublisherProcessor<T> {

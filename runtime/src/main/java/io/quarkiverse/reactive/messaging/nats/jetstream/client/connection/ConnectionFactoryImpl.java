@@ -2,17 +2,17 @@ package io.quarkiverse.reactive.messaging.nats.jetstream.client.connection;
 
 import static io.nats.client.Options.DEFAULT_RECONNECT_WAIT;
 
+import java.util.concurrent.atomic.AtomicReference;
+
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Produces;
 
 import io.nats.client.ErrorListener;
 import io.nats.client.Nats;
 import io.nats.client.Options;
 import io.quarkus.tls.TlsConfiguration;
 import io.quarkus.tls.TlsConfigurationRegistry;
-import jakarta.enterprise.inject.Produces;
 import lombok.RequiredArgsConstructor;
-
-import java.util.concurrent.atomic.AtomicReference;
 
 @ApplicationScoped
 @RequiredArgsConstructor

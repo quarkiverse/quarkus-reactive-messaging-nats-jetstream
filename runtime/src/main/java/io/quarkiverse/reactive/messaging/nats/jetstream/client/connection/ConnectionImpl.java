@@ -1,12 +1,5 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client.connection;
 
-import io.nats.client.*;
-import io.nats.client.api.ServerInfo;
-import io.nats.client.impl.Headers;
-import lombok.extern.jbosslog.JBossLog;
-import org.jspecify.annotations.NonNull;
-import org.jspecify.annotations.Nullable;
-
 import java.io.IOException;
 import java.net.InetAddress;
 import java.time.Duration;
@@ -14,9 +7,16 @@ import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
 
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
+
+import io.nats.client.*;
+import io.nats.client.api.ServerInfo;
+import io.nats.client.impl.Headers;
+import lombok.extern.jbosslog.JBossLog;
+
 @JBossLog
 public record ConnectionImpl(io.nats.client.Connection delegate) implements Connection {
-
 
     @Override
     public void publish(@NonNull String subject, byte @Nullable [] body) {
@@ -49,17 +49,20 @@ public record ConnectionImpl(io.nats.client.Connection delegate) implements Conn
     }
 
     @Override
-    public @NonNull CompletableFuture<Message> request(@NonNull String subject, @Nullable Headers headers, byte @Nullable [] body) {
+    public @NonNull CompletableFuture<Message> request(@NonNull String subject, @Nullable Headers headers,
+            byte @Nullable [] body) {
         return delegate.request(subject, headers, body);
     }
 
     @Override
-    public @NonNull CompletableFuture<Message> requestWithTimeout(@NonNull String subject, byte @Nullable [] body, @Nullable Duration timeout) {
+    public @NonNull CompletableFuture<Message> requestWithTimeout(@NonNull String subject, byte @Nullable [] body,
+            @Nullable Duration timeout) {
         return delegate.requestWithTimeout(subject, body, timeout);
     }
 
     @Override
-    public @NonNull CompletableFuture<Message> requestWithTimeout(@NonNull String subject, @Nullable Headers headers, byte @Nullable [] body, Duration timeout) {
+    public @NonNull CompletableFuture<Message> requestWithTimeout(@NonNull String subject, @Nullable Headers headers,
+            byte @Nullable [] body, Duration timeout) {
         return delegate.requestWithTimeout(subject, headers, body, timeout);
     }
 
@@ -74,12 +77,14 @@ public record ConnectionImpl(io.nats.client.Connection delegate) implements Conn
     }
 
     @Override
-    public @Nullable Message request(@NonNull String subject, byte @Nullable [] body, @Nullable Duration timeout) throws InterruptedException {
+    public @Nullable Message request(@NonNull String subject, byte @Nullable [] body, @Nullable Duration timeout)
+            throws InterruptedException {
         return delegate.request(subject, body, timeout);
     }
 
     @Override
-    public @Nullable Message request(@NonNull String subject, @Nullable Headers headers, byte @Nullable [] body, @Nullable Duration timeout) throws InterruptedException {
+    public @Nullable Message request(@NonNull String subject, @Nullable Headers headers, byte @Nullable [] body,
+            @Nullable Duration timeout) throws InterruptedException {
         return delegate.request(subject, headers, body, timeout);
     }
 
@@ -219,17 +224,20 @@ public record ConnectionImpl(io.nats.client.Connection delegate) implements Conn
     }
 
     @Override
-    public @NonNull StreamContext getStreamContext(@NonNull String streamName, @Nullable JetStreamOptions options) throws IOException, JetStreamApiException {
+    public @NonNull StreamContext getStreamContext(@NonNull String streamName, @Nullable JetStreamOptions options)
+            throws IOException, JetStreamApiException {
         return delegate.getStreamContext(streamName, options);
     }
 
     @Override
-    public @NonNull ConsumerContext getConsumerContext(@NonNull String streamName, @NonNull String consumerName) throws IOException, JetStreamApiException {
+    public @NonNull ConsumerContext getConsumerContext(@NonNull String streamName, @NonNull String consumerName)
+            throws IOException, JetStreamApiException {
         return delegate.getConsumerContext(streamName, consumerName);
     }
 
     @Override
-    public @NonNull ConsumerContext getConsumerContext(@NonNull String streamName, @NonNull String consumerName, @Nullable JetStreamOptions options) throws IOException, JetStreamApiException {
+    public @NonNull ConsumerContext getConsumerContext(@NonNull String streamName, @NonNull String consumerName,
+            @Nullable JetStreamOptions options) throws IOException, JetStreamApiException {
         return delegate.getConsumerContext(streamName, consumerName, options);
     }
 
@@ -279,7 +287,8 @@ public record ConnectionImpl(io.nats.client.Connection delegate) implements Conn
     }
 
     @Override
-    public @NonNull ObjectStore objectStore(@NonNull String bucketName, @Nullable ObjectStoreOptions options) throws IOException {
+    public @NonNull ObjectStore objectStore(@NonNull String bucketName, @Nullable ObjectStoreOptions options)
+            throws IOException {
         return delegate.objectStore(bucketName, options);
     }
 

@@ -1,8 +1,8 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.configuration.mapper;
 
-import io.quarkiverse.reactive.messaging.nats.jetstream.configuration.ConnectorConfiguration;
-
 import java.util.List;
+
+import io.quarkiverse.reactive.messaging.nats.jetstream.configuration.ConnectorConfiguration;
 
 public interface PushConsumerConfigurationMapper {
 

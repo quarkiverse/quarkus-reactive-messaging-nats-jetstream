@@ -1,12 +1,13 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer;
 
+import java.time.Duration;
+import java.time.ZonedDateTime;
+
+import org.eclipse.microprofile.reactive.messaging.Message;
+
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.Consumer;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
-import org.eclipse.microprofile.reactive.messaging.Message;
-
-import java.time.Duration;
-import java.time.ZonedDateTime;
 
 public interface ConsumerAware {
 
@@ -42,8 +43,10 @@ public interface ConsumerAware {
 
     <T> Multi<Message<T>> subscribe(ConsumerConfiguration<T> configuration, PushConfiguration pushConfiguration);
 
-    <T> Multi<Message<T>> subscribe(ConsumerConfiguration<T> configuration, PullConfiguration pullConfiguration, ConsumerListener<T> listener);
+    <T> Multi<Message<T>> subscribe(ConsumerConfiguration<T> configuration, PullConfiguration pullConfiguration,
+            ConsumerListener<T> listener);
 
-    <T> Multi<Message<T>> subscribe(ConsumerConfiguration<T> configuration, PushConfiguration pushConfiguration, ConsumerListener<T> listener);
+    <T> Multi<Message<T>> subscribe(ConsumerConfiguration<T> configuration, PushConfiguration pushConfiguration,
+            ConsumerListener<T> listener);
 
 }

@@ -1,15 +1,15 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.configuration;
 
+import java.time.Duration;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+
 import io.nats.client.api.CompressionOption;
 import io.nats.client.api.DiscardPolicy;
 import io.nats.client.api.RetentionPolicy;
 import io.nats.client.api.StorageType;
 import io.smallrye.config.WithDefault;
-
-import java.time.Duration;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
 
 public interface StreamConfiguration {
 
@@ -138,7 +138,5 @@ public interface StreamConfiguration {
      * Push consumer configurations. The map key is the name of the consumer.
      */
     Map<String, PushConsumerConfiguration> pushConsumers();
-
-
 
 }

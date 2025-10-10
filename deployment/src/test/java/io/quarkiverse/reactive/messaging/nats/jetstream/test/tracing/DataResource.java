@@ -3,6 +3,7 @@ package io.quarkiverse.reactive.messaging.nats.jetstream.test.tracing;
 import java.util.HashMap;
 import java.util.List;
 
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.GenericSerializedPayload;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 
@@ -41,7 +42,7 @@ public class DataResource {
         return Uni.createFrom().item(() -> {
             final var headers = new HashMap<String, List<String>>();
             headers.put("RESOURCE_ID", List.of(data));
-            final var message = Message.of(data, Metadata.of(PublishMessageMetadata.of(id, headers)));
+            final var message = Message.of(data, Metadata.of(PublishMessageMetadata.builder().payload(GenericSerializedPayload.builder().id(id).headers(headers).build()).build()));
             emitter.send(message);
             return message;
         });

@@ -9,7 +9,7 @@ import lombok.extern.jbosslog.JBossLog;
 
 @JBossLog
 public class NativeErrorListener implements ErrorListener {
-    
+
     @Override
     public void errorOccurred(io.nats.client.Connection conn, String error) {
         log.errorf("Error occurred: %s", error);

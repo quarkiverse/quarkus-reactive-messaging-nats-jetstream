@@ -1,9 +1,9 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.configuration;
 
-import io.smallrye.config.WithDefault;
-
 import java.time.Duration;
 import java.util.Optional;
+
+import io.smallrye.config.WithDefault;
 
 public interface PullConfiguration {
 

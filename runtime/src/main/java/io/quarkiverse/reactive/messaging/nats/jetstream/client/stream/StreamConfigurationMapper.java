@@ -1,9 +1,9 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client.stream;
 
-import org.mapstruct.Mapper;
-
 import java.util.HashSet;
 import java.util.Optional;
+
+import org.mapstruct.Mapper;
 
 @Mapper(componentModel = "cdi")
 public interface StreamConfigurationMapper {

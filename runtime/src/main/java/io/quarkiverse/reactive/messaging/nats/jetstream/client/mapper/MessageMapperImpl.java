@@ -1,20 +1,22 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client.mapper;
 
+import java.util.List;
+
+import jakarta.enterprise.context.ApplicationScoped;
+
+import org.eclipse.microprofile.reactive.messaging.Message;
+
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.Payload;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.SubscribeMessage;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer.ConsumerConfiguration;
 import io.vertx.mutiny.core.Context;
-import jakarta.enterprise.context.ApplicationScoped;
-import org.eclipse.microprofile.reactive.messaging.Message;
-
-import java.util.List;
 
 @ApplicationScoped
 public record MessageMapperImpl(PayloadMapper payloadMapper) implements MessageMapper {
 
     @Override
     public <T> List<Message<T>> map(List<io.nats.client.Message> messages, ConsumerConfiguration<T> configuration,
-                                    Context context) {
+            Context context) {
         return messages.stream().map(message -> map(message, configuration, context)).toList();
     }
 

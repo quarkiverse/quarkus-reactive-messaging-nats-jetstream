@@ -1,17 +1,12 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.test.fetch;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-
-import java.time.Duration;
-import java.time.ZonedDateTime;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.Client;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.NackMetadata;
+import io.quarkiverse.reactive.messaging.nats.jetstream.test.TestSpanExporter;
+import io.quarkus.test.QuarkusUnitTest;
+import io.smallrye.mutiny.Uni;
 import jakarta.annotation.Nullable;
 import jakarta.inject.Inject;
-
 import org.eclipse.microprofile.reactive.messaging.Message;
 import org.eclipse.microprofile.reactive.messaging.Metadata;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
@@ -20,22 +15,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.nats.client.api.DeliverPolicy;
-import io.nats.client.api.ReplayPolicy;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.ClientFactory;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.stream.StreamContext;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.ConnectionFactory;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.DefaultConnectionListener;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.MessageNotFoundException;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.StreamManagement;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.NackMetadata;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ConsumerConfiguration;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.FetchConfiguration;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.FetchConsumerConfiguration;
-import io.quarkiverse.reactive.messaging.nats.jetstream.configuration.JetStreamConfiguration;
-import io.quarkiverse.reactive.messaging.nats.jetstream.test.TestSpanExporter;
-import io.quarkus.test.QuarkusUnitTest;
-import io.smallrye.mutiny.Uni;
+import java.time.Duration;
+import java.util.List;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class FetchMessagesTest {
 
@@ -47,27 +30,19 @@ public class FetchMessagesTest {
             .withConfigurationResource("application-fetch.properties");
 
     @Inject
-    JetStreamConfiguration jetStreamConfiguration;
-
-    @Inject
-    ClientFactory clientFactory;
+    Client client;
 
     @BeforeEach
-    public void setup() throws Exception {
-        try (final var connection = clientFactory.create(jetStreamConfiguration.connection(),
-                new DefaultConnectionListener()).await().atMost(Duration.ofSeconds(30))) {
-            connection.streamManagement().onItem().transformToMulti(StreamContext::purgeAll)
-                    .collect().asList()
-                    .await().atMost(Duration.ofSeconds(30));
-        }
+    public void setup() {
+        client.purgeAll().collect().asList().await().atMost(Duration.ofSeconds(30));
     }
 
     @Test
     void fetchOneMessage() throws Exception {
         final var data = new Data("test", "52b13992-749a-4943-ab8f-2403c734c648", "46c818c9-8915-48a6-9378-b8f540b0afe2");
 
-        final var consumerConfiguration = createConsumerConfiguration("fetch-data");
-        addConsumer("fetch-data-consumer", consumerConfiguration);
+        final var consumerConfiguration = new ConsumerConfiguration("fetch-test", "fetch-data-consumer", "fetch-data");
+        addConsumer(consumerConfiguration);
 
         publish(data, "fetch-data");
 
@@ -80,8 +55,8 @@ public class FetchMessagesTest {
         final var data1 = new Data("test1", "ea030796-4692-40f1-9ce5-a9cf04b5fe53", "3bd00e71-7bc3-45c3-a1aa-8f8679ff7373");
         final var data2 = new Data("test2", "4d76e337-97f8-41b9-9030-b19d4ba824be", "58707f28-74c5-45fd-b59a-be0286bb8490");
 
-        final var consumerConfiguration = createConsumerConfiguration("fetch-data");
-        addConsumer("fetch-data-consumer", consumerConfiguration);
+        final var consumerConfiguration = new ConsumerConfiguration("fetch-test", "fetch-data-consumer", "fetch-data");
+        addConsumer(consumerConfiguration);
 
         publish(data1, "fetch-data");
         publish(data2, "fetch-data");
@@ -98,8 +73,8 @@ public class FetchMessagesTest {
         final var data1 = new Data("test1", "ea030796-4692-40f1-9ce5-a9cf04b5fe53", "3bd00e71-7bc3-45c3-a1aa-8f8679ff7373");
         final var data2 = new Data("test2", "4d76e337-97f8-41b9-9030-b19d4ba824be", "58707f28-74c5-45fd-b59a-be0286bb8490");
 
-        final var consumerConfiguration = createConsumerConfiguration("fetch-data");
-        addConsumer("fetch-data-consumer", consumerConfiguration);
+        final var consumerConfiguration = new ConsumerConfiguration("fetch-test", "fetch-data-consumer", "fetch-data");
+        addConsumer(consumerConfiguration);
 
         publish(data1, "fetch-data");
         publish(data2, "fetch-data");
@@ -115,8 +90,8 @@ public class FetchMessagesTest {
     void fetchOneNotAcknowledgedWithDelayMessage() throws Exception {
         final var data1 = new Data("test1", "ea030796-4692-40f1-9ce5-a9cf04b5fe53", "3bd00e71-7bc3-45c3-a1aa-8f8679ff7373");
 
-        final var consumerConfiguration = createConsumerConfiguration("fetch-data");
-        addConsumer("fetch-data-consumer", consumerConfiguration);
+        final var consumerConfiguration = new ConsumerConfiguration("fetch-test", "fetch-data-consumer", "fetch-data");
+        addConsumer(consumerConfiguration);
 
         publish(data1, "fetch-data");
 
@@ -124,8 +99,7 @@ public class FetchMessagesTest {
         assertThat(received1).isEqualTo(data1);
 
         // The message should not be available immediately after a nack with delay
-        assertThatThrownBy(() -> next("fetch-data-consumer", "fetch-data", true))
-                .isInstanceOf(MessageNotFoundException.class);
+        assertThat(next("fetch-data-consumer", "fetch-data", true)).isNull();
 
         // Attempt to fetch the message until it is available again
         final var received2 = next("fetch-data-consumer", "fetch-data", true);
@@ -139,10 +113,10 @@ public class FetchMessagesTest {
         final var data3 = new Data("test3", "14e9aaaf-0d42-42a8-a93a-ebe37ff6a742", "974932c1-90b8-4b79-b10a-b508d7badc04");
         final var data4 = new Data("test4", "5246354a-2342-4422-9268-af95862b51fb", "1325e196-4186-47ab-8b30-5047cae77d7e");
 
-        addConsumer(data1.resourceId(), createConsumerConfiguration("resources." + data1.resourceId()));
-        addConsumer(data2.resourceId(), createConsumerConfiguration("resources." + data2.resourceId()));
-        addConsumer(data3.resourceId(), createConsumerConfiguration("resources." + data3.resourceId()));
-        addConsumer(data4.resourceId(), createConsumerConfiguration("resources." + data4.resourceId()));
+        addConsumer(new ConsumerConfiguration("fetch-test", data1.resourceId(), "resources." + data1.resourceId()));
+        addConsumer(new ConsumerConfiguration("fetch-test", data2.resourceId(), "resources." + data2.resourceId()));
+        addConsumer(new ConsumerConfiguration("fetch-test", data3.resourceId(), "resources." + data3.resourceId()));
+        addConsumer(new ConsumerConfiguration("fetch-test", data4.resourceId(), "resources." + data4.resourceId()));
 
         publish(data1, "resources." + data1.resourceId());
         publish(data2, "resources." + data2.resourceId());
@@ -170,8 +144,8 @@ public class FetchMessagesTest {
         addSubject(data1.resourceId());
         addSubject(data2.resourceId());
 
-        addConsumer(data1.resourceId(), createConsumerConfiguration(data1.resourceId()));
-        addConsumer(data2.resourceId(), createConsumerConfiguration(data2.resourceId()));
+        addConsumer(new ConsumerConfiguration("fetch-test", data1.resourceId(), data1.resourceId()));
+        addConsumer(new ConsumerConfiguration("fetch-test", data2.resourceId(), data2.resourceId()));
 
         publish(data1, data1.resourceId());
         publish(data2, data2.resourceId());
@@ -193,7 +167,7 @@ public class FetchMessagesTest {
 
         addSubject(data1.resourceId());
 
-        addConsumer(data1.resourceId(), createConsumerConfiguration(data1.resourceId()));
+        addConsumer(new ConsumerConfiguration("fetch-test", data1.resourceId(), data1.resourceId()));
 
         publish(data1, data1.resourceId());
         publish(data2, data2.resourceId());
@@ -202,205 +176,55 @@ public class FetchMessagesTest {
         assertThat(received).containsExactly(data1, data2);
     }
 
-    private void addSubject(String subject) throws Exception {
-        try (final var connection = clientFactory.create(jetStreamConfiguration.connection(),
-                new DefaultConnectionListener()).await().atMost(Duration.ofSeconds(30))) {
-            connection.streamManagement()
-                    .onItem().transformToUni(streamManagement -> streamManagement.addSubject("fetch-test", subject))
-                    .await().atMost(Duration.ofSeconds(30));
-        }
+    private void addSubject(String subject) {
+        client.addSubject("fetch-test", subject).await().atMost(Duration.ofSeconds(30));
     }
 
-    private void addConsumer(String name, ConsumerConfiguration configuration) throws Exception {
-        try (final var connection = clientFactory.create(jetStreamConfiguration.connection(),
-                new DefaultConnectionListener()).await().atMost(Duration.ofSeconds(30))) {
-            connection.addConsumerIfAbsent("fetch-test", name, configuration).await().atMost(Duration.ofSeconds(30));
-        }
+    private void addConsumer(ConsumerConfiguration configuration) {
+        client.addConsumerIfAbsent(configuration).await().atMost(Duration.ofSeconds(30));
     }
 
-    private void removeSubject(String subject) throws Exception {
-        try (final var connection = clientFactory.create(jetStreamConfiguration.connection()).await()
-                .atMost(Duration.ofSeconds(30))) {
-            connection.streamManagement()
-                    .onItem().transformToUni(streamManagement -> streamManagement.removeSubject("fetch-test", subject))
-                    .await().atMost(Duration.ofSeconds(30));
-        }
+    private void removeSubject(String subject) {
+        client.removeSubject("fetch-test", subject).await().atMost(Duration.ofSeconds(30));
     }
 
-    private void publish(Data data, String subject) throws Exception {
-        try (final var connection = clientFactory.create(jetStreamConfiguration.connection(),
-                new DefaultConnectionListener()).await().atMost(Duration.ofSeconds(30))) {
-            connection.publish(Message.of(data), "fetch-test", subject)
-                    .await()
-                    .atMost(Duration.ofSeconds(30));
-        }
+    private void publish(Data data, String subject) {
+        client.publish(Message.of(data), "fetch-test", subject)
+                .await()
+                .atMost(Duration.ofSeconds(30));
     }
 
-    private Data next(String consumer, String subject, boolean ack) throws Exception {
-        try (final var connection = clientFactory.create(jetStreamConfiguration.connection(),
-        return next(consumer, subject, ack, null);
+    private Data next(String consumer, String subject, boolean ack) {
+        return next(consumer, subject, ack, Duration.ofSeconds(30));
     }
 
-    private Data next(String consumer, String subject, boolean ack, @Nullable Duration waitDelay) throws Exception {
-        try (final var connection = connectionFactory.create(jetStreamConfiguration.connection(),
-                new DefaultConnectionListener()).await().atMost(Duration.ofSeconds(30))) {
-            final var consumerConfiguration = createConsumerConfiguration(subject);
-            final var received = connection
-                    .next("fetch-test", consumer, consumerConfiguration, Duration.ofSeconds(30))
-                    .await().atMost(Duration.ofSeconds(30));
-            if (ack) {
-                Uni.createFrom().completionStage(received.ack()).await().atMost(Duration.ofSeconds(30));
+    private Data next(String consumer, String subject, boolean ack, @Nullable Duration waitDelay) {
+        final var consumerConfiguration = new ConsumerConfiguration("fetch-test", consumer, subject);
+        final var received = client.next(consumerConfiguration, Duration.ofSeconds(30))
+                .await().atMost(Duration.ofSeconds(30));
+        if (ack) {
+            Uni.createFrom().completionStage(received.ack()).await().atMost(Duration.ofSeconds(30));
+        } else {
+            if (waitDelay != null) {
+                Uni.createFrom()
+                        .completionStage(received.nack(new RuntimeException(),
+                                Metadata.of(NackMetadata.builder().delayWait(waitDelay).build())))
+                        .await().atMost(Duration.ofSeconds(30));
             } else {
-                if (waitDelay != null) {
-                    Uni.createFrom()
-                            .completionStage(received.nack(new RuntimeException(),
-                                    Metadata.of(NackMetadata.builder().delayWait(waitDelay).build())))
-                            .await().atMost(Duration.ofSeconds(30));
-                } else {
-                    Uni.createFrom().completionStage(received.nack(new RuntimeException())).await()
-                            .atMost(Duration.ofSeconds(30));
-                }
+                Uni.createFrom().completionStage(received.nack(new RuntimeException())).await()
+                        .atMost(Duration.ofSeconds(30));
             }
-            return (Data) received.getPayload();
         }
+        return (Data) received.getPayload();
     }
 
     private List<Data> fetch(String consumer, String subject) throws Exception {
-        try (final var connection = clientFactory.create(jetStreamConfiguration.connection(),
-                new DefaultConnectionListener()).await().atMost(Duration.ofSeconds(30))) {
-            final var consumerConfiguration = createFetchConsumerConfiguration(subject);
-            final var received = connection.fetch("fetch-test", consumer, consumerConfiguration)
-                    .onItem().transformToUniAndMerge(message -> Uni.createFrom().completionStage(message.ack())
-                            .onItem().transform(ignored -> message))
-                    .collect().asList()
-                    .await().atMost(Duration.ofSeconds(30));
-            return received.stream().map(Message::getPayload).map(payload -> (Data) payload).toList();
-        }
+        final var consumerConfiguration = new ConsumerConfiguration("fetch-test", consumer, subject);
+        final var received = client.fetch(consumerConfiguration, new FetchConfiguration())
+                .onItem().transformToUniAndMerge(message -> Uni.createFrom().completionStage(message.ack())
+                        .onItem().transform(ignored -> message))
+                .collect().asList()
+                .await().atMost(Duration.ofSeconds(30));
+        return received.stream().map(Message::getPayload).map(payload -> (Data) payload).toList();
     }
-
-    private FetchConsumerConfiguration createFetchConsumerConfiguration(String subject) {
-        return new FetchConsumerConfiguration() {
-
-            @Override
-            public ConsumerConfiguration consumerConfiguration() {
-                return createConsumerConfiguration(subject);
-            }
-
-            @Override
-            public FetchConfiguration fetchConfiguration() {
-                return new FetchConfiguration() {
-                    @Override
-                    public Optional<Duration> timeout() {
-                        return Optional.of(Duration.ofSeconds(3));
-                    }
-
-                    @Override
-                    public Integer batchSize() {
-                        return 10;
-                    }
-                };
-            }
-
-        };
-    }
-
-    private ConsumerConfiguration createConsumerConfiguration(String subject) {
-        return new ConsumerConfiguration() {
-            @Override
-            public Boolean durable() {
-                return true;
-            }
-
-            @Override
-            public List<String> filterSubjects() {
-                return List.of(subject);
-            }
-
-            @Override
-            public Optional<Duration> ackWait() {
-                return Optional.empty();
-            }
-
-            @Override
-            public DeliverPolicy deliverPolicy() {
-                return DeliverPolicy.All;
-            }
-
-            @Override
-            public Optional<Long> startSequence() {
-                return Optional.empty();
-            }
-
-            @Override
-            public Optional<ZonedDateTime> startTime() {
-                return Optional.empty();
-            }
-
-            @Override
-            public Optional<String> description() {
-                return Optional.empty();
-            }
-
-            @Override
-            public Optional<Duration> inactiveThreshold() {
-                return Optional.empty();
-            }
-
-            @Override
-            public Optional<Long> maxAckPending() {
-                return Optional.empty();
-            }
-
-            @Override
-            public Optional<Long> maxDeliver() {
-                return Optional.empty();
-            }
-
-            @Override
-            public ReplayPolicy replayPolicy() {
-                return ReplayPolicy.Instant;
-            }
-
-            @Override
-            public Integer replicas() {
-                return 1;
-            }
-
-            @Override
-            public Optional<Boolean> memoryStorage() {
-                return Optional.empty();
-            }
-
-            @Override
-            public Optional<String> sampleFrequency() {
-                return Optional.empty();
-            }
-
-            @Override
-            public Map<String, String> metadata() {
-                return Map.of();
-            }
-
-            @Override
-            public Optional<List<Duration>> backoff() {
-                return Optional.empty();
-            }
-
-            @Override
-            public Optional<ZonedDateTime> pauseUntil() {
-                return Optional.empty();
-            }
-
-            @Override
-            public Optional<Class<?>> payloadType() {
-                return Optional.empty();
-            }
-
-            @Override
-            public Optional<Duration> acknowledgeTimeout() {
-                return Optional.of(Duration.ofMillis(1000));
-            }
-        };
-    }
-
 }

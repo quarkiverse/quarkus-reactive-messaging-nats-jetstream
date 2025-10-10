@@ -1,15 +1,16 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.configuration.mapper;
 
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+import org.mapstruct.Mapper;
+
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.stream.StreamConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.stream.StreamConfigurationImpl;
 import io.quarkiverse.reactive.messaging.nats.jetstream.configuration.ConnectorConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.configuration.PullConsumerConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.configuration.PushConsumerConfiguration;
-import org.mapstruct.Mapper;
-
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
 
 @Mapper(componentModel = "cdi")
 public interface StreamConfigurationMapper {
@@ -19,7 +20,8 @@ public interface StreamConfigurationMapper {
                 .map(entry -> map(entry.getKey(), entry.getValue())).toList();
     }
 
-    private io.quarkiverse.reactive.messaging.nats.jetstream.client.stream.StreamConfiguration map(String name, io.quarkiverse.reactive.messaging.nats.jetstream.configuration.StreamConfiguration configuration) {
+    private io.quarkiverse.reactive.messaging.nats.jetstream.client.stream.StreamConfiguration map(String name,
+            io.quarkiverse.reactive.messaging.nats.jetstream.configuration.StreamConfiguration configuration) {
         return StreamConfigurationImpl.builder()
                 .name(name)
                 .description(configuration.description())
@@ -47,9 +49,11 @@ public interface StreamConfigurationMapper {
                 .build();
     }
 
-    private Set<String> allSubjects(io.quarkiverse.reactive.messaging.nats.jetstream.configuration.StreamConfiguration streamConfiguration) {
+    private Set<String> allSubjects(
+            io.quarkiverse.reactive.messaging.nats.jetstream.configuration.StreamConfiguration streamConfiguration) {
         final var subjects = new HashSet<String>();
-        streamConfiguration.subjects().ifPresent(streamSubjects -> streamSubjects.forEach(subject -> subjects.add(escape(subject))));
+        streamConfiguration.subjects()
+                .ifPresent(streamSubjects -> streamSubjects.forEach(subject -> subjects.add(escape(subject))));
         streamConfiguration.pullConsumers().values().stream()
                 .map(PullConsumerConfiguration::consumerConfiguration)
                 .forEach(consumer -> subjects.addAll(consumer.filterSubjects().stream().map(this::escape).toList()));

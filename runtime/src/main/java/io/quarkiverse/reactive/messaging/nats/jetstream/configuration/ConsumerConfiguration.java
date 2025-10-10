@@ -1,14 +1,14 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.configuration;
 
-import io.nats.client.api.DeliverPolicy;
-import io.nats.client.api.ReplayPolicy;
-import io.smallrye.config.WithDefault;
-
 import java.time.Duration;
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+
+import io.nats.client.api.DeliverPolicy;
+import io.nats.client.api.ReplayPolicy;
+import io.smallrye.config.WithDefault;
 
 public interface ConsumerConfiguration {
 

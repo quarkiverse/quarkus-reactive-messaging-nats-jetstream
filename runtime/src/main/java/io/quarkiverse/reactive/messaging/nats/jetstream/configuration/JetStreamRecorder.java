@@ -22,16 +22,22 @@ public class JetStreamRecorder {
     public void setup() {
         if (configuration.getValue().autoConfiguration()) {
             try {
-                connectorConfigurationMapper.getValue().map(configuration.getValue()).forEach(client.getValue()::addStreamIfAbsent);
+                connectorConfigurationMapper.getValue().map(configuration.getValue())
+                        .forEach(client.getValue()::addStreamIfAbsent);
 
                 pullConsumerConfigurationMapper.getValue().map(configuration.getValue())
-                        .forEach(tuple -> client.getValue().addConsumerIfAbsent(tuple.consumerConfiguration(), tuple.pullConfiguration()).await().indefinitely());
+                        .forEach(tuple -> client.getValue()
+                                .addConsumerIfAbsent(tuple.consumerConfiguration(), tuple.pullConfiguration()).await()
+                                .indefinitely());
 
                 pushConsumerConfigurationMapper.getValue().map(configuration.getValue())
-                        .forEach(tuple -> client.getValue().addConsumerIfAbsent(tuple.consumerConfiguration(), tuple.pushConfiguration()).await().indefinitely());
+                        .forEach(tuple -> client.getValue()
+                                .addConsumerIfAbsent(tuple.consumerConfiguration(), tuple.pushConfiguration()).await()
+                                .indefinitely());
 
                 keyValueStoreConfigurationMapper.getValue().map(configuration.getValue())
-                        .forEach(keyValueStoreConfiguration -> client.getValue().addKeyValueStoreIfAbsent(keyValueStoreConfiguration).await().indefinitely());
+                        .forEach(keyValueStoreConfiguration -> client.getValue()
+                                .addKeyValueStoreIfAbsent(keyValueStoreConfiguration).await().indefinitely());
             } catch (Exception failure) {
                 throw new RuntimeException(
                         String.format("Unable to configure streams and key value stores: %s", failure.getMessage()),

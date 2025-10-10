@@ -5,5 +5,6 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer.PullConf
 import lombok.Builder;
 
 @Builder
-public record PullConsumerConfiguration<T>(ConsumerConfiguration<T> consumerConfiguration, PullConfiguration pullConfiguration) {
+public record PullConsumerConfiguration<T>(ConsumerConfiguration<T> consumerConfiguration,
+        PullConfiguration pullConfiguration) {
 }
