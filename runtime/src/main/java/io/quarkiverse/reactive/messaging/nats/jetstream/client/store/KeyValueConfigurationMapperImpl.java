@@ -1,7 +1,8 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client.store;
 
-import io.nats.client.api.KeyValueConfiguration;
 import jakarta.enterprise.context.ApplicationScoped;
+
+import io.nats.client.api.KeyValueConfiguration;
 
 @ApplicationScoped
 public class KeyValueConfigurationMapperImpl implements KeyValueConfigurationMapper {

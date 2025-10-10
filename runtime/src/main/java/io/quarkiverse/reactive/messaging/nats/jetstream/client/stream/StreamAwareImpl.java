@@ -1,5 +1,7 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client.stream;
 
+import java.util.HashSet;
+
 import io.nats.client.api.StreamInfo;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.ClientException;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.PurgeResult;
@@ -14,8 +16,6 @@ import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.unchecked.Unchecked;
 import io.smallrye.reactive.messaging.providers.connectors.ExecutionHolder;
 import lombok.extern.jbosslog.JBossLog;
-
-import java.util.HashSet;
 
 @JBossLog
 public record StreamAwareImpl(ExecutionHolder executionHolder, StreamStateMapper streamStateMapper,

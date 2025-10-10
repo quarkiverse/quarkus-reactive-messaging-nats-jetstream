@@ -1,11 +1,12 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.configuration.mapper;
 
+import java.util.List;
+
+import jakarta.enterprise.context.ApplicationScoped;
+
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.store.KeyValueStoreConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.store.KeyValueStoreConfigurationImpl;
 import io.quarkiverse.reactive.messaging.nats.jetstream.configuration.ConnectorConfiguration;
-import jakarta.enterprise.context.ApplicationScoped;
-
-import java.util.List;
 
 @ApplicationScoped
 public class KeyValueStoreConfigurationMapperImpl implements KeyValueStoreConfigurationMapper {
@@ -17,7 +18,7 @@ public class KeyValueStoreConfigurationMapperImpl implements KeyValueStoreConfig
     }
 
     private io.quarkiverse.reactive.messaging.nats.jetstream.client.store.KeyValueStoreConfiguration map(String name,
-                                                                                                         io.quarkiverse.reactive.messaging.nats.jetstream.configuration.KeyValueStoreConfiguration configuration) {
+            io.quarkiverse.reactive.messaging.nats.jetstream.configuration.KeyValueStoreConfiguration configuration) {
         return KeyValueStoreConfigurationImpl.builder()
                 .name(name)
                 .description(configuration.description())

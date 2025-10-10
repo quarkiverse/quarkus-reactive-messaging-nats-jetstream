@@ -1,9 +1,9 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client.api;
 
-import lombok.Builder;
-
 import java.time.Duration;
 import java.time.ZonedDateTime;
+
+import lombok.Builder;
 
 @Builder
 public record Consumer(String stream,

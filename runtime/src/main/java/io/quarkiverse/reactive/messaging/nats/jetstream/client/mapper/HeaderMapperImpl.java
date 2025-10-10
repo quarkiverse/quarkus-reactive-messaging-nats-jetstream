@@ -1,11 +1,12 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client.mapper;
 
-import io.nats.client.impl.Headers;
-import jakarta.enterprise.context.ApplicationScoped;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import jakarta.enterprise.context.ApplicationScoped;
+
+import io.nats.client.impl.Headers;
 
 @ApplicationScoped
 public class HeaderMapperImpl implements HeaderMapper {

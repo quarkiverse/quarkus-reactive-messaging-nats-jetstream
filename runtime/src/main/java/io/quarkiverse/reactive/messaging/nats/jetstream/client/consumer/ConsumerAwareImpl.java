@@ -1,5 +1,13 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer;
 
+import java.io.IOException;
+import java.time.Duration;
+import java.time.ZonedDateTime;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
+import org.eclipse.microprofile.reactive.messaging.Message;
+
 import io.nats.client.*;
 import io.nats.client.api.ConsumerInfo;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.ClientException;
@@ -19,13 +27,6 @@ import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.unchecked.Unchecked;
 import io.smallrye.reactive.messaging.providers.connectors.ExecutionHolder;
 import io.vertx.mutiny.core.Context;
-import org.eclipse.microprofile.reactive.messaging.Message;
-
-import java.io.IOException;
-import java.time.Duration;
-import java.time.ZonedDateTime;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 public record ConsumerAwareImpl(ExecutionHolder executionHolder,
         ConsumerConfigurationMapper consumerConfigurationMapper,
@@ -318,7 +319,8 @@ public record ConsumerAwareImpl(ExecutionHolder executionHolder,
                         .item(Unchecked.supplier(() -> jetStream.subscribe(null, pullSubscribeOptions(stream, consumer)))))
                 .onItem()
                 .transformToUni(subscription -> Uni.createFrom().item(
-                        Unchecked.supplier(() -> subscription.reader(configuration.batchSize(), configuration.rePullAt()))));
+                        Unchecked.supplier(() -> subscription.reader(configuration.batchSize(), configuration.rePullAt()))))
+                .onFailure().transform(failure -> new SubscribeException(stream, consumer, failure));
     }
 
     private Uni<io.nats.client.Message> next(final JetStreamReader reader, final Duration timeout) {

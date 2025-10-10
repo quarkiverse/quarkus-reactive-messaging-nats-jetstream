@@ -1,14 +1,15 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer;
 
+import java.util.List;
+
+import jakarta.enterprise.context.ApplicationScoped;
+
 import io.nats.client.api.ClusterInfo;
 import io.nats.client.api.ConsumerInfo;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.Cluster;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.Consumer;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.ConsumerConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.Replica;
-import jakarta.enterprise.context.ApplicationScoped;
-
-import java.util.List;
 
 @ApplicationScoped
 public class ConsumerMapperImpl implements ConsumerMapper {

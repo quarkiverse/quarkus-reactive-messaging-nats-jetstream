@@ -1,9 +1,9 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client.stream;
 
-import jakarta.enterprise.context.ApplicationScoped;
-
 import java.util.HashSet;
 import java.util.Optional;
+
+import jakarta.enterprise.context.ApplicationScoped;
 
 @ApplicationScoped
 public class StreamConfigurationMapperImpl implements StreamConfigurationMapper {
@@ -66,6 +66,5 @@ public class StreamConfigurationMapperImpl implements StreamConfigurationMapper 
                 .firstSequence(Optional.of(configuration.getFirstSequence()))
                 .build();
     }
-
 
 }

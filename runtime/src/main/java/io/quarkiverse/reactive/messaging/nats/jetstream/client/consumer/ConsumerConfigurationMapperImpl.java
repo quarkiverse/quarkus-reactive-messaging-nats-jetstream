@@ -1,9 +1,10 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer;
 
-import io.nats.client.api.AckPolicy;
+import java.time.Duration;
+
 import jakarta.enterprise.context.ApplicationScoped;
 
-import java.time.Duration;
+import io.nats.client.api.AckPolicy;
 
 @ApplicationScoped
 public class ConsumerConfigurationMapperImpl implements ConsumerConfigurationMapper {
@@ -15,7 +16,7 @@ public class ConsumerConfigurationMapperImpl implements ConsumerConfigurationMap
 
     @Override
     public <T> io.nats.client.api.ConsumerConfiguration map(final ConsumerConfiguration<T> configuration,
-                                                            final PullConfiguration pullConfiguration) {
+            final PullConfiguration pullConfiguration) {
         var builder = toBuilder(configuration);
         builder = pullConfiguration.maxWaiting().map(builder::maxPullWaiting).orElse(builder);
         return builder.build();
@@ -23,7 +24,7 @@ public class ConsumerConfigurationMapperImpl implements ConsumerConfigurationMap
 
     @Override
     public <T> io.nats.client.api.ConsumerConfiguration map(final ConsumerConfiguration<T> configuration,
-                                                            final PushConfiguration pushConfiguration) {
+            final PushConfiguration pushConfiguration) {
         var builder = toBuilder(configuration);
         builder = builder.deliverSubject(pushConfiguration.deliverSubject());
         builder = pushConfiguration.flowControl().map(builder::flowControl).orElse(builder);

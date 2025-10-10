@@ -2,8 +2,6 @@ package io.quarkiverse.reactive.messaging.nats.jetstream.client.store;
 
 import java.util.List;
 
-import jakarta.enterprise.context.ApplicationScoped;
-
 import io.nats.client.KeyValue;
 import io.nats.client.KeyValueManagement;
 import io.nats.client.api.KeyValueConfiguration;

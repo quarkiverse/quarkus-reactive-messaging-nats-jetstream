@@ -1,15 +1,16 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.configuration.mapper;
 
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+import jakarta.enterprise.context.ApplicationScoped;
+
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.stream.StreamConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.stream.StreamConfigurationImpl;
 import io.quarkiverse.reactive.messaging.nats.jetstream.configuration.ConnectorConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.configuration.PullConsumerConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.configuration.PushConsumerConfiguration;
-import jakarta.enterprise.context.ApplicationScoped;
-
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
 
 @ApplicationScoped
 public class StreamConfigurationMapperImpl implements StreamConfigurationMapper {
@@ -21,7 +22,7 @@ public class StreamConfigurationMapperImpl implements StreamConfigurationMapper 
     }
 
     private io.quarkiverse.reactive.messaging.nats.jetstream.client.stream.StreamConfiguration map(String name,
-                                                                                                   io.quarkiverse.reactive.messaging.nats.jetstream.configuration.StreamConfiguration configuration) {
+            io.quarkiverse.reactive.messaging.nats.jetstream.configuration.StreamConfiguration configuration) {
         return StreamConfigurationImpl.builder()
                 .name(name)
                 .description(configuration.description())

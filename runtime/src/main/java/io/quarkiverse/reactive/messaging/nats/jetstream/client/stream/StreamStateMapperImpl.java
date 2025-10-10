@@ -1,10 +1,11 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client.stream;
 
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.StreamState;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.SubjectState;
+import java.util.List;
+
 import jakarta.enterprise.context.ApplicationScoped;
 
-import java.util.List;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.StreamState;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.SubjectState;
 
 @ApplicationScoped
 public class StreamStateMapperImpl implements StreamStateMapper {

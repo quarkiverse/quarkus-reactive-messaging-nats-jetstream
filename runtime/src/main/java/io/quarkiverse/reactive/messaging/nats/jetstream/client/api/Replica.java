@@ -1,8 +1,8 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client.api;
 
-import lombok.Builder;
-
 import java.time.Duration;
+
+import lombok.Builder;
 
 @Builder
 public record Replica(String name,

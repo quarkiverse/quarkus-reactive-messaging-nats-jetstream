@@ -1,5 +1,12 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client;
 
+import java.time.Duration;
+import java.time.ZonedDateTime;
+
+import jakarta.enterprise.context.ApplicationScoped;
+
+import org.eclipse.microprofile.reactive.messaging.Message;
+
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.Consumer;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.PurgeResult;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.StreamResult;
@@ -20,12 +27,7 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.client.tracing.TracerFac
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.reactive.messaging.providers.connectors.ExecutionHolder;
-import jakarta.enterprise.context.ApplicationScoped;
 import lombok.extern.jbosslog.JBossLog;
-import org.eclipse.microprofile.reactive.messaging.Message;
-
-import java.time.Duration;
-import java.time.ZonedDateTime;
 
 @JBossLog
 @ApplicationScoped
@@ -36,19 +38,21 @@ public class ClientImpl implements Client {
     private final KeyValueStoreAware keyValueStoreDelegate;
 
     public ClientImpl(ExecutionHolder executionHolder,
-                      Connection connection,
-                      TracerFactory tracerFactory,
-                      PayloadMapper payloadMapper,
-                      ConsumerConfigurationMapper consumerConfigurationMapper,
-                      ConsumerMapper consumerMapper,
-                      MessageMapper messageMapper,
-                      StreamStateMapper streamStateMapper,
-                      StreamConfigurationMapper streamConfigurationMapper,
-                      KeyValueConfigurationMapper keyValueConfigurationMapper) {
+            Connection connection,
+            TracerFactory tracerFactory,
+            PayloadMapper payloadMapper,
+            ConsumerConfigurationMapper consumerConfigurationMapper,
+            ConsumerMapper consumerMapper,
+            MessageMapper messageMapper,
+            StreamStateMapper streamStateMapper,
+            StreamConfigurationMapper streamConfigurationMapper,
+            KeyValueConfigurationMapper keyValueConfigurationMapper) {
         this.publisherDelegate = new PublisherAwareImpl(executionHolder, tracerFactory, payloadMapper, connection);
-        this.consumerDelegate = new ConsumerAwareImpl(executionHolder, consumerConfigurationMapper, consumerMapper, tracerFactory, messageMapper, payloadMapper, connection);
+        this.consumerDelegate = new ConsumerAwareImpl(executionHolder, consumerConfigurationMapper, consumerMapper,
+                tracerFactory, messageMapper, payloadMapper, connection);
         this.streamDelegate = new StreamAwareImpl(executionHolder, streamStateMapper, streamConfigurationMapper, connection);
-        this.keyValueStoreDelegate = new KeyValueStoreAwareImpl(executionHolder, payloadMapper, keyValueConfigurationMapper, connection);
+        this.keyValueStoreDelegate = new KeyValueStoreAwareImpl(executionHolder, payloadMapper, keyValueConfigurationMapper,
+                connection);
     }
 
     @Override
@@ -138,13 +142,13 @@ public class ClientImpl implements Client {
 
     @Override
     public <T> Multi<Message<T>> subscribe(ConsumerConfiguration<T> configuration, PullConfiguration pullConfiguration,
-                                           ConsumerListener<T> listener) {
+            ConsumerListener<T> listener) {
         return consumerDelegate.subscribe(configuration, pullConfiguration, listener);
     }
 
     @Override
     public <T> Multi<Message<T>> subscribe(ConsumerConfiguration<T> configuration, PushConfiguration pushConfiguration,
-                                           ConsumerListener<T> listener) {
+            ConsumerListener<T> listener) {
         return consumerDelegate.subscribe(configuration, pushConfiguration, listener);
     }
 

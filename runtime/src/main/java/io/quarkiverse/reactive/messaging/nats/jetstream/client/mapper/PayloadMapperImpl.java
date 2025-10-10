@@ -3,6 +3,7 @@ package io.quarkiverse.reactive.messaging.nats.jetstream.client.mapper;
 import static io.nats.client.support.NatsJetStreamConstants.MSG_ID_HDR;
 import static io.quarkiverse.reactive.messaging.nats.jetstream.client.api.JetStreamMessage.MESSAGE_TYPE_HEADER;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -25,7 +26,7 @@ public class PayloadMapperImpl implements PayloadMapper {
                 .id(payload.id())
                 .data(serializer.toBytes(payload.data()))
                 .type(payload.type())
-                .headers(payload.headers())
+                .headers(new HashMap<>(payload.headers()))
                 .build();
     }
 
@@ -35,7 +36,7 @@ public class PayloadMapperImpl implements PayloadMapper {
                 .id(payload.id())
                 .type(payload.type())
                 .data(serializer.readValue(payload.data(), payload.type()))
-                .headers(payload.headers())
+                .headers(new HashMap<>(payload.headers()))
                 .build();
     }
 
@@ -76,8 +77,9 @@ public class PayloadMapperImpl implements PayloadMapper {
         return GenericPayload.<T, T> builder()
                 .data(message.getPayload())
                 .type((Class<T>) message.getPayload().getClass())
-                .headers(metadata.flatMap(publishMessageMetadata -> Optional.ofNullable(publishMessageMetadata.payload()))
-                        .flatMap(payload -> Optional.ofNullable(payload.headers())).orElseGet(Map::of))
+                .headers(new HashMap<>(
+                        metadata.flatMap(publishMessageMetadata -> Optional.ofNullable(publishMessageMetadata.payload()))
+                                .flatMap(payload -> Optional.ofNullable(payload.headers())).orElseGet(Map::of)))
                 .id(metadata.flatMap(publishMessageMetadata -> Optional.ofNullable(publishMessageMetadata.payload()))
                         .flatMap(payload -> Optional.ofNullable(payload.id())).orElseGet(() -> UUID.randomUUID().toString()))
                 .build();

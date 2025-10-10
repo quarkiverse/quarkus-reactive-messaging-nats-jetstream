@@ -1,7 +1,8 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.configuration.mapper;
 
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer.ConsumerConfigurationImpl;
 import jakarta.enterprise.context.ApplicationScoped;
+
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer.ConsumerConfigurationImpl;
 
 @ApplicationScoped
 public class ConsumerConfigurationMapperImpl implements ConsumerConfigurationMapper {
@@ -9,7 +10,7 @@ public class ConsumerConfigurationMapperImpl implements ConsumerConfigurationMap
     @Override
     @SuppressWarnings("unchecked")
     public <T> io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer.ConsumerConfiguration<T> map(String stream,
-                                                                                                              String name, io.quarkiverse.reactive.messaging.nats.jetstream.configuration.ConsumerConfiguration configuration) {
+            String name, io.quarkiverse.reactive.messaging.nats.jetstream.configuration.ConsumerConfiguration configuration) {
         return ConsumerConfigurationImpl.<T> builder()
                 .stream(stream)
                 .name(name)
