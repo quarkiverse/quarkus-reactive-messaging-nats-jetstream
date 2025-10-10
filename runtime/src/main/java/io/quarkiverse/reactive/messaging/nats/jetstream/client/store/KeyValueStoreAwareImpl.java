@@ -19,7 +19,6 @@ import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.unchecked.Unchecked;
 import io.smallrye.reactive.messaging.providers.connectors.ExecutionHolder;
 
-@ApplicationScoped
 public record KeyValueStoreAwareImpl(ExecutionHolder executionHolder, PayloadMapper payloadMapper,
         KeyValueConfigurationMapper keyValueConfigurationMapper,
         Connection connection) implements KeyValueStoreAware, ContextAware {

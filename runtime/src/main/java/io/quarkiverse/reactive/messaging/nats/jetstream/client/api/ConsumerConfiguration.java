@@ -8,7 +8,9 @@ import java.util.Map;
 import io.nats.client.api.AckPolicy;
 import io.nats.client.api.DeliverPolicy;
 import io.nats.client.api.ReplayPolicy;
+import lombok.Builder;
 
+@Builder
 public record ConsumerConfiguration(DeliverPolicy deliverPolicy,
         AckPolicy ackPolicy,
         ReplayPolicy replayPolicy,
@@ -26,10 +28,10 @@ public record ConsumerConfiguration(DeliverPolicy deliverPolicy,
         Long startSequence, // server side this is unsigned
         Long maxDeliver,
         Long rateLimit, // server side this is unsigned
-        Integer maxAckPending,
-        Integer maxPullWaiting,
-        Integer maxBatch,
-        Integer maxBytes,
+        Long maxAckPending,
+        Long maxPullWaiting,
+        Long maxBatch,
+        Long maxBytes,
         Integer numReplicas,
         ZonedDateTime pauseUntil,
         Boolean flowControl,

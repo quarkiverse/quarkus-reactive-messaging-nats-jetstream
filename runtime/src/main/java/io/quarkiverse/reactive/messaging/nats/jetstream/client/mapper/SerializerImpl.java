@@ -4,9 +4,12 @@ import jakarta.enterprise.context.ApplicationScoped;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.RequiredArgsConstructor;
 
+@RequiredArgsConstructor
 @ApplicationScoped
-public record SerializerImpl(ObjectMapper objectMapper) implements Serializer {
+public class SerializerImpl implements Serializer {
+    private final ObjectMapper objectMapper;
 
     @Override
     public <T> T readValue(byte[] data, Class<T> type) {

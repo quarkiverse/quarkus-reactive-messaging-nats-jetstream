@@ -4,6 +4,7 @@ import java.util.List;
 
 import jakarta.enterprise.context.ApplicationScoped;
 
+import lombok.RequiredArgsConstructor;
 import org.eclipse.microprofile.reactive.messaging.Message;
 
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.Payload;
@@ -11,8 +12,10 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.SubscribeMess
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer.ConsumerConfiguration;
 import io.vertx.mutiny.core.Context;
 
+@RequiredArgsConstructor
 @ApplicationScoped
-public record MessageMapperImpl(PayloadMapper payloadMapper) implements MessageMapper {
+public class MessageMapperImpl implements MessageMapper {
+    private final PayloadMapper payloadMapper;
 
     @Override
     public <T> List<Message<T>> map(List<io.nats.client.Message> messages, ConsumerConfiguration<T> configuration,

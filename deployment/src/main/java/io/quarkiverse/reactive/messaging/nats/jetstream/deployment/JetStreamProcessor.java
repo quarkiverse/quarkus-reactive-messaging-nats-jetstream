@@ -1,19 +1,16 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.deployment;
 
-import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
-
 import io.nats.client.Options;
 import io.quarkiverse.reactive.messaging.nats.jetstream.JetStreamConnector;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.ClientImpl;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.connection.ConnectionFactoryImpl;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer.ConsumerAwareImpl;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer.ConsumerConfigurationMapperImpl;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer.ConsumerMapperImpl;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.mapper.*;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.mapper.HeaderMapperImpl;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.mapper.MessageMapperImpl;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.mapper.PayloadMapperImpl;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.mapper.SerializerImpl;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.store.KeyValueConfigurationMapperImpl;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.store.KeyValueStoreAwareImpl;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.stream.StreamAwareImpl;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.stream.StreamConfigurationMapperImpl;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.stream.StreamStateMapperImpl;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.tracing.TracerFactoryImpl;
@@ -31,6 +28,8 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.smallrye.reactive.messaging.providers.connectors.ExecutionHolder;
+
+import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 
 class JetStreamProcessor {
     static final String FEATURE = "reactive-messaging-nats-jetstream";
@@ -62,16 +61,13 @@ class JetStreamProcessor {
         buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(JetStreamConnector.class));
         buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(ClientImpl.class));
         buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(ConnectionFactoryImpl.class));
-        buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(ConsumerAwareImpl.class));
         buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(ConsumerConfigurationMapperImpl.class));
         buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(ConsumerMapperImpl.class));
         buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(HeaderMapperImpl.class));
         buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(MessageMapperImpl.class));
         buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(PayloadMapperImpl.class));
         buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(SerializerImpl.class));
-        buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(KeyValueStoreAwareImpl.class));
         buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(KeyValueConfigurationMapperImpl.class));
-        buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(StreamAwareImpl.class));
         buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(StreamConfigurationMapperImpl.class));
         buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(StreamStateMapperImpl.class));
         buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(TracerFactoryImpl.class));

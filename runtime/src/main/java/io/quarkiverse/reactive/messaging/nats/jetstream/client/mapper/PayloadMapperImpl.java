@@ -11,9 +11,13 @@ import jakarta.enterprise.context.ApplicationScoped;
 
 import io.nats.client.impl.Headers;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.*;
+import lombok.RequiredArgsConstructor;
 
+@RequiredArgsConstructor
 @ApplicationScoped
-public record PayloadMapperImpl(Serializer serializer, HeaderMapper headerMapper) implements PayloadMapper {
+public class PayloadMapperImpl implements PayloadMapper {
+    private final Serializer serializer;
+    private final HeaderMapper headerMapper;
 
     @Override
     public <T> SerializedPayload<T> map(Payload<T, T> payload) {

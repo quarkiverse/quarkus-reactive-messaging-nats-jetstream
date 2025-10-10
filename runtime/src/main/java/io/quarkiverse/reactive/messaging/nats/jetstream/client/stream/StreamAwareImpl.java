@@ -1,9 +1,5 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client.stream;
 
-import java.util.HashSet;
-
-import jakarta.enterprise.context.ApplicationScoped;
-
 import io.nats.client.api.StreamInfo;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.ClientException;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.PurgeResult;
@@ -19,8 +15,9 @@ import io.smallrye.mutiny.unchecked.Unchecked;
 import io.smallrye.reactive.messaging.providers.connectors.ExecutionHolder;
 import lombok.extern.jbosslog.JBossLog;
 
+import java.util.HashSet;
+
 @JBossLog
-@ApplicationScoped
 public record StreamAwareImpl(ExecutionHolder executionHolder, StreamStateMapper streamStateMapper,
         StreamConfigurationMapper streamConfigurationMapper,
         Connection connection) implements StreamAware, ContextAware, JetStreamAware {
@@ -76,7 +73,7 @@ public record StreamAwareImpl(ExecutionHolder executionHolder, StreamStateMapper
     @Override
     public Uni<StreamState> streamState(final String streamName) {
         return withContext(context -> context.executeBlocking(streamInfo(streamName))
-                .onItem().transform(Unchecked.function(streamInfo -> streamStateMapper.of(streamInfo.getStreamState())))
+                .onItem().transform(Unchecked.function(streamInfo -> streamStateMapper.map(streamInfo.getStreamState())))
                 .onFailure().transform(ClientException::new));
     }
 

@@ -15,11 +15,15 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.configuration.mapper.Pul
 import io.quarkiverse.reactive.messaging.nats.jetstream.configuration.mapper.PullConsumerConfigurationMapper;
 import io.quarkiverse.reactive.messaging.nats.jetstream.configuration.mapper.PushConsumerConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.configuration.mapper.PushConsumerConfigurationMapper;
+import lombok.RequiredArgsConstructor;
 
+@RequiredArgsConstructor
 @ApplicationScoped
-public record MessagePublisherProcessorFactory(ConnectorConfiguration configuration, Client client,
-        PullConsumerConfigurationMapper pullConsumerConfigurationMapper,
-        PushConsumerConfigurationMapper pushConsumerConfigurationMapper) {
+public class MessagePublisherProcessorFactory {
+    private final ConnectorConfiguration configuration;
+    private final Client client;
+    private final PullConsumerConfigurationMapper pullConsumerConfigurationMapper;
+    private final PushConsumerConfigurationMapper pushConsumerConfigurationMapper;
 
     public MessagePublisherProcessor<?> create(String channel, String stream, String consumer, Duration retryBackoff) {
         return createPullPublisherProcessor(channel, stream, consumer, retryBackoff)

@@ -9,10 +9,12 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer.PushConf
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer.PushConfigurationImpl;
 import io.quarkiverse.reactive.messaging.nats.jetstream.configuration.ConnectorConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.configuration.StreamConfiguration;
+import lombok.RequiredArgsConstructor;
 
+@RequiredArgsConstructor
 @ApplicationScoped
-public record PushConsumerConfigurationMapperImpl(
-        ConsumerConfigurationMapper consumerConfigurationMapper) implements PushConsumerConfigurationMapper {
+public class PushConsumerConfigurationMapperImpl implements PushConsumerConfigurationMapper {
+    private final ConsumerConfigurationMapper consumerConfigurationMapper;
 
     @Override
     public <T> List<PushConsumerConfiguration<T>> map(ConnectorConfiguration configuration) {

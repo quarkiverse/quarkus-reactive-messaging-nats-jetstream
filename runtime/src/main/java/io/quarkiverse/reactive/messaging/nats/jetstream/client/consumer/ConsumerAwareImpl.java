@@ -1,15 +1,5 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer;
 
-import java.io.IOException;
-import java.time.Duration;
-import java.time.ZonedDateTime;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-
-import jakarta.enterprise.context.ApplicationScoped;
-
-import org.eclipse.microprofile.reactive.messaging.Message;
-
 import io.nats.client.*;
 import io.nats.client.api.ConsumerInfo;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.ClientException;
@@ -29,8 +19,14 @@ import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.unchecked.Unchecked;
 import io.smallrye.reactive.messaging.providers.connectors.ExecutionHolder;
 import io.vertx.mutiny.core.Context;
+import org.eclipse.microprofile.reactive.messaging.Message;
 
-@ApplicationScoped
+import java.io.IOException;
+import java.time.Duration;
+import java.time.ZonedDateTime;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
 public record ConsumerAwareImpl(ExecutionHolder executionHolder,
         ConsumerConfigurationMapper consumerConfigurationMapper,
         ConsumerMapper consumerMapper, TracerFactory tracerFactory,
