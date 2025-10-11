@@ -43,6 +43,7 @@ public class StreamConfigurationMapperImpl implements StreamConfigurationMapper 
     @Override
     public StreamConfiguration map(io.nats.client.api.StreamConfiguration configuration) {
         return StreamConfigurationImpl.builder()
+                .name(configuration.getName())
                 .description(Optional.ofNullable(configuration.getDescription()))
                 .subjects(new HashSet<>(configuration.getSubjects()))
                 .replicas(configuration.getReplicas())

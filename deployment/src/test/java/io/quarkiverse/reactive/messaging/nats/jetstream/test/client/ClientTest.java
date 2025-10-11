@@ -64,4 +64,22 @@ public class ClientTest {
         client.deleteMessage("client-test", sequence, true).await().atMost(TIMEOUT);
     }
 
+    @Test
+    void streamState() {
+        var state = client.streamState("client-test").await().atMost(TIMEOUT);
+        assertThat(state).isNotNull();
+    }
+
+    @Test
+    void streamConfiguration() {
+        var configuration = client.streamConfiguration("client-test").await().atMost(TIMEOUT);
+        assertThat(configuration).isNotNull();
+        assertThat(configuration.name()).isEqualTo("client-test");
+    }
+
+    @Test
+    void purgeAll() {
+        var result = client.purgeAll().collect().asList().await().atMost(TIMEOUT);
+        assertThat(result).hasSizeGreaterThanOrEqualTo(1);
+    }
 }
