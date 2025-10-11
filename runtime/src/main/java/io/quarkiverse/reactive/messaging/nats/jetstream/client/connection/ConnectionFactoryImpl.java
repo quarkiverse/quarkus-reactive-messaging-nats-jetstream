@@ -2,6 +2,7 @@ package io.quarkiverse.reactive.messaging.nats.jetstream.client.connection;
 
 import static io.nats.client.Options.DEFAULT_RECONNECT_WAIT;
 
+import jakarta.annotation.PreDestroy;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Produces;
 
@@ -12,12 +13,15 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.configuration.ConnectorC
 import io.quarkus.tls.TlsConfiguration;
 import io.quarkus.tls.TlsConfigurationRegistry;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.jbosslog.JBossLog;
 
 @ApplicationScoped
 @RequiredArgsConstructor
+@JBossLog
 public class ConnectionFactoryImpl implements ConnectionFactory {
     private final ConnectorConfiguration configuration;
     private final TlsConfigurationRegistry tlsConfigurationRegistry;
+    private Connection connection;
 
     @ApplicationScoped
     @Produces
@@ -25,9 +29,21 @@ public class ConnectionFactoryImpl implements ConnectionFactory {
     public Connection create() {
         try {
             final var options = createOptions();
-            return new ConnectionImpl(Nats.connect(options));
+            this.connection = new ConnectionImpl(Nats.connect(options));
+            return connection;
         } catch (Exception e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    @PreDestroy
+    public void closeConnection() {
+        if (connection != null) {
+            try {
+                connection.close();
+            } catch (Exception e) {
+                log.warn("Failed to close NATS connection", e);
+            }
         }
     }
 

@@ -43,7 +43,7 @@ public class KeyValueStoreTest {
                 .pathParam("key", "test-key")
                 .body(data)
                 .put("/key-value/{key}")
-                .then().statusCode(204);
+                .then().statusCode(200);
     }
 
     @Test
@@ -56,7 +56,7 @@ public class KeyValueStoreTest {
                 .pathParam("key", "test-key-2")
                 .body(data)
                 .put("/key-value/{key}")
-                .then().statusCode(204);
+                .then().statusCode(200);
 
         final var value = given()
                 .filters(new RequestLoggingFilter(), new ResponseLoggingFilter())
@@ -78,7 +78,7 @@ public class KeyValueStoreTest {
                 .pathParam("key", "test-key-3")
                 .body(data)
                 .put("/key-value/{key}")
-                .then().statusCode(204);
+                .then().statusCode(200);
 
         final var value = given()
                 .filters(new RequestLoggingFilter(), new ResponseLoggingFilter())

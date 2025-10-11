@@ -26,7 +26,7 @@ public class PayloadMapperImpl implements PayloadMapper {
                 .id(payload.id())
                 .data(serializer.toBytes(payload.data()))
                 .type(payload.type())
-                .headers(new HashMap<>(payload.headers()))
+                .headers(payload.headers() != null ? new HashMap<>(payload.headers()) : new HashMap<>())
                 .build();
     }
 
@@ -36,7 +36,7 @@ public class PayloadMapperImpl implements PayloadMapper {
                 .id(payload.id())
                 .type(payload.type())
                 .data(serializer.readValue(payload.data(), payload.type()))
-                .headers(new HashMap<>(payload.headers()))
+                .headers(payload.headers() != null ? new HashMap<>(payload.headers()) : new HashMap<>())
                 .build();
     }
 

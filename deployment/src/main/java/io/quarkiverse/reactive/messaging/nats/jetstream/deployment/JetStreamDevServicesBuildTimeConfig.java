@@ -1,6 +1,6 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.deployment;
 
-import java.util.Optional;
+import java.util.OptionalInt;
 
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
@@ -23,7 +23,7 @@ public interface JetStreamDevServicesBuildTimeConfig {
      * <p>
      * If not defined, the port will be chosen randomly.
      */
-    Optional<Integer> port();
+    OptionalInt port();
 
     /**
      * The image to use.
@@ -59,4 +59,13 @@ public interface JetStreamDevServicesBuildTimeConfig {
      */
     @WithDefault("nats")
     String serviceName();
+
+    @WithDefault("guest")
+    String username();
+
+    @WithDefault("guest")
+    String password();
+
+    @WithDefault("false")
+    Boolean sslEnabled();
 }

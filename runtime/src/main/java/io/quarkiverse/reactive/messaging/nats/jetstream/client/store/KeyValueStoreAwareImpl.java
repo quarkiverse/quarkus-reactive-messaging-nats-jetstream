@@ -42,7 +42,6 @@ public record KeyValueStoreAwareImpl(ExecutionHolder executionHolder, PayloadMap
                 .onItem().ifNull().failWith(() -> new KeyValueNotFoundException(bucketName, key))
                 .onItem().ifNotNull()
                 .transformToUni(keyValue -> Uni.createFrom().item(Unchecked.supplier(() -> keyValue.get(key))))
-                .onItem().ifNull().failWith(() -> new KeyValueNotFoundException(bucketName, key))
                 .onItem().ifNotNull().transform(keyValueEntry -> GenericSerializedPayload
                         .<T> builder()
                         .data(keyValueEntry.getValue())
