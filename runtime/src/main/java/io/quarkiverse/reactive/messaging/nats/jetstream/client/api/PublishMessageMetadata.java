@@ -4,6 +4,7 @@ import lombok.Builder;
 
 @Builder
 public record PublishMessageMetadata(String stream,
-        String subject,
-        SerializedPayload<?> payload) {
+                                     String subject,
+                                     SerializedPayload<?> payload,
+                                     Long sequence) {
 }

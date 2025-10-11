@@ -1,9 +1,10 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client.publisher;
 
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.ErrorListener;
+import org.eclipse.microprofile.reactive.messaging.Message;
 
-public interface PublishListener extends ErrorListener {
+public interface PublishListener<T> extends ErrorListener {
 
-    void onPublished(String messageId, Long sequence);
+    void onPublished(Message<T> message);
 
 }

@@ -61,7 +61,7 @@ public class ClientImpl implements Client {
     }
 
     @Override
-    public <T> Uni<Message<T>> publish(Message<T> message, String stream, String subject, PublishListener listener) {
+    public <T> Uni<Message<T>> publish(Message<T> message, String stream, String subject, PublishListener<T> listener) {
         return publisherDelegate.publish(message, stream, subject, listener);
     }
 
@@ -71,7 +71,7 @@ public class ClientImpl implements Client {
     }
 
     @Override
-    public <T> Multi<Message<T>> publish(Multi<Message<T>> messages, String stream, String subject, PublishListener listener) {
+    public <T> Multi<Message<T>> publish(Multi<Message<T>> messages, String stream, String subject, PublishListener<T> listener) {
         return publisherDelegate.publish(messages, stream, subject, listener);
     }
 

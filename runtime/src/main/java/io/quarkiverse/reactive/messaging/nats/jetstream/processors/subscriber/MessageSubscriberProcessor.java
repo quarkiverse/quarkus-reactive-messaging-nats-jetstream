@@ -4,6 +4,7 @@ import java.time.Duration;
 import java.util.concurrent.Flow;
 import java.util.concurrent.atomic.AtomicReference;
 
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.PublishMessageMetadata;
 import org.eclipse.microprofile.reactive.messaging.Message;
 
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.Client;
@@ -15,7 +16,7 @@ import io.smallrye.reactive.messaging.providers.helpers.MultiUtils;
 import lombok.extern.jbosslog.JBossLog;
 
 @JBossLog
-public class MessageSubscriberProcessor<T> implements MessageProcessor, PublishListener {
+public class MessageSubscriberProcessor<T> implements MessageProcessor, PublishListener<T> {
     private final String channel;
     private final String stream;
     private final String subject;
@@ -62,9 +63,8 @@ public class MessageSubscriberProcessor<T> implements MessageProcessor, PublishL
     }
 
     @Override
-    public void onPublished(String messageId, Long sequence) {
-        log.debugf("Published message with id: %s and sequence: %s to stream: %s and subject: %s", messageId, sequence, stream,
-                subject);
+    public void onPublished(Message<T> message) {
+        message.getMetadata(PublishMessageMetadata.class).ifPresent(metadata -> log.infof("Published message with id: %s and sequence: %s", metadata.payload().id(), metadata.sequence()));
         health.set(new Health(true, "Subscriber processor active for channel: " + channel()));
     }
 

@@ -9,10 +9,9 @@ public interface PublisherAware {
 
     <T> Uni<Message<T>> publish(Message<T> message, String stream, String subject);
 
-    <T> Uni<Message<T>> publish(Message<T> message, String stream, String subject, PublishListener listener);
+    <T> Uni<Message<T>> publish(Message<T> message, String stream, String subject, PublishListener<T> listener);
 
     <T> Multi<Message<T>> publish(Multi<Message<T>> messages, String stream, String subject);
 
-    <T> Multi<Message<T>> publish(Multi<Message<T>> messages, String stream, String subject, PublishListener listener);
-
+    <T> Multi<Message<T>> publish(Multi<Message<T>> messages, String stream, String subject, PublishListener<T> listener);
 }
