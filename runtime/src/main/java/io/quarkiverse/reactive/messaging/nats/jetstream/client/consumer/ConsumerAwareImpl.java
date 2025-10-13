@@ -18,15 +18,17 @@ import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.unchecked.Unchecked;
 import io.smallrye.reactive.messaging.providers.connectors.ExecutionHolder;
-import io.vertx.mutiny.core.Context;
+import lombok.extern.jbosslog.JBossLog;
 import org.eclipse.microprofile.reactive.messaging.Message;
 
 import java.io.IOException;
 import java.time.Duration;
 import java.time.ZonedDateTime;
+import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+@JBossLog
 public record ConsumerAwareImpl(ExecutionHolder executionHolder,
                                 ConsumerConfigurationMapper consumerConfigurationMapper,
                                 ConsumerMapper consumerMapper, TracerFactory tracerFactory,
@@ -109,9 +111,8 @@ public record ConsumerAwareImpl(ExecutionHolder executionHolder,
     public <T> Uni<Message<T>> next(final ConsumerConfiguration<T> configuration, final Duration timeout) {
         return withContext(context -> context.executeBlocking(next(configuration.stream(), configuration.name(), timeout)
                 .runSubscriptionOn(context::runOnContext)
-                .onItem().ifNotNull().transformToUni(message -> transformMessage(message, configuration, context))
-                .onItem().ifNotNull()
-                .transformToUni(message -> tracerFactory.<T>create(TracerType.Subscribe).withTrace(message,
+                .onItem().ifNotNull().transform(message -> messageMapper.map(message, configuration, context))
+                .onItem().ifNotNull().transformToUni(message -> tracerFactory.<T>create(TracerType.Subscribe).withTrace(message,
                         new AttachContextTraceSupplier<>()))
                 .onFailure().transform(ClientException::new)));
     }
@@ -125,7 +126,7 @@ public record ConsumerAwareImpl(ExecutionHolder executionHolder,
                 .onItem().transformToMulti(consumerContext -> fetch(consumerContext, fetchConfiguration)
                         .runSubscriptionOn(executor)
                         .emitOn(context::runOnContext)
-                        .onItem().transformToUniAndMerge(message -> transformMessage(message, configuration, context))
+                        .onItem().transform(message -> messageMapper.map(message, configuration, context))
                         .onItem()
                         .transformToUniAndMerge(message -> tracerFactory.<T>create(TracerType.Subscribe).withTrace(message,
                                 new AttachContextTraceSupplier<>()))
@@ -164,7 +165,8 @@ public record ConsumerAwareImpl(ExecutionHolder executionHolder,
         return withContext(context -> subscribe(configuration.stream(), configuration.name(), pullConfiguration)
                 .runSubscriptionOn(pullExecutor)
                 .emitOn(context::runOnContext)
-                .onItem().transformToUniAndMerge(message -> transformMessage(message, configuration, context))
+                .select().where(Objects::nonNull)
+                .onItem().transform(message -> messageMapper.map(message, configuration, context))
                 .onItem().transformToUniAndMerge(message -> tracer.withTrace(message, msg -> msg)))
                 .onItem().invoke(listener::onMessage)
                 .onFailure().invoke(listener::onError)
@@ -191,7 +193,7 @@ public record ConsumerAwareImpl(ExecutionHolder executionHolder,
                     }
                 })
                 .emitOn(context::runOnContext)
-                .onItem().transformToUniAndMerge(message -> transformMessage(message, configuration, context))
+                .onItem().transform(message -> messageMapper.map(message, configuration, context))
                 .onItem().transformToUniAndMerge(message -> tracer.withTrace(message, msg -> msg)))
                 .onItem().invoke(listener::onMessage)
                 .onFailure().invoke(listener::onError)
@@ -211,14 +213,6 @@ public record ConsumerAwareImpl(ExecutionHolder executionHolder,
                 .onItem()
                 .transformToUni(jetStreamManagement -> Uni.createFrom()
                         .item(Unchecked.supplier(() -> jetStreamManagement.createConsumer(stream, configuration))));
-    }
-
-    private <T> Uni<Message<T>> transformMessage(final io.nats.client.Message message,
-                                                 final ConsumerConfiguration<T> configuration,
-                                                 final Context context) {
-        return Uni.createFrom()
-                .item(Unchecked.supplier(
-                        () -> messageMapper.map(message, configuration, context)));
     }
 
     private Uni<ConsumerInfo> consumerInfo(final String stream, final String consumer) {
@@ -298,16 +292,12 @@ public record ConsumerAwareImpl(ExecutionHolder executionHolder,
             return consumerContext(stream, consumer)
                     .onItem().transformToMulti(consumerContext -> Multi.createBy().repeating()
                             .uni(() -> next(consumerContext, configuration.maxExpires()))
-                            .whilst(message -> true)
-                            .flatMap(message -> message != null ? Multi.createFrom().item(message)
-                                    : Multi.createFrom().empty()));
+                            .whilst(message -> true));
         } else {
             return reader(stream, consumer, configuration)
                     .onItem().transformToMulti(reader -> Multi.createBy().repeating()
-                            .uni(() -> next(reader, configuration.maxExpires()))
-                            .whilst(message -> true)
-                            .flatMap(message -> message != null ? Multi.createFrom().item(message)
-                                    : Multi.createFrom().empty()));
+                            .uni(() -> read(reader, configuration.maxExpires()))
+                            .whilst(message -> true));
         }
     }
 
@@ -322,10 +312,11 @@ public record ConsumerAwareImpl(ExecutionHolder executionHolder,
                 .onFailure().transform(failure -> new SubscribeException(stream, consumer, failure));
     }
 
-    private Uni<io.nats.client.Message> next(final JetStreamReader reader, final Duration timeout) {
+    private Uni<io.nats.client.Message> read(final JetStreamReader reader, final Duration timeout) {
         return Uni.createFrom().emitter(emitter -> {
             try {
-                emitter.complete(reader.nextMessage(timeout));
+                final var message = reader.nextMessage(timeout);
+                emitter.complete(message);
             } catch (JetStreamStatusException e) {
                 emitter.fail(e);
             } catch (IllegalStateException | InterruptedException e) {
