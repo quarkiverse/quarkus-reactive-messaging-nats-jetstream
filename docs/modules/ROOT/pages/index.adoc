@@ -101,7 +101,7 @@ If you want more examples, please take a look at the tests of the extension.
 | quarkus.messaging.nats.trace | Enable tracing | Boolean | true
 | quarkus.messaging.nats.streams.[stream-name].replicas | The number of replicas a message must be stored. | Integer | 1
 | quarkus.messaging.nats.streams.[stream-name].storage-type | The storage type for stream data | File or Memory | File
-| quarkus.messaging.nats.streams.[stream-name].retention-policy, Declares the retention policy for the stream | Limits or Interest | Interest
+| quarkus.messaging.nats.streams.[stream-name].retention-policy | Declares the retention policy for the stream | Limits or Interest | Interest
 | quarkus.messaging.nats.streams.[stream-name].subjects | A comma separated list of the subject names in stream to setup if auto-configure is enabled | String |
 | quarkus.messaging.nats.streams.[stream-name].description | Description of stream | String |
 | quarkus.messaging.nats.streams.[stream-name].compression-option | The compression option for this stream | None or S2 | None
@@ -152,7 +152,7 @@ If you want more examples, please take a look at the tests of the extension.
 | quarkus.messaging.nats.streams.[stream-name].push-consumers.[consumer-name].consumer-configuration.inactive-threshold | Duration that instructs the server to cleanup consumers that are inactive for that long | Duration |
 | quarkus.messaging.nats.streams.[stream-name].push-consumers.[consumer-name].consumer-configuration.max-ack-pending | Defines the maximum number of messages, without an acknowledgement, that can be outstanding | Long |
 | quarkus.messaging.nats.streams.[stream-name].push-consumers.[consumer-name].consumer-configuration.max-deliver | The maximum number of times a specific message delivery will be attempted | Long |
-| quarkus.messaging.nats.streams.[stream-name].push-consumers.[consumer-name].consumer-configuration.replay-policy, "If the policy is ReplayOriginal, the messages in the stream will be pushed to the client at the same rate that they were originally received, simulating the original timing of messages. If the policy is ReplayInstant (the default), the messages will be pushed to the client as fast as possible while adhering to the Ack Policy, Max Ack Pending and the client's ability to consume those messages."
+| quarkus.messaging.nats.streams.[stream-name].push-consumers.[consumer-name].consumer-configuration.replay-policy | If the policy is Original, the messages in the stream will be pushed to the client at the same rate that they were originally received, simulating the original timing of messages. If the policy is Instant (the default), the messages will be pushed to the client as fast as possible while adhering to the Ack Policy, Max Ack Pending and the client's ability to consume those messages. | Instant or Original | Instant
 | quarkus.messaging.nats.streams.[stream-name].push-consumers.[consumer-name].consumer-configuration.replicas | Sets the number of replicas for the consumer's state. By default, when the value is set to zero, consumers inherit the number of replicas from the stream | Integer | 0
 | quarkus.messaging.nats.streams.[stream-name].push-consumers.[consumer-name].consumer-configuration.memory-storage | If set, forces the consumer state to be kept in memory rather than inherit the storage type of the stream (file in this case). | Boolean |
 | quarkus.messaging.nats.streams.[stream-name].push-consumers.[consumer-name].consumer-configuration.back-off | The timing of re-deliveries as a comma-separated list of durations | Duration |
