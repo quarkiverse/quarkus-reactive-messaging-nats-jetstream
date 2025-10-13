@@ -82,4 +82,35 @@ public class ClientTest {
         var result = client.purgeAll().collect().asList().await().atMost(TIMEOUT);
         assertThat(result).hasSizeGreaterThanOrEqualTo(1);
     }
+
+    @Test
+    void addAndRemoveSubject() {
+        var subjects = client.subjects("client-test").collect().asList().await().atMost(TIMEOUT);
+        assertThat(subjects).contains("client-data");
+        assertThat(subjects).doesNotContain("client-temp");
+
+        client.addSubject("client-test", "client-temp").await().atMost(TIMEOUT);
+        subjects = client.subjects("client-test").collect().asList().await().atMost(TIMEOUT);
+        assertThat(subjects).contains("client-data", "client-temp");
+
+        client.removeSubject("client-test", "client-temp").await().atMost(TIMEOUT);
+        subjects = client.subjects("client-test").collect().asList().await().atMost(TIMEOUT);
+        assertThat(subjects).contains("client-data");
+        assertThat(subjects).doesNotContain("client-temp");
+    }
+
+    @Test
+    void keyValueCrudTest() {
+        var data = new Data("c251274f-8528-4539-bc54-1b726cadd74e");
+
+        var revision = client.putValue("client", "data", data).await().atMost(TIMEOUT);
+        assertThat(revision).isGreaterThan(0L);
+
+        var read = client.getValue("client", "data", Data.class).await().atMost(TIMEOUT);
+        assertThat(read).isEqualTo(data);
+
+        client.deleteValue("client", "data").await().atMost(TIMEOUT);
+        read = client.getValue("client", "data", Data.class).await().atMost(TIMEOUT);
+        assertThat(read).isNull();
+    }
 }

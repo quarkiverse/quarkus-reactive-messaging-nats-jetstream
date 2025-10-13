@@ -39,7 +39,7 @@ public record KeyValueStoreAwareImpl(ExecutionHolder executionHolder, PayloadMap
     @Override
     public <T> Uni<T> getValue(final String bucketName, final String key, final Class<T> valueType) {
         return withContext(context -> context.executeBlocking(keyValue(bucketName)
-                .onItem().ifNull().failWith(() -> new KeyValueNotFoundException(bucketName, key))
+                .onItem().ifNull().failWith(() -> new BucketNotFoundException(bucketName))
                 .onItem().ifNotNull()
                 .transformToUni(keyValue -> Uni.createFrom().item(Unchecked.supplier(() -> keyValue.get(key))))
                 .onItem().ifNotNull().transform(keyValueEntry -> GenericSerializedPayload
@@ -48,7 +48,7 @@ public record KeyValueStoreAwareImpl(ExecutionHolder executionHolder, PayloadMap
                         .type(valueType)
                         .build())
                 .onItem().ifNotNull().transform(payloadMapper::map)
-                .onItem().transform(Payload::data)
+                .onItem().ifNotNull().transform(Payload::data)
                 .onFailure().transform(ClientException::new)));
     }
 
@@ -58,7 +58,7 @@ public record KeyValueStoreAwareImpl(ExecutionHolder executionHolder, PayloadMap
         final var payload = payloadMapper
                 .map(GenericPayload.<T, T> builder().data(value).type((Class<T>) value.getClass()).build());
         return withContext(context -> context.executeBlocking(keyValue(bucketName)
-                .onItem().ifNull().failWith(() -> new KeyValueNotFoundException(bucketName, key))
+                .onItem().ifNull().failWith(() -> new BucketNotFoundException(bucketName))
                 .onItem().ifNotNull()
                 .transformToUni(keyValue -> Uni.createFrom().item(Unchecked.supplier(() -> keyValue.put(key, payload.data())))))
                 .onFailure().transform(ClientException::new));
@@ -67,12 +67,11 @@ public record KeyValueStoreAwareImpl(ExecutionHolder executionHolder, PayloadMap
     @Override
     public Uni<Void> deleteValue(final String bucketName, final String key) {
         return withContext(context -> context.executeBlocking(keyValue(bucketName)
-                .onItem().ifNull().failWith(() -> new KeyValueNotFoundException(bucketName, key))
+                .onItem().ifNull().failWith(() -> new BucketNotFoundException(bucketName))
                 .onItem().ifNotNull().<Void> transformToUni(keyValue -> Uni.createFrom().item(Unchecked.supplier(() -> {
                     keyValue.delete(key);
                     return null;
                 })))
-                .onItem().<Void> transform(revisionNumber -> null)
                 .onFailure().transform(ClientException::new)));
     }
 
