@@ -359,8 +359,8 @@ public class FetchMessagesTest {
             }
 
             @Override
-            public Integer replicas() {
-                return 1;
+            public Optional<Integer> replicas() {
+                return Optional.empty();
             }
 
             @Override
