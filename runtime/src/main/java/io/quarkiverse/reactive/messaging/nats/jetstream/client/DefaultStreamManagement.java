@@ -326,7 +326,7 @@ class DefaultStreamManagement implements StreamManagement {
                 .storageType(streamConfiguration.storageType())
                 .retentionPolicy(streamConfiguration.retentionPolicy())
                 .replicas(streamConfiguration.replicas())
-                .subjects(streamConfiguration.allSubjects())
+                .subjects(streamConfiguration.subjects().orElseGet(Set::of))
                 .compressionOption(streamConfiguration.compressionOption());
 
         builder = streamConfiguration.description().map(builder::description).orElse(builder);
