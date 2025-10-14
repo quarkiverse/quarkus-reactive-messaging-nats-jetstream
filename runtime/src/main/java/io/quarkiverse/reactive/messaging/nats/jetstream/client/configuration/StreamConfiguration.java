@@ -137,18 +137,6 @@ public interface StreamConfiguration {
      */
     Map<String, PushConsumerConfiguration> pushConsumers();
 
-    default Set<String> allSubjects() {
-        final var subjects = new HashSet<String>();
-        subjects().ifPresent(streamSubjects -> streamSubjects.forEach(subjects::add));
-        pullConsumers().values().stream()
-                .map(PullConsumerConfiguration::consumerConfiguration)
-                .forEach(consumer -> subjects.addAll(consumer.filterSubjects()));
-        pushConsumers().values().stream()
-                .map(PushConsumerConfiguration::consumerConfiguration)
-                .forEach(consumer -> subjects.addAll(consumer.filterSubjects()));
-        return subjects;
-    }
-
     static StreamConfiguration of(io.nats.client.api.StreamConfiguration configuration) {
         return DefaultStreamConfiguration.builder()
                 .description(Optional.ofNullable(configuration.getDescription()))
