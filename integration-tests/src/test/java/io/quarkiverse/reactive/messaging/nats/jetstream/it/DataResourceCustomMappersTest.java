@@ -24,10 +24,10 @@ import io.quarkus.test.junit.TestProfile;
 
 @QuarkusTest
 @TestProfile(Profile.class)
-public class DataResourceCustomMappersTest {
+class DataResourceCustomMappersTest {
 
     @Test
-    public void data() {
+    void data() {
         final var messageId = "8cb9fd88-08e9-422d-9f19-a3b4b3cc8cb7";
         final var data = "N6cXzM";
         final var resourceId = "56d5cc43-92dd-4df9-b385-1e412fd8fc8a";

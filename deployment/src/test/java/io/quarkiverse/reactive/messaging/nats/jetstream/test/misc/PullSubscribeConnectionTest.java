@@ -29,8 +29,8 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.configuration.JetStreamC
 import io.quarkiverse.reactive.messaging.nats.jetstream.test.TestSpanExporter;
 import io.quarkus.test.QuarkusUnitTest;
 
-public class PullSubscribeConnectionTest {
-    private final static Logger logger = Logger.getLogger(PullSubscribeConnectionTest.class);
+class PullSubscribeConnectionTest {
+    private static final Logger logger = Logger.getLogger(PullSubscribeConnectionTest.class);
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest().setArchiveProducer(
