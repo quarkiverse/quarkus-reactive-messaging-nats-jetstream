@@ -139,22 +139,14 @@ public interface StreamConfiguration {
 
     default Set<String> allSubjects() {
         final var subjects = new HashSet<String>();
-        subjects().ifPresent(streamSubjects -> streamSubjects.forEach(subject -> subjects.add(escape(subject))));
+        subjects().ifPresent(streamSubjects -> streamSubjects.forEach(subjects::add));
         pullConsumers().values().stream()
                 .map(PullConsumerConfiguration::consumerConfiguration)
-                .forEach(consumer -> subjects.addAll(consumer.filterSubjects().stream().map(this::escape).toList()));
+                .forEach(consumer -> subjects.addAll(consumer.filterSubjects()));
         pushConsumers().values().stream()
                 .map(PushConsumerConfiguration::consumerConfiguration)
-                .forEach(consumer -> subjects.addAll(consumer.filterSubjects().stream().map(this::escape).toList()));
+                .forEach(consumer -> subjects.addAll(consumer.filterSubjects()));
         return subjects;
-    }
-
-    private String escape(String subject) {
-        if (subject.endsWith(".>")) {
-            return subject.substring(0, subject.length() - 2);
-        } else {
-            return subject;
-        }
     }
 
     static StreamConfiguration of(io.nats.client.api.StreamConfiguration configuration) {
