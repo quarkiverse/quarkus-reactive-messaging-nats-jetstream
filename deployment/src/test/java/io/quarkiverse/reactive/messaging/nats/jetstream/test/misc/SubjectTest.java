@@ -20,7 +20,7 @@ import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
 import io.restassured.parsing.Parser;
 
-public class SubjectTest {
+class SubjectTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
@@ -34,13 +34,13 @@ public class SubjectTest {
     TestSpanExporter spanExporter;
 
     @BeforeEach
-    public void setup() {
+    void setup() {
         RestAssured.defaultParser = Parser.JSON;
         spanExporter.reset();
     }
 
     @Test
-    public void subtopic() {
+    void subtopic() {
         final var messageId = "9a99811a-ef82-468e-9f0b-7879f7be16a9";
         final var data = "N6cXzM";
         final var subject = "data";
@@ -56,5 +56,4 @@ public class SubjectTest {
                     && dataValue.subject().equals(subject + "." + subtopic);
         });
     }
-
 }
