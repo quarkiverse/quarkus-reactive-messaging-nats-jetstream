@@ -4,10 +4,10 @@ import java.time.Duration;
 import java.util.concurrent.Flow;
 import java.util.concurrent.atomic.AtomicReference;
 
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.PublishMessageMetadata;
 import org.eclipse.microprofile.reactive.messaging.Message;
 
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.Client;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.PublishMessageMetadata;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.publisher.PublishListener;
 import io.quarkiverse.reactive.messaging.nats.jetstream.processors.Health;
 import io.quarkiverse.reactive.messaging.nats.jetstream.processors.MessageProcessor;
@@ -64,7 +64,8 @@ public class MessageSubscriberProcessor<T> implements MessageProcessor, PublishL
 
     @Override
     public void onPublished(Message<T> message) {
-        message.getMetadata(PublishMessageMetadata.class).ifPresent(metadata -> log.infof("Published message with id: %s and sequence: %s", metadata.payload().id(), metadata.sequence()));
+        message.getMetadata(PublishMessageMetadata.class).ifPresent(metadata -> log
+                .infof("Published message with id: %s and sequence: %s", metadata.payload().id(), metadata.sequence()));
         health.set(new Health(true, "Subscriber processor active for channel: " + channel()));
     }
 

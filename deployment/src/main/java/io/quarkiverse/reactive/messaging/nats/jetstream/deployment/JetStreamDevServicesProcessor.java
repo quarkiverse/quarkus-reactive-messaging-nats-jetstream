@@ -1,5 +1,14 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.deployment;
 
+import static io.quarkiverse.reactive.messaging.nats.jetstream.deployment.JetStreamContainer.NATS_PORT;
+import static io.quarkiverse.reactive.messaging.nats.jetstream.deployment.JetStreamProcessor.FEATURE;
+
+import java.util.List;
+import java.util.Map;
+
+import org.jboss.logging.Logger;
+import org.testcontainers.utility.DockerImageName;
+
 import io.quarkus.deployment.IsDevServicesSupportedByLaunchMode;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -10,20 +19,12 @@ import io.quarkus.devservices.common.ComposeLocator;
 import io.quarkus.devservices.common.ContainerLocator;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigUtils;
-import org.jboss.logging.Logger;
-import org.testcontainers.utility.DockerImageName;
-
-import java.util.List;
-import java.util.Map;
-
-import static io.quarkiverse.reactive.messaging.nats.jetstream.deployment.JetStreamContainer.NATS_PORT;
-import static io.quarkiverse.reactive.messaging.nats.jetstream.deployment.JetStreamProcessor.FEATURE;
 
 /**
  * Starts a NATS JetStream broker as dev service if needed.
  * It uses <a href="https://hub.docker.com/nats">NATS</a> as image.
  */
-@BuildSteps(onlyIf = {IsDevServicesSupportedByLaunchMode.class, DevServicesConfig.Enabled.class})
+@BuildSteps(onlyIf = { IsDevServicesSupportedByLaunchMode.class, DevServicesConfig.Enabled.class })
 public class JetStreamDevServicesProcessor {
     private static final Logger log = Logger.getLogger(JetStreamDevServicesProcessor.class);
 
@@ -38,12 +39,12 @@ public class JetStreamDevServicesProcessor {
     @SuppressWarnings("resource")
     @BuildStep
     public void startJetstreamContainer(LaunchModeBuildItem launchMode,
-                                     DockerStatusBuildItem dockerStatusBuildItem,
-                                     DevServicesComposeProjectBuildItem composeProjectBuildItem,
-                                     List<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem,
-                                     JetStreamDevServicesBuildTimeConfig devServicesBuildTimeConfig,
-                                     BuildProducer<DevServicesResultBuildItem> devServicesResult,
-                                     DevServicesConfig devServicesConfig) {
+            DockerStatusBuildItem dockerStatusBuildItem,
+            DevServicesComposeProjectBuildItem composeProjectBuildItem,
+            List<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem,
+            JetStreamDevServicesBuildTimeConfig devServicesBuildTimeConfig,
+            BuildProducer<DevServicesResultBuildItem> devServicesResult,
+            DevServicesConfig devServicesConfig) {
 
         boolean useSharedNetwork = DevServicesSharedNetworkBuildItem.isSharedNetworkRequired(devServicesConfig,
                 devServicesSharedNetworkBuildItem);
@@ -53,33 +54,38 @@ public class JetStreamDevServicesProcessor {
             return;
         }
 
-        DevServicesResultBuildItem discovered = discoverRunningService(composeProjectBuildItem, launchMode.getLaunchMode(), devServicesBuildTimeConfig, useSharedNetwork);
+        DevServicesResultBuildItem discovered = discoverRunningService(composeProjectBuildItem, launchMode.getLaunchMode(),
+                devServicesBuildTimeConfig, useSharedNetwork);
         if (discovered != null) {
             devServicesResult.produce(discovered);
         } else {
             devServicesResult
                     .produce(DevServicesResultBuildItem.owned().name(FEATURE)
                             .serviceName(devServicesBuildTimeConfig.serviceName())
-                            .startable(() -> new JetStreamContainer(DockerImageName.parse(devServicesBuildTimeConfig.imageName()),
-                                    devServicesBuildTimeConfig.port(),
-                                    composeProjectBuildItem.getDefaultNetworkId(), useSharedNetwork, devServicesBuildTimeConfig.username(), devServicesBuildTimeConfig.password())
-                                    // Dev Service discovery works using a global dev service label applied in DevServicesCustomizerBuildItem
-                                    // for backwards compatibility we still add the custom label
-                                    .withSharedServiceLabel(launchMode.getLaunchMode(), devServicesBuildTimeConfig.serviceName()))
-                            .configProvider(Map.of("quarkus.messaging.nats.connection.servers", s -> "nats://" + s.getConnectionInfo(),
+                            .startable(
+                                    () -> new JetStreamContainer(DockerImageName.parse(devServicesBuildTimeConfig.imageName()),
+                                            devServicesBuildTimeConfig.port(),
+                                            composeProjectBuildItem.getDefaultNetworkId(), useSharedNetwork,
+                                            devServicesBuildTimeConfig.username(), devServicesBuildTimeConfig.password())
+                                            // Dev Service discovery works using a global dev service label applied in DevServicesCustomizerBuildItem
+                                            // for backwards compatibility we still add the custom label
+                                            .withSharedServiceLabel(launchMode.getLaunchMode(),
+                                                    devServicesBuildTimeConfig.serviceName()))
+                            .configProvider(Map.of("quarkus.messaging.nats.connection.servers",
+                                    s -> "nats://" + s.getConnectionInfo(),
                                     "quarkus.messaging.nats.connection.username", s -> devServicesBuildTimeConfig.username(),
                                     "quarkus.messaging.nats.connection.password", s -> devServicesBuildTimeConfig.password(),
-                                    "quarkus.messaging.nats.connection.ssl-enabled", s -> "false"
-                                    ))
+                                    "quarkus.messaging.nats.connection.ssl-enabled", s -> "false"))
                             .build());
         }
     }
 
     private DevServicesResultBuildItem discoverRunningService(DevServicesComposeProjectBuildItem composeProjectBuildItem,
-                                                              LaunchMode launchMode,
-                                                              JetStreamDevServicesBuildTimeConfig devServicesBuildTimeConfig,
-                                                              boolean useSharedNetwork) {
-        return jetStreamContainerLocator.locateContainer(devServicesBuildTimeConfig.serviceName(), devServicesBuildTimeConfig.shared(), launchMode)
+            LaunchMode launchMode,
+            JetStreamDevServicesBuildTimeConfig devServicesBuildTimeConfig,
+            boolean useSharedNetwork) {
+        return jetStreamContainerLocator
+                .locateContainer(devServicesBuildTimeConfig.serviceName(), devServicesBuildTimeConfig.shared(), launchMode)
                 .or(() -> ComposeLocator.locateContainer(composeProjectBuildItem,
                         List.of(devServicesBuildTimeConfig.imageName()),
                         NATS_PORT, launchMode, useSharedNetwork))
@@ -91,13 +97,14 @@ public class JetStreamDevServicesProcessor {
                             .config(Map.of("quarkus.messaging.nats.connection.servers", serverUrl,
                                     "quarkus.messaging.nats.connection.username", devServicesBuildTimeConfig.username(),
                                     "quarkus.messaging.nats.connection.password", devServicesBuildTimeConfig.password(),
-                                    "quarkus.messaging.nats.connection.ssl-enabled", devServicesBuildTimeConfig.sslEnabled().toString()))
+                                    "quarkus.messaging.nats.connection.ssl-enabled",
+                                    devServicesBuildTimeConfig.sslEnabled().toString()))
                             .build();
                 }).orElse(null);
     }
 
     private boolean natsDevServicesEnabled(DockerStatusBuildItem dockerStatusBuildItem,
-                                                  JetStreamDevServicesBuildTimeConfig devServicesConfig) {
+            JetStreamDevServicesBuildTimeConfig devServicesConfig) {
         if (!devServicesConfig.enabled()) {
             // explicitly disabled
             log.debug("Not starting devservices for NATS as it has been disabled in the config");

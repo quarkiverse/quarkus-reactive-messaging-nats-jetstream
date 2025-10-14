@@ -71,7 +71,8 @@ public class PayloadMapperImpl implements PayloadMapper {
     @Override
     public <T> Payload<T, T> map(org.eclipse.microprofile.reactive.messaging.Message<T> message) {
         final var metadata = message.getMetadata(PublishMessageMetadata.class);
-        final var headers = new HashMap<>(metadata.flatMap(publishMessageMetadata -> Optional.ofNullable(publishMessageMetadata.payload()))
+        final var headers = new HashMap<>(
+                metadata.flatMap(publishMessageMetadata -> Optional.ofNullable(publishMessageMetadata.payload()))
                         .flatMap(payload -> Optional.ofNullable(payload.headers())).orElseGet(Map::of));
         headers.put(MESSAGE_TYPE_HEADER, List.of(message.getPayload().getClass().getName()));
         final var id = metadata.flatMap(publishMessageMetadata -> Optional.ofNullable(publishMessageMetadata.payload()))

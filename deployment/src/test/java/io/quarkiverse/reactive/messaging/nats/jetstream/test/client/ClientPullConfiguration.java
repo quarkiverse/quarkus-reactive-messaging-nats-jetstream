@@ -1,9 +1,9 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.test.client;
 
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer.PullConfiguration;
-
 import java.time.Duration;
 import java.util.Optional;
+
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer.PullConfiguration;
 
 public class ClientPullConfiguration implements PullConfiguration {
 

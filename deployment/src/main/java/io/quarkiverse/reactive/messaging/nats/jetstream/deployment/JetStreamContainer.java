@@ -1,18 +1,19 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.deployment;
 
-import io.quarkus.deployment.builditem.Startable;
-import io.quarkus.devservices.common.ConfigureUtil;
-import io.quarkus.runtime.LaunchMode;
+import static io.quarkiverse.reactive.messaging.nats.jetstream.deployment.JetStreamDevServicesProcessor.DEV_SERVICE_LABEL;
+import static io.quarkus.devservices.common.ConfigureUtil.configureSharedServiceLabel;
+
+import java.time.Duration;
+import java.util.OptionalInt;
+
 import org.jboss.logging.Logger;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.utility.DockerImageName;
 
-import java.time.Duration;
-import java.util.OptionalInt;
-
-import static io.quarkiverse.reactive.messaging.nats.jetstream.deployment.JetStreamDevServicesProcessor.DEV_SERVICE_LABEL;
-import static io.quarkus.devservices.common.ConfigureUtil.configureSharedServiceLabel;
+import io.quarkus.deployment.builditem.Startable;
+import io.quarkus.devservices.common.ConfigureUtil;
+import io.quarkus.runtime.LaunchMode;
 
 @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
 class JetStreamContainer extends GenericContainer<JetStreamContainer> implements Startable {
@@ -26,7 +27,8 @@ class JetStreamContainer extends GenericContainer<JetStreamContainer> implements
 
     private final String hostName;
 
-    JetStreamContainer(DockerImageName imageName, OptionalInt fixedExposedPort, String defaultNetworkId, boolean useSharedNetwork, String username, String password) {
+    JetStreamContainer(DockerImageName imageName, OptionalInt fixedExposedPort, String defaultNetworkId,
+            boolean useSharedNetwork, String username, String password) {
         super(imageName);
 
         super.withNetworkAliases("nats");

@@ -1,5 +1,10 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client.publisher;
 
+import java.util.List;
+import java.util.Map;
+
+import org.eclipse.microprofile.reactive.messaging.Message;
+
 import io.nats.client.PublishOptions;
 import io.nats.client.api.PublishAck;
 import io.nats.client.impl.Headers;
@@ -18,10 +23,6 @@ import io.smallrye.mutiny.tuples.Tuple2;
 import io.smallrye.mutiny.unchecked.Unchecked;
 import io.smallrye.reactive.messaging.providers.connectors.ExecutionHolder;
 import lombok.extern.jbosslog.JBossLog;
-import org.eclipse.microprofile.reactive.messaging.Message;
-
-import java.util.List;
-import java.util.Map;
 
 @JBossLog
 public record PublisherAwareImpl(ExecutionHolder executionHolder,
@@ -66,8 +67,9 @@ public record PublisherAwareImpl(ExecutionHolder executionHolder,
                         .onItem().transformToUni(jetStream -> Uni.createFrom().item(Unchecked.supplier(() -> jetStream.publish(
                                 tuple.getItem2().subject(),
                                 toJetStreamHeaders(tuple.getItem2().payload().headers()),
-                                tuple.getItem2().payload().data(), publishOptions(tuple.getItem2().payload().id(), tuple.getItem2().stream()))))).
-                        onItem().transform(publishAck -> Tuple2.of(tuple.getItem1(), publishAck)))
+                                tuple.getItem2().payload().data(),
+                                publishOptions(tuple.getItem2().payload().id(), tuple.getItem2().stream())))))
+                        .onItem().transform(publishAck -> Tuple2.of(tuple.getItem1(), publishAck)))
                 .onItem().transform(this::withSequence)
                 .onItem().invoke(listener::onPublished)
                 .onItem().transformToUni(this::acknowledge)
@@ -75,8 +77,9 @@ public record PublisherAwareImpl(ExecutionHolder executionHolder,
                 .onFailure().transform(ClientException::new);
     }
 
-    private <T> Tuple2<Message<T>, PublishMessageMetadata> withMetadata(final Message<T> message, final String stream, final String subject,
-                                                                        final SerializedPayload<T> payload) {
+    private <T> Tuple2<Message<T>, PublishMessageMetadata> withMetadata(final Message<T> message, final String stream,
+            final String subject,
+            final SerializedPayload<T> payload) {
         final var publishMetadata = PublishMessageMetadata.builder()
                 .stream(stream)
                 .subject(subject)
@@ -92,7 +95,8 @@ public record PublisherAwareImpl(ExecutionHolder executionHolder,
     }
 
     private <T> Message<T> withSequence(final Tuple2<Message<T>, PublishAck> tuple) {
-        final var publishMetadata = tuple.getItem1().getMetadata(PublishMessageMetadata.class).orElseThrow(() -> new IllegalStateException("No metadata found"));
+        final var publishMetadata = tuple.getItem1().getMetadata(PublishMessageMetadata.class)
+                .orElseThrow(() -> new IllegalStateException("No metadata found"));
         final var metadata = tuple.getItem1().getMetadata().without(PublishMessageMetadata.class);
         return tuple.getItem1().withMetadata(metadata.with(PublishMessageMetadata.builder()
                 .stream(publishMetadata.stream())
