@@ -209,11 +209,11 @@ If you want more examples, please take a look at the tests of the extension.
 [cols="4",options="header"]
 |======
 | Property Name | Description | Type | Default Value
-| quarkus.messaging.nats.jet-stream.devservices.enabled | If Dev Services for NATS JetStream has been explicitly enabled or disabled | Boolean | true
-| quarkus.messaging.nats.jet-stream.devservices.port | Fixed port the dev service will listen to | Integer |
-| quarkus.messaging.nats.jet-stream.devservices.image-name | The image to use | String | nats:2.11
-| quarkus.messaging.nats.jet-stream.devservices.shared | Indicates if the NATS JetStream broker managed by Quarkus Dev Services is shared | Boolean | true
-| quarkus.messaging.nats.jet-stream.devservices.service-name | This property is used when you need multiple shared NATS JetStream brokers. | String | nats
+| quarkus.messaging.nats.devservices.enabled | If Dev Services for NATS JetStream has been explicitly enabled or disabled | Boolean | true
+| quarkus.messaging.nats.devservices.port | Fixed port the dev service will listen to | Integer |
+| quarkus.messaging.nats.devservices.image-name | The image to use | String | nats:2.11
+| quarkus.messaging.nats.devservices.shared | Indicates if the NATS JetStream broker managed by Quarkus Dev Services is shared | Boolean | true
+| quarkus.messaging.nats.devservices.service-name | This property is used when you need multiple shared NATS JetStream brokers. | String | nats
 |======
 
 == NATS JetStream
