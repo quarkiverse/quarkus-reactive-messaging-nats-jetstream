@@ -14,14 +14,14 @@ import io.quarkus.test.QuarkusDevModeTest;
 public class DevModeTest {
 
     @RegisterExtension
-    final static QuarkusDevModeTest devModeTest = new QuarkusDevModeTest()
+    static final QuarkusDevModeTest devModeTest = new QuarkusDevModeTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(ValueConsumingBean.class, ValueProducingBean.class, ValueResource.class,
                             TestSpanExporter.class)
                     .addAsResource("application-dev.properties", "application.properties"));
 
     @Test
-    public void testCodeUpdate() {
+    void testCodeUpdate() {
         await()
                 .atMost(1, TimeUnit.MINUTES)
                 .until(() -> {
@@ -39,5 +39,4 @@ public class DevModeTest {
                 });
 
     }
-
 }
