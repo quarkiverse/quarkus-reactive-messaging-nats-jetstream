@@ -16,7 +16,7 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.test.TestSpanExporter;
 import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.parsing.Parser;
 
-public class PullMetadataTest {
+class PullMetadataTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
@@ -26,12 +26,12 @@ public class PullMetadataTest {
             .withConfigurationResource("application-pull-metadata.properties");
 
     @BeforeEach
-    public void setup() {
+    void setup() {
         defaultParser = Parser.JSON;
     }
 
     @Test
-    public void metadata() {
+    void metadata() {
         final var messageId = "4dc58197-8cfb-4099-a211-25d5c2d04f4b";
         final var data = "N6cXzM";
 
