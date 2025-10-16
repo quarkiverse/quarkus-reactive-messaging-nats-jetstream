@@ -79,8 +79,7 @@ public interface ConsumerConfiguration {
      * Sets the number of replicas for the consumer's state. By default, when the value is set to zero, consumers
      * inherit the number of replicas from the stream
      */
-    @WithDefault("1")
-    Integer replicas();
+    Optional<Integer> replicas();
 
     /**
      * If set, forces the consumer state to be kept in memory rather than inherit the storage type of the

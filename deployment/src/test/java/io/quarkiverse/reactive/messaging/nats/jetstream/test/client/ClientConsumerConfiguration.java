@@ -79,8 +79,8 @@ public record ClientConsumerConfiguration<T>(String stream, String consumer,
     }
 
     @Override
-    public Integer replicas() {
-        return 1;
+    public Optional<Integer> replicas() {
+        return Optional.empty();
     }
 
     @Override

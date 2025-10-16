@@ -52,7 +52,7 @@ public class ConsumerConfigurationMapperImpl implements ConsumerConfigurationMap
         builder = configuration.maxAckPending().map(builder::maxAckPending).orElse(builder);
         builder = configuration.maxDeliver().map(builder::maxDeliver).orElse(builder);
         builder = builder.replayPolicy(configuration.replayPolicy());
-        builder = builder.numReplicas(configuration.replicas());
+        builder = configuration.replicas().map(builder::numReplicas).orElse(builder);
         builder = configuration.memoryStorage().map(builder::memStorage).orElse(builder);
         builder = configuration.sampleFrequency().map(builder::sampleFrequency).orElse(builder);
         if (!configuration.metadata().isEmpty()) {
