@@ -21,7 +21,7 @@ import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
 import io.restassured.parsing.Parser;
 
-public class PushTracingTest {
+class PushTracingTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
@@ -34,13 +34,13 @@ public class PushTracingTest {
     TestSpanExporter spanExporter;
 
     @BeforeEach
-    public void setup() {
+    void setup() {
         RestAssured.defaultParser = Parser.JSON;
         spanExporter.reset();
     }
 
     @Test
-    public void tracing() {
+    void tracing() {
         final var messageId = "c923ca9b-27ac-4dc3-ad61-8c6733f93b11";
         final var data = "N6cXzadfafM";
 

@@ -20,7 +20,7 @@ import io.restassured.filter.log.RequestLoggingFilter;
 import io.restassured.filter.log.ResponseLoggingFilter;
 import io.restassured.parsing.Parser;
 
-public class PushTest {
+class PushTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
@@ -33,12 +33,12 @@ public class PushTest {
             .withConfigurationResource("application-push.properties");
 
     @BeforeEach
-    public void setup() {
+    void setup() {
         defaultParser = Parser.JSON;
     }
 
     @Test
-    public void readiness() {
+    void readiness() {
         given()
                 .filters(new RequestLoggingFilter(), new ResponseLoggingFilter())
                 .when().get("/q/health/ready")
@@ -47,7 +47,7 @@ public class PushTest {
     }
 
     @Test
-    public void liveness() {
+    void liveness() {
         given()
                 .filters(new RequestLoggingFilter(), new ResponseLoggingFilter())
                 .when().get("/q/health/live")
@@ -56,7 +56,7 @@ public class PushTest {
     }
 
     @Test
-    public void metadata() {
+    void metadata() {
         final var messageId = "4e54818a-c624-495a-81c8-0145ad4c9925";
         final var data = "N6cX533zM";
 
@@ -70,7 +70,7 @@ public class PushTest {
     }
 
     @Test
-    public void deadLetter() {
+    void deadLetter() {
         final var messageId = "342646ee-acc5-4acd-b35d-a222568a127f";
         final var data = "6UFqFISmfk";
 
