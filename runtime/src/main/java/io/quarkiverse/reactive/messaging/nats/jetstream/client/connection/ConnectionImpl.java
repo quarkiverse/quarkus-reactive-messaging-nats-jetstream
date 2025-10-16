@@ -19,6 +19,11 @@ import lombok.extern.jbosslog.JBossLog;
 public record ConnectionImpl(io.nats.client.Connection delegate) implements Connection {
 
     @Override
+    public boolean isConnected() {
+        return Status.CONNECTED.equals(delegate.getStatus());
+    }
+
+    @Override
     public void publish(@NonNull String subject, byte @Nullable [] body) {
         delegate.publish(subject, body);
     }

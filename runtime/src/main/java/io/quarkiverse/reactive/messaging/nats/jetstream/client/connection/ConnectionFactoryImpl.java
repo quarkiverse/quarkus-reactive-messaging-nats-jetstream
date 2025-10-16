@@ -1,19 +1,20 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client.connection;
 
-import static io.nats.client.Options.DEFAULT_RECONNECT_WAIT;
-
-import jakarta.annotation.PreDestroy;
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.inject.Produces;
-
 import io.nats.client.ErrorListener;
 import io.nats.client.Nats;
 import io.nats.client.Options;
 import io.quarkiverse.reactive.messaging.nats.jetstream.configuration.ConnectorConfiguration;
 import io.quarkus.tls.TlsConfiguration;
 import io.quarkus.tls.TlsConfigurationRegistry;
+import jakarta.annotation.PreDestroy;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Produces;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.jbosslog.JBossLog;
+
+import java.util.concurrent.atomic.AtomicReference;
+
+import static io.nats.client.Options.DEFAULT_RECONNECT_WAIT;
 
 @ApplicationScoped
 @RequiredArgsConstructor
@@ -21,16 +22,19 @@ import lombok.extern.jbosslog.JBossLog;
 public class ConnectionFactoryImpl implements ConnectionFactory {
     private final ConnectorConfiguration configuration;
     private final TlsConfigurationRegistry tlsConfigurationRegistry;
-    private Connection connection;
+    private final AtomicReference<Connection> connection = new AtomicReference<>();
 
     @ApplicationScoped
     @Produces
     @Override
     public Connection create() {
+        return connection.updateAndGet(c -> c != null && c.isConnected() ? c : createNewConnection());
+    }
+
+    private Connection createNewConnection() {
         try {
             final var options = createOptions();
-            this.connection = new ConnectionImpl(Nats.connect(options));
-            return connection;
+            return new ConnectionImpl(Nats.connect(options));
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -38,7 +42,8 @@ public class ConnectionFactoryImpl implements ConnectionFactory {
 
     @PreDestroy
     public void closeConnection() {
-        if (connection != null) {
+        final var connection = this.connection.getAndSet(null);
+        if (connection != null && connection.isConnected()) {
             try {
                 connection.close();
             } catch (Exception e) {
