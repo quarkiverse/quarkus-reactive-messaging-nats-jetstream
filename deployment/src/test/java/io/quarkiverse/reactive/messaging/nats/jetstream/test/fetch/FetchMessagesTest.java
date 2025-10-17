@@ -1,11 +1,11 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.test.fetch;
 
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.Client;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.NackMetadata;
-import io.quarkiverse.reactive.messaging.nats.jetstream.test.MessageConsumer;
-import io.quarkiverse.reactive.messaging.nats.jetstream.test.TestSpanExporter;
-import io.quarkus.test.QuarkusUnitTest;
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.time.Duration;
+
 import jakarta.inject.Inject;
+
 import org.eclipse.microprofile.reactive.messaging.Message;
 import org.eclipse.microprofile.reactive.messaging.Metadata;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
@@ -14,9 +14,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import java.time.Duration;
-
-import static org.assertj.core.api.Assertions.assertThat;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.Client;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.NackMetadata;
+import io.quarkiverse.reactive.messaging.nats.jetstream.test.MessageConsumer;
+import io.quarkiverse.reactive.messaging.nats.jetstream.test.TestSpanExporter;
+import io.quarkus.test.QuarkusUnitTest;
 
 public class FetchMessagesTest implements MessageConsumer<Object> {
     private final static Duration TIMEOUT = Duration.ofSeconds(5);
@@ -25,7 +27,8 @@ public class FetchMessagesTest implements MessageConsumer<Object> {
     static QuarkusUnitTest runner = new QuarkusUnitTest()
             .setArchiveProducer(
                     () -> ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(TestSpanExporter.class, Data.class, ConsumerConfiguration.class, FetchConfiguration.class, MessageConsumer.class))
+                            .addClasses(TestSpanExporter.class, Data.class, ConsumerConfiguration.class,
+                                    FetchConfiguration.class, MessageConsumer.class))
             .withConfigurationResource("application-fetch.properties");
 
     @Inject
@@ -105,10 +108,11 @@ public class FetchMessagesTest implements MessageConsumer<Object> {
         final var received1 = client.next(configuration, TIMEOUT).await().atMost(TIMEOUT);
         assertThat(received1).isNotNull();
         assertThat(received1.getPayload()).isEqualTo(data1);
-        notAcknowledge(received1, new RuntimeException(), Metadata.of(NackMetadata.builder().delayWait(TIMEOUT.plusSeconds(5)).build())).await().atMost(TIMEOUT);
+        notAcknowledge(received1, new RuntimeException(),
+                Metadata.of(NackMetadata.builder().delayWait(TIMEOUT.plusSeconds(5)).build())).await().atMost(TIMEOUT);
 
         // The message should not be available immediately after a nack with delay
-        assertThat(client.next(configuration, TIMEOUT).await().atMost(TIMEOUT)).isNull();
+        assertThat(client.next(configuration, TIMEOUT).await().atMost(TIMEOUT.plusSeconds(1))).isNull();
 
         // Attempt to fetch the message until it is available again
         final var received2 = client.next(configuration, Duration.ofSeconds(35L)).await().atMost(Duration.ofSeconds(35L));
@@ -123,10 +127,14 @@ public class FetchMessagesTest implements MessageConsumer<Object> {
         final var data3 = new Data("test3", "14e9aaaf-0d42-42a8-a93a-ebe37ff6a742", "974932c1-90b8-4b79-b10a-b508d7badc04");
         final var data4 = new Data("test4", "5246354a-2342-4422-9268-af95862b51fb", "1325e196-4186-47ab-8b30-5047cae77d7e");
 
-        final var configuration1 = new ConsumerConfiguration("fetch-test", data1.resourceId(), "resources." + data1.resourceId());
-        final var configuration2 = new ConsumerConfiguration("fetch-test", data2.resourceId(), "resources." + data2.resourceId());
-        final var configuration3 = new ConsumerConfiguration("fetch-test", data3.resourceId(), "resources." + data3.resourceId());
-        final var configuration4 = new ConsumerConfiguration("fetch-test", data4.resourceId(), "resources." + data4.resourceId());
+        final var configuration1 = new ConsumerConfiguration("fetch-test", data1.resourceId(),
+                "resources." + data1.resourceId());
+        final var configuration2 = new ConsumerConfiguration("fetch-test", data2.resourceId(),
+                "resources." + data2.resourceId());
+        final var configuration3 = new ConsumerConfiguration("fetch-test", data3.resourceId(),
+                "resources." + data3.resourceId());
+        final var configuration4 = new ConsumerConfiguration("fetch-test", data4.resourceId(),
+                "resources." + data4.resourceId());
 
         client.addConsumerIfAbsent(configuration1).await().atMost(TIMEOUT);
         client.addConsumerIfAbsent(configuration2).await().atMost(TIMEOUT);
@@ -201,7 +209,8 @@ public class FetchMessagesTest implements MessageConsumer<Object> {
         client.publish(Message.of(data2), "fetch-test", subject).await().atMost(TIMEOUT);
 
         final var received = client.fetch(configuration, new FetchConfiguration())
-                .onItem().transformToUniAndMerge(message -> acknowledge(message).onItem().transform(ignored -> message.getPayload()))
+                .onItem()
+                .transformToUniAndMerge(message -> acknowledge(message).onItem().transform(ignored -> message.getPayload()))
                 .collect().asList()
                 .await().atMost(TIMEOUT);
 

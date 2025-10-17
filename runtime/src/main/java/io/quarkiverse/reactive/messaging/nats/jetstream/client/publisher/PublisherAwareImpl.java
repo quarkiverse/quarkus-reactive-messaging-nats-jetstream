@@ -1,7 +1,9 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client.publisher;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import org.eclipse.microprofile.reactive.messaging.Message;
 
@@ -23,6 +25,8 @@ import io.smallrye.mutiny.tuples.Tuple2;
 import io.smallrye.mutiny.unchecked.Unchecked;
 import io.smallrye.reactive.messaging.providers.connectors.ExecutionHolder;
 import lombok.extern.jbosslog.JBossLog;
+
+import static io.quarkiverse.reactive.messaging.nats.jetstream.client.api.JetStreamMessage.MESSAGE_TYPE_HEADER;
 
 @JBossLog
 public record PublisherAwareImpl(ExecutionHolder executionHolder,
@@ -66,9 +70,9 @@ public record PublisherAwareImpl(ExecutionHolder executionHolder,
                 .onItem().transformToUni(tuple -> jetStream()
                         .onItem().transformToUni(jetStream -> Uni.createFrom().item(Unchecked.supplier(() -> jetStream.publish(
                                 tuple.getItem2().subject(),
-                                toJetStreamHeaders(tuple.getItem2().payload().headers()),
+                                toJetStreamHeaders(tuple.getItem2().headers()),
                                 tuple.getItem2().payload().data(),
-                                publishOptions(tuple.getItem2().payload().id(), tuple.getItem2().stream())))))
+                                publishOptions(tuple.getItem2().messageId(), tuple.getItem2().stream())))))
                         .onItem().transform(publishAck -> Tuple2.of(tuple.getItem1(), publishAck)))
                 .onItem().transform(this::withSequence)
                 .onItem().invoke(listener::onPublished)
@@ -82,11 +86,37 @@ public record PublisherAwareImpl(ExecutionHolder executionHolder,
             final SerializedPayload<T> payload) {
         final var publishMetadata = PublishMessageMetadata.builder()
                 .stream(stream)
-                .subject(subject)
+                .subject(subject(message, subject))
                 .payload(payload)
+                .messageId(messageId(message))
+                .headers(headers(message, payload))
                 .build();
         final var metadata = message.getMetadata().without(PublishMessageMetadata.class);
         return Tuple2.of(message.withMetadata(metadata.with(publishMetadata)), publishMetadata);
+    }
+
+    private <T> String subject(final Message<T> message, final String subject) {
+        final var result = message.getMetadata().get(PublishMessageMetadata.class)
+                .map(PublishMessageMetadata::subject)
+                .orElse(subject);
+        if (!result.startsWith(subject)) {
+            throw new IllegalArgumentException("Subject must start with " + subject);
+        }
+        return result;
+    }
+
+    private String messageId(final Message<?> message) {
+        return message.getMetadata().get(PublishMessageMetadata.class)
+                .map(PublishMessageMetadata::messageId)
+                .orElseGet(() -> UUID.randomUUID().toString());
+    }
+
+    private <T> Map<String, List<String>> headers(final Message<?> message, final SerializedPayload<T> payload) {
+        final var headers = new HashMap<>(message.getMetadata().get(PublishMessageMetadata.class)
+                .map(PublishMessageMetadata::headers)
+                .orElseGet(Map::of));
+        headers.put(MESSAGE_TYPE_HEADER, List.of(message.getPayload().getClass().getName()));
+        return headers;
     }
 
     private <T> Uni<Tuple2<Message<T>, PublishMessageMetadata>> withTrace(Tuple2<Message<T>, PublishMessageMetadata> tuple) {

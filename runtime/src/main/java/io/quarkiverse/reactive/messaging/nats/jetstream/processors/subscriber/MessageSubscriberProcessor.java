@@ -65,7 +65,7 @@ public class MessageSubscriberProcessor<T> implements MessageProcessor, PublishL
     @Override
     public void onPublished(Message<T> message) {
         message.getMetadata(PublishMessageMetadata.class).ifPresent(metadata -> log
-                .infof("Published message with id: %s and sequence: %s", metadata.payload().id(), metadata.sequence()));
+                .infof("Published message with id: %s and sequence: %s", metadata.messageId(), metadata.sequence()));
         health.set(new Health(true, "Subscriber processor active for channel: " + channel()));
     }
 

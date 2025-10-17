@@ -11,7 +11,7 @@ public class PublishListenerImpl<T> implements PublishListener<T> {
     @Override
     public void onPublished(Message<T> message) {
         message.getMetadata(PublishMessageMetadata.class).ifPresent(metadata -> log
-                .infof("Published message with id: %s and sequence: %s", metadata.payload().id(), metadata.sequence()));
+                .infof("Published message with id: %s and sequence: %s", metadata.messageId(), metadata.sequence()));
     }
 
     @Override

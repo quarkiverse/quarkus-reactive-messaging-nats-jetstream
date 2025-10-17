@@ -11,7 +11,7 @@ public class PublishMessageTextMapSetter implements TextMapSetter<PublishMessage
     @Override
     public void set(PublishMessageMetadata carrier, final String key, final String value) {
         if (carrier != null) {
-            Optional.ofNullable(carrier.payload()).flatMap(payload -> Optional.ofNullable(payload.headers()))
+            Optional.ofNullable(carrier.payload()).flatMap(payload -> Optional.ofNullable(carrier.headers()))
                     .ifPresent(headers -> headers.put(key, List.of(value)));
         }
     }

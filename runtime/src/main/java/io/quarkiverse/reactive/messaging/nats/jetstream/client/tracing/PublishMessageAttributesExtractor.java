@@ -69,7 +69,7 @@ public class PublishMessageAttributesExtractor implements AttributesExtractor<Pu
 
         @Override
         public String getMessageId(PublishMessageMetadata message, Void unused) {
-            return message.payload().id();
+            return message.messageId();
         }
 
     }

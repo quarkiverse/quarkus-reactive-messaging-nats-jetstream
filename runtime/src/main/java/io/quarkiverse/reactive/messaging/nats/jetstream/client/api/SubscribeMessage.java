@@ -70,7 +70,7 @@ public class SubscribeMessage<T> implements JetStreamMessage<T> {
     }
 
     public Map<String, List<String>> headers() {
-        return payload.headers();
+        return subscribeMessageMetadata.headers();
     }
 
     @Override

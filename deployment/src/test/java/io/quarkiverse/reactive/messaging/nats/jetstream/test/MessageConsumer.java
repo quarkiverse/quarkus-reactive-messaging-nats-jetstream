@@ -1,9 +1,9 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.test;
 
 import org.eclipse.microprofile.reactive.messaging.Message;
+import org.eclipse.microprofile.reactive.messaging.Metadata;
 
 import io.smallrye.mutiny.Uni;
-import org.eclipse.microprofile.reactive.messaging.Metadata;
 
 public interface MessageConsumer<T> {
 

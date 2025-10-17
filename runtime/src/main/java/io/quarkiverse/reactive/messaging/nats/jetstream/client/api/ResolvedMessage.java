@@ -50,7 +50,7 @@ public class ResolvedMessage<T> implements JetStreamMessage<T> {
     }
 
     public Map<String, List<String>> headers() {
-        return payload.headers();
+        return incomingMetadata.headers();
     }
 
     @Override

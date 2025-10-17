@@ -17,7 +17,6 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.it;
 
 import com.fasterxml.jackson.annotation.JsonView;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.GenericSerializedPayload;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.PublishMessageMetadata;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -66,7 +65,7 @@ public class DataResource {
         final var headers = new HashMap<String, List<String>>();
         headers.put("RESOURCE_ID", List.of(data.getResourceId()));
         final var message = Message.of(data,
-                Metadata.of(PublishMessageMetadata.builder().payload(GenericSerializedPayload.builder().id(messageId).headers(headers).build()).build()));
+                Metadata.of(PublishMessageMetadata.builder().messageId(messageId).headers(headers).build()));
         emitter.send(message);
         return message;
     }
