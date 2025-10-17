@@ -1,14 +1,5 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client.publisher;
 
-import static io.quarkiverse.reactive.messaging.nats.jetstream.client.api.JetStreamMessage.MESSAGE_TYPE_HEADER;
-
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-
-import org.eclipse.microprofile.reactive.messaging.Message;
-
 import io.nats.client.PublishOptions;
 import io.nats.client.api.PublishAck;
 import io.nats.client.impl.Headers;
@@ -27,12 +18,20 @@ import io.smallrye.mutiny.tuples.Tuple2;
 import io.smallrye.mutiny.unchecked.Unchecked;
 import io.smallrye.reactive.messaging.providers.connectors.ExecutionHolder;
 import lombok.extern.jbosslog.JBossLog;
+import org.eclipse.microprofile.reactive.messaging.Message;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
+import static io.quarkiverse.reactive.messaging.nats.jetstream.client.api.JetStreamMessage.MESSAGE_TYPE_HEADER;
 
 @JBossLog
 public record PublisherAwareImpl(ExecutionHolder executionHolder,
-        TracerFactory tracerFactory,
-        PayloadMapper payloadMapper,
-        Connection connection) implements PublisherAware, ContextAware, JetStreamAware {
+                                 TracerFactory tracerFactory,
+                                 PayloadMapper payloadMapper,
+                                 Connection connection) implements PublisherAware, ContextAware, JetStreamAware {
 
     @Override
     public <T> Uni<Message<T>> publish(final Message<T> message, final String stream, final String subject) {
@@ -41,7 +40,7 @@ public record PublisherAwareImpl(ExecutionHolder executionHolder,
 
     @Override
     public <T> Uni<Message<T>> publish(final Message<T> message, final String stream, final String subject,
-            final PublishListener<T> listener) {
+                                       final PublishListener<T> listener) {
         return withContext(context -> context.executeBlocking(publishInternal(message, stream, subject, listener)))
                 .onFailure().invoke(listener::onError)
                 .onFailure().transform(ClientException::new);
@@ -49,7 +48,7 @@ public record PublisherAwareImpl(ExecutionHolder executionHolder,
 
     @Override
     public <T> Multi<Message<T>> publish(final Multi<Message<T>> messages, final String stream, final String subject,
-            final PublishListener<T> listener) {
+                                         final PublishListener<T> listener) {
         return withContext(context -> messages.onItem()
                 .transformToUniAndMerge(message -> publishInternal(message, stream, subject, listener)))
                 .onFailure().invoke(listener::onError)
@@ -62,7 +61,7 @@ public record PublisherAwareImpl(ExecutionHolder executionHolder,
     }
 
     private <T> Uni<Message<T>> publishInternal(final Message<T> message, final String stream, final String subject,
-            final PublishListener<T> listener) {
+                                                final PublishListener<T> listener) {
         return Uni.createFrom().item(Unchecked.supplier(() -> payloadMapper.map(message)))
                 .onItem().transform(Unchecked.function(payload -> payloadMapper.map(payload)))
                 .onItem().transform(Unchecked.function(payload -> withMetadata(message, stream, subject, payload)))
@@ -82,8 +81,8 @@ public record PublisherAwareImpl(ExecutionHolder executionHolder,
     }
 
     private <T> Tuple2<Message<T>, PublishMessageMetadata> withMetadata(final Message<T> message, final String stream,
-            final String subject,
-            final SerializedPayload<T> payload) {
+                                                                        final String subject,
+                                                                        final SerializedPayload<T> payload) {
         final var publishMetadata = PublishMessageMetadata.builder()
                 .stream(stream)
                 .subject(subject(message, subject))
@@ -120,7 +119,7 @@ public record PublisherAwareImpl(ExecutionHolder executionHolder,
     }
 
     private <T> Uni<Tuple2<Message<T>, PublishMessageMetadata>> withTrace(Tuple2<Message<T>, PublishMessageMetadata> tuple) {
-        return tracerFactory.<T> create(TracerType.Publish).withTrace(tuple.getItem1(), m -> m)
+        return tracerFactory.<T>create(TracerType.Publish).withTrace(tuple.getItem1(), m -> m)
                 .onItem().transform(message -> Tuple2.of(message, tuple.getItem2()));
     }
 
@@ -133,6 +132,8 @@ public record PublisherAwareImpl(ExecutionHolder executionHolder,
                 .subject(publishMetadata.subject())
                 .payload(publishMetadata.payload())
                 .sequence(tuple.getItem2().getSeqno())
+                .messageId(publishMetadata.messageId())
+                .headers(publishMetadata.headers())
                 .build()));
     }
 
@@ -161,7 +162,7 @@ public record PublisherAwareImpl(ExecutionHolder executionHolder,
     }
 
     private Uni<PublishAck> publish(final String subject, final Headers headers, final byte[] body,
-            final PublishOptions options) {
+                                    final PublishOptions options) {
         return jetStream()
                 .onItem()
                 .transformToUni(jetStream -> Uni.createFrom()

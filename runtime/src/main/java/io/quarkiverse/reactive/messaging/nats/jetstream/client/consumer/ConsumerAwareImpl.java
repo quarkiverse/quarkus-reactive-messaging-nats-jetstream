@@ -199,6 +199,7 @@ public record ConsumerAwareImpl(ExecutionHolder executionHolder,
                     }
                 })
                 .emitOn(context::runOnContext)
+                .select().where(Objects::nonNull)
                 .onItem().transform(message -> messageMapper.map(message, configuration, context))
                 .onItem().transformToUniAndMerge(message -> tracer.withTrace(message, msg -> msg)))
                 .onItem().invoke(listener::onMessage)
