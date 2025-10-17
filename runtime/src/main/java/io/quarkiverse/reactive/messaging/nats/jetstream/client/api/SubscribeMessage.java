@@ -157,7 +157,11 @@ public class SubscribeMessage<T> implements JetStreamMessage<T> {
         if (backoff.isEmpty()) {
             return Optional.empty();
         }
-        final var index = getDeliveredCount() > backoff.size() ? backoff.size() - 1 : getDeliveredCount().intValue();
-        return Optional.of(backoff.get(index));
+        if (getDeliveredCount() == 0) {
+            return Optional.of(backoff.get(0));
+        } else {
+            final var index = getDeliveredCount() >= backoff.size() ? backoff.size() - 1 : getDeliveredCount().intValue() - 1;
+            return Optional.of(backoff.get(index));
+        }
     }
 }

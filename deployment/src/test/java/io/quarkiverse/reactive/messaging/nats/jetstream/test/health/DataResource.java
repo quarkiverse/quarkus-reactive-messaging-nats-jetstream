@@ -1,16 +1,18 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.test.health;
 
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.PublishMessageMetadata;
-import io.smallrye.mutiny.Uni;
+import java.util.HashMap;
+import java.util.List;
+
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
+
 import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.eclipse.microprofile.reactive.messaging.Emitter;
 import org.eclipse.microprofile.reactive.messaging.Message;
 import org.eclipse.microprofile.reactive.messaging.Metadata;
 
-import java.util.HashMap;
-import java.util.List;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.PublishMessageMetadata;
+import io.smallrye.mutiny.Uni;
 
 @Path("/data")
 @Produces("application/json")
@@ -39,7 +41,8 @@ public class DataResource {
         return Uni.createFrom().item(() -> {
             final var headers = new HashMap<String, List<String>>();
             headers.put("RESOURCE_ID", List.of(data));
-            final var message = Message.of(data, Metadata.of(PublishMessageMetadata.builder().messageId(id).headers(headers).build()));
+            final var message = Message.of(data,
+                    Metadata.of(PublishMessageMetadata.builder().messageId(id).headers(headers).build()));
             emitter.send(message);
             return message;
         });
