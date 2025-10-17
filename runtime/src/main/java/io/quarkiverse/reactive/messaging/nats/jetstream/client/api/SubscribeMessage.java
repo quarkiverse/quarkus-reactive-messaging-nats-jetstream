@@ -103,7 +103,7 @@ public class SubscribeMessage<T> implements JetStreamMessage<T> {
                 if (nackMetadata.isPresent() && nackMetadata.get().delayWaitOptional().isPresent()) {
                     message.nakWithDelay(nackMetadata.get().delayWaitOptional().get());
                 } else {
-                    message.nak();
+                    getBackoff().ifPresentOrElse(message::nakWithDelay, message::nak);
                 }
                 this.runOnMessageContext(() -> f.complete(null));
             } catch (Exception e) {

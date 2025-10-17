@@ -111,15 +111,18 @@ public record ConsumerAwareImpl(ExecutionHolder executionHolder,
                 .onFailure().transform(ClientException::new)));
     }
 
+    @SuppressWarnings("resource")
     @Override
     public <T> Uni<Message<T>> next(final ConsumerConfiguration<T> configuration, final Duration timeout) {
-        return withContext(context -> context.executeBlocking(next(configuration.stream(), configuration.name(), timeout)
-                .runSubscriptionOn(context::runOnContext)
+        ExecutorService executor = Executors.newSingleThreadExecutor(ConsumerWorkerThread::new);
+        return withContext(context -> next(configuration.stream(), configuration.name(), timeout)
+                .runSubscriptionOn(executor)
+                .emitOn(context::runOnContext)
                 .onItem().ifNotNull().transform(message -> messageMapper.map(message, configuration, context))
                 .onItem().ifNotNull()
                 .transformToUni(message -> tracerFactory.<T> create(TracerType.Subscribe).withTrace(message,
                         new AttachContextTraceSupplier<>()))
-                .onFailure().transform(ClientException::new)));
+                .onFailure().transform(ClientException::new));
     }
 
     @SuppressWarnings({ "resource", "ReactiveStreamsUnusedPublisher" })

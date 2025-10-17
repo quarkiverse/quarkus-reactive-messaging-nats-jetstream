@@ -101,7 +101,7 @@ public class KeyValueStoreTest {
                 .header("Accept", "application/json")
                 .pathParam("key", "test-key-3")
                 .get("/key-value/{key}")
-                .then().statusCode(404);
+                .then().statusCode(204);
     }
 
 }

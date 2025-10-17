@@ -1,12 +1,13 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.configuration.mapper;
 
+import java.util.List;
+import java.util.Set;
+
+import jakarta.enterprise.context.ApplicationScoped;
+
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.stream.StreamConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.stream.StreamConfigurationImpl;
 import io.quarkiverse.reactive.messaging.nats.jetstream.configuration.ConnectorConfiguration;
-import jakarta.enterprise.context.ApplicationScoped;
-
-import java.util.List;
-import java.util.Set;
 
 @ApplicationScoped
 public class StreamConfigurationMapperImpl implements StreamConfigurationMapper {
