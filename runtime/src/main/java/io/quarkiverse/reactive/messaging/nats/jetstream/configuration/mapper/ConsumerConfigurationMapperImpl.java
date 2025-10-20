@@ -1,5 +1,7 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.configuration.mapper;
 
+import java.util.List;
+
 import jakarta.enterprise.context.ApplicationScoped;
 
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer.ConsumerConfigurationImpl;
@@ -15,7 +17,7 @@ public class ConsumerConfigurationMapperImpl implements ConsumerConfigurationMap
                 .stream(stream)
                 .name(name)
                 .durable(configuration.durable())
-                .filterSubjects(configuration.filterSubjects())
+                .filterSubjects(configuration.filterSubjects().orElseGet(List::of))
                 .ackWait(configuration.ackWait())
                 .deliverPolicy(configuration.deliverPolicy())
                 .startSequence(configuration.startSequence())

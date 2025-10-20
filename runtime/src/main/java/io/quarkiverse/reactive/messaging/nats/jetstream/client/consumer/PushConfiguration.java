@@ -6,12 +6,7 @@ import java.util.Optional;
 public interface PushConfiguration {
 
     /**
-     * Flag indicating whether this subscription should be ordered
-     */
-    Boolean ordered();
-
-    /**
-     * The subject
+     * The deliver subject
      */
     String deliverSubject();
 

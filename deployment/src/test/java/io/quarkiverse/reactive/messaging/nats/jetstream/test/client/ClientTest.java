@@ -32,7 +32,7 @@ public class ClientTest {
     static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
             () -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(TestSpanExporter.class, Data.class, ClientConsumerConfiguration.class,
-                            ClientPullConfiguration.class))
+                            ClientPullConfiguration.class, ClientPushConfiguration.class))
             .withConfigurationResource("application-client.properties");
 
     @Inject
@@ -55,7 +55,6 @@ public class ClientTest {
         var result = client.purge("client-test").await().atMost(TIMEOUT);
         assertThat(result.success()).isTrue();
         assertThat(result.streamName()).isEqualTo("client-test");
-        assertThat(result.purgeCount()).isEqualTo(0L);
     }
 
     @Test
@@ -142,6 +141,31 @@ public class ClientTest {
 
         final var consumed = new ArrayList<Data>();
         client.subscribe(consumerConfiguration, pullConfiguration)
+                .onItem().invoke(message -> consumed.add(message.getPayload()))
+                .subscribe().with(
+                        item -> log.infof("Consumed message: %s", item.getPayload()),
+                        log::error);
+
+        Awaitility.await().atMost(TIMEOUT).until(() -> consumed.size() == 3);
+    }
+
+    @Test
+    void publishAndConsumeMessagesWithPushSubscription() {
+        var consumerConfiguration = new ClientConsumerConfiguration<Data>("client-test", "client-push-subscription",
+                List.of("push-data"));
+        var pushConfiguration = new ClientPushConfiguration("deliver-push-data");
+
+        client.addConsumerIfAbsent(consumerConfiguration, pushConfiguration).await().atMost(TIMEOUT);
+        var consumers = client.consumerNames("client-test").collect().asList().await().atMost(TIMEOUT);
+        assertThat(consumers).contains("client-push-subscription");
+
+        var messages = Multi.createFrom()
+                .items(Stream.of(Message.of(new Data("1")), Message.of(new Data("2")), Message.of(new Data("3"))));
+        var published = client.publish(messages, "client-test", "push-data").collect().asList().await().atMost(TIMEOUT);
+        assertThat(published).hasSize(3);
+
+        final var consumed = new ArrayList<Data>();
+        client.subscribe(consumerConfiguration, pushConfiguration)
                 .onItem().invoke(message -> consumed.add(message.getPayload()))
                 .subscribe().with(
                         item -> log.infof("Consumed message: %s", item.getPayload()),

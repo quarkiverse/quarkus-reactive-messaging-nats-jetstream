@@ -3,18 +3,10 @@ package io.quarkiverse.reactive.messaging.nats.jetstream.configuration;
 import java.time.Duration;
 import java.util.Optional;
 
-import io.smallrye.config.WithDefault;
-
 public interface PushConfiguration {
 
     /**
-     * Flag indicating whether this subscription should be ordered
-     */
-    @WithDefault("true")
-    Boolean ordered();
-
-    /**
-     * The subject
+     * The deliver subject
      */
     String deliverSubject();
 

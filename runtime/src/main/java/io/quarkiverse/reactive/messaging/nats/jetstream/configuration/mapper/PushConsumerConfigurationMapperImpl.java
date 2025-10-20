@@ -44,7 +44,6 @@ public class PushConsumerConfigurationMapperImpl implements PushConsumerConfigur
                 .deliverGroup(configuration.deliverGroup())
                 .flowControl(configuration.flowControl())
                 .idleHeartbeat(configuration.idleHeartbeat())
-                .ordered(configuration.ordered())
                 .rateLimit(configuration.rateLimit())
                 .build();
     }
