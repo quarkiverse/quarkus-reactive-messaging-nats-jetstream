@@ -193,7 +193,7 @@ public class FetchMessagesTest implements MessageConsumer<Object> {
     }
 
     @Test
-    void fetchMessages() throws Exception {
+    void fetchMessages() {
         final var data1 = new Data("test1", "64a8903f-983a-4775-8c41-e59c1a40ca08", "5a6af883-2be2-4c73-9d5d-7cdc4157f2fb");
         final var data2 = new Data("test2", "64a8903f-983a-4775-8c41-e59c1a40ca08", "d38ddb6f-3b9c-4a6c-978e-e97c0b66a2fd");
 

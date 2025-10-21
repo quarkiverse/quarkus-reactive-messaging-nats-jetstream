@@ -6,7 +6,4 @@ public class ClientException extends RuntimeException {
         super(cause);
     }
 
-    public ClientException(String message) {
-        super(message);
-    }
 }
