@@ -173,4 +173,19 @@ public class ClientTest {
 
         Awaitility.await().atMost(TIMEOUT).until(() -> consumed.size() == 3);
     }
+
+    @Test
+    void addConsumerTwiceWithoutFailure() {
+        var consumerConfiguration = new ClientConsumerConfiguration<Data>("client-test", "client-pull-subscription",
+                List.of("client-data"));
+        var pullConfiguration = new ClientPullConfiguration();
+
+        client.addConsumerIfAbsent(consumerConfiguration, pullConfiguration).await().atMost(TIMEOUT);
+        var consumers = client.consumerNames("client-test").collect().asList().await().atMost(TIMEOUT);
+        assertThat(consumers).contains("client-pull-subscription");
+
+        client.addConsumerIfAbsent(consumerConfiguration, pullConfiguration).await().atMost(TIMEOUT);
+        consumers = client.consumerNames("client-test").collect().asList().await().atMost(TIMEOUT);
+        assertThat(consumers).contains("client-pull-subscription");
+    }
 }
