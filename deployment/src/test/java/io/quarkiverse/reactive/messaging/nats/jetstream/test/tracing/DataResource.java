@@ -41,7 +41,8 @@ public class DataResource {
         return Uni.createFrom().item(() -> {
             final var headers = new HashMap<String, List<String>>();
             headers.put("RESOURCE_ID", List.of(data));
-            final var message = Message.of(data, Metadata.of(PublishMessageMetadata.of(id, headers)));
+            final var message = Message.of(data,
+                    Metadata.of(PublishMessageMetadata.builder().messageId(id).headers(headers).build()));
             emitter.send(message);
             return message;
         });

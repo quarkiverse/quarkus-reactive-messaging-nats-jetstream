@@ -1,8 +1,8 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client.api;
 
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.StreamConfiguration;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.stream.StreamConfiguration;
 import lombok.Builder;
 
 @Builder
-public record StreamResult(String name, StreamConfiguration configuration, StreamStatus status) {
+public record StreamResult(StreamConfiguration configuration, StreamStatus status) {
 }

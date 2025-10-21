@@ -28,10 +28,10 @@ public record ConsumerConfiguration(DeliverPolicy deliverPolicy,
         Long startSequence, // server side this is unsigned
         Long maxDeliver,
         Long rateLimit, // server side this is unsigned
-        Integer maxAckPending,
-        Integer maxPullWaiting,
-        Integer maxBatch,
-        Integer maxBytes,
+        Long maxAckPending,
+        Long maxPullWaiting,
+        Long maxBatch,
+        Long maxBytes,
         Integer numReplicas,
         ZonedDateTime pauseUntil,
         Boolean flowControl,
@@ -40,4 +40,5 @@ public record ConsumerConfiguration(DeliverPolicy deliverPolicy,
         List<Duration> backoff,
         Map<String, String> metadata,
         List<String> filterSubjects) {
+
 }

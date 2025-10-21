@@ -9,15 +9,15 @@ import java.time.Instant;
 import java.util.concurrent.TimeUnit;
 
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 
 import org.junit.jupiter.api.Test;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.mapper.*;
 import io.quarkiverse.reactive.messaging.nats.jetstream.it.DataResourceCustomMappersTest.Profile;
-import io.quarkiverse.reactive.messaging.nats.jetstream.mapper.DefaultPayloadMapper;
-import io.quarkiverse.reactive.messaging.nats.jetstream.mapper.PayloadMapper;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.QuarkusTestProfile;
 import io.quarkus.test.junit.TestProfile;
@@ -25,6 +25,9 @@ import io.quarkus.test.junit.TestProfile;
 @QuarkusTest
 @TestProfile(Profile.class)
 class DataResourceCustomMappersTest {
+
+    @Inject
+    HeaderMapper headerMapper;
 
     @Test
     void data() {
@@ -50,10 +53,10 @@ class DataResourceCustomMappersTest {
     public static class Profile implements QuarkusTestProfile {
 
         @ApplicationScoped
-        public PayloadMapper getPayloadMapper(ObjectMapper objectMapper) {
-            return new DefaultPayloadMapper(objectMapper) {
+        public Serializer getSerializer(ObjectMapper objectMapper) {
+            return new Serializer() {
                 @Override
-                public <T> T of(byte[] data, Class<T> type) {
+                public <T> T readValue(byte[] data, Class<T> type) {
                     try {
                         return objectMapper.readerWithView(IncludeTimestamps.class).readValue(data, type);
                     } catch (IOException e) {
@@ -62,7 +65,7 @@ class DataResourceCustomMappersTest {
                 }
 
                 @Override
-                public byte[] of(Object payload) {
+                public byte[] toBytes(Object payload) {
                     try {
                         if (payload == null) {
                             return new byte[0];

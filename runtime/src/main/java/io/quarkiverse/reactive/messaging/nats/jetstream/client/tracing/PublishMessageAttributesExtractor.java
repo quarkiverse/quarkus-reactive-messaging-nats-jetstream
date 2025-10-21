@@ -10,6 +10,7 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.PublishMessag
 
 public class PublishMessageAttributesExtractor implements AttributesExtractor<PublishMessageMetadata, Void> {
     private static final String MESSAGE_PAYLOAD = "message.payload";
+    private static final String MESSAGE_TYPE = "message.type";
 
     private final MessagingAttributesGetter<PublishMessageMetadata, Void> attributesGetter;
 
@@ -19,7 +20,8 @@ public class PublishMessageAttributesExtractor implements AttributesExtractor<Pu
 
     @Override
     public void onStart(AttributesBuilder attributes, Context parentContext, PublishMessageMetadata message) {
-        attributes.put(MESSAGE_PAYLOAD, new String(message.payload(), StandardCharsets.UTF_8));
+        attributes.put(MESSAGE_PAYLOAD, new String(message.payload().data(), StandardCharsets.UTF_8));
+        attributes.put(MESSAGE_TYPE, message.payload().type().toString());
     }
 
     @Override
@@ -57,7 +59,7 @@ public class PublishMessageAttributesExtractor implements AttributesExtractor<Pu
 
         @Override
         public Long getMessagePayloadSize(PublishMessageMetadata message) {
-            return (long) message.payload().length;
+            return (long) message.payload().data().length;
         }
 
         @Override

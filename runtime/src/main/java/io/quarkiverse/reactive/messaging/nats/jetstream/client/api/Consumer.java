@@ -21,4 +21,5 @@ public record Consumer(String stream,
         Cluster cluster,
         Boolean pushBound,
         ZonedDateTime timestamp) {
+
 }

@@ -1,12 +1,11 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.processors;
 
-public interface MessageProcessor extends AutoCloseable {
+public interface MessageProcessor {
 
     String channel();
 
     String stream();
 
-    Status readiness();
+    Health health();
 
-    Status liveness();
 }

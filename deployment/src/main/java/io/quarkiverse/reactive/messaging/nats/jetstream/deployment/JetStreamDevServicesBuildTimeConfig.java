@@ -1,6 +1,6 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.deployment;
 
-import java.util.Optional;
+import java.util.OptionalInt;
 
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
@@ -23,7 +23,7 @@ public interface JetStreamDevServicesBuildTimeConfig {
      * <p>
      * If not defined, the port will be chosen randomly.
      */
-    Optional<Integer> port();
+    OptionalInt port();
 
     /**
      * The image to use.
@@ -59,4 +59,30 @@ public interface JetStreamDevServicesBuildTimeConfig {
      */
     @WithDefault("nats")
     String serviceName();
+
+    /**
+     * Retrieves the username to be used for authenticating with the NATS JetStream broker.
+     * If not explicitly configured, the default value is "guest".
+     *
+     * @return the username for authentication
+     */
+    @WithDefault("guest")
+    String username();
+
+    /**
+     * Returns the password to be used for authenticating with the NATS JetStream broker.
+     * If not explicitly configured, the default value is "guest".
+     *
+     * @return the password for authentication
+     */
+    @WithDefault("guest")
+    String password();
+
+    /**
+     * Determines whether SSL is enabled for the NATS JetStream broker managed by Quarkus Dev Services.
+     *
+     * @return a boolean value indicating if SSL is enabled (true) or disabled (false). The default is false.
+     */
+    @WithDefault("false")
+    Boolean sslEnabled();
 }

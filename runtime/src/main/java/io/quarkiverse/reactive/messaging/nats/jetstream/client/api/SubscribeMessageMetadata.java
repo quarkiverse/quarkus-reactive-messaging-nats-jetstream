@@ -63,18 +63,4 @@ public record SubscribeMessageMetadata(String stream,
         return headers;
     }
 
-    @Override
-    public String toString() {
-        return "SubscribeMessageMetadata{" +
-                "stream='" + stream + '\'' +
-                ", subject='" + subject + '\'' +
-                ", messageId='" + messageId + '\'' +
-                ", headers=" + headers +
-                ", deliveredCount=" + deliveredCount +
-                ", consumer='" + consumer + '\'' +
-                ", streamSequence=" + streamSequence +
-                ", consumerSequence=" + consumerSequence +
-                ", timestamp=" + timestamp +
-                '}';
-    }
 }

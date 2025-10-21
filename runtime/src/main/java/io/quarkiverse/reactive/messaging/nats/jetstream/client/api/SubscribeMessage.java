@@ -1,6 +1,5 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client.api;
 
-import static io.quarkiverse.reactive.messaging.nats.jetstream.mapper.HeaderMapper.toMessageHeaders;
 import static io.smallrye.reactive.messaging.providers.locals.ContextAwareMessage.captureContextMetadata;
 
 import java.time.Duration;
@@ -19,18 +18,16 @@ import io.smallrye.reactive.messaging.providers.locals.LocalContextMetadata;
 import io.vertx.mutiny.core.Context;
 
 public class SubscribeMessage<T> implements JetStreamMessage<T> {
-    public static final Duration DEFAULT_ACK_TIMEOUT = Duration.ofSeconds(5);
-
     private final Message message;
     private Metadata metadata;
     private final SubscribeMessageMetadata subscribeMessageMetadata;
-    private final T payload;
+    private final Payload<T, T> payload;
     private final Context context;
     private final Duration timeout;
     private final List<Duration> backoff;
 
     public SubscribeMessage(final Message message,
-            final T payload,
+            final Payload<T, T> payload,
             final Context context,
             final Duration timeout,
             final List<Duration> backoff) {
@@ -73,12 +70,12 @@ public class SubscribeMessage<T> implements JetStreamMessage<T> {
     }
 
     public Map<String, List<String>> headers() {
-        return toMessageHeaders(message.getHeaders());
+        return subscribeMessageMetadata.headers();
     }
 
     @Override
     public T getPayload() {
-        return payload;
+        return payload.data();
     }
 
     @Override
@@ -106,7 +103,7 @@ public class SubscribeMessage<T> implements JetStreamMessage<T> {
                 if (nackMetadata.isPresent() && nackMetadata.get().delayWaitOptional().isPresent()) {
                     message.nakWithDelay(nackMetadata.get().delayWaitOptional().get());
                 } else {
-                    message.nak();
+                    getBackoff().ifPresentOrElse(message::nakWithDelay, message::nak);
                 }
                 this.runOnMessageContext(() -> f.complete(null));
             } catch (Exception e) {
@@ -160,7 +157,11 @@ public class SubscribeMessage<T> implements JetStreamMessage<T> {
         if (backoff.isEmpty()) {
             return Optional.empty();
         }
-        final var index = getDeliveredCount() > backoff.size() ? backoff.size() - 1 : getDeliveredCount().intValue();
-        return Optional.of(backoff.get(index));
+        if (getDeliveredCount() == 0) {
+            return Optional.of(backoff.get(0));
+        } else {
+            final var index = getDeliveredCount() >= backoff.size() ? backoff.size() - 1 : getDeliveredCount().intValue() - 1;
+            return Optional.of(backoff.get(index));
+        }
     }
 }

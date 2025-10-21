@@ -6,6 +6,7 @@ import static io.smallrye.reactive.messaging.tracing.TracingUtils.getOpenTelemet
 import jakarta.enterprise.inject.Instance;
 
 import org.eclipse.microprofile.reactive.messaging.Message;
+import org.jboss.logging.Logger;
 
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.instrumentation.api.instrumenter.Instrumenter;
@@ -17,10 +18,10 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.SubscribeMess
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.unchecked.Unchecked;
 import io.smallrye.reactive.messaging.tracing.TracingUtils;
-import lombok.extern.jbosslog.JBossLog;
 
-@JBossLog
 public class SubscribeTracer<T> implements Tracer<T> {
+    private static final Logger log = Logger.getLogger(SubscribeTracer.class);
+
     private final boolean enabled;
     private final Instrumenter<SubscribeMessageMetadata, Void> instrumenter;
 

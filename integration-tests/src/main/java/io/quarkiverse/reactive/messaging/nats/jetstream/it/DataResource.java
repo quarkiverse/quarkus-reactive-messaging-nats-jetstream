@@ -68,7 +68,7 @@ public class DataResource {
         final var headers = new HashMap<String, List<String>>();
         headers.put("RESOURCE_ID", List.of(data.getResourceId()));
         final var message = Message.of(data,
-                Metadata.of(PublishMessageMetadata.of(messageId, headers)));
+                Metadata.of(PublishMessageMetadata.builder().messageId(messageId).headers(headers).build()));
         emitter.send(message);
         return message;
     }

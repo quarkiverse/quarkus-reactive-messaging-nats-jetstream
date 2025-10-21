@@ -4,30 +4,31 @@ import java.time.Duration;
 
 import org.eclipse.microprofile.reactive.messaging.Message;
 
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.Connection;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.ConnectionFactory;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.Subscription;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ConnectionConfiguration;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.PushConsumerConfiguration;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.Client;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer.ConsumerConfiguration;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer.PushConfiguration;
 import io.smallrye.mutiny.Multi;
 
 public class MessagePushPublisherProcessor<T> extends MessagePublisherProcessor<T> {
-    private final PushConsumerConfiguration configuration;
+    private final ConsumerConfiguration<T> configuration;
+    private final PushConfiguration pushConfiguration;
+    private final Client client;
 
     public MessagePushPublisherProcessor(final String channel,
             final String stream,
             final String consumer,
-            final ConnectionFactory connectionFactory,
-            final ConnectionConfiguration connectionConfiguration,
-            final PushConsumerConfiguration configuration,
+            final Client client,
+            final ConsumerConfiguration<T> configuration,
+            final PushConfiguration pushConfiguration,
             final Duration retryBackoff) {
-        super(channel, stream, consumer, connectionFactory, connectionConfiguration, retryBackoff);
+        super(channel, stream, consumer, retryBackoff);
         this.configuration = configuration;
+        this.pushConfiguration = pushConfiguration;
+        this.client = client;
     }
 
     @Override
-    protected Multi<Message<T>> subscription(Connection connection) {
-        return connection.<T> subscribe(stream(), consumer(), configuration)
-                .onItem().transformToMulti(Subscription::subscribe);
+    protected Multi<Message<T>> subscribe() {
+        return client.subscribe(configuration, pushConfiguration, this);
     }
 }
