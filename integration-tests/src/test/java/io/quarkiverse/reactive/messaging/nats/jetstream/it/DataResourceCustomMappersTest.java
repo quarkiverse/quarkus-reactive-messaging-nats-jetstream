@@ -8,15 +8,15 @@ import java.io.IOException;
 import java.time.Instant;
 import java.util.concurrent.TimeUnit;
 
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.mapper.*;
 import jakarta.enterprise.context.ApplicationScoped;
-
 import jakarta.inject.Inject;
+
 import org.junit.jupiter.api.Test;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.mapper.*;
 import io.quarkiverse.reactive.messaging.nats.jetstream.it.DataResourceCustomMappersTest.Profile;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.QuarkusTestProfile;

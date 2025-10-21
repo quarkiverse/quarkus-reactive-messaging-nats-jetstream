@@ -5,10 +5,12 @@ import jakarta.enterprise.context.ApplicationScoped;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import io.quarkus.arc.DefaultBean;
 import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
 @ApplicationScoped
+@DefaultBean
 public class SerializerImpl implements Serializer {
     private final ObjectMapper objectMapper;
 
