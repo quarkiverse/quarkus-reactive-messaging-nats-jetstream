@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.time.Duration;
 import java.time.ZonedDateTime;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -275,6 +276,8 @@ public record ConsumerAwareImpl(ExecutionHolder executionHolder,
                     }
                     emitter.complete();
                 }
+            } catch (IllegalStateException e) {
+                emitter.complete(); // when the connection is closed
             } catch (Exception failure) {
                 emitter.fail(failure);
             }
@@ -296,43 +299,13 @@ public record ConsumerAwareImpl(ExecutionHolder executionHolder,
     @SuppressWarnings("ReactiveStreamsUnusedPublisher")
     private Multi<io.nats.client.Message> subscribe(final String stream, final String consumer,
             final PullConfiguration configuration) {
-        if (configuration.batchSize() <= 1) {
-            return consumerContext(stream, consumer)
-                    .onItem().transformToMulti(consumerContext -> Multi.createBy().repeating()
-                            .uni(() -> next(consumerContext, configuration.maxExpires()))
-                            .whilst(message -> true));
-        } else {
-            return reader(stream, consumer, configuration)
-                    .onItem().transformToMulti(reader -> Multi.createBy().repeating()
-                            .uni(() -> read(reader, configuration.maxExpires()))
-                            .whilst(message -> true));
-        }
-    }
+        final var fetchConfiguration = toFetchConfiguration(configuration);
+        return consumerContext(stream, consumer)
+                .onItem().transformToMulti(consumerContext -> Multi.createBy().repeating()
+                        .uni(() -> Uni.createFrom().item(42))
+                        .whilst(v -> true)
+                        .onItem().transformToMultiAndConcatenate(v -> fetch(consumerContext, fetchConfiguration)));
 
-    private Uni<JetStreamReader> reader(final String stream, final String consumer, final PullConfiguration configuration) {
-        return jetStream()
-                .onItem()
-                .transformToUni(jetStream -> Uni.createFrom()
-                        .item(Unchecked.supplier(() -> jetStream.subscribe(null, pullSubscribeOptions(stream, consumer)))))
-                .onItem()
-                .transformToUni(subscription -> Uni.createFrom().item(
-                        Unchecked.supplier(() -> subscription.reader(configuration.batchSize(), configuration.rePullAt()))))
-                .onFailure().transform(failure -> new SubscribeException(stream, consumer, failure));
-    }
-
-    private Uni<io.nats.client.Message> read(final JetStreamReader reader, final Duration timeout) {
-        return Uni.createFrom().emitter(emitter -> {
-            try {
-                final var message = reader.nextMessage(timeout);
-                emitter.complete(message);
-            } catch (JetStreamStatusException e) {
-                emitter.fail(e);
-            } catch (IllegalStateException | InterruptedException e) {
-                emitter.complete(null);
-            } catch (Exception e) {
-                emitter.fail(e);
-            }
-        });
     }
 
     private PushSubscribeOptions pushSubscribeOptions(final String stream,
@@ -346,11 +319,17 @@ public record ConsumerAwareImpl(ExecutionHolder executionHolder,
         return builder.build();
     }
 
-    private PullSubscribeOptions pullSubscribeOptions(final String stream, final String consumer) {
-        return PullSubscribeOptions.builder()
-                .stream(stream)
-                .name(consumer)
-                .bind(true)
-                .build();
+    private FetchConfiguration toFetchConfiguration(PullConfiguration configuration) {
+        return new FetchConfiguration() {
+            @Override
+            public Optional<Duration> timeout() {
+                return Optional.ofNullable(configuration.maxExpires());
+            }
+
+            @Override
+            public Integer batchSize() {
+                return configuration.batchSize();
+            }
+        };
     }
 }

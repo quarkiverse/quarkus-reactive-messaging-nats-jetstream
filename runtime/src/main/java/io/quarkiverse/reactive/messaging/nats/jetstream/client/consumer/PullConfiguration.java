@@ -16,11 +16,6 @@ public interface PullConfiguration {
     Integer batchSize();
 
     /**
-     * The point in the current batch to tell the server to start the next batch
-     */
-    Integer rePullAt();
-
-    /**
      * The maximum number of waiting pull requests.
      */
     Optional<Integer> maxWaiting();

@@ -18,11 +18,6 @@ public class ClientPullConfiguration implements PullConfiguration {
     }
 
     @Override
-    public Integer rePullAt() {
-        return 10;
-    }
-
-    @Override
     public Optional<Integer> maxWaiting() {
         return Optional.empty();
     }
