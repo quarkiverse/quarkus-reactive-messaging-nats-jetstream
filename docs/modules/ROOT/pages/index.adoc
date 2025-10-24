@@ -140,7 +140,7 @@ If you want more examples, please take a look at the tests of the extension.
 | quarkus.messaging.nats.streams.[stream-name].pull-consumers.[consumer-name].consumer-configuration.sample-frequency | The sample frequency | String |
 | quarkus.messaging.nats.streams.[stream-name].pull-consumers.[consumer-name].consumer-configuration.meta-data | The consumer metadata | Map<String, String> |
 | quarkus.messaging.nats.streams.[stream-name].pull-consumers.[consumer-name].consumer-configuration.pause-until | The pause until | ZonedDateTime |
-| quarkus.messaging.nats.streams.[stream-name].pull-consumers.[consumer-name].pull-configuration.pull.batch-size | The size of batch of messages to be pulled in pull mode | Integer | 10
+| quarkus.messaging.nats.streams.[stream-name].pull-consumers.[consumer-name].pull-configuration.batch-size | The batch size of messages to be pulled in pull mode | Integer | 100
 | quarkus.messaging.nats.streams.[stream-name].pull-consumers.[consumer-name].pull-configuration.max-waiting | The maximum number of waiting pull requests | Integer |
 | quarkus.messaging.nats.streams.[stream-name].pull-consumers.[consumer-name].pull-configuration.max-expires | The maximum duration a single pull request will wait for messages to be available to pull. NATS require this to be 1000ms or above | Duration | 1s
 | quarkus.messaging.nats.streams.[stream-name].push-consumers.[consumer-name].consumer-configuration.description | Description of pull consumer | String |
