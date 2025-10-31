@@ -63,3 +63,5 @@ pom.xml.releaseBackup
 pom.xml.versionsBackup
 release.properties
 /qodana.yaml
+
+CLAUDE.md
