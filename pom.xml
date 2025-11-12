@@ -30,7 +30,7 @@
         <quarkus.version>3.29.2</quarkus.version>
 
         <jnats.version>2.24.0</jnats.version>
-        <smallrye-connector-attribute-processor.version>4.29.0</smallrye-connector-attribute-processor.version>
+        <smallrye-connector-attribute-processor.version>4.31.0</smallrye-connector-attribute-processor.version>
         <smallrye-reactive-messaging-otel.version>4.29.0</smallrye-reactive-messaging-otel.version>
         <microprofile-config-api.version>3.1</microprofile-config-api.version>
         <assertj-core.version>3.27.6</assertj-core.version>
