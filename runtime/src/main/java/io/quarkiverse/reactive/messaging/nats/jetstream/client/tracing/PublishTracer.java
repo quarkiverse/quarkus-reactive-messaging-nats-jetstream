@@ -1,23 +1,25 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client.tracing;
 
-import static io.opentelemetry.instrumentation.api.instrumenter.messaging.MessageOperation.PUBLISH;
-import static io.smallrye.reactive.messaging.tracing.TracingUtils.getOpenTelemetry;
+import static io.quarkiverse.reactive.messaging.nats.jetstream.client.tracing.messaging.MessageOperation.PUBLISH;
+
+import java.util.Optional;
 
 import jakarta.enterprise.inject.Instance;
 
 import org.eclipse.microprofile.reactive.messaging.Message;
 
 import io.opentelemetry.api.OpenTelemetry;
+import io.opentelemetry.context.Context;
+import io.opentelemetry.context.Scope;
 import io.opentelemetry.instrumentation.api.instrumenter.Instrumenter;
 import io.opentelemetry.instrumentation.api.instrumenter.InstrumenterBuilder;
-import io.opentelemetry.instrumentation.api.instrumenter.messaging.MessagingAttributesExtractor;
-import io.opentelemetry.instrumentation.api.instrumenter.messaging.MessagingSpanNameExtractor;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.PublishMessageMetadata;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.tracing.messaging.MessagingAttributesExtractor;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.tracing.messaging.MessagingSpanNameExtractor;
 import io.quarkus.opentelemetry.runtime.QuarkusContextStorage;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.unchecked.Unchecked;
 import io.smallrye.reactive.messaging.TracingMetadata;
-import io.smallrye.reactive.messaging.tracing.TracingUtils;
 
 public class PublishTracer<T> implements Tracer<T> {
     private final boolean enabled;
@@ -34,7 +36,7 @@ public class PublishTracer<T> implements Tracer<T> {
             return addTracingMetadata(message)
                     .onItem().transformToUni(msg -> Uni.createFrom().item(Unchecked.supplier(() -> {
                         msg.getMetadata(PublishMessageMetadata.class)
-                                .ifPresent(metadata -> TracingUtils.traceOutgoing(instrumenter, msg, metadata));
+                                .ifPresent(metadata -> traceOutgoing(instrumenter, msg, metadata));
                         return traceSupplier.get(message);
                     })));
         } else {
@@ -65,9 +67,28 @@ public class PublishTracer<T> implements Tracer<T> {
         InstrumenterBuilder<PublishMessageMetadata, Void> builder = Instrumenter.builder(
                 getOpenTelemetry(openTelemetryInstance),
                 "io.smallrye.reactive.messaging.jetstream",
-                MessagingSpanNameExtractor.create(messagingAttributesGetter, PUBLISH));
+                new MessagingSpanNameExtractor<>(messagingAttributesGetter, PUBLISH));
         return builder.addAttributesExtractor(MessagingAttributesExtractor.create(messagingAttributesGetter, PUBLISH))
                 .addAttributesExtractor(attributesExtractor)
                 .buildProducerInstrumenter(new PublishMessageTextMapSetter());
+    }
+
+    private void traceOutgoing(Instrumenter<PublishMessageMetadata, Void> instrumenter, Message<T> message,
+            PublishMessageMetadata metadata) {
+        Optional<TracingMetadata> tracingMetadata = TracingMetadata.fromMessage(message);
+        Context parentContext = tracingMetadata.map(TracingMetadata::getCurrentContext).orElse(Context.current());
+        boolean shouldStart = instrumenter.shouldStart(parentContext, metadata);
+        if (shouldStart) {
+            Scope scope = null;
+            try {
+                Context spanContext = instrumenter.start(parentContext, metadata);
+                scope = spanContext.makeCurrent();
+                instrumenter.end(spanContext, metadata, null, null);
+            } finally {
+                if (scope != null) {
+                    scope.close();
+                }
+            }
+        }
     }
 }

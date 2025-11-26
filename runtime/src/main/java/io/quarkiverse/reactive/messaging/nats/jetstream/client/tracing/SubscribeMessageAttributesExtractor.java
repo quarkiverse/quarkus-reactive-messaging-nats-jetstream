@@ -5,8 +5,8 @@ import java.nio.charset.StandardCharsets;
 import io.opentelemetry.api.common.AttributesBuilder;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.instrumentation.api.instrumenter.AttributesExtractor;
-import io.opentelemetry.instrumentation.api.instrumenter.messaging.MessagingAttributesGetter;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.SubscribeMessageMetadata;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.tracing.messaging.MessagingAttributesGetter;
 
 public class SubscribeMessageAttributesExtractor implements AttributesExtractor<SubscribeMessageMetadata, Void> {
     private static final String MESSAGE_PAYLOAD = "message.payload";
@@ -15,7 +15,7 @@ public class SubscribeMessageAttributesExtractor implements AttributesExtractor<
     private static final String MESSAGE_CONSUMER = "message.consumer";
     private static final String MESSAGE_DELIVERED_COUNT = "message.delivered_count";
 
-    private final MessagingAttributesGetter<SubscribeMessageMetadata, Void> attributesGetter;
+    private final MessagingAttributesGetter<SubscribeMessageMetadata> attributesGetter;
 
     public SubscribeMessageAttributesExtractor() {
         this.attributesGetter = new SubscribeMessagingAttributesGetter();
@@ -35,12 +35,12 @@ public class SubscribeMessageAttributesExtractor implements AttributesExtractor<
             Throwable error) {
     }
 
-    public MessagingAttributesGetter<SubscribeMessageMetadata, Void> getMessagingAttributesGetter() {
+    public MessagingAttributesGetter<SubscribeMessageMetadata> getMessagingAttributesGetter() {
         return attributesGetter;
     }
 
     private final static class SubscribeMessagingAttributesGetter
-            implements MessagingAttributesGetter<SubscribeMessageMetadata, Void> {
+            implements MessagingAttributesGetter<SubscribeMessageMetadata> {
 
         @Override
         public String getSystem(SubscribeMessageMetadata metadata) {
@@ -53,28 +53,13 @@ public class SubscribeMessageAttributesExtractor implements AttributesExtractor<
         }
 
         @Override
-        public boolean isTemporaryDestination(SubscribeMessageMetadata metadata) {
-            return false;
-        }
-
-        @Override
-        public String getConversationId(SubscribeMessageMetadata message) {
-            return null;
-        }
-
-        @Override
-        public Long getMessagePayloadSize(SubscribeMessageMetadata metadata) {
+        public Long getMessageBodySize(SubscribeMessageMetadata metadata) {
             return (long) metadata.payload().length;
         }
 
         @Override
-        public Long getMessagePayloadCompressedSize(SubscribeMessageMetadata message) {
-            return null;
-        }
-
-        @Override
-        public String getMessageId(SubscribeMessageMetadata message, Void unused) {
-            return message.messageId();
+        public String getMessageId(SubscribeMessageMetadata metadata) {
+            return metadata.messageId();
         }
     }
 }

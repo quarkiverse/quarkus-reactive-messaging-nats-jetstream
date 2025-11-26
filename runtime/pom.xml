@@ -30,10 +30,6 @@
             <artifactId>quarkus-devservices</artifactId>
         </dependency>
         <dependency>
-            <groupId>io.opentelemetry.instrumentation</groupId>
-            <artifactId>opentelemetry-instrumentation-api-semconv</artifactId>
-        </dependency>
-        <dependency>
             <groupId>io.nats</groupId>
             <artifactId>jnats</artifactId>
         </dependency>
@@ -46,10 +42,6 @@
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>io.smallrye.reactive</groupId>
-            <artifactId>smallrye-reactive-messaging-otel</artifactId>
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
