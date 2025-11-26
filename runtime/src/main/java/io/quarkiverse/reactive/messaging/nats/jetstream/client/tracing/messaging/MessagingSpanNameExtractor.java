@@ -3,7 +3,6 @@ package io.quarkiverse.reactive.messaging.nats.jetstream.client.tracing.messagin
 import io.opentelemetry.instrumentation.api.instrumenter.SpanNameExtractor;
 
 public class MessagingSpanNameExtractor<T> implements SpanNameExtractor<T> {
-
     private final MessagingAttributesGetter<T> getter;
     private final MessageOperation operation;
 
@@ -18,6 +17,6 @@ public class MessagingSpanNameExtractor<T> implements SpanNameExtractor<T> {
         if (destinationName == null) {
             destinationName = "unknown";
         }
-        return destinationName + " " + operation.operationName();
+        return destinationName + " " + operation.toString();
     }
 }

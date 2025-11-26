@@ -6,8 +6,8 @@ public enum MessageOperation {
     PUBLISH,
     RECEIVE;
 
-    String operationName() {
+    @Override
+    public String toString() {
         return this.name().toLowerCase(Locale.ROOT);
     }
-
 }

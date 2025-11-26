@@ -38,7 +38,7 @@ public final class MessagingAttributesExtractor<T> implements AttributesExtracto
         attributes.put(MESSAGING_SYSTEM, getter.getSystem(request));
         attributes.put(MESSAGING_DESTINATION_NAME, getter.getDestination(request));
         attributes.put(MESSAGING_MESSAGE_BODY_SIZE, getter.getMessageBodySize(request));
-        attributes.put(MESSAGING_OPERATION, operation.operationName());
+        attributes.put(MESSAGING_OPERATION, operation.toString());
     }
 
     @Override
