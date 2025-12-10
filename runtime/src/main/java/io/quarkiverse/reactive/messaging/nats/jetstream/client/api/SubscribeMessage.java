@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -114,6 +115,11 @@ public class SubscribeMessage<T> implements JetStreamMessage<T> {
 
     @Override
     public Function<Throwable, CompletionStage<Void>> getNack() {
+        return this::nack;
+    }
+
+    @Override
+    public BiFunction<Throwable, Metadata, CompletionStage<Void>> getNackWithMetadata() {
         return this::nack;
     }
 
