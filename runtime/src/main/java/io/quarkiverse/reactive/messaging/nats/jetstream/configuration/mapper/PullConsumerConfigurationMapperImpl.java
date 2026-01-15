@@ -18,13 +18,19 @@ public class PullConsumerConfigurationMapperImpl implements PullConsumerConfigur
 
     @Override
     public <T> List<PullConsumerConfiguration<T>> map(ConnectorConfiguration configuration) {
-        return configuration.streams().entrySet().stream()
-                .flatMap(entry -> this.<T> map(entry.getKey(), entry.getValue()).stream()).toList();
+        if (configuration.streams() == null) {
+            return List.of();
+        }
+        return Optional.ofNullable(configuration.streams())
+                .map(streams -> streams.entrySet().stream()
+                        .flatMap(entry -> this.<T> map(entry.getKey(), entry.getValue()).stream()).toList())
+                .orElseGet(List::of);
     }
 
     @Override
     public <T> List<PullConsumerConfiguration<T>> map(String stream, ConnectorConfiguration configuration) {
-        return Optional.ofNullable(configuration.streams().get(stream))
+        return Optional.ofNullable(configuration.streams())
+                .flatMap(streams -> Optional.ofNullable(streams.get(stream)))
                 .map(streamConfiguration -> this.<T> map(stream, streamConfiguration))
                 .orElseGet(List::of);
     }

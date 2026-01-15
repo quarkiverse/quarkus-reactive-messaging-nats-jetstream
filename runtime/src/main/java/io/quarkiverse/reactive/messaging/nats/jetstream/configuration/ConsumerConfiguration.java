@@ -13,6 +13,11 @@ import io.smallrye.config.WithDefault;
 public interface ConsumerConfiguration {
 
     /**
+     * Name of consumer. If not set then the key of the map is used
+     */
+    Optional<String> name();
+
+    /**
      * Set to true if the consumer should be durable.
      */
     @WithDefault("false")

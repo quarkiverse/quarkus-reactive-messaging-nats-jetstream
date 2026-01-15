@@ -18,13 +18,16 @@ public class PushConsumerConfigurationMapperImpl implements PushConsumerConfigur
 
     @Override
     public <T> List<PushConsumerConfiguration<T>> map(ConnectorConfiguration configuration) {
-        return configuration.streams().entrySet().stream()
-                .flatMap(entry -> this.<T> map(entry.getKey(), entry.getValue()).stream()).toList();
+        return Optional.ofNullable(configuration.streams())
+                .map(streams -> streams.entrySet().stream()
+                        .flatMap(entry -> this.<T> map(entry.getKey(), entry.getValue()).stream()).toList())
+                .orElseGet(List::of);
     }
 
     @Override
     public <T> List<PushConsumerConfiguration<T>> map(String stream, ConnectorConfiguration configuration) {
-        return Optional.ofNullable(configuration.streams().get(stream))
+        return Optional.ofNullable(configuration.streams())
+                .flatMap(streams -> Optional.ofNullable(streams.get(stream)))
                 .map(streamConfiguration -> this.<T> map(stream, streamConfiguration))
                 .orElseGet(List::of);
     }

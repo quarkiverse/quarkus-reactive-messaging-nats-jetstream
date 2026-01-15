@@ -1,6 +1,7 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.configuration.mapper;
 
 import java.util.List;
+import java.util.Optional;
 
 import jakarta.enterprise.context.ApplicationScoped;
 
@@ -12,15 +13,18 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.configuration.ConnectorC
 public class KeyValueStoreConfigurationMapperImpl implements KeyValueStoreConfigurationMapper {
 
     @Override
-    public List<KeyValueStoreConfiguration> map(
-            ConnectorConfiguration configuration) {
-        return configuration.keyValueStores().entrySet().stream().map(entry -> map(entry.getKey(), entry.getValue())).toList();
+    public List<KeyValueStoreConfiguration> map(ConnectorConfiguration configuration) {
+        return Optional.ofNullable(configuration.keyValueStores())
+                .map(keyValueStores -> keyValueStores.entrySet().stream().map(entry -> map(entry.getKey(), entry.getValue()))
+                        .toList())
+                .orElseGet(List::of);
+
     }
 
     private io.quarkiverse.reactive.messaging.nats.jetstream.client.store.KeyValueStoreConfiguration map(String name,
             io.quarkiverse.reactive.messaging.nats.jetstream.configuration.KeyValueStoreConfiguration configuration) {
         return KeyValueStoreConfigurationImpl.builder()
-                .name(name)
+                .name(configuration.bucketName().orElse(name))
                 .description(configuration.description())
                 .ttl(configuration.ttl())
                 .maxHistoryPerKey(configuration.maxHistoryPerKey())
