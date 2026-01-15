@@ -28,7 +28,7 @@ public record KeyValueStoreAwareImpl(ExecutionHolder executionHolder, PayloadMap
                     if (!bucketNames.contains(configuration.name())) {
                         return addKeyValueStore(keyValueConfigurationMapper.map(configuration));
                     } else {
-                        return Uni.createFrom().item(null);
+                        return Uni.createFrom().voidItem();
                     }
                 })
                 .onItem().<Void> transform(keyValueStatus -> null)
