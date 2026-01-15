@@ -8,6 +8,11 @@ import io.nats.client.api.StorageType;
 public interface KeyValueStoreConfiguration {
 
     /**
+     * Name of Key-Value store. If not set then the key of the map is used
+     */
+    Optional<String> bucketName();
+
+    /**
      * Description of Key-Value store
      */
     Optional<String> description();

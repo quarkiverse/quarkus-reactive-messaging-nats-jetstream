@@ -15,7 +15,7 @@ public class ConsumerConfigurationMapperImpl implements ConsumerConfigurationMap
             String name, io.quarkiverse.reactive.messaging.nats.jetstream.configuration.ConsumerConfiguration configuration) {
         return ConsumerConfigurationImpl.<T> builder()
                 .stream(stream)
-                .name(name)
+                .name(configuration.name().orElse(name))
                 .durable(configuration.durable())
                 .filterSubjects(configuration.filterSubjects().orElseGet(List::of))
                 .ackWait(configuration.ackWait())

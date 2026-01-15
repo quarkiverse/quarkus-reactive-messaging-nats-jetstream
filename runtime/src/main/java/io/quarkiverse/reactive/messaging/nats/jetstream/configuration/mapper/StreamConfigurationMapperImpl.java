@@ -1,6 +1,7 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.configuration.mapper;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 import jakarta.enterprise.context.ApplicationScoped;
@@ -14,14 +15,16 @@ public class StreamConfigurationMapperImpl implements StreamConfigurationMapper 
 
     @Override
     public List<StreamConfiguration> map(ConnectorConfiguration configuration) {
-        return configuration.streams().entrySet().stream()
-                .map(entry -> map(entry.getKey(), entry.getValue())).toList();
+        return Optional.ofNullable(configuration.streams())
+                .map(streams -> streams.entrySet().stream()
+                        .map(entry -> map(entry.getKey(), entry.getValue())).toList())
+                .orElseGet(List::of);
     }
 
     private io.quarkiverse.reactive.messaging.nats.jetstream.client.stream.StreamConfiguration map(String name,
             io.quarkiverse.reactive.messaging.nats.jetstream.configuration.StreamConfiguration configuration) {
         return StreamConfigurationImpl.builder()
-                .name(name)
+                .name(configuration.name().orElse(name))
                 .description(configuration.description())
                 .subjects(configuration.subjects().orElseGet(Set::of))
                 .replicas(configuration.replicas())
