@@ -14,6 +14,11 @@ import io.smallrye.config.WithDefault;
 public interface StreamConfiguration {
 
     /**
+     * Name of stream. If not set then the key of the map is used
+     */
+    Optional<String> name();
+
+    /**
      * Description of stream
      */
     Optional<String> description();

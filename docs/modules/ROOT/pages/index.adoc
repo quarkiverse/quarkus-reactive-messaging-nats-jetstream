@@ -99,6 +99,7 @@ If you want more examples, please take a look at the tests of the extension.
 | Property Name | Description | Type | Default Value
 | quarkus.messaging.nats.auto-configuration | Auto-configuration stream and subjects based on channel configuration | Boolean | true
 | quarkus.messaging.nats.trace | Enable tracing | Boolean | true
+| quarkus.messaging.nats.streams.[stream-name].name | The name of the stream. If not set the key from the map is used | String | [stream-name]
 | quarkus.messaging.nats.streams.[stream-name].replicas | The number of replicas a message must be stored. | Integer | 1
 | quarkus.messaging.nats.streams.[stream-name].storage-type | The storage type for stream data | File or Memory | File
 | quarkus.messaging.nats.streams.[stream-name].retention-policy | Declares the retention policy for the stream | Limits or Interest | Interest
@@ -121,6 +122,7 @@ If you want more examples, please take a look at the tests of the extension.
 | quarkus.messaging.nats.streams.[stream-name].deny-purge | The flag indicating if deny purge is set for the stream | Boolean |
 | quarkus.messaging.nats.streams.[stream-name].discard-new-per-subject | Whether discard policy with max message per subject is applied per subject | Boolean |
 | quarkus.messaging.nats.streams.[stream-name].first-sequence | The first sequence used in the stream | Long |
+| quarkus.messaging.nats.streams.[stream-name].pull-consumers.[consumer-name].consumer-configuration.name | The name of the consumer. If not set the key from the map is used | String | [consumer-name]
 | quarkus.messaging.nats.streams.[stream-name].pull-consumers.[consumer-name].consumer-configuration.description | Description of pull consumer | String |
 | quarkus.messaging.nats.streams.[stream-name].pull-consumers.[consumer-name].consumer-configuration.payload-type | The class name of the payload type | String |
 | quarkus.messaging.nats.streams.[stream-name].pull-consumers.[consumer-name].consumer-configuration.durable | Set to true if the consumer should be durable | Boolean | false
@@ -143,6 +145,7 @@ If you want more examples, please take a look at the tests of the extension.
 | quarkus.messaging.nats.streams.[stream-name].pull-consumers.[consumer-name].pull-configuration.batch-size | The batch size of messages to be pulled in pull mode | Integer | 100
 | quarkus.messaging.nats.streams.[stream-name].pull-consumers.[consumer-name].pull-configuration.max-waiting | The maximum number of waiting pull requests | Integer |
 | quarkus.messaging.nats.streams.[stream-name].pull-consumers.[consumer-name].pull-configuration.max-expires | The maximum duration a single pull request will wait for messages to be available to pull. NATS require this to be 1000ms or above | Duration | 1s
+| quarkus.messaging.nats.streams.[stream-name].push-consumers.[consumer-name].consumer-configuration.name | The name of the consumer. If not set the key from the map is used | String | [consumer-name]
 | quarkus.messaging.nats.streams.[stream-name].push-consumers.[consumer-name].consumer-configuration.description | Description of pull consumer | String |
 | quarkus.messaging.nats.streams.[stream-name].push-consumers.[consumer-name].consumer-configuration.payload-type | The class name of the payload type | String |
 | quarkus.messaging.nats.streams.[stream-name].push-consumers.[consumer-name].consumer-configuration.durable | Sets the durable for the consumer | Boolean | false
@@ -193,14 +196,15 @@ If you want more examples, please take a look at the tests of the extension.
 .NATS Key/Value Store configuration
 [cols="4",options="header"]
 |======
-| quarkus.messaging.nats.key-value-stores[bucket-name].description | Description of Key-Value store | String |
-| quarkus.messaging.nats.key-value-stores[bucket-name].storage-type | The storage type | File or Memory | File
-| quarkus.messaging.nats.key-value-stores[bucket-name].max-bucket-size | The maximum number of bytes for this bucket | Long |
-| quarkus.messaging.nats.key-value-stores[bucket-name].max-history-per-key | The maximum amount of history for any one key. Includes the current value. | Integer |
-| quarkus.messaging.nats.key-value-stores[bucket-name].max-value-size | The maximum size for an individual value in the bucket | Integer |
-| quarkus.messaging.nats.key-value-stores[bucket-name].ttl | The maximum age for a value in this bucket | Duration |
-| quarkus.messaging.nats.key-value-stores[bucket-name].replicas | The number of replicas for this bucket | Integer | 1
-| quarkus.messaging.nats.key-value-stores[bucket-name].compressed | Whether to use compression | Boolean | false
+| quarkus.messaging.nats.key-value-stores.[bucket-name].bucket-name | The name of the bucket. If not set the key from the map is used | String | [bucket-name]
+| quarkus.messaging.nats.key-value-stores.[bucket-name].description | Description of Key-Value store | String |
+| quarkus.messaging.nats.key-value-stores.[bucket-name].storage-type | The storage type | File or Memory | File
+| quarkus.messaging.nats.key-value-stores.[bucket-name].max-bucket-size | The maximum number of bytes for this bucket | Long |
+| quarkus.messaging.nats.key-value-stores.[bucket-name].max-history-per-key | The maximum amount of history for any one key. Includes the current value. | Integer |
+| quarkus.messaging.nats.key-value-stores.[bucket-name].max-value-size | The maximum size for an individual value in the bucket | Integer |
+| quarkus.messaging.nats.key-value-stores.[bucket-name].ttl | The maximum age for a value in this bucket | Duration |
+| quarkus.messaging.nats.key-value-stores.[bucket-name].replicas | The number of replicas for this bucket | Integer | 1
+| quarkus.messaging.nats.key-value-stores.[bucket-name].compressed | Whether to use compression | Boolean | false
 |======
 
 === Dev service configuration
