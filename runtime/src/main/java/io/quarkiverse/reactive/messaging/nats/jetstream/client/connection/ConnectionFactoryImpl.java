@@ -12,8 +12,6 @@ import io.nats.client.ErrorListener;
 import io.nats.client.Nats;
 import io.nats.client.Options;
 import io.quarkiverse.reactive.messaging.nats.jetstream.configuration.ConnectorConfiguration;
-import io.quarkus.tls.TlsConfiguration;
-import io.quarkus.tls.TlsConfigurationRegistry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.jbosslog.JBossLog;
 
@@ -22,10 +20,9 @@ import lombok.extern.jbosslog.JBossLog;
 @JBossLog
 public class ConnectionFactoryImpl implements ConnectionFactory {
     private final ConnectorConfiguration configuration;
-    private final TlsConfigurationRegistry tlsConfigurationRegistry;
+    private final TlsContext tlsContext;
     private final AtomicReference<Connection> connection = new AtomicReference<>();
 
-    @ApplicationScoped
     @Produces
     @Override
     public Connection create() {
@@ -72,12 +69,9 @@ public class ConnectionFactoryImpl implements ConnectionFactory {
         configuration().credentialPath().ifPresent(optionsBuilder::credentialPath);
         configuration().bufferSize().ifPresent(optionsBuilder::bufferSize);
         configuration().connectionTimeout().ifPresent(optionsBuilder::connectionTimeout);
-        if (configuration().sslEnabled().orElse(false)) {
+        if (tlsContext.sslContext().isPresent()) {
             optionsBuilder.opentls();
-            final var tlsConfiguration = configuration().tlsConfigurationName()
-                    .flatMap(tlsConfigurationRegistry::get)
-                    .orElseGet(() -> getDefaultTlsConfiguration(tlsConfigurationRegistry));
-            optionsBuilder.sslContext(tlsConfiguration.createSSLContext());
+            optionsBuilder.sslContext(tlsContext.sslContext().get());
         }
         configuration().tlsAlgorithm().ifPresent(optionsBuilder::tlsAlgorithm);
         return optionsBuilder.build();
@@ -88,8 +82,4 @@ public class ConnectionFactoryImpl implements ConnectionFactory {
                 .orElseGet(NativeErrorListener::new);
     }
 
-    private TlsConfiguration getDefaultTlsConfiguration(TlsConfigurationRegistry tlsConfigurationRegistry) {
-        return tlsConfigurationRegistry.getDefault().orElseThrow(
-                () -> new IllegalStateException("No Quarkus TLS configuration found for NATS JetStream connection"));
-    }
 }
