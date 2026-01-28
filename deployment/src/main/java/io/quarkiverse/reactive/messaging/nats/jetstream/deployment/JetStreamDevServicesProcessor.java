@@ -49,7 +49,7 @@ public class JetStreamDevServicesProcessor {
         boolean useSharedNetwork = DevServicesSharedNetworkBuildItem.isSharedNetworkRequired(devServicesConfig,
                 devServicesSharedNetworkBuildItem);
 
-        if (natsDevServicesEnabled(dockerStatusBuildItem, devServicesBuildTimeConfig)) {
+        if (!natsDevServicesEnabled(dockerStatusBuildItem, devServicesBuildTimeConfig)) {
             // If the dev services are disabled, we don't need to do anything
             return;
         }
@@ -108,19 +108,20 @@ public class JetStreamDevServicesProcessor {
         if (!devServicesConfig.enabled()) {
             // explicitly disabled
             log.debug("Not starting devservices for NATS as it has been disabled in the config");
-            return true;
+            return false;
         }
 
         boolean needToStart = !ConfigUtils.isPropertyNonEmpty("quarkus.messaging.nats.connection.servers");
         if (!needToStart) {
             log.debug("Not starting dev services for NATS as servers have been provided");
-            return true;
+            return false;
         }
 
         if (!dockerStatusBuildItem.isContainerRuntimeAvailable()) {
             log.warn("Please configure quarkus.messaging.nats.connection.servers for NATS or get a working docker instance");
-            return true;
+            return false;
         }
-        return false;
+
+        return true;
     }
 }

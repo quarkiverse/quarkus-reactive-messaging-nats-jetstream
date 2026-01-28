@@ -6,6 +6,7 @@ import io.nats.client.Options;
 import io.quarkiverse.reactive.messaging.nats.jetstream.JetStreamConnector;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.ClientImpl;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.connection.ConnectionFactoryImpl;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.connection.TlsContextFactoryImpl;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer.ConsumerConfigurationMapperImpl;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer.ConsumerMapperImpl;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.mapper.HeaderMapperImpl;
@@ -85,7 +86,7 @@ class JetStreamProcessor {
 
         buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(MessagePublisherProcessorFactory.class));
         buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(MessageSubscriberProcessorFactory.class));
-
+        buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(TlsContextFactoryImpl.class));
     }
 
     @BuildStep
