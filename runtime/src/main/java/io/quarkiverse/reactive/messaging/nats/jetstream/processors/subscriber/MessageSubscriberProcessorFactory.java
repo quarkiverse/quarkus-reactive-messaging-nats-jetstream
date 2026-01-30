@@ -1,7 +1,9 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.processors.subscriber;
 
 import java.time.Duration;
+import java.util.Optional;
 
+import io.quarkiverse.reactive.messaging.nats.jetstream.configuration.*;
 import jakarta.enterprise.context.ApplicationScoped;
 
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.Client;
@@ -11,9 +13,14 @@ import lombok.RequiredArgsConstructor;
 @ApplicationScoped
 public class MessageSubscriberProcessorFactory {
     private final Client client;
+    private final ConnectorConfiguration configuration;
 
     public <T> MessageSubscriberProcessor<T> create(String channel, String stream, String subject, Duration retryBackoff) {
-        return new MessageSubscriberProcessor<>(channel, stream, subject, client, retryBackoff);
+        var streamName = Optional.ofNullable(configuration.streams())
+                .flatMap(streams -> Optional.ofNullable(streams.get(stream)))
+                .flatMap(StreamConfiguration::name)
+                .orElse(stream);
+        return new MessageSubscriberProcessor<>(channel, streamName, subject, client, retryBackoff);
     }
 
 }
