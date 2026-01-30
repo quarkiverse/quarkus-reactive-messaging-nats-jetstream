@@ -20,7 +20,9 @@ public class PushConsumerConfigurationMapperImpl implements PushConsumerConfigur
     public <T> List<PushConsumerConfiguration<T>> map(ConnectorConfiguration configuration) {
         return Optional.ofNullable(configuration.streams())
                 .map(streams -> streams.entrySet().stream()
-                        .flatMap(entry -> this.<T> map(entry.getValue().name().orElse(entry.getKey()), entry.getValue()).stream()).toList())
+                        .flatMap(entry -> this.<T> map(entry.getValue().name().orElse(entry.getKey()), entry.getValue())
+                                .stream())
+                        .toList())
                 .orElseGet(List::of);
     }
 

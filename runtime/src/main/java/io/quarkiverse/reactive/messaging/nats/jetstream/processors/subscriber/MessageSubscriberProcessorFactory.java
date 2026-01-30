@@ -3,10 +3,10 @@ package io.quarkiverse.reactive.messaging.nats.jetstream.processors.subscriber;
 import java.time.Duration;
 import java.util.Optional;
 
-import io.quarkiverse.reactive.messaging.nats.jetstream.configuration.*;
 import jakarta.enterprise.context.ApplicationScoped;
 
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.Client;
+import io.quarkiverse.reactive.messaging.nats.jetstream.configuration.*;
 import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
