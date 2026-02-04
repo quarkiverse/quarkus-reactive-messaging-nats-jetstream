@@ -2,6 +2,7 @@ package io.quarkiverse.reactive.messaging.nats.jetstream.client.connection;
 
 import java.util.Optional;
 
+import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Produces;
 
@@ -17,22 +18,28 @@ import lombok.extern.jbosslog.JBossLog;
 public class TlsContextFactoryImpl implements TlsContextFactory {
     private final ConnectorConfiguration configuration;
     private final TlsConfigurationRegistry registry;
+    private volatile TlsContext cached;
 
-    @Produces
-    @Override
-    public TlsContext create() {
+    @PostConstruct
+    void init() {
         try {
             if (configuration.connection().sslEnabled().orElse(false)) {
                 final var tlsConfiguration = configuration.connection().tlsConfigurationName()
                         .flatMap(registry::get)
                         .orElseGet(this::getDefaultTlsConfiguration);
-                return new TlsContextImpl(Optional.of(tlsConfiguration.createSSLContext()));
+                cached = new TlsContextImpl(Optional.of(tlsConfiguration.createSSLContext()));
             } else {
-                return new TlsContextImpl(Optional.empty());
+                cached = new TlsContextImpl(Optional.empty());
             }
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    @Produces
+    @Override
+    public TlsContext create() {
+        return cached;
     }
 
     private TlsConfiguration getDefaultTlsConfiguration() {
