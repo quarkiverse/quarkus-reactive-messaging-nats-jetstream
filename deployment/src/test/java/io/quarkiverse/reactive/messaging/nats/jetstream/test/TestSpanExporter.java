@@ -7,12 +7,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 
 import jakarta.enterprise.context.ApplicationScoped;
 
 import io.opentelemetry.sdk.common.CompletableResultCode;
+import io.opentelemetry.sdk.testing.exporter.InMemorySpanExporter;
 import io.opentelemetry.sdk.trace.data.SpanData;
 import io.opentelemetry.sdk.trace.export.SpanExporter;
 import io.quarkus.arc.Unremovable;
@@ -20,8 +20,11 @@ import io.quarkus.arc.Unremovable;
 @Unremovable
 @ApplicationScoped
 public class TestSpanExporter implements SpanExporter {
-    private final List<SpanData> finishedSpanItems = new CopyOnWriteArrayList<>();
-    private volatile boolean isStopped = false;
+    private final InMemorySpanExporter spanExporter;
+
+    public TestSpanExporter() {
+        this.spanExporter = InMemorySpanExporter.create();
+    }
 
     /**
      * Careful when retrieving the list of finished spans. There is a chance when the response is already sent to the
@@ -31,36 +34,30 @@ public class TestSpanExporter implements SpanExporter {
      */
     public List<SpanData> getFinishedSpanItems(int spanCount) {
         assertSpanCount(spanCount);
-        return finishedSpanItems.stream().sorted(comparingLong(SpanData::getStartEpochNanos).reversed())
+        return spanExporter.getFinishedSpanItems().stream().sorted(comparingLong(SpanData::getStartEpochNanos).reversed())
                 .collect(Collectors.toList());
     }
 
     public void assertSpanCount(int spanCount) {
-        await().atMost(30, SECONDS).untilAsserted(() -> assertEquals(spanCount, finishedSpanItems.size()));
+        await().atMost(30, SECONDS).untilAsserted(() -> assertEquals(spanCount, spanExporter.getFinishedSpanItems().size()));
     }
 
     public void reset() {
-        finishedSpanItems.clear();
+        spanExporter.reset();
     }
 
     @Override
     public CompletableResultCode export(Collection<SpanData> spans) {
-        if (isStopped) {
-            return CompletableResultCode.ofFailure();
-        }
-        finishedSpanItems.addAll(spans);
-        return CompletableResultCode.ofSuccess();
+        return spanExporter.export(spans);
     }
 
     @Override
     public CompletableResultCode flush() {
-        return CompletableResultCode.ofSuccess();
+        return spanExporter.flush();
     }
 
     @Override
     public CompletableResultCode shutdown() {
-        finishedSpanItems.clear();
-        isStopped = true;
-        return CompletableResultCode.ofSuccess();
+        return spanExporter.shutdown();
     }
 }
