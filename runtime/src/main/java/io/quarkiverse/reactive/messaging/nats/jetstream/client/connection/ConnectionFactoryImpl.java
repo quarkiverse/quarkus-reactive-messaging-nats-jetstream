@@ -4,6 +4,7 @@ import static io.nats.client.Options.DEFAULT_RECONNECT_WAIT;
 
 import java.util.concurrent.atomic.AtomicReference;
 
+import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Produces;
@@ -22,6 +23,16 @@ public class ConnectionFactoryImpl implements ConnectionFactory {
     private final ConnectorConfiguration configuration;
     private final TlsContext tlsContext;
     private final AtomicReference<Connection> connection = new AtomicReference<>();
+
+    @PostConstruct
+    void init() {
+        // Force TLS context resolution on CDI/main thread to avoid CDI lookups from worker threads
+        try {
+            tlsContext.sslContext();
+        } catch (Exception e) {
+            log.warn("Failed to eagerly initialize TLS context", e);
+        }
+    }
 
     @Produces
     @Override
