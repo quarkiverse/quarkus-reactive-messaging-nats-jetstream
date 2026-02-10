@@ -140,7 +140,7 @@ public class ClientTest {
         assertThat(published).hasSize(3);
 
         final var consumed = new ArrayList<Data>();
-        client.subscribe(consumerConfiguration, pullConfiguration)
+        client.subscribe(consumerConfiguration, pullConfiguration, Data.class)
                 .onItem().invoke(message -> consumed.add(message.getPayload()))
                 .subscribe().with(
                         item -> log.infof("Consumed message: %s", item.getPayload()),
@@ -165,7 +165,7 @@ public class ClientTest {
         assertThat(published).hasSize(3);
 
         final var consumed = new ArrayList<Data>();
-        client.subscribe(consumerConfiguration, pushConfiguration)
+        client.subscribe(consumerConfiguration, pushConfiguration, Data.class)
                 .onItem().invoke(message -> consumed.add(message.getPayload()))
                 .subscribe().with(
                         item -> log.infof("Consumed message: %s", item.getPayload()),

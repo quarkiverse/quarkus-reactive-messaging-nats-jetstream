@@ -17,28 +17,28 @@ public class PullConsumerConfigurationMapperImpl implements PullConsumerConfigur
     private final ConsumerConfigurationMapper consumerConfigurationMapper;
 
     @Override
-    public <T> List<PullConsumerConfiguration<T>> map(ConnectorConfiguration configuration) {
+    public List<PullConsumerConfiguration> map(ConnectorConfiguration configuration) {
         if (configuration.streams() == null) {
             return List.of();
         }
         return Optional.ofNullable(configuration.streams())
                 .map(streams -> streams.entrySet().stream()
-                        .flatMap(entry -> this.<T> map(entry.getValue().name().orElse(entry.getKey()), entry.getValue())
+                        .flatMap(entry -> this.map(entry.getValue().name().orElse(entry.getKey()), entry.getValue())
                                 .stream())
                         .toList())
                 .orElseGet(List::of);
     }
 
     @Override
-    public <T> List<PullConsumerConfiguration<T>> map(String stream, ConnectorConfiguration configuration) {
+    public List<PullConsumerConfiguration> map(String stream, ConnectorConfiguration configuration) {
         return Optional.ofNullable(configuration.streams())
                 .flatMap(streams -> Optional.ofNullable(streams.get(stream)))
-                .map(streamConfiguration -> this.<T> map(streamConfiguration.name().orElse(stream), streamConfiguration))
+                .map(streamConfiguration -> this.map(streamConfiguration.name().orElse(stream), streamConfiguration))
                 .orElseGet(List::of);
     }
 
-    private <T> List<PullConsumerConfiguration<T>> map(String stream, StreamConfiguration configuration) {
-        return configuration.pullConsumers().entrySet().stream().map(entry -> PullConsumerConfiguration.<T> builder()
+    private List<PullConsumerConfiguration> map(String stream, StreamConfiguration configuration) {
+        return configuration.pullConsumers().entrySet().stream().map(entry -> PullConsumerConfiguration.builder()
                 .consumerConfiguration(
                         consumerConfigurationMapper.map(stream, entry.getKey(), entry.getValue().consumerConfiguration()))
                 .pullConfiguration(map(entry.getValue().pullConfiguration())).build()).toList();

@@ -124,7 +124,6 @@ If you want more examples, please take a look at the tests of the extension.
 | quarkus.messaging.nats.streams.[stream-name].first-sequence | The first sequence used in the stream | Long |
 | quarkus.messaging.nats.streams.[stream-name].pull-consumers.[consumer-name].consumer-configuration.name | The name of the consumer. If not set the key from the map is used | String | [consumer-name]
 | quarkus.messaging.nats.streams.[stream-name].pull-consumers.[consumer-name].consumer-configuration.description | Description of pull consumer | String |
-| quarkus.messaging.nats.streams.[stream-name].pull-consumers.[consumer-name].consumer-configuration.payload-type | The class name of the payload type | String |
 | quarkus.messaging.nats.streams.[stream-name].pull-consumers.[consumer-name].consumer-configuration.durable | Set to true if the consumer should be durable | Boolean | false
 | quarkus.messaging.nats.streams.[stream-name].pull-consumers.[consumer-name].consumer-configuration.filter-subjects | A comma separated list of subjects that overlap with the subjects bound to the stream to filter delivery to subscribers | String |
 | quarkus.messaging.nats.streams.[stream-name].pull-consumers.[consumer-name].consumer-configuration.ack-wait | The duration that the server will wait for an ack for any individual message once it has been delivered to a consumer. If an ack is not received in time, the message will be redelivered | Duration |
@@ -147,7 +146,6 @@ If you want more examples, please take a look at the tests of the extension.
 | quarkus.messaging.nats.streams.[stream-name].pull-consumers.[consumer-name].pull-configuration.max-expires | The maximum duration a single pull request will wait for messages to be available to pull. NATS require this to be 1000ms or above | Duration | 1s
 | quarkus.messaging.nats.streams.[stream-name].push-consumers.[consumer-name].consumer-configuration.name | The name of the consumer. If not set the key from the map is used | String | [consumer-name]
 | quarkus.messaging.nats.streams.[stream-name].push-consumers.[consumer-name].consumer-configuration.description | Description of pull consumer | String |
-| quarkus.messaging.nats.streams.[stream-name].push-consumers.[consumer-name].consumer-configuration.payload-type | The class name of the payload type | String |
 | quarkus.messaging.nats.streams.[stream-name].push-consumers.[consumer-name].consumer-configuration.durable | Sets the durable for the consumer | Boolean | false
 | quarkus.messaging.nats.streams.[stream-name].push-consumers.[consumer-name].consumer-configuration.filter-subjects | A comma separated list of subjects that overlap with the subjects bound to the stream to filter delivery to subscribers | String |
 | quarkus.messaging.nats.streams.[stream-name].push-consumers.[consumer-name].consumer-configuration.ack-wait | The duration that the server will wait for an ack for any individual message once it has been delivered to a consumer. If an ack is not received in time, the message will be redelivered | Duration |
@@ -189,6 +187,7 @@ If you want more examples, please take a look at the tests of the extension.
 | mp.messaging.incoming.[channel-name].stream | The stream to publish messages from | String |
 | mp.messaging.incoming.[channel-name].consumer | The name of the consumer to use | String |
 | mp.messaging.incoming.[channel-name].retry-backoff | The retry backoff in milliseconds for retry publishing messagess | Long | 10000
+| mp.messaging.incoming.[channel-name].payload-type | The class name of the payload type | String |
 |======
 
 === Key/Value Store configuration
@@ -212,11 +211,13 @@ If you want more examples, please take a look at the tests of the extension.
 [cols="4",options="header"]
 |======
 | Property Name | Description | Type | Default Value
-| quarkus.messaging.nats.devservices.enabled | If Dev Services for NATS JetStream has been explicitly enabled or disabled | Boolean | true
 | quarkus.messaging.nats.devservices.port | Fixed port the dev service will listen to | Integer |
 | quarkus.messaging.nats.devservices.image-name | The image to use | String | nats:2.11
 | quarkus.messaging.nats.devservices.shared | Indicates if the NATS JetStream broker managed by Quarkus Dev Services is shared | Boolean | true
 | quarkus.messaging.nats.devservices.service-name | This property is used when you need multiple shared NATS JetStream brokers. | String | nats
+| quarkus.messaging.nats.devservices.enabled | If Dev Services for NATS JetStream has been explicitly enabled or disabled | Boolean | true
+| quarkus.messaging.nats.devservices.tls-configuration.certificate-file | The absolute path to the PEM certificate file | String |
+| quarkus.messaging.nats.devservices.tls-configuration.key-file | The absolute path to the PEM key file | String |
 |======
 
 == NATS JetStream

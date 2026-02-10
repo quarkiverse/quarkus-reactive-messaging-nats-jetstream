@@ -16,7 +16,8 @@ import org.junit.jupiter.api.Test;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.mapper.*;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.mapper.HeaderMapper;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.mapper.Serializer;
 import io.quarkiverse.reactive.messaging.nats.jetstream.it.DataResourceCustomMappersTest.Profile;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.QuarkusTestProfile;

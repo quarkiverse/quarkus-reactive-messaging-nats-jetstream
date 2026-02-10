@@ -10,12 +10,12 @@ import io.nats.client.api.AckPolicy;
 public class ConsumerConfigurationMapperImpl implements ConsumerConfigurationMapper {
 
     @Override
-    public <T> io.nats.client.api.ConsumerConfiguration map(final ConsumerConfiguration<T> configuration) {
+    public io.nats.client.api.ConsumerConfiguration map(final ConsumerConfiguration configuration) {
         return toBuilder(configuration).build();
     }
 
     @Override
-    public <T> io.nats.client.api.ConsumerConfiguration map(final ConsumerConfiguration<T> configuration,
+    public io.nats.client.api.ConsumerConfiguration map(final ConsumerConfiguration configuration,
             final PullConfiguration pullConfiguration) {
         var builder = toBuilder(configuration);
         builder = pullConfiguration.maxWaiting().map(builder::maxPullWaiting).orElse(builder);
@@ -23,7 +23,7 @@ public class ConsumerConfigurationMapperImpl implements ConsumerConfigurationMap
     }
 
     @Override
-    public <T> io.nats.client.api.ConsumerConfiguration map(final ConsumerConfiguration<T> configuration,
+    public io.nats.client.api.ConsumerConfiguration map(final ConsumerConfiguration configuration,
             final PushConfiguration pushConfiguration) {
         var builder = toBuilder(configuration);
         builder = builder.deliverSubject(pushConfiguration.deliverSubject());
@@ -35,7 +35,7 @@ public class ConsumerConfigurationMapperImpl implements ConsumerConfigurationMap
         return builder.build();
     }
 
-    private <T> io.nats.client.api.ConsumerConfiguration.Builder toBuilder(final ConsumerConfiguration<T> configuration) {
+    private io.nats.client.api.ConsumerConfiguration.Builder toBuilder(final ConsumerConfiguration configuration) {
         var builder = io.nats.client.api.ConsumerConfiguration.builder();
         if (configuration.durable()) {
             builder = builder.durable(configuration.name());

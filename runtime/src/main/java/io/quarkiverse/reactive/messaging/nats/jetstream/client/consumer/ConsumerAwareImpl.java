@@ -39,14 +39,14 @@ public record ConsumerAwareImpl(ExecutionHolder executionHolder,
         Connection connection) implements ConsumerAware, ContextAware, JetStreamAware, StreamContextAware {
 
     @Override
-    public <T> Uni<Consumer> addConsumerIfAbsent(final ConsumerConfiguration<T> configuration) {
+    public Uni<Consumer> addConsumerIfAbsent(final ConsumerConfiguration configuration) {
         return withContext(context -> context
                 .executeBlocking(addConsumerIfAbsent(configuration.stream(), consumerConfigurationMapper.map(configuration))
                         .onFailure().transform(ClientException::new)));
     }
 
     @Override
-    public <T> Uni<Consumer> addConsumerIfAbsent(final ConsumerConfiguration<T> configuration,
+    public Uni<Consumer> addConsumerIfAbsent(final ConsumerConfiguration configuration,
             PushConfiguration pushConfiguration) {
         return withContext(context -> context.executeBlocking(
                 addConsumerIfAbsent(configuration.stream(), consumerConfigurationMapper.map(configuration, pushConfiguration))
@@ -54,7 +54,7 @@ public record ConsumerAwareImpl(ExecutionHolder executionHolder,
     }
 
     @Override
-    public <T> Uni<Consumer> addConsumerIfAbsent(final ConsumerConfiguration<T> configuration,
+    public Uni<Consumer> addConsumerIfAbsent(final ConsumerConfiguration configuration,
             PullConfiguration pullConfiguration) {
         return withContext(context -> context.executeBlocking(
                 addConsumerIfAbsent(configuration.stream(), consumerConfigurationMapper.map(configuration, pullConfiguration))
@@ -112,30 +112,43 @@ public record ConsumerAwareImpl(ExecutionHolder executionHolder,
                 .onFailure().transform(ClientException::new)));
     }
 
+    @Override
+    public <T> Uni<Message<T>> next(final ConsumerConfiguration configuration, final Duration timeout) {
+        return next(configuration, timeout, null);
+    }
+
     @SuppressWarnings("resource")
     @Override
-    public <T> Uni<Message<T>> next(final ConsumerConfiguration<T> configuration, final Duration timeout) {
+    public <T> Uni<Message<T>> next(final ConsumerConfiguration configuration, final Duration timeout,
+            final Class<T> payloadType) {
         ExecutorService executor = Executors.newSingleThreadExecutor(ConsumerWorkerThread::new);
         return withContext(context -> next(configuration.stream(), configuration.name(), timeout)
                 .runSubscriptionOn(executor)
                 .emitOn(context::runOnContext)
-                .onItem().ifNotNull().transform(message -> messageMapper.map(message, configuration, context))
+                .onItem().ifNotNull().transform(message -> messageMapper.map(message, configuration, context, payloadType))
                 .onItem().ifNotNull()
                 .transformToUni(message -> tracerFactory.<T> create(TracerType.Subscribe).withTrace(message,
                         new AttachContextTraceSupplier<>()))
                 .onFailure().transform(ClientException::new));
     }
 
+    @Override
+    public <T> Multi<Message<T>> fetch(final ConsumerConfiguration configuration,
+            final FetchConfiguration fetchConfiguration) {
+        return fetch(configuration, fetchConfiguration, null);
+    }
+
     @SuppressWarnings({ "resource", "ReactiveStreamsUnusedPublisher" })
     @Override
-    public <T> Multi<Message<T>> fetch(final ConsumerConfiguration<T> configuration,
-            final FetchConfiguration fetchConfiguration) {
+    public <T> Multi<Message<T>> fetch(final ConsumerConfiguration configuration,
+            final FetchConfiguration fetchConfiguration,
+            final Class<T> payloadType) {
         ExecutorService executor = Executors.newSingleThreadExecutor(ConsumerWorkerThread::new);
         return withContext(context -> consumerContext(configuration.stream(), configuration.name())
                 .onItem().transformToMulti(consumerContext -> fetch(consumerContext, fetchConfiguration)
                         .runSubscriptionOn(executor)
                         .emitOn(context::runOnContext)
-                        .onItem().transform(message -> messageMapper.map(message, configuration, context))
+                        .onItem().transform(message -> messageMapper.map(message, configuration, context, payloadType))
                         .onItem()
                         .transformToUniAndMerge(message -> tracerFactory.<T> create(TracerType.Subscribe).withTrace(message,
                                 new AttachContextTraceSupplier<>()))
@@ -154,28 +167,34 @@ public record ConsumerAwareImpl(ExecutionHolder executionHolder,
     }
 
     @Override
-    public <T> Multi<Message<T>> subscribe(final ConsumerConfiguration<T> configuration,
+    public <T> Multi<Message<T>> subscribe(final ConsumerConfiguration configuration,
             final PullConfiguration pullConfiguration) {
         return subscribe(configuration, pullConfiguration, new ConsumerListenerImpl<>());
     }
 
     @Override
-    public <T> Multi<Message<T>> subscribe(final ConsumerConfiguration<T> configuration,
+    public <T> Multi<Message<T>> subscribe(final ConsumerConfiguration configuration,
             final PushConfiguration pushConfiguration) {
         return subscribe(configuration, pushConfiguration, new ConsumerListenerImpl<>());
     }
 
+    @Override
+    public <T> Multi<Message<T>> subscribe(ConsumerConfiguration configuration, PullConfiguration pullConfiguration,
+            ConsumerListener<T> listener) {
+        return subscribe(configuration, pullConfiguration, listener, null);
+    }
+
     @SuppressWarnings("resource")
     @Override
-    public <T> Multi<Message<T>> subscribe(ConsumerConfiguration<T> configuration, PullConfiguration pullConfiguration,
-            ConsumerListener<T> listener) {
+    public <T> Multi<Message<T>> subscribe(ConsumerConfiguration configuration, PullConfiguration pullConfiguration,
+            ConsumerListener<T> listener, Class<T> payloadType) {
         final var tracer = tracerFactory.<T> create(TracerType.Subscribe);
         ExecutorService pullExecutor = Executors.newSingleThreadExecutor(ConsumerWorkerThread::new);
         return withContext(context -> subscribe(configuration.stream(), configuration.name(), pullConfiguration)
                 .runSubscriptionOn(pullExecutor)
                 .emitOn(context::runOnContext)
                 .select().where(Objects::nonNull)
-                .onItem().transform(message -> messageMapper.map(message, configuration, context))
+                .onItem().transform(message -> messageMapper.map(message, configuration, context, payloadType))
                 .onItem().transformToUniAndMerge(message -> tracer.withTrace(message, msg -> msg)))
                 .onItem().invoke(listener::onMessage)
                 .onFailure().invoke(listener::onError)
@@ -183,8 +202,14 @@ public record ConsumerAwareImpl(ExecutionHolder executionHolder,
     }
 
     @Override
-    public <T> Multi<Message<T>> subscribe(ConsumerConfiguration<T> configuration, PushConfiguration pushConfiguration,
+    public <T> Multi<Message<T>> subscribe(ConsumerConfiguration configuration, PushConfiguration pushConfiguration,
             ConsumerListener<T> listener) {
+        return subscribe(configuration, pushConfiguration, listener, null);
+    }
+
+    @Override
+    public <T> Multi<Message<T>> subscribe(ConsumerConfiguration configuration, PushConfiguration pushConfiguration,
+            ConsumerListener<T> listener, Class<T> payloadType) {
         final var tracer = tracerFactory.<T> create(TracerType.Subscribe);
         return withContext(context -> Multi.createFrom().<io.nats.client.Message> emitter(emitter -> {
             try {
@@ -202,11 +227,23 @@ public record ConsumerAwareImpl(ExecutionHolder executionHolder,
         })
                 .emitOn(context::runOnContext)
                 .select().where(Objects::nonNull)
-                .onItem().transform(message -> messageMapper.map(message, configuration, context))
+                .onItem().transform(message -> messageMapper.map(message, configuration, context, payloadType))
                 .onItem().transformToUniAndMerge(message -> tracer.withTrace(message, msg -> msg)))
                 .onItem().invoke(listener::onMessage)
                 .onFailure().invoke(listener::onError)
                 .onFailure().transform(ClientException::new);
+    }
+
+    @Override
+    public <T> Multi<Message<T>> subscribe(ConsumerConfiguration configuration, PullConfiguration pullConfiguration,
+            Class<T> payloadType) {
+        return subscribe(configuration, pullConfiguration, new ConsumerListenerImpl<>(), payloadType);
+    }
+
+    @Override
+    public <T> Multi<Message<T>> subscribe(ConsumerConfiguration configuration, PushConfiguration pushConfiguration,
+            Class<T> payloadType) {
+        return subscribe(configuration, pushConfiguration, new ConsumerListenerImpl<>(), payloadType);
     }
 
     private Uni<Consumer> addConsumerIfAbsent(final String stream,

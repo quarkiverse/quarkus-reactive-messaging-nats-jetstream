@@ -1,7 +1,8 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client.stream;
 
 import java.time.Duration;
-import java.util.*;
+import java.util.Optional;
+import java.util.Set;
 
 import io.nats.client.api.CompressionOption;
 import io.nats.client.api.DiscardPolicy;

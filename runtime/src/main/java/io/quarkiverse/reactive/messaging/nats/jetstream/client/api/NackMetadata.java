@@ -1,7 +1,7 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client.api;
 
 import java.time.Duration;
-import java.util.*;
+import java.util.Optional;
 
 import lombok.Builder;
 

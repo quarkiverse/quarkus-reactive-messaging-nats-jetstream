@@ -18,16 +18,19 @@ public abstract class MessagePublisherProcessor<T> implements MessageProcessor, 
     private final String consumer;
     private final AtomicReference<Health> health;
     private final Duration retryBackoff;
+    private final Class<T> payloadType;
 
     public MessagePublisherProcessor(final String channel,
             final String stream,
             final String consumer,
-            final Duration retryBackoff) {
+            final Duration retryBackoff,
+            final Class<T> payloadType) {
         this.channel = channel;
         this.stream = stream;
         this.consumer = consumer;
         this.health = new AtomicReference<>(Health.builder().message("Publish processor inactive").healthy(false).build());
         this.retryBackoff = retryBackoff;
+        this.payloadType = payloadType;
     }
 
     @Override
@@ -61,7 +64,7 @@ public abstract class MessagePublisherProcessor<T> implements MessageProcessor, 
     }
 
     public Multi<org.eclipse.microprofile.reactive.messaging.Message<T>> publisher() {
-        return subscribe()
+        return subscribe(payloadType)
                 .onSubscription()
                 .invoke(() -> health
                         .set(new Health(true, String.format("Publish processor healthy for channel: %s", channel()))))
@@ -70,5 +73,5 @@ public abstract class MessagePublisherProcessor<T> implements MessageProcessor, 
                 .onFailure().retry().withBackOff(retryBackoff).indefinitely();
     }
 
-    protected abstract Multi<Message<T>> subscribe();
+    protected abstract Multi<Message<T>> subscribe(Class<T> payloadType);
 }
