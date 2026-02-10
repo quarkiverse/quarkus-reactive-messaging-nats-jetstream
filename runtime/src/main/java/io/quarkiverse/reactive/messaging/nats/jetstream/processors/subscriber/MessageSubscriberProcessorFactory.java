@@ -6,7 +6,8 @@ import java.util.Optional;
 import jakarta.enterprise.context.ApplicationScoped;
 
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.Client;
-import io.quarkiverse.reactive.messaging.nats.jetstream.configuration.*;
+import io.quarkiverse.reactive.messaging.nats.jetstream.configuration.ConnectorConfiguration;
+import io.quarkiverse.reactive.messaging.nats.jetstream.configuration.StreamConfiguration;
 import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor

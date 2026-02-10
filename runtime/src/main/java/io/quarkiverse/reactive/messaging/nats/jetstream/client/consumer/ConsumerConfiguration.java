@@ -9,7 +9,7 @@ import java.util.Optional;
 import io.nats.client.api.DeliverPolicy;
 import io.nats.client.api.ReplayPolicy;
 
-public interface ConsumerConfiguration<T> {
+public interface ConsumerConfiguration {
 
     /**
      * The consumer name
@@ -112,11 +112,6 @@ public interface ConsumerConfiguration<T> {
      * The pause until
      */
     Optional<ZonedDateTime> pauseUntil();
-
-    /**
-     * The payload type
-     */
-    Optional<Class<T>> payloadType();
 
     /**
      * The duration to wait for an ack confirmation

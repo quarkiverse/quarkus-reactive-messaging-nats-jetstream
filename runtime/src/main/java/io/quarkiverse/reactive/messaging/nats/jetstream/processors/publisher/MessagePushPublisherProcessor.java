@@ -10,7 +10,7 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer.PushConf
 import io.smallrye.mutiny.Multi;
 
 public class MessagePushPublisherProcessor<T> extends MessagePublisherProcessor<T> {
-    private final ConsumerConfiguration<T> configuration;
+    private final ConsumerConfiguration configuration;
     private final PushConfiguration pushConfiguration;
     private final Client client;
 
@@ -18,17 +18,18 @@ public class MessagePushPublisherProcessor<T> extends MessagePublisherProcessor<
             final String stream,
             final String consumer,
             final Client client,
-            final ConsumerConfiguration<T> configuration,
+            final ConsumerConfiguration configuration,
             final PushConfiguration pushConfiguration,
-            final Duration retryBackoff) {
-        super(channel, stream, consumer, retryBackoff);
+            final Duration retryBackoff,
+            final Class<T> payloadType) {
+        super(channel, stream, consumer, retryBackoff, payloadType);
         this.configuration = configuration;
         this.pushConfiguration = pushConfiguration;
         this.client = client;
     }
 
     @Override
-    protected Multi<Message<T>> subscribe() {
-        return client.subscribe(configuration, pushConfiguration, this);
+    protected Multi<Message<T>> subscribe(Class<T> payloadType) {
+        return client.subscribe(configuration, pushConfiguration, this, payloadType);
     }
 }

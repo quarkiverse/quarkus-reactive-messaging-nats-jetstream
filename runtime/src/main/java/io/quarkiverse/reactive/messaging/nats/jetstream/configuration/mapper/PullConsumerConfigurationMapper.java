@@ -6,8 +6,8 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.configuration.ConnectorC
 
 public interface PullConsumerConfigurationMapper {
 
-    <T> List<PullConsumerConfiguration<T>> map(ConnectorConfiguration configuration);
+    List<PullConsumerConfiguration> map(ConnectorConfiguration configuration);
 
-    <T> List<PullConsumerConfiguration<T>> map(String stream, ConnectorConfiguration configuration);
+    List<PullConsumerConfiguration> map(String stream, ConnectorConfiguration configuration);
 
 }

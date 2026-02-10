@@ -113,11 +113,6 @@ public interface ConsumerConfiguration {
     Optional<ZonedDateTime> pauseUntil();
 
     /**
-     * The payload type
-     */
-    Optional<Class<?>> payloadType();
-
-    /**
      * The duration to wait for an ack confirmation
      */
     @WithDefault("5s")

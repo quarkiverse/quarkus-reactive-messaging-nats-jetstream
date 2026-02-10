@@ -10,10 +10,9 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer.Consumer
 public class ConsumerConfigurationMapperImpl implements ConsumerConfigurationMapper {
 
     @Override
-    @SuppressWarnings("unchecked")
-    public <T> io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer.ConsumerConfiguration<T> map(String stream,
+    public io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer.ConsumerConfiguration map(String stream,
             String name, io.quarkiverse.reactive.messaging.nats.jetstream.configuration.ConsumerConfiguration configuration) {
-        return ConsumerConfigurationImpl.<T> builder()
+        return ConsumerConfigurationImpl.builder()
                 .stream(stream)
                 .name(configuration.name().orElse(name))
                 .durable(configuration.durable())
@@ -33,7 +32,6 @@ public class ConsumerConfigurationMapperImpl implements ConsumerConfigurationMap
                 .metadata(configuration.metadata())
                 .backoff(configuration.backoff())
                 .pauseUntil(configuration.pauseUntil())
-                .payloadType(configuration.payloadType().map(payloadType -> (Class<T>) payloadType))
                 .acknowledgeTimeout(configuration.acknowledgeTimeout())
                 .build();
     }

@@ -11,7 +11,7 @@ import io.nats.client.api.ReplayPolicy;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer.ConsumerConfiguration;
 
 public record ClientConsumerConfiguration<T>(String stream, String consumer,
-        List<String> subjects) implements ConsumerConfiguration<T> {
+        List<String> subjects) implements ConsumerConfiguration {
 
     @Override
     public String name() {
@@ -105,11 +105,6 @@ public record ClientConsumerConfiguration<T>(String stream, String consumer,
 
     @Override
     public Optional<ZonedDateTime> pauseUntil() {
-        return Optional.empty();
-    }
-
-    @Override
-    public Optional<Class<T>> payloadType() {
         return Optional.empty();
     }
 

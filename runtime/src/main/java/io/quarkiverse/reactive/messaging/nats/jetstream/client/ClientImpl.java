@@ -77,17 +77,17 @@ public class ClientImpl implements Client {
     }
 
     @Override
-    public <T> Uni<Consumer> addConsumerIfAbsent(ConsumerConfiguration<T> configuration) {
+    public Uni<Consumer> addConsumerIfAbsent(ConsumerConfiguration configuration) {
         return consumerDelegate.addConsumerIfAbsent(configuration);
     }
 
     @Override
-    public <T> Uni<Consumer> addConsumerIfAbsent(ConsumerConfiguration<T> configuration, PushConfiguration pushConfiguration) {
+    public Uni<Consumer> addConsumerIfAbsent(ConsumerConfiguration configuration, PushConfiguration pushConfiguration) {
         return consumerDelegate.addConsumerIfAbsent(configuration, pushConfiguration);
     }
 
     @Override
-    public <T> Uni<Consumer> addConsumerIfAbsent(ConsumerConfiguration<T> configuration, PullConfiguration pullConfiguration) {
+    public Uni<Consumer> addConsumerIfAbsent(ConsumerConfiguration configuration, PullConfiguration pullConfiguration) {
         return consumerDelegate.addConsumerIfAbsent(configuration, pullConfiguration);
     }
 
@@ -117,13 +117,24 @@ public class ClientImpl implements Client {
     }
 
     @Override
-    public <T> Uni<Message<T>> next(ConsumerConfiguration<T> configuration, Duration timeout) {
+    public <T> Uni<Message<T>> next(ConsumerConfiguration configuration, Duration timeout) {
         return consumerDelegate.next(configuration, timeout);
     }
 
     @Override
-    public <T> Multi<Message<T>> fetch(ConsumerConfiguration<T> configuration, FetchConfiguration fetchConfiguration) {
+    public <T> Uni<Message<T>> next(ConsumerConfiguration configuration, Duration timeout, Class<T> payloadType) {
+        return consumerDelegate.next(configuration, timeout, payloadType);
+    }
+
+    @Override
+    public <T> Multi<Message<T>> fetch(ConsumerConfiguration configuration, FetchConfiguration fetchConfiguration) {
         return consumerDelegate.fetch(configuration, fetchConfiguration);
+    }
+
+    @Override
+    public <T> Multi<Message<T>> fetch(ConsumerConfiguration configuration, FetchConfiguration fetchConfiguration,
+            Class<T> payloadType) {
+        return consumerDelegate.fetch(configuration, fetchConfiguration, payloadType);
     }
 
     @Override
@@ -132,25 +143,49 @@ public class ClientImpl implements Client {
     }
 
     @Override
-    public <T> Multi<Message<T>> subscribe(ConsumerConfiguration<T> configuration, PullConfiguration pullConfiguration) {
+    public <T> Multi<Message<T>> subscribe(ConsumerConfiguration configuration, PullConfiguration pullConfiguration) {
         return consumerDelegate.subscribe(configuration, pullConfiguration);
     }
 
     @Override
-    public <T> Multi<Message<T>> subscribe(ConsumerConfiguration<T> configuration, PushConfiguration pushConfiguration) {
+    public <T> Multi<Message<T>> subscribe(ConsumerConfiguration configuration, PullConfiguration pullConfiguration,
+            ConsumerListener<T> listener, Class<T> payloadType) {
+        return consumerDelegate.subscribe(configuration, pullConfiguration, listener, payloadType);
+    }
+
+    @Override
+    public <T> Multi<Message<T>> subscribe(ConsumerConfiguration configuration, PushConfiguration pushConfiguration) {
         return consumerDelegate.subscribe(configuration, pushConfiguration);
     }
 
     @Override
-    public <T> Multi<Message<T>> subscribe(ConsumerConfiguration<T> configuration, PullConfiguration pullConfiguration,
+    public <T> Multi<Message<T>> subscribe(ConsumerConfiguration configuration, PullConfiguration pullConfiguration,
             ConsumerListener<T> listener) {
         return consumerDelegate.subscribe(configuration, pullConfiguration, listener);
     }
 
     @Override
-    public <T> Multi<Message<T>> subscribe(ConsumerConfiguration<T> configuration, PushConfiguration pushConfiguration,
+    public <T> Multi<Message<T>> subscribe(ConsumerConfiguration configuration, PushConfiguration pushConfiguration,
             ConsumerListener<T> listener) {
         return consumerDelegate.subscribe(configuration, pushConfiguration, listener);
+    }
+
+    @Override
+    public <T> Multi<Message<T>> subscribe(ConsumerConfiguration configuration, PushConfiguration pushConfiguration,
+            ConsumerListener<T> listener, Class<T> payloadType) {
+        return consumerDelegate.subscribe(configuration, pushConfiguration, listener, payloadType);
+    }
+
+    @Override
+    public <T> Multi<Message<T>> subscribe(ConsumerConfiguration configuration, PullConfiguration pullConfiguration,
+            Class<T> payloadType) {
+        return consumerDelegate.subscribe(configuration, pullConfiguration, payloadType);
+    }
+
+    @Override
+    public <T> Multi<Message<T>> subscribe(ConsumerConfiguration configuration, PushConfiguration pushConfiguration,
+            Class<T> payloadType) {
+        return consumerDelegate.subscribe(configuration, pushConfiguration, payloadType);
     }
 
     @Override

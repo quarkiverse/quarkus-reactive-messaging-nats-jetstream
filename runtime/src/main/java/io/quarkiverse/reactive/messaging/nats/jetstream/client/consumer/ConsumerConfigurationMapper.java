@@ -2,11 +2,11 @@ package io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer;
 
 public interface ConsumerConfigurationMapper {
 
-    <T> io.nats.client.api.ConsumerConfiguration map(final ConsumerConfiguration<T> configuration);
+    io.nats.client.api.ConsumerConfiguration map(final ConsumerConfiguration configuration);
 
-    <T> io.nats.client.api.ConsumerConfiguration map(final ConsumerConfiguration<T> configuration,
+    io.nats.client.api.ConsumerConfiguration map(final ConsumerConfiguration configuration,
             final PullConfiguration pullConfiguration);
 
-    <T> io.nats.client.api.ConsumerConfiguration map(final ConsumerConfiguration<T> configuration,
+    io.nats.client.api.ConsumerConfiguration map(final ConsumerConfiguration configuration,
             final PushConfiguration pushConfiguration);
 }

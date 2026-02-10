@@ -11,7 +11,7 @@ import io.nats.client.api.ReplayPolicy;
 import lombok.Builder;
 
 @Builder
-public record ConsumerConfigurationImpl<T>(String name,
+public record ConsumerConfigurationImpl(String name,
         String stream,
         Boolean durable,
         List<String> filterSubjects,
@@ -30,7 +30,6 @@ public record ConsumerConfigurationImpl<T>(String name,
         Map<String, String> metadata,
         Optional<List<Duration>> backoff,
         Optional<ZonedDateTime> pauseUntil,
-        Optional<Class<T>> payloadType,
-        Duration acknowledgeTimeout) implements ConsumerConfiguration<T> {
+        Duration acknowledgeTimeout) implements ConsumerConfiguration {
 
 }

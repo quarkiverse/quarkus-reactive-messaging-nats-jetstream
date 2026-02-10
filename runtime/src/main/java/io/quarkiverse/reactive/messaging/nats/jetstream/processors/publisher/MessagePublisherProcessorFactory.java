@@ -25,38 +25,42 @@ public class MessagePublisherProcessorFactory {
     private final PullConsumerConfigurationMapper pullConsumerConfigurationMapper;
     private final PushConsumerConfigurationMapper pushConsumerConfigurationMapper;
 
-    public MessagePublisherProcessor<?> create(String channel, String stream, String consumer, Duration retryBackoff) {
-        return createPullPublisherProcessor(channel, stream, consumer, retryBackoff)
-                .orElseGet(() -> createPushPublisherProcessor(channel, stream, consumer, retryBackoff)
+    public MessagePublisherProcessor<?> create(String channel, String stream, String consumer, Duration retryBackoff,
+            Class<?> payloadType) {
+        return createPullPublisherProcessor(channel, stream, consumer, retryBackoff, payloadType)
+                .orElseGet(() -> createPushPublisherProcessor(channel, stream, consumer, retryBackoff, payloadType)
                         .orElseThrow(() -> new ConfigurationException(
                                 "Consumer configuration not found for stream: " + stream + " and consumer: " + consumer)));
     }
 
     private Optional<MessagePublisherProcessor<?>> createPullPublisherProcessor(String channel, String stream, String consumer,
-            Duration retryBackoff) {
+            Duration retryBackoff, Class<?> payloadType) {
         return findPullConsumerConfiguration(stream, consumer)
-                .map(tuple -> createPullPublisherProcessor(channel, stream, consumer, retryBackoff,
+                .map(tuple -> createPullPublisherProcessor(channel, stream, consumer, retryBackoff, payloadType,
                         tuple.consumerConfiguration(), tuple.pullConfiguration()));
     }
 
-    private <T> MessagePublisherProcessor<?> createPullPublisherProcessor(String channel, String stream, String consumer,
-            Duration retryBackoff, ConsumerConfiguration<T> consumerConfiguration, PullConfiguration pullConfiguration) {
+    private MessagePublisherProcessor<?> createPullPublisherProcessor(String channel, String stream, String consumer,
+            Duration retryBackoff, Class<?> payloadType, ConsumerConfiguration consumerConfiguration,
+            PullConfiguration pullConfiguration) {
         return new MessagePullPublisherProcessor<>(channel, stream, consumer, client, consumerConfiguration, pullConfiguration,
-                retryBackoff);
+                retryBackoff, payloadType);
     }
 
     private Optional<MessagePublisherProcessor<?>> createPushPublisherProcessor(String channel, String stream, String consumer,
-            Duration retryBackoff) {
+            Duration retryBackoff,
+            Class<?> payloadType) {
         return findPushConsumerConfiguration(stream, consumer)
-                .map(tuple -> createPushPublisherProcessor(channel, stream, consumer, retryBackoff,
+                .map(tuple -> createPushPublisherProcessor(channel, stream, consumer, retryBackoff, payloadType,
                         tuple.consumerConfiguration(), tuple.pushConfiguration()));
     }
 
-    private <T> MessagePublisherProcessor<?> createPushPublisherProcessor(String channel, String stream, String consumer,
+    private MessagePublisherProcessor<?> createPushPublisherProcessor(String channel, String stream, String consumer,
             Duration retryBackoff,
-            ConsumerConfiguration<T> consumerConfiguration, PushConfiguration pushConfiguration) {
+            Class<?> payloadType,
+            ConsumerConfiguration consumerConfiguration, PushConfiguration pushConfiguration) {
         return new MessagePushPublisherProcessor<>(channel, stream, consumer, client,
-                consumerConfiguration, pushConfiguration, retryBackoff);
+                consumerConfiguration, pushConfiguration, retryBackoff, payloadType);
     }
 
     private <T> Optional<PushConsumerConfiguration<T>> findPushConsumerConfiguration(String stream,
@@ -65,8 +69,8 @@ public class MessagePublisherProcessorFactory {
                 .filter(tuple -> tuple.consumerConfiguration().name().equals(consumer)).findAny();
     }
 
-    private <T> Optional<PullConsumerConfiguration<T>> findPullConsumerConfiguration(String stream, String consumer) {
-        return pullConsumerConfigurationMapper.<T> map(stream, configuration).stream()
+    private Optional<PullConsumerConfiguration> findPullConsumerConfiguration(String stream, String consumer) {
+        return pullConsumerConfigurationMapper.map(stream, configuration).stream()
                 .filter(tuple -> tuple.consumerConfiguration().name().equals(consumer)).findAny();
     }
 }

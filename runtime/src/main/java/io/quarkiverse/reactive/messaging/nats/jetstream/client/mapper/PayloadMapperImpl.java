@@ -2,12 +2,15 @@ package io.quarkiverse.reactive.messaging.nats.jetstream.client.mapper;
 
 import static io.quarkiverse.reactive.messaging.nats.jetstream.client.api.JetStreamMessage.MESSAGE_TYPE_HEADER;
 
-import java.util.*;
+import java.util.Optional;
 
 import jakarta.enterprise.context.ApplicationScoped;
 
 import io.nats.client.impl.Headers;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.*;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.GenericPayload;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.GenericSerializedPayload;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.Payload;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.SerializedPayload;
 import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
