@@ -7,8 +7,10 @@ import java.time.Duration;
 import java.util.OptionalInt;
 
 import org.jboss.logging.Logger;
+import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
+import org.testcontainers.containers.wait.strategy.WaitAllStrategy;
 import org.testcontainers.utility.DockerImageName;
 
 import io.quarkus.deployment.builditem.Startable;
@@ -28,12 +30,15 @@ class JetStreamContainer extends GenericContainer<JetStreamContainer> implements
     private final String hostName;
 
     JetStreamContainer(DockerImageName imageName, OptionalInt fixedExposedPort, String defaultNetworkId,
-            boolean useSharedNetwork, String username, String password) {
+            boolean useSharedNetwork, JetStreamConfiguration configuration) {
         super(imageName);
 
         super.withNetworkAliases("nats");
-        super.waitingFor(Wait.forHttp("/healthz").forPort(NATS_HTTP_PORT));
+        super.waitingFor(new WaitAllStrategy()
+                .withStrategy(Wait.forListeningPort())
+                .withStrategy(Wait.forHttp("/healthz").forPort(NATS_HTTP_PORT).forStatusCode(200)));
         super.withStartupTimeout(Duration.ofSeconds(180L));
+        super.withStartupAttempts(3);
 
         if (fixedExposedPort.isPresent()) {
             super.addFixedExposedPort(fixedExposedPort.getAsInt(), NATS_PORT);
@@ -41,7 +46,21 @@ class JetStreamContainer extends GenericContainer<JetStreamContainer> implements
             addExposedPort(NATS_PORT);
         }
         addExposedPort(NATS_HTTP_PORT);
-        super.withCommand("--jetstream", "--user", username, "--pass", password, "--http_port", NATS_HTTP_PORT.toString());
+
+        if (configuration.sslEnabled()) {
+            final String certificatePath = "/etc/nats/certs/server.crt";
+            final String keyPath = "/etc/nats/certs/server.key";
+            super.withFileSystemBind(configuration.certificateFile(), certificatePath, BindMode.READ_ONLY);
+            super.withFileSystemBind(configuration.keyFile(), keyPath, BindMode.READ_ONLY);
+            super.withCommand("--jetstream", "--user", configuration.username(), "--pass", configuration.password(),
+                    "--http_port",
+                    NATS_HTTP_PORT.toString(), "--tls", "--tlscert", certificatePath, "--tlskey", keyPath);
+        } else {
+            super.withCommand("--jetstream", "--user", configuration.username(), "--pass", configuration.password(),
+                    "--http_port",
+                    NATS_HTTP_PORT.toString());
+        }
+
         super.withLogConsumer(outputFrame -> logger.info(outputFrame.getUtf8String().replace("\n", "")));
 
         this.fixedExposedPort = fixedExposedPort;

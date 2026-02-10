@@ -1,5 +1,6 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.deployment;
 
+import java.util.Optional;
 import java.util.OptionalInt;
 
 import io.quarkus.runtime.annotations.ConfigPhase;
@@ -9,7 +10,7 @@ import io.smallrye.config.WithDefault;
 
 @ConfigMapping(prefix = "quarkus.messaging.nats.devservices")
 @ConfigRoot(phase = ConfigPhase.BUILD_TIME)
-public interface JetStreamDevServicesBuildTimeConfig {
+public interface JetStreamDevServicesBuildTimeConfiguration {
 
     /**
      * If Dev Services for NATS JetStream has been explicitly enabled or disabled. Dev Services are generally enabled
@@ -79,10 +80,20 @@ public interface JetStreamDevServicesBuildTimeConfig {
     String password();
 
     /**
-     * Determines whether SSL is enabled for the NATS JetStream broker managed by Quarkus Dev Services.
-     *
-     * @return a boolean value indicating if SSL is enabled (true) or disabled (false). The default is false.
+     * TLS configuration
      */
-    @WithDefault("false")
-    Boolean sslEnabled();
+    Optional<TlsConfiguration> tlsConfiguration();
+
+    interface TlsConfiguration {
+
+        /**
+         * The absolute path to the PEM certificate file.
+         */
+        String certificateFile();
+
+        /**
+         * The absolut path to the PEM key file.
+         */
+        String keyFile();
+    }
 }
