@@ -97,7 +97,6 @@
                         <path>
                             <groupId>org.eclipse.microprofile.config</groupId>
                             <artifactId>microprofile-config-api</artifactId>
-                            <version>${microprofile-config-api.version}</version>
                         </path>
                         <path>
                             <groupId>io.quarkus</groupId>
