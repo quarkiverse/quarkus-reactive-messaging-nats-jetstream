@@ -4,7 +4,7 @@
     <parent>
         <groupId>io.quarkiverse.reactivemessaging.nats-jetstream</groupId>
         <artifactId>quarkus-messaging-nats-jetstream-parent</artifactId>
-        <version>3.32.0</version>
+        <version>3.33.0-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
