@@ -97,7 +97,6 @@ If you want more examples, please take a look at the tests of the extension.
 [cols="4",options="header"]
 |======
 | Property Name | Description | Type | Default Value
-| quarkus.messaging.nats.auto-configuration | Auto-configuration of streams, consumers and key/value stores. If no attributes of quarkus.messaging.nats.streams.[stream-name].configuration.* is specified the stream is not created | Boolean | true
 | quarkus.messaging.nats.trace | Enable tracing | Boolean | true
 | quarkus.messaging.nats.streams.[stream-name].name | The name of the stream. If not set the key from the map is used | String | [stream-name]
 | quarkus.messaging.nats.streams.[stream-name].configuration.replicas | The number of replicas a message must be stored. | Integer | 1

@@ -24,13 +24,6 @@ public interface ConnectorConfiguration {
     Boolean trace();
 
     /**
-     * Whether the streams and key value stores should be automatically configured.
-     * If the artifacts already exist, they are left untouched.
-     */
-    @WithDefault("true")
-    Boolean autoConfiguration();
-
-    /**
      * The stream configurations. The map key is the name of the stream.
      */
     Map<String, Stream> streams();
