@@ -8,7 +8,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer.PushConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer.PushConfigurationImpl;
 import io.quarkiverse.reactive.messaging.nats.jetstream.configuration.ConnectorConfiguration;
-import io.quarkiverse.reactive.messaging.nats.jetstream.configuration.StreamConfiguration;
+import io.quarkiverse.reactive.messaging.nats.jetstream.configuration.Stream;
 import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
@@ -34,7 +34,7 @@ public class PushConsumerConfigurationMapperImpl implements PushConsumerConfigur
                 .orElseGet(List::of);
     }
 
-    private <T> List<PushConsumerConfiguration<T>> map(String stream, StreamConfiguration configuration) {
+    private <T> List<PushConsumerConfiguration<T>> map(String stream, Stream configuration) {
         return configuration.pushConsumers().entrySet().stream().map(entry -> PushConsumerConfiguration.<T> builder()
                 .consumerConfiguration(
                         consumerConfigurationMapper.map(stream, entry.getKey(), entry.getValue().consumerConfiguration()))

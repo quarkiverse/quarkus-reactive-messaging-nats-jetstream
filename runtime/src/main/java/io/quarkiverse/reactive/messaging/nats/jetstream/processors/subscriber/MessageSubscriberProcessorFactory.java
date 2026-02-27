@@ -7,7 +7,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.Client;
 import io.quarkiverse.reactive.messaging.nats.jetstream.configuration.ConnectorConfiguration;
-import io.quarkiverse.reactive.messaging.nats.jetstream.configuration.StreamConfiguration;
+import io.quarkiverse.reactive.messaging.nats.jetstream.configuration.Stream;
 import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
@@ -19,7 +19,7 @@ public class MessageSubscriberProcessorFactory {
     public <T> MessageSubscriberProcessor<T> create(String channel, String stream, String subject, Duration retryBackoff) {
         var streamName = Optional.ofNullable(configuration.streams())
                 .flatMap(streams -> Optional.ofNullable(streams.get(stream)))
-                .flatMap(StreamConfiguration::name)
+                .flatMap(Stream::name)
                 .orElse(stream);
         return new MessageSubscriberProcessor<>(channel, streamName, subject, client, retryBackoff);
     }

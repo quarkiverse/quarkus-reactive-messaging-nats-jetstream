@@ -94,7 +94,7 @@ public class JetStreamDevServicesProcessor {
                 .map(containerAddress -> {
                     String serverUrl = "nats://" + containerAddress.getUrl();
                     return DevServicesResultBuildItem.discovered()
-                            .name(FEATURE)
+                            .feature(FEATURE)
                             .containerId(containerAddress.getId())
                             .config(Map.of(
                                     "quarkus.messaging.nats.connection.servers", serverUrl,

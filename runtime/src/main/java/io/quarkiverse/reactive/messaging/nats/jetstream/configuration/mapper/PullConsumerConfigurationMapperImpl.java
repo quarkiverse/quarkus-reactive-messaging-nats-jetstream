@@ -8,7 +8,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer.PullConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer.PullConfigurationImpl;
 import io.quarkiverse.reactive.messaging.nats.jetstream.configuration.ConnectorConfiguration;
-import io.quarkiverse.reactive.messaging.nats.jetstream.configuration.StreamConfiguration;
+import io.quarkiverse.reactive.messaging.nats.jetstream.configuration.Stream;
 import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
@@ -37,7 +37,7 @@ public class PullConsumerConfigurationMapperImpl implements PullConsumerConfigur
                 .orElseGet(List::of);
     }
 
-    private List<PullConsumerConfiguration> map(String stream, StreamConfiguration configuration) {
+    private List<PullConsumerConfiguration> map(String stream, Stream configuration) {
         return configuration.pullConsumers().entrySet().stream().map(entry -> PullConsumerConfiguration.builder()
                 .consumerConfiguration(
                         consumerConfigurationMapper.map(stream, entry.getKey(), entry.getValue().consumerConfiguration()))

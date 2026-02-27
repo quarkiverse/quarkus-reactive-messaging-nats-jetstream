@@ -31,7 +31,7 @@ public interface JetStreamDevServicesBuildTimeConfiguration {
      * Note that only NATS.io images are supported.
      * Check <a href="https://hub.docker.com/_/nats">NATS</a> to find the available versions.
      */
-    @WithDefault("nats:2.11")
+    @WithDefault("nats:2.12")
     String imageName();
 
     /**
