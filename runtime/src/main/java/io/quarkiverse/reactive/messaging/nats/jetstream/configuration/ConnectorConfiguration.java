@@ -33,7 +33,7 @@ public interface ConnectorConfiguration {
     /**
      * The stream configurations. The map key is the name of the stream.
      */
-    Map<String, StreamConfiguration> streams();
+    Map<String, Stream> streams();
 
     /**
      * The configuration of key value stores. The key is the name of the bucket.

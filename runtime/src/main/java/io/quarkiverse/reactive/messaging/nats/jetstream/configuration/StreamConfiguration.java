@@ -1,7 +1,6 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.configuration;
 
 import java.time.Duration;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -12,11 +11,6 @@ import io.nats.client.api.StorageType;
 import io.smallrye.config.WithDefault;
 
 public interface StreamConfiguration {
-
-    /**
-     * Name of stream. If not set then the key of the map is used
-     */
-    Optional<String> name();
 
     /**
      * Description of stream
@@ -133,15 +127,5 @@ public interface StreamConfiguration {
      * The first sequence used in the stream
      */
     Optional<Long> firstSequence();
-
-    /**
-     * Pull consumer configurations. The map key is the name of the consumer.
-     */
-    Map<String, PullConsumerConfiguration> pullConsumers();
-
-    /**
-     * Push consumer configurations. The map key is the name of the consumer.
-     */
-    Map<String, PushConsumerConfiguration> pushConsumers();
 
 }

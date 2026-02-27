@@ -1,12 +1,13 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.configuration.mapper;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import jakarta.enterprise.context.ApplicationScoped;
 
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.stream.StreamConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.stream.StreamConfigurationImpl;
 import io.quarkiverse.reactive.messaging.nats.jetstream.configuration.ConnectorConfiguration;
 
@@ -14,17 +15,22 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.configuration.ConnectorC
 public class StreamConfigurationMapperImpl implements StreamConfigurationMapper {
 
     @Override
-    public List<StreamConfiguration> map(ConnectorConfiguration configuration) {
+    public List<? extends io.quarkiverse.reactive.messaging.nats.jetstream.client.stream.StreamConfiguration> map(
+            ConnectorConfiguration configuration) {
         return Optional.ofNullable(configuration.streams())
-                .map(streams -> streams.entrySet().stream()
-                        .map(entry -> map(entry.getKey(), entry.getValue())).toList())
+                .map(streams -> map(streams.entrySet()))
                 .orElseGet(List::of);
     }
 
-    private io.quarkiverse.reactive.messaging.nats.jetstream.client.stream.StreamConfiguration map(String name,
-            io.quarkiverse.reactive.messaging.nats.jetstream.configuration.StreamConfiguration configuration) {
-        return StreamConfigurationImpl.builder()
-                .name(configuration.name().orElse(name))
+    private List<? extends io.quarkiverse.reactive.messaging.nats.jetstream.client.stream.StreamConfiguration> map(
+            Set<Map.Entry<String, io.quarkiverse.reactive.messaging.nats.jetstream.configuration.Stream>> streams) {
+        return streams.stream().flatMap(this::map).toList();
+    }
+
+    private Stream<? extends io.quarkiverse.reactive.messaging.nats.jetstream.client.stream.StreamConfiguration> map(
+            Map.Entry<String, io.quarkiverse.reactive.messaging.nats.jetstream.configuration.Stream> entry) {
+        return entry.getValue().configuration().stream().map(configuration -> StreamConfigurationImpl.builder()
+                .name(entry.getValue().name().orElse(entry.getKey()))
                 .description(configuration.description())
                 .subjects(configuration.subjects().orElseGet(Set::of))
                 .replicas(configuration.replicas())
@@ -47,6 +53,6 @@ public class StreamConfigurationMapperImpl implements StreamConfigurationMapper 
                 .denyPurge(configuration.denyPurge())
                 .discardNewPerSubject(configuration.discardNewPerSubject())
                 .firstSequence(configuration.firstSequence())
-                .build();
+                .build());
     }
 }

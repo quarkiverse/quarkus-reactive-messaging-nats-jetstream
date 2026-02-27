@@ -7,6 +7,6 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.configuration.ConnectorC
 
 public interface StreamConfigurationMapper {
 
-    List<StreamConfiguration> map(ConnectorConfiguration configuration);
+    List<? extends StreamConfiguration> map(ConnectorConfiguration configuration);
 
 }
