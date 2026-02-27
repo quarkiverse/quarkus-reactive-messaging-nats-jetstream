@@ -9,7 +9,7 @@
     </parent>
 
     <artifactId>quarkus-reactive-messaging-nats-jetstream-docs</artifactId>
-    <name>Quarkus Reactive messaging Nats Jetstream - Documentation</name>
+    <name>Quarkus Messaging Nats Jetstream - Documentation</name>
 
     <dependencies>
         <!-- Make sure the doc is built after the other artifacts -->
