@@ -1,6 +1,5 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer;
 
-import java.io.IOException;
 import java.time.Duration;
 import java.time.ZonedDateTime;
 import java.util.Objects;
@@ -144,8 +143,8 @@ public record ConsumerAwareImpl(ExecutionHolder executionHolder,
             final FetchConfiguration fetchConfiguration,
             final Class<T> payloadType) {
         ExecutorService executor = Executors.newSingleThreadExecutor(ConsumerWorkerThread::new);
-        return withContext(context -> consumerContext(configuration.stream(), configuration.name())
-                .onItem().transformToMulti(consumerContext -> fetch(consumerContext, fetchConfiguration)
+        return withContext(context -> subscription(configuration.stream(), configuration.name())
+                .onItem().transformToMulti(subscription -> fetch(subscription, fetchConfiguration)
                         .runSubscriptionOn(executor)
                         .emitOn(context::runOnContext)
                         .onItem().transform(message -> messageMapper.map(message, configuration, context, payloadType))
@@ -282,6 +281,13 @@ public record ConsumerAwareImpl(ExecutionHolder executionHolder,
                         .item(Unchecked.supplier(() -> streamContext.getConsumerContext(consumer))));
     }
 
+    private Uni<io.nats.client.JetStreamSubscription> subscription(final String stream, final String consumer) {
+        return jetStream()
+                .onItem().transformToUni(jetStream -> Uni.createFrom()
+                        .item(Unchecked
+                                .supplier(() -> jetStream.subscribe(null, PullSubscribeOptions.bind(stream, consumer)))));
+    }
+
     private Uni<io.nats.client.Message> next(final String stream, final String consumer, final Duration timeout) {
         return consumerContext(stream, consumer)
                 .onItem()
@@ -302,17 +308,16 @@ public record ConsumerAwareImpl(ExecutionHolder executionHolder,
         });
     }
 
-    private Multi<io.nats.client.Message> fetch(final ConsumerContext consumerContext, FetchConfiguration configuration) {
+    private Multi<io.nats.client.Message> fetch(final JetStreamSubscription subscription,
+            final FetchConfiguration configuration) {
         return Multi.createFrom().emitter(emitter -> {
             try {
-                try (final var fetchConsumer = fetchConsumer(consumerContext, configuration)) {
-                    var message = fetchConsumer.nextMessage();
-                    while (message != null) {
-                        emitter.emit(message);
-                        message = fetchConsumer.nextMessage();
-                    }
-                    emitter.complete();
+                final var iterator = subscription.iterate(configuration.batchSize(),
+                        configuration.timeout().orElse(Duration.ofSeconds(1)));
+                while (iterator.hasNext()) {
+                    emitter.emit(iterator.next());
                 }
+                emitter.complete();
             } catch (IllegalStateException e) {
                 emitter.complete(); // when the connection is closed
             } catch (Exception failure) {
@@ -321,28 +326,15 @@ public record ConsumerAwareImpl(ExecutionHolder executionHolder,
         });
     }
 
-    private FetchConsumer fetchConsumer(final ConsumerContext consumerContext, final FetchConfiguration configuration)
-            throws IOException, JetStreamApiException {
-        if (configuration.timeout().isEmpty()) {
-            return consumerContext.fetch(
-                    FetchConsumeOptions.builder().maxMessages(configuration.batchSize()).noWait().build());
-        } else {
-            return consumerContext
-                    .fetch(FetchConsumeOptions.builder().maxMessages(configuration.batchSize())
-                            .expiresIn(configuration.timeout().get().toMillis()).build());
-        }
-    }
-
     @SuppressWarnings("ReactiveStreamsUnusedPublisher")
     private Multi<io.nats.client.Message> subscribe(final String stream, final String consumer,
             final PullConfiguration configuration) {
         final var fetchConfiguration = toFetchConfiguration(configuration);
-        return consumerContext(stream, consumer)
-                .onItem().transformToMulti(consumerContext -> Multi.createBy().repeating()
+        return subscription(stream, consumer)
+                .onItem().transformToMulti(subscription -> Multi.createBy().repeating()
                         .uni(() -> Uni.createFrom().item(42))
                         .whilst(v -> true)
-                        .onItem().transformToMultiAndConcatenate(v -> fetch(consumerContext, fetchConfiguration)));
-
+                        .onItem().transformToMultiAndConcatenate(v -> fetch(subscription, fetchConfiguration)));
     }
 
     private PushSubscribeOptions pushSubscribeOptions(final String stream,
