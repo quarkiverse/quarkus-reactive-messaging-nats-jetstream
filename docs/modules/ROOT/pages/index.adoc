@@ -73,6 +73,8 @@ public class DataConsumer {
 If you want more examples, please take a look at the tests of the extension.
 
 == Configuration
+The stream and Key/Value store configuration are optional. If they are omitted, it is assumed that they already exist on NATS.
+
 .NATS connection configuration
 [cols="4",options="header"]
 |======
@@ -92,7 +94,7 @@ If you want more examples, please take a look at the tests of the extension.
 | quarkus.messaging.nats.connection.tls-configuration-name | The name of the TLS configuration (bucket) used for client authentication in the TLS registry | String |
 |======
 
-.NATS JetStream configuration
+.NATS JetStream Stream configuration
 [cols="4",options="header"]
 |======
 | Property Name | Description | Type | Default Value
