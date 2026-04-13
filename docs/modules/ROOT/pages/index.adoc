@@ -69,8 +69,59 @@ public class DataConsumer {
 
 }
 ----
-
 If you want more examples, please take a look at the tests of the extension.
+
+== Using NATS Key/Value store
+If you want to use the Key/Value store in NATS, then configure your as follows:
+
+----
+quarkus.messaging.nats.connection.servers=nats://localhost:4242
+quarkus.messaging.nats.connection.username=guest
+quarkus.messaging.nats.connection.password=guest
+quarkus.messaging.nats.connection.ssl-enabled=false
+
+# Creates a "test" bucket stored in memory. This part is optional. If you already have created a bucket on NATS
+# then this configuration is redundant.
+quarkus.messaging.nats.key-value-stores.test.storage-type=Memory
+quarkus.messaging.nats.key-value-stores.test.description=Test bucket
+----
+
+Then your application can use the Key/Value store like this:
+
+----
+@Path("/key-value")
+@Produces("application/json")
+@RequestScoped
+class KeyValueStoreResource {
+    private final Client client;
+
+    @Inject
+    public KeyValueStoreResource(Client client) {
+        this.client = client;
+    }
+
+    @GET
+    @Path("{key}")
+    public Uni<Data> getValue(@PathParam("key") String key) {
+        return client.getValue("test", key, Data.class);
+    }
+
+    @PUT
+    @Path("{key}")
+    @Consumes("application/json")
+    public Uni<Long> putValue(@PathParam("key") String key, Data data) {
+        return client.putValue("test", key, data);
+    }
+
+    @DELETE
+    @Path("{key}")
+    @Consumes("application/json")
+    public Uni<Void> deleteValue(@PathParam("key") String key) {
+        return client.deleteValue("test", key);
+    }
+}
+----
+
 
 == Configuration
 The stream and Key/Value store configuration are optional. If they are omitted, it is assumed that they already exist on NATS.
