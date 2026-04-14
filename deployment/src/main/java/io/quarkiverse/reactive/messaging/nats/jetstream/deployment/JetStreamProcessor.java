@@ -9,10 +9,7 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.client.connection.Connec
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.connection.TlsContextFactoryImpl;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer.ConsumerConfigurationMapperImpl;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer.ConsumerMapperImpl;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.mapper.HeaderMapperImpl;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.mapper.MessageMapperImpl;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.mapper.PayloadMapperImpl;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.mapper.SerializerImpl;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.mapper.*;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.store.KeyValueConfigurationMapperImpl;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.stream.StreamConfigurationMapperImpl;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.stream.StreamStateMapperImpl;
@@ -22,6 +19,8 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.processors.publisher.Mes
 import io.quarkiverse.reactive.messaging.nats.jetstream.processors.subscriber.MessageSubscriberProcessorFactory;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeansRuntimeInitBuildItem;
+import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Consume;
@@ -67,7 +66,6 @@ class JetStreamProcessor {
         buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(HeaderMapperImpl.class));
         buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(MessageMapperImpl.class));
         buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(PayloadMapperImpl.class));
-        buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(SerializerImpl.class));
         buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(KeyValueConfigurationMapperImpl.class));
         buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(StreamConfigurationMapperImpl.class));
         buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(StreamStateMapperImpl.class));
@@ -87,6 +85,17 @@ class JetStreamProcessor {
         buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(MessagePublisherProcessorFactory.class));
         buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(MessageSubscriberProcessorFactory.class));
         buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(TlsContextFactoryImpl.class));
+    }
+
+    @BuildStep
+    void registerSerializer(BuildProducer<AdditionalBeanBuildItem> buildProducer, Capabilities capabilities) {
+        if (capabilities.isPresent(Capability.JACKSON)) {
+            buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(JacksonSerializer.class));
+        } else if (capabilities.isPresent(Capability.JSONB)) {
+            buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(JsonbSerializer.class));
+        } else {
+            buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(DefaultSerializer.class));
+        }
     }
 
     @BuildStep

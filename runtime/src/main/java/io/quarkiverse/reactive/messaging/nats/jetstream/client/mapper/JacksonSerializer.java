@@ -11,7 +11,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 @ApplicationScoped
 @DefaultBean
-public class SerializerImpl implements Serializer {
+public class JacksonSerializer implements Serializer {
     private final ObjectMapper objectMapper;
 
     @Override
