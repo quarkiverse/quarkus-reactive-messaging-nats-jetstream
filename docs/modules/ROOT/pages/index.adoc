@@ -156,7 +156,6 @@ The stream and Key/Value store configuration are optional. If they are omitted, 
 [cols="4",options="header"]
 |======
 | Property Name | Description | Type | Default Value
-| quarkus.messaging.nats.trace | Enable tracing | Boolean | true
 | quarkus.messaging.nats.streams.[stream-name].name | The name of the stream. If not set the key from the map is used | String | [stream-name]
 | quarkus.messaging.nats.streams.[stream-name].configuration.replicas | The number of replicas a message must be stored. | Integer | 1
 | quarkus.messaging.nats.streams.[stream-name].configuration.storage-type | The storage type for stream data | File or Memory | File
