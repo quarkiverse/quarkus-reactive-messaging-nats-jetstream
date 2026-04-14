@@ -122,6 +122,13 @@ class KeyValueStoreResource {
 }
 ----
 
+== Serializing Java Objects
+
+By default, Java objects are serialized using `java.io.*` streams. If either the `quarkus-jackson` or
+`quarkus-jsonb` dependency is present, objects are serialized as JSON instead.
+
+To use a custom serializer, create a CDI bean that implements the
+`io.quarkiverse.reactive.messaging.nats.jetstream.client.mapper.Serializer` interface.
 
 == Configuration
 The stream and Key/Value store configuration are optional. If they are omitted, it is assumed that they already exist on NATS.
