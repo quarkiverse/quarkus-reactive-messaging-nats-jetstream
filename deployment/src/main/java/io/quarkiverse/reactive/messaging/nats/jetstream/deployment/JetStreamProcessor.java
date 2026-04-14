@@ -13,7 +13,8 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.client.mapper.*;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.store.KeyValueConfigurationMapperImpl;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.stream.StreamConfigurationMapperImpl;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.stream.StreamStateMapperImpl;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.tracing.TracerFactoryImpl;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.tracing.DefaultTracerFactory;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.tracing.OpenTelemetryTracerFactory;
 import io.quarkiverse.reactive.messaging.nats.jetstream.configuration.JetStreamRecorder;
 import io.quarkiverse.reactive.messaging.nats.jetstream.processors.publisher.MessagePublisherProcessorFactory;
 import io.quarkiverse.reactive.messaging.nats.jetstream.processors.subscriber.MessageSubscriberProcessorFactory;
@@ -69,7 +70,6 @@ class JetStreamProcessor {
         buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(KeyValueConfigurationMapperImpl.class));
         buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(StreamConfigurationMapperImpl.class));
         buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(StreamStateMapperImpl.class));
-        buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(TracerFactoryImpl.class));
         buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(
                 io.quarkiverse.reactive.messaging.nats.jetstream.configuration.mapper.ConsumerConfigurationMapperImpl.class));
         buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(
@@ -95,6 +95,15 @@ class JetStreamProcessor {
             buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(JsonbSerializer.class));
         } else {
             buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(DefaultSerializer.class));
+        }
+    }
+
+    @BuildStep
+    void registerTracing(BuildProducer<AdditionalBeanBuildItem> buildProducer, Capabilities capabilities) {
+        if (capabilities.isPresent(Capability.OPENTELEMETRY_TRACER)) {
+            buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(OpenTelemetryTracerFactory.class));
+        } else {
+            buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(DefaultTracerFactory.class));
         }
     }
 
