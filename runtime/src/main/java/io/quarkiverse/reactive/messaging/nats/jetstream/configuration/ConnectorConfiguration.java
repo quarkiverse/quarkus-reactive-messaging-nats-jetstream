@@ -6,7 +6,6 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.client.connection.Connec
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.smallrye.config.ConfigMapping;
-import io.smallrye.config.WithDefault;
 
 @ConfigMapping(prefix = "quarkus.messaging.nats")
 @ConfigRoot(phase = ConfigPhase.RUN_TIME)
@@ -16,12 +15,6 @@ public interface ConnectorConfiguration {
      * The connection configuration
      */
     ConnectionConfiguration connection();
-
-    /**
-     * Enable tracing for JetStream
-     */
-    @WithDefault("true")
-    Boolean trace();
 
     /**
      * The stream configurations. The map key is the name of the stream.

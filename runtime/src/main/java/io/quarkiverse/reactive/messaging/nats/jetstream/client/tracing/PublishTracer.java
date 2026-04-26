@@ -8,6 +8,7 @@ import jakarta.enterprise.inject.Instance;
 
 import org.eclipse.microprofile.reactive.messaging.Message;
 
+import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
@@ -22,26 +23,20 @@ import io.smallrye.mutiny.unchecked.Unchecked;
 import io.smallrye.reactive.messaging.TracingMetadata;
 
 public class PublishTracer<T> implements Tracer<T> {
-    private final boolean enabled;
     private final Instrumenter<PublishMessageMetadata, Void> instrumenter;
 
-    public PublishTracer(boolean enabled, Instance<OpenTelemetry> openTelemetryInstance) {
-        this.enabled = enabled;
+    public PublishTracer(Instance<OpenTelemetry> openTelemetryInstance) {
         this.instrumenter = instrumenter(openTelemetryInstance);
     }
 
     @Override
     public Uni<Message<T>> withTrace(Message<T> message, TraceSupplier<T> traceSupplier) {
-        if (enabled) {
-            return addTracingMetadata(message)
-                    .onItem().transformToUni(msg -> Uni.createFrom().item(Unchecked.supplier(() -> {
-                        msg.getMetadata(PublishMessageMetadata.class)
-                                .ifPresent(metadata -> traceOutgoing(instrumenter, msg, metadata));
-                        return traceSupplier.get(message);
-                    })));
-        } else {
-            return Uni.createFrom().item(message);
-        }
+        return addTracingMetadata(message)
+                .onItem().transformToUni(msg -> Uni.createFrom().item(Unchecked.supplier(() -> {
+                    msg.getMetadata(PublishMessageMetadata.class)
+                            .ifPresent(metadata -> traceOutgoing(instrumenter, msg, metadata));
+                    return traceSupplier.get(message);
+                })));
     }
 
     /**
@@ -90,5 +85,12 @@ public class PublishTracer<T> implements Tracer<T> {
                 }
             }
         }
+    }
+
+    private OpenTelemetry getOpenTelemetry(Instance<OpenTelemetry> openTelemetryInstance) {
+        if (openTelemetryInstance.isResolvable()) {
+            return openTelemetryInstance.get();
+        }
+        return GlobalOpenTelemetry.get();
     }
 }

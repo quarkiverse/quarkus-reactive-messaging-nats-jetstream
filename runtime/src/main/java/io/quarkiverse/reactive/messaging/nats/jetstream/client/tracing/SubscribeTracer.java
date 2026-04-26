@@ -7,6 +7,7 @@ import jakarta.enterprise.inject.Instance;
 import org.eclipse.microprofile.reactive.messaging.Message;
 import org.jboss.logging.Logger;
 
+import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
@@ -24,25 +25,20 @@ import io.smallrye.reactive.messaging.providers.MetadataInjectableMessage;
 public class SubscribeTracer<T> implements Tracer<T> {
     private static final Logger log = Logger.getLogger(SubscribeTracer.class);
 
-    private final boolean enabled;
     private final Instrumenter<SubscribeMessageMetadata, Void> instrumenter;
 
-    public SubscribeTracer(boolean enabled, Instance<OpenTelemetry> openTelemetryInstance) {
-        this.enabled = enabled;
+    public SubscribeTracer(Instance<OpenTelemetry> openTelemetryInstance) {
         this.instrumenter = instrumenter(openTelemetryInstance);
     }
 
     @Override
     public Uni<Message<T>> withTrace(Message<T> message, TraceSupplier<T> traceSupplier) {
         log.debugf("Adding trace on thread: %s", Thread.currentThread().getName());
-        if (enabled) {
-            return Uni.createFrom().item(Unchecked.supplier(() -> {
-                final var msg = message.getMetadata(SubscribeMessageMetadata.class)
-                        .map(metadata -> traceIncoming(instrumenter, message, metadata)).orElse(message);
-                return traceSupplier.get(msg);
-            }));
-        }
-        return Uni.createFrom().item(message);
+        return Uni.createFrom().item(Unchecked.supplier(() -> {
+            final var msg = message.getMetadata(SubscribeMessageMetadata.class)
+                    .map(metadata -> traceIncoming(instrumenter, message, metadata)).orElse(message);
+            return traceSupplier.get(msg);
+        }));
     }
 
     private Instrumenter<SubscribeMessageMetadata, Void> instrumenter(Instance<OpenTelemetry> openTelemetryInstance) {
@@ -90,5 +86,12 @@ public class SubscribeTracer<T> implements Tracer<T> {
             return message;
         }
         return msg;
+    }
+
+    private OpenTelemetry getOpenTelemetry(Instance<OpenTelemetry> openTelemetryInstance) {
+        if (openTelemetryInstance.isResolvable()) {
+            return openTelemetryInstance.get();
+        }
+        return GlobalOpenTelemetry.get();
     }
 }

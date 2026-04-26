@@ -4,20 +4,17 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Instance;
 
 import io.opentelemetry.api.OpenTelemetry;
-import io.quarkiverse.reactive.messaging.nats.jetstream.configuration.ConnectorConfiguration;
 import lombok.RequiredArgsConstructor;
 
 @ApplicationScoped
 @RequiredArgsConstructor
-public class TracerFactoryImpl implements TracerFactory {
-    private final ConnectorConfiguration configuration;
+public class OpenTelemetryTracerFactory implements TracerFactory {
     private final Instance<OpenTelemetry> openTelemetryInstance;
 
     public <T> Tracer<T> create(TracerType tracerType) {
-        final boolean enabled = configuration.trace();
         return switch (tracerType) {
-            case Subscribe -> new SubscribeTracer<>(enabled, openTelemetryInstance);
-            case Publish -> new PublishTracer<>(enabled, openTelemetryInstance);
+            case Subscribe -> new SubscribeTracer<>(openTelemetryInstance);
+            case Publish -> new PublishTracer<>(openTelemetryInstance);
         };
     }
 }
