@@ -5,13 +5,10 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.client.connection.Connec
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.unchecked.Unchecked;
 
-@SuppressWarnings("resource")
 public interface StreamContextAware {
 
-    Connection connection();
-
-    default Uni<StreamContext> streamContext(final String stream) {
-        return Uni.createFrom().item(Unchecked.supplier(() -> connection().getStreamContext(stream)));
+    default Uni<StreamContext> streamContext(final Connection connection, final String stream) {
+        return Uni.createFrom().item(Unchecked.supplier(() -> connection.getStreamContext(stream)));
     }
 
 }

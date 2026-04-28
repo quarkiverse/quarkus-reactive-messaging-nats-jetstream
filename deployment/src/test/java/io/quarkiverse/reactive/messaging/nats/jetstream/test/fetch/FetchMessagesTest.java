@@ -18,13 +18,13 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.client.Client;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.NackMetadata;
 import io.quarkiverse.reactive.messaging.nats.jetstream.test.MessageConsumer;
 import io.quarkiverse.reactive.messaging.nats.jetstream.test.TestSpanExporter;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class FetchMessagesTest implements MessageConsumer<Object> {
     private final static Duration TIMEOUT = Duration.ofSeconds(5);
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
+    static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .setArchiveProducer(
                     () -> ShrinkWrap.create(JavaArchive.class)
                             .addClasses(TestSpanExporter.class, Data.class, ConsumerConfiguration.class,

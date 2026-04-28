@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.List;
 
+import io.quarkus.test.QuarkusExtensionTest;
 import jakarta.inject.Inject;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
@@ -24,7 +25,7 @@ import io.restassured.parsing.Parser;
 class PushTracingTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest().setArchiveProducer(
             () -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(TestSpanExporter.class, Data.class, DataResource.class, DataConsumingBean.class,
                             DataCollectorBean.class, MessageConsumer.class))

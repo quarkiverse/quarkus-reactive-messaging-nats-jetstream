@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ExecutorService;
 
 import org.eclipse.microprofile.reactive.messaging.Message;
 
@@ -29,10 +30,18 @@ import io.smallrye.reactive.messaging.providers.connectors.ExecutionHolder;
 import lombok.extern.jbosslog.JBossLog;
 
 @JBossLog
-public record PublisherAwareImpl(ExecutionHolder executionHolder,
-        TracerFactory tracerFactory,
-        PayloadMapper payloadMapper,
-        Connection connection) implements PublisherAware, ContextAware, JetStreamAware {
+public class PublisherAwareImpl extends ContextAware implements PublisherAware, JetStreamAware {
+    private final TracerFactory tracerFactory;
+    private final PayloadMapper payloadMapper;
+    private final Connection connection;
+
+    public PublisherAwareImpl(ExecutionHolder executionHolder, ExecutorService executorService, TracerFactory tracerFactory,
+            PayloadMapper payloadMapper, Connection connection) {
+        super(executionHolder, executorService);
+        this.tracerFactory = tracerFactory;
+        this.payloadMapper = payloadMapper;
+        this.connection = connection;
+    }
 
     @Override
     public <T> Uni<Message<T>> publish(final Message<T> message, final String stream, final String subject) {
@@ -42,7 +51,7 @@ public record PublisherAwareImpl(ExecutionHolder executionHolder,
     @Override
     public <T> Uni<Message<T>> publish(final Message<T> message, final String stream, final String subject,
             final PublishListener<T> listener) {
-        return withContext(context -> context.executeBlocking(publishInternal(message, stream, subject, listener)))
+        return withContext(context -> context.execute(publishInternal(message, stream, subject, listener)))
                 .onFailure().invoke(listener::onError)
                 .onFailure().transform(ClientException::new);
     }
@@ -67,7 +76,7 @@ public record PublisherAwareImpl(ExecutionHolder executionHolder,
                 .onItem().transform(Unchecked.function(payload -> payloadMapper.map(payload)))
                 .onItem().transform(Unchecked.function(payload -> withMetadata(message, stream, subject, payload)))
                 .onItem().transformToUni(this::withTrace)
-                .onItem().transformToUni(tuple -> jetStream()
+                .onItem().transformToUni(tuple -> jetStream(connection)
                         .onItem().transformToUni(jetStream -> Uni.createFrom().item(Unchecked.supplier(() -> jetStream.publish(
                                 tuple.getItem2().subject(),
                                 toJetStreamHeaders(tuple.getItem2().headers()),
@@ -89,7 +98,7 @@ public record PublisherAwareImpl(ExecutionHolder executionHolder,
                 .subject(subject(message, subject))
                 .payload(payload)
                 .messageId(messageId(message))
-                .headers(headers(message, payload))
+                .headers(headers(message))
                 .build();
         final var metadata = message.getMetadata().without(PublishMessageMetadata.class);
         return Tuple2.of(message.withMetadata(metadata.with(publishMetadata)), publishMetadata);
@@ -111,7 +120,7 @@ public record PublisherAwareImpl(ExecutionHolder executionHolder,
                 .orElseGet(() -> UUID.randomUUID().toString());
     }
 
-    private <T> Map<String, List<String>> headers(final Message<?> message, final SerializedPayload<T> payload) {
+    private Map<String, List<String>> headers(final Message<?> message) {
         final var headers = new HashMap<>(message.getMetadata().get(PublishMessageMetadata.class)
                 .map(PublishMessageMetadata::headers)
                 .orElseGet(Map::of));
@@ -160,13 +169,5 @@ public record PublisherAwareImpl(ExecutionHolder executionHolder,
         final var result = new Headers();
         headers.forEach(result::add);
         return result;
-    }
-
-    private Uni<PublishAck> publish(final String subject, final Headers headers, final byte[] body,
-            final PublishOptions options) {
-        return jetStream()
-                .onItem()
-                .transformToUni(jetStream -> Uni.createFrom()
-                        .item(Unchecked.supplier(() -> jetStream.publish(subject, headers, body, options))));
     }
 }
