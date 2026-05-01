@@ -9,7 +9,6 @@ import org.eclipse.microprofile.reactive.messaging.Message;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.SubscribeMessageMetadata;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.unchecked.Unchecked;
-import io.smallrye.reactive.messaging.annotations.Blocking;
 
 @ApplicationScoped
 public class RedeliveryConsumingBean {
@@ -17,7 +16,6 @@ public class RedeliveryConsumingBean {
 
     @Incoming("unstable")
     @Acknowledgment(Acknowledgment.Strategy.MANUAL)
-    @Blocking
     public Uni<Void> unstable(Message<Integer> message) {
         return Uni.createFrom().item(message)
                 .onItem().transformToUni(m -> Uni.createFrom().item(Unchecked.supplier(() -> {

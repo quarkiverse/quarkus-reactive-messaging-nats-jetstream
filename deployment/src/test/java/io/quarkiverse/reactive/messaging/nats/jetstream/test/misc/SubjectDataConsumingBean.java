@@ -11,7 +11,6 @@ import org.jboss.logging.Logger;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.SubscribeMessageMetadata;
 import io.quarkiverse.reactive.messaging.nats.jetstream.test.MessageConsumer;
 import io.smallrye.mutiny.Uni;
-import io.smallrye.reactive.messaging.annotations.Blocking;
 
 @ApplicationScoped
 public class SubjectDataConsumingBean implements MessageConsumer<String> {
@@ -19,7 +18,6 @@ public class SubjectDataConsumingBean implements MessageConsumer<String> {
 
     volatile Optional<SubjectData> lastData = Optional.empty();
 
-    @Blocking
     @Incoming("data-consumer")
     public Uni<Void> data(Message<String> message) {
         return handleData(message)
