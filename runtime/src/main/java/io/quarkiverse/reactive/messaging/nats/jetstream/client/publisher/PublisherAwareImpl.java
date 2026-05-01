@@ -6,7 +6,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ExecutorService;
 
 import org.eclipse.microprofile.reactive.messaging.Message;
 
@@ -35,9 +34,9 @@ public class PublisherAwareImpl extends ContextAware implements PublisherAware, 
     private final PayloadMapper payloadMapper;
     private final Connection connection;
 
-    public PublisherAwareImpl(ExecutionHolder executionHolder, ExecutorService executorService, TracerFactory tracerFactory,
+    public PublisherAwareImpl(ExecutionHolder executionHolder, TracerFactory tracerFactory,
             PayloadMapper payloadMapper, Connection connection) {
-        super(executionHolder, executorService);
+        super(executionHolder);
         this.tracerFactory = tracerFactory;
         this.payloadMapper = payloadMapper;
         this.connection = connection;

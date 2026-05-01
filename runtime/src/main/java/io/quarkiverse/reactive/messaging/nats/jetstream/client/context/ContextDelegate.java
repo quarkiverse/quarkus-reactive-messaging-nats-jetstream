@@ -6,7 +6,7 @@ import java.util.concurrent.Executors;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 
-public record ContextDelegate(io.vertx.mutiny.core.Context delegate, ExecutorService executorService) implements Context {
+public record ContextDelegate(io.vertx.mutiny.core.Context delegate) implements Context {
 
     @Override
     public io.vertx.core.Context getDelegate() {
@@ -15,8 +15,9 @@ public record ContextDelegate(io.vertx.mutiny.core.Context delegate, ExecutorSer
 
     @Override
     public <T> Uni<T> execute(Uni<T> codeHandler) {
+        ExecutorService executor = Executors.newSingleThreadExecutor(ContextWorkerThread::new);
         return codeHandler
-                .runSubscriptionOn(executorService)
+                .runSubscriptionOn(executor)
                 .emitOn(delegate::runOnContext);
     }
 

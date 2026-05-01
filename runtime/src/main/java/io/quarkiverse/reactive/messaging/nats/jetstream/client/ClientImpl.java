@@ -2,7 +2,6 @@ package io.quarkiverse.reactive.messaging.nats.jetstream.client;
 
 import java.time.Duration;
 import java.time.ZonedDateTime;
-import java.util.concurrent.ExecutorService;
 
 import jakarta.enterprise.context.ApplicationScoped;
 
@@ -39,7 +38,6 @@ public class ClientImpl implements Client {
     private final KeyValueStoreAware keyValueStoreDelegate;
 
     public ClientImpl(ExecutionHolder executionHolder,
-            ExecutorService executorService,
             Connection connection,
             TracerFactory tracerFactory,
             PayloadMapper payloadMapper,
@@ -49,14 +47,14 @@ public class ClientImpl implements Client {
             StreamStateMapper streamStateMapper,
             StreamConfigurationMapper streamConfigurationMapper,
             KeyValueConfigurationMapper keyValueConfigurationMapper) {
-        this.publisherDelegate = new PublisherAwareImpl(executionHolder, executorService, tracerFactory, payloadMapper,
+        this.publisherDelegate = new PublisherAwareImpl(executionHolder, tracerFactory, payloadMapper,
                 connection);
-        this.consumerDelegate = new ConsumerAwareImpl(executionHolder, executorService, consumerConfigurationMapper,
+        this.consumerDelegate = new ConsumerAwareImpl(executionHolder, consumerConfigurationMapper,
                 consumerMapper,
                 messageMapper, payloadMapper, connection, tracerFactory);
-        this.streamDelegate = new StreamAwareImpl(executionHolder, executorService, streamStateMapper,
+        this.streamDelegate = new StreamAwareImpl(executionHolder, streamStateMapper,
                 streamConfigurationMapper, connection);
-        this.keyValueStoreDelegate = new KeyValueStoreAwareImpl(executionHolder, executorService, payloadMapper,
+        this.keyValueStoreDelegate = new KeyValueStoreAwareImpl(executionHolder, payloadMapper,
                 keyValueConfigurationMapper,
                 connection);
     }

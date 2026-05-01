@@ -1,7 +1,6 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client.store;
 
 import java.util.List;
-import java.util.concurrent.ExecutorService;
 
 import io.nats.client.KeyValue;
 import io.nats.client.KeyValueManagement;
@@ -23,9 +22,9 @@ public class KeyValueStoreAwareImpl extends ContextAware implements KeyValueStor
     private final KeyValueConfigurationMapper keyValueConfigurationMapper;
     private final Connection connection;
 
-    public KeyValueStoreAwareImpl(ExecutionHolder executionHolder, ExecutorService executorService, PayloadMapper payloadMapper,
+    public KeyValueStoreAwareImpl(ExecutionHolder executionHolder, PayloadMapper payloadMapper,
             KeyValueConfigurationMapper keyValueConfigurationMapper, Connection connection) {
-        super(executionHolder, executorService);
+        super(executionHolder);
         this.payloadMapper = payloadMapper;
         this.keyValueConfigurationMapper = keyValueConfigurationMapper;
         this.connection = connection;

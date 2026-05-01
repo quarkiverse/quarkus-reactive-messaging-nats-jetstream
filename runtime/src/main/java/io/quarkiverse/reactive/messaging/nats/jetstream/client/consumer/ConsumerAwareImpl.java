@@ -4,7 +4,6 @@ import java.time.Duration;
 import java.time.ZonedDateTime;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.concurrent.ExecutorService;
 
 import org.eclipse.microprofile.reactive.messaging.Message;
 
@@ -38,14 +37,13 @@ public class ConsumerAwareImpl extends ContextAware implements ConsumerAware, Je
     private final TracerFactory tracerFactory;
 
     public ConsumerAwareImpl(ExecutionHolder executionHolder,
-            ExecutorService executorService,
             ConsumerConfigurationMapper consumerConfigurationMapper,
             ConsumerMapper consumerMapper,
             MessageMapper messageMapper,
             PayloadMapper payloadMapper,
             Connection connection,
             TracerFactory tracerFactory) {
-        super(executionHolder, executorService);
+        super(executionHolder);
         this.consumerConfigurationMapper = consumerConfigurationMapper;
         this.consumerMapper = consumerMapper;
         this.messageMapper = messageMapper;

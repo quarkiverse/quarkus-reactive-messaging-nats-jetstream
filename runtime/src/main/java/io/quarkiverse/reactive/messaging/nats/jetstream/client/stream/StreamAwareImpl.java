@@ -1,7 +1,6 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client.stream;
 
 import java.util.HashSet;
-import java.util.concurrent.ExecutorService;
 
 import io.nats.client.api.StreamInfo;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.ClientException;
@@ -24,9 +23,9 @@ public class StreamAwareImpl extends ContextAware implements StreamAware, JetStr
     private final StreamConfigurationMapper streamConfigurationMapper;
     private final Connection connection;
 
-    public StreamAwareImpl(ExecutionHolder executionHolder, ExecutorService executorService,
+    public StreamAwareImpl(ExecutionHolder executionHolder,
             StreamStateMapper streamStateMapper, StreamConfigurationMapper streamConfigurationMapper, Connection connection) {
-        super(executionHolder, executorService);
+        super(executionHolder);
         this.streamStateMapper = streamStateMapper;
         this.streamConfigurationMapper = streamConfigurationMapper;
         this.connection = connection;
