@@ -35,7 +35,6 @@ class JetStreamContainer extends GenericContainer<JetStreamContainer> implements
 
         super.withNetworkAliases("nats");
         super.waitingFor(new WaitAllStrategy()
-                .withStrategy(Wait.forListeningPort())
                 .withStrategy(Wait.forHttp("/healthz").forPort(NATS_HTTP_PORT).forStatusCode(200)));
         super.withStartupTimeout(Duration.ofSeconds(180L));
         super.withStartupAttempts(3);

@@ -14,9 +14,9 @@ import java.util.function.Supplier;
 import org.eclipse.microprofile.reactive.messaging.Metadata;
 
 import io.nats.client.Message;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.context.Context;
 import io.smallrye.reactive.messaging.providers.helpers.VertxContext;
 import io.smallrye.reactive.messaging.providers.locals.LocalContextMetadata;
-import io.vertx.mutiny.core.Context;
 
 public class SubscribeMessage<T> implements JetStreamMessage<T> {
     private final Message message;

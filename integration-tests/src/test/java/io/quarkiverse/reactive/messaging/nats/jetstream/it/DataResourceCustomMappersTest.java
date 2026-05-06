@@ -9,6 +9,7 @@ import java.time.Instant;
 import java.util.concurrent.TimeUnit;
 
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Inject;
 
 import org.junit.jupiter.api.Test;
@@ -54,6 +55,7 @@ class DataResourceCustomMappersTest {
     public static class Profile implements QuarkusTestProfile {
 
         @ApplicationScoped
+        @Produces
         public Serializer getSerializer(ObjectMapper objectMapper) {
             return new Serializer() {
                 @Override

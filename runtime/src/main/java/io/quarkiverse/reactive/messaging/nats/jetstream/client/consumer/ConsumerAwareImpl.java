@@ -4,8 +4,6 @@ import java.time.Duration;
 import java.time.ZonedDateTime;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 import org.eclipse.microprofile.reactive.messaging.Message;
 
@@ -30,24 +28,41 @@ import io.smallrye.reactive.messaging.providers.connectors.ExecutionHolder;
 import lombok.extern.jbosslog.JBossLog;
 
 @JBossLog
-public record ConsumerAwareImpl(ExecutionHolder executionHolder,
-        ConsumerConfigurationMapper consumerConfigurationMapper,
-        ConsumerMapper consumerMapper, TracerFactory tracerFactory,
-        MessageMapper messageMapper,
-        PayloadMapper payloadMapper,
-        Connection connection) implements ConsumerAware, ContextAware, JetStreamAware, StreamContextAware {
+public class ConsumerAwareImpl extends ContextAware implements ConsumerAware, JetStreamAware, StreamContextAware {
+    private final ConsumerConfigurationMapper consumerConfigurationMapper;
+    private final ConsumerMapper consumerMapper;
+    private final MessageMapper messageMapper;
+    private final PayloadMapper payloadMapper;
+    private final Connection connection;
+    private final TracerFactory tracerFactory;
+
+    public ConsumerAwareImpl(ExecutionHolder executionHolder,
+            ConsumerConfigurationMapper consumerConfigurationMapper,
+            ConsumerMapper consumerMapper,
+            MessageMapper messageMapper,
+            PayloadMapper payloadMapper,
+            Connection connection,
+            TracerFactory tracerFactory) {
+        super(executionHolder);
+        this.consumerConfigurationMapper = consumerConfigurationMapper;
+        this.consumerMapper = consumerMapper;
+        this.messageMapper = messageMapper;
+        this.payloadMapper = payloadMapper;
+        this.connection = connection;
+        this.tracerFactory = tracerFactory;
+    }
 
     @Override
     public Uni<Consumer> addConsumerIfAbsent(final ConsumerConfiguration configuration) {
         return withContext(context -> context
-                .executeBlocking(addConsumerIfAbsent(configuration.stream(), consumerConfigurationMapper.map(configuration))
+                .execute(addConsumerIfAbsent(configuration.stream(), consumerConfigurationMapper.map(configuration))
                         .onFailure().transform(ClientException::new)));
     }
 
     @Override
     public Uni<Consumer> addConsumerIfAbsent(final ConsumerConfiguration configuration,
             PushConfiguration pushConfiguration) {
-        return withContext(context -> context.executeBlocking(
+        return withContext(context -> context.execute(
                 addConsumerIfAbsent(configuration.stream(), consumerConfigurationMapper.map(configuration, pushConfiguration))
                         .onFailure().transform(ClientException::new)));
     }
@@ -55,14 +70,14 @@ public record ConsumerAwareImpl(ExecutionHolder executionHolder,
     @Override
     public Uni<Consumer> addConsumerIfAbsent(final ConsumerConfiguration configuration,
             PullConfiguration pullConfiguration) {
-        return withContext(context -> context.executeBlocking(
+        return withContext(context -> context.execute(
                 addConsumerIfAbsent(configuration.stream(), consumerConfigurationMapper.map(configuration, pullConfiguration))
                         .onFailure().transform(ClientException::new)));
     }
 
     @Override
     public Uni<Consumer> consumer(final String stream, final String consumerName) {
-        return withContext(context -> context.executeBlocking(consumerInfo(stream, consumerName)
+        return withContext(context -> context.execute(consumerInfo(stream, consumerName)
                 .onItem().transform(consumerMapper::map)
                 .onFailure().transform(ClientException::new)));
     }
@@ -70,7 +85,7 @@ public record ConsumerAwareImpl(ExecutionHolder executionHolder,
     @SuppressWarnings("ReactiveStreamsUnusedPublisher")
     @Override
     public Multi<String> consumerNames(final String streamName) {
-        return jetStreamManagement().onItem()
+        return jetStreamManagement(connection).onItem()
                 .transformToMulti(jetStreamManagement -> Multi.createFrom()
                         .items(Unchecked.supplier(() -> jetStreamManagement.getConsumerNames(streamName).stream()))
                         .onFailure().transform(ClientException::new));
@@ -78,7 +93,7 @@ public record ConsumerAwareImpl(ExecutionHolder executionHolder,
 
     @Override
     public Uni<Void> deleteConsumer(final String streamName, final String consumerName) {
-        return withContext(context -> context.executeBlocking(jetStreamManagement().onItem()
+        return withContext(context -> context.execute(jetStreamManagement(connection).onItem()
                 .transformToUni(jetStreamManagement -> Uni.createFrom()
                         .item(Unchecked.supplier(() -> jetStreamManagement.deleteConsumer(streamName, consumerName))))
                 .onItem()
@@ -89,7 +104,7 @@ public record ConsumerAwareImpl(ExecutionHolder executionHolder,
 
     @Override
     public Uni<Void> pauseConsumer(final String streamName, final String consumerName, final ZonedDateTime pauseUntil) {
-        return withContext(context -> context.executeBlocking(jetStreamManagement()
+        return withContext(context -> context.execute(jetStreamManagement(connection)
                 .onItem()
                 .transformToUni(jetStreamManagement -> Uni.createFrom().item(
                         Unchecked.supplier(() -> jetStreamManagement.pauseConsumer(streamName, consumerName, pauseUntil))))
@@ -101,7 +116,7 @@ public record ConsumerAwareImpl(ExecutionHolder executionHolder,
 
     @Override
     public Uni<Void> resumeConsumer(final String streamName, final String consumerName) {
-        return withContext(context -> context.executeBlocking(jetStreamManagement()
+        return withContext(context -> context.execute(jetStreamManagement(connection)
                 .onItem()
                 .transformToUni(jetStreamManagement -> Uni.createFrom()
                         .item(Unchecked.supplier(() -> jetStreamManagement.resumeConsumer(streamName, consumerName))))
@@ -116,19 +131,15 @@ public record ConsumerAwareImpl(ExecutionHolder executionHolder,
         return next(configuration, timeout, null);
     }
 
-    @SuppressWarnings("resource")
     @Override
     public <T> Uni<Message<T>> next(final ConsumerConfiguration configuration, final Duration timeout,
             final Class<T> payloadType) {
-        ExecutorService executor = Executors.newSingleThreadExecutor(ConsumerWorkerThread::new);
-        return withContext(context -> next(configuration.stream(), configuration.name(), timeout)
-                .runSubscriptionOn(executor)
-                .emitOn(context::runOnContext)
+        return withContext(context -> context.execute(next(configuration.stream(), configuration.name(), timeout)
                 .onItem().ifNotNull().transform(message -> messageMapper.map(message, configuration, context, payloadType))
                 .onItem().ifNotNull()
                 .transformToUni(message -> tracerFactory.<T> create(TracerType.Subscribe).withTrace(message,
                         new AttachContextTraceSupplier<>()))
-                .onFailure().transform(ClientException::new));
+                .onFailure().transform(ClientException::new)));
     }
 
     @Override
@@ -137,26 +148,23 @@ public record ConsumerAwareImpl(ExecutionHolder executionHolder,
         return fetch(configuration, fetchConfiguration, null);
     }
 
-    @SuppressWarnings({ "resource", "ReactiveStreamsUnusedPublisher" })
+    @SuppressWarnings({ "ReactiveStreamsUnusedPublisher" })
     @Override
     public <T> Multi<Message<T>> fetch(final ConsumerConfiguration configuration,
             final FetchConfiguration fetchConfiguration,
             final Class<T> payloadType) {
-        ExecutorService executor = Executors.newSingleThreadExecutor(ConsumerWorkerThread::new);
-        return withContext(context -> subscription(configuration.stream(), configuration.name())
-                .onItem().transformToMulti(subscription -> fetch(subscription, fetchConfiguration)
-                        .runSubscriptionOn(executor)
-                        .emitOn(context::runOnContext)
-                        .onItem().transform(message -> messageMapper.map(message, configuration, context, payloadType))
-                        .onItem()
-                        .transformToUniAndMerge(message -> tracerFactory.<T> create(TracerType.Subscribe).withTrace(message,
-                                new AttachContextTraceSupplier<>()))
-                        .onFailure().transform(ClientException::new)));
+        return withContext(context -> context.execute(subscription(configuration.stream(), configuration.name())
+                .onItem().transformToMulti(subscription -> fetch(subscription, fetchConfiguration)))
+                .onItem().transform(message -> messageMapper.map(message, configuration, context, payloadType))
+                .onItem()
+                .transformToUniAndMerge(message -> tracerFactory.<T> create(TracerType.Subscribe).withTrace(message,
+                        new AttachContextTraceSupplier<>()))
+                .onFailure().transform(ClientException::new));
     }
 
     @Override
     public <T> Uni<Message<T>> resolve(final String streamName, final long sequence) {
-        return withContext(context -> context.executeBlocking(streamContext(streamName)
+        return withContext(context -> context.execute(streamContext(connection, streamName)
                 .onItem()
                 .transformToUni(
                         streamContext -> Uni.createFrom().item(Unchecked.supplier(() -> streamContext.getMessage(sequence))))
@@ -183,18 +191,15 @@ public record ConsumerAwareImpl(ExecutionHolder executionHolder,
         return subscribe(configuration, pullConfiguration, listener, null);
     }
 
-    @SuppressWarnings("resource")
     @Override
     public <T> Multi<Message<T>> subscribe(ConsumerConfiguration configuration, PullConfiguration pullConfiguration,
             ConsumerListener<T> listener, Class<T> payloadType) {
         final var tracer = tracerFactory.<T> create(TracerType.Subscribe);
-        ExecutorService pullExecutor = Executors.newSingleThreadExecutor(ConsumerWorkerThread::new);
-        return withContext(context -> subscribe(configuration.stream(), configuration.name(), pullConfiguration)
-                .runSubscriptionOn(pullExecutor)
-                .emitOn(context::runOnContext)
-                .select().where(Objects::nonNull)
-                .onItem().transform(message -> messageMapper.map(message, configuration, context, payloadType))
-                .onItem().transformToUniAndMerge(message -> tracer.withTrace(message, msg -> msg)))
+        return withContext(
+                context -> context.execute(subscribe(configuration.stream(), configuration.name(), pullConfiguration))
+                        .select().where(Objects::nonNull)
+                        .onItem().transform(message -> messageMapper.map(message, configuration, context, payloadType))
+                        .onItem().transformToUniAndMerge(message -> tracer.withTrace(message, msg -> msg)))
                 .onItem().invoke(listener::onMessage)
                 .onFailure().invoke(listener::onError)
                 .onFailure().transform(ClientException::new);
@@ -254,14 +259,14 @@ public record ConsumerAwareImpl(ExecutionHolder executionHolder,
 
     private Uni<ConsumerInfo> createConsumer(final String stream,
             final io.nats.client.api.ConsumerConfiguration configuration) {
-        return jetStreamManagement()
+        return jetStreamManagement(connection)
                 .onItem()
                 .transformToUni(jetStreamManagement -> Uni.createFrom()
                         .item(Unchecked.supplier(() -> jetStreamManagement.createConsumer(stream, configuration))));
     }
 
     private Uni<ConsumerInfo> consumerInfo(final String stream, final String consumer) {
-        return jetStreamManagement()
+        return jetStreamManagement(connection)
                 .onItem()
                 .transformToUni(jetStreamManagement -> Uni.createFrom()
                         .item(Unchecked.supplier(() -> jetStreamManagement.getConsumerNames(stream)))
@@ -276,13 +281,13 @@ public record ConsumerAwareImpl(ExecutionHolder executionHolder,
     }
 
     private Uni<io.nats.client.ConsumerContext> consumerContext(final String stream, final String consumer) {
-        return streamContext(stream)
+        return streamContext(connection, stream)
                 .onItem().transformToUni(streamContext -> Uni.createFrom()
                         .item(Unchecked.supplier(() -> streamContext.getConsumerContext(consumer))));
     }
 
     private Uni<io.nats.client.JetStreamSubscription> subscription(final String stream, final String consumer) {
-        return jetStream()
+        return jetStream(connection)
                 .onItem().transformToUni(jetStream -> Uni.createFrom()
                         .item(Unchecked
                                 .supplier(() -> jetStream.subscribe(null, PullSubscribeOptions.bind(stream, consumer)))));

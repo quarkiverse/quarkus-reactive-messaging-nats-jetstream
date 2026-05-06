@@ -5,7 +5,7 @@ import java.util.List;
 import org.eclipse.microprofile.reactive.messaging.Message;
 
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer.ConsumerConfiguration;
-import io.vertx.mutiny.core.Context;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.context.Context;
 
 public interface MessageMapper {
 

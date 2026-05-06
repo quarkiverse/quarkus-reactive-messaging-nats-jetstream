@@ -10,7 +10,7 @@ import org.eclipse.microprofile.reactive.messaging.Message;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.Payload;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.SubscribeMessage;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer.ConsumerConfiguration;
-import io.vertx.mutiny.core.Context;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.context.Context;
 import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor

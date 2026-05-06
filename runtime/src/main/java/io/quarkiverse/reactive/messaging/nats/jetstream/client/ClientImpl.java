@@ -47,11 +47,15 @@ public class ClientImpl implements Client {
             StreamStateMapper streamStateMapper,
             StreamConfigurationMapper streamConfigurationMapper,
             KeyValueConfigurationMapper keyValueConfigurationMapper) {
-        this.publisherDelegate = new PublisherAwareImpl(executionHolder, tracerFactory, payloadMapper, connection);
-        this.consumerDelegate = new ConsumerAwareImpl(executionHolder, consumerConfigurationMapper, consumerMapper,
-                tracerFactory, messageMapper, payloadMapper, connection);
-        this.streamDelegate = new StreamAwareImpl(executionHolder, streamStateMapper, streamConfigurationMapper, connection);
-        this.keyValueStoreDelegate = new KeyValueStoreAwareImpl(executionHolder, payloadMapper, keyValueConfigurationMapper,
+        this.publisherDelegate = new PublisherAwareImpl(executionHolder, tracerFactory, payloadMapper,
+                connection);
+        this.consumerDelegate = new ConsumerAwareImpl(executionHolder, consumerConfigurationMapper,
+                consumerMapper,
+                messageMapper, payloadMapper, connection, tracerFactory);
+        this.streamDelegate = new StreamAwareImpl(executionHolder, streamStateMapper,
+                streamConfigurationMapper, connection);
+        this.keyValueStoreDelegate = new KeyValueStoreAwareImpl(executionHolder, payloadMapper,
+                keyValueConfigurationMapper,
                 connection);
     }
 

@@ -13,13 +13,13 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkiverse.reactive.messaging.nats.jetstream.test.MessageConsumer;
 import io.quarkiverse.reactive.messaging.nats.jetstream.test.TestSpanExporter;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.parsing.Parser;
 
 class PullMetadataTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest().setArchiveProducer(
             () -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(TestSpanExporter.class, Data.class, DataResource.class, DataConsumingBean.class,
                             DataCollectorBean.class, MessageConsumer.class))

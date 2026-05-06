@@ -20,7 +20,7 @@ import org.testcontainers.shaded.org.awaitility.Awaitility;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.Client;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.PublishMessageMetadata;
 import io.quarkiverse.reactive.messaging.nats.jetstream.test.TestSpanExporter;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.smallrye.mutiny.Multi;
 
 public class ClientTest {
@@ -29,7 +29,7 @@ public class ClientTest {
     static final Duration TIMEOUT = Duration.ofSeconds(10);
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest().setArchiveProducer(
             () -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(TestSpanExporter.class, Data.class, ClientConsumerConfiguration.class,
                             ClientPullConfiguration.class, ClientPushConfiguration.class))

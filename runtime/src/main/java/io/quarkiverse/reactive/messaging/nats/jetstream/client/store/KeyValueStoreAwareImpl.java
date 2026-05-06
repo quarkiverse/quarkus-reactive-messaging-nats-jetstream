@@ -17,13 +17,22 @@ import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.unchecked.Unchecked;
 import io.smallrye.reactive.messaging.providers.connectors.ExecutionHolder;
 
-public record KeyValueStoreAwareImpl(ExecutionHolder executionHolder, PayloadMapper payloadMapper,
-        KeyValueConfigurationMapper keyValueConfigurationMapper,
-        Connection connection) implements KeyValueStoreAware, ContextAware {
+public class KeyValueStoreAwareImpl extends ContextAware implements KeyValueStoreAware {
+    private final PayloadMapper payloadMapper;
+    private final KeyValueConfigurationMapper keyValueConfigurationMapper;
+    private final Connection connection;
+
+    public KeyValueStoreAwareImpl(ExecutionHolder executionHolder, PayloadMapper payloadMapper,
+            KeyValueConfigurationMapper keyValueConfigurationMapper, Connection connection) {
+        super(executionHolder);
+        this.payloadMapper = payloadMapper;
+        this.keyValueConfigurationMapper = keyValueConfigurationMapper;
+        this.connection = connection;
+    }
 
     @Override
     public Uni<Void> addKeyValueStoreIfAbsent(final KeyValueStoreConfiguration configuration) {
-        return withContext(context -> context.executeBlocking(bucketNames()
+        return withContext(context -> context.execute(bucketNames()
                 .onItem().transformToUni(bucketNames -> {
                     if (!bucketNames.contains(configuration.name())) {
                         return addKeyValueStore(keyValueConfigurationMapper.map(configuration));
@@ -38,7 +47,7 @@ public record KeyValueStoreAwareImpl(ExecutionHolder executionHolder, PayloadMap
 
     @Override
     public <T> Uni<T> getValue(final String bucketName, final String key, final Class<T> valueType) {
-        return withContext(context -> context.executeBlocking(keyValue(bucketName)
+        return withContext(context -> context.execute(keyValue(bucketName)
                 .onItem().ifNull().failWith(() -> new BucketNotFoundException(bucketName))
                 .onItem().ifNotNull()
                 .transformToUni(keyValue -> Uni.createFrom().item(Unchecked.supplier(() -> keyValue.get(key))))
@@ -57,7 +66,7 @@ public record KeyValueStoreAwareImpl(ExecutionHolder executionHolder, PayloadMap
     public <T> Uni<Long> putValue(final String bucketName, final String key, final T value) {
         final var payload = payloadMapper
                 .map(GenericPayload.<T, T> builder().data(value).type((Class<T>) value.getClass()).build());
-        return withContext(context -> context.executeBlocking(keyValue(bucketName)
+        return withContext(context -> context.execute(keyValue(bucketName)
                 .onItem().ifNull().failWith(() -> new BucketNotFoundException(bucketName))
                 .onItem().ifNotNull()
                 .transformToUni(keyValue -> Uni.createFrom().item(Unchecked.supplier(() -> keyValue.put(key, payload.data())))))
@@ -66,7 +75,7 @@ public record KeyValueStoreAwareImpl(ExecutionHolder executionHolder, PayloadMap
 
     @Override
     public Uni<Void> deleteValue(final String bucketName, final String key) {
-        return withContext(context -> context.executeBlocking(keyValue(bucketName)
+        return withContext(context -> context.execute(keyValue(bucketName)
                 .onItem().ifNull().failWith(() -> new BucketNotFoundException(bucketName))
                 .onItem().ifNotNull().<Void> transformToUni(keyValue -> Uni.createFrom().item(Unchecked.supplier(() -> {
                     keyValue.delete(key);
