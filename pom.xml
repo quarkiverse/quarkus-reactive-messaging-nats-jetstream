@@ -14,6 +14,7 @@
     <modules>
         <module>deployment</module>
         <module>runtime</module>
+        <module>client</module>
     </modules>
     <scm>
         <connection>scm:git:git@github.com:quarkiverse/quarkus-reactive-messaging-nats-jetstream.git</connection>
