@@ -1,12 +1,20 @@
 package io.quarkiverse.reactive.nats.consumer;
 
+import io.quarkiverse.reactive.nats.Context;
+import io.quarkiverse.reactive.nats.consumer.imperative.ImperativeDispatcher;
 import io.quarkiverse.reactive.nats.message.MessageHandler;
 import io.smallrye.mutiny.Uni;
+
+import java.util.concurrent.ExecutorService;
 
 /**
  * @see io.nats.client.Dispatcher
  */
 public interface Dispatcher extends Consumer {
+
+    static Dispatcher of(ImperativeDispatcher dispatcher, Context context, ExecutorService executor) {
+        return new DispatcherDelegate(dispatcher, context, executor);
+    }
 
     /**
      * @see io.nats.client.Dispatcher#start(String)

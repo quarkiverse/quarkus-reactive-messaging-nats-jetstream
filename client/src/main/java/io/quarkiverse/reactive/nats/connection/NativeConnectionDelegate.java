@@ -1,6 +1,9 @@
 package io.quarkiverse.reactive.nats.connection;
 
 import io.nats.client.*;
+import io.nats.client.ConnectionListener;
+import io.nats.client.ForceReconnectOptions;
+import io.nats.client.Options;
 import io.nats.client.api.ServerInfo;
 import io.nats.client.impl.Headers;
 import org.jspecify.annotations.NonNull;
@@ -13,7 +16,27 @@ import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
 
-public record ConnectionDelegate(io.nats.client.Connection delegate) implements Connection {
+public record NativeConnectionDelegate(NativeConnection delegate) implements NativeConnection {
+
+    @Override
+    public void addConnectionListener(@NonNull ConnectionListener connectionListener) {
+        delegate.addConnectionListener(connectionListener);
+    }
+
+    @Override
+    public void removeConnectionListener(@NonNull ConnectionListener connectionListener) {
+        delegate.removeConnectionListener(connectionListener);
+    }
+
+    @Override
+    public @NonNull Options getOptions() {
+        return delegate.getOptions();
+    }
+
+    @Override
+    public void forceReconnect(@Nullable ForceReconnectOptions options) throws IOException, InterruptedException {
+        delegate.forceReconnect(options);
+    }
 
     @Override
     public void publish(@NonNull String subject, byte @Nullable [] body) {
@@ -116,16 +139,6 @@ public record ConnectionDelegate(io.nats.client.Connection delegate) implements 
     }
 
     @Override
-    public void addConnectionListener(@NonNull ConnectionListener connectionListener) {
-        delegate.addConnectionListener(connectionListener);
-    }
-
-    @Override
-    public void removeConnectionListener(@NonNull ConnectionListener connectionListener) {
-        delegate.removeConnectionListener(connectionListener);
-    }
-
-    @Override
     public void flush(@Nullable Duration timeout) throws TimeoutException, InterruptedException {
         delegate.flush(timeout);
     }
@@ -158,11 +171,6 @@ public record ConnectionDelegate(io.nats.client.Connection delegate) implements 
     @Override
     public @NonNull Statistics getStatistics() {
         return delegate.getStatistics();
-    }
-
-    @Override
-    public @NonNull Options getOptions() {
-        return delegate.getOptions();
     }
 
     @Override
@@ -203,11 +211,6 @@ public record ConnectionDelegate(io.nats.client.Connection delegate) implements 
     @Override
     public void forceReconnect() throws IOException, InterruptedException {
         delegate.forceReconnect();
-    }
-
-    @Override
-    public void forceReconnect(@Nullable ForceReconnectOptions options) throws IOException, InterruptedException {
-        delegate.forceReconnect(options);
     }
 
     @Override

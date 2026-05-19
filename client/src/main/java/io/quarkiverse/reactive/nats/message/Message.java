@@ -1,13 +1,19 @@
 package io.quarkiverse.reactive.nats.message;
 
 import io.quarkiverse.reactive.nats.Client;
+import io.quarkiverse.reactive.nats.Context;
 import io.quarkiverse.reactive.nats.consumer.Subscription;
+import io.quarkiverse.reactive.nats.message.imperative.ImperativeMessage;
 import io.smallrye.mutiny.Uni;
 
 import java.time.Duration;
 import java.util.Optional;
 
 public interface Message  {
+
+    static Message of(ImperativeMessage message, Context context) {
+        return new MessageDelegate(message, context);
+    }
 
 
     /**

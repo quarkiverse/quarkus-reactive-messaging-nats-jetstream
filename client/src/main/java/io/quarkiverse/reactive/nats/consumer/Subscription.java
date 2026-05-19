@@ -1,30 +1,36 @@
 package io.quarkiverse.reactive.nats.consumer;
 
+import io.quarkiverse.reactive.nats.Context;
+import io.quarkiverse.reactive.nats.consumer.imperative.ImperativeSubscription;
 import io.quarkiverse.reactive.nats.message.Message;
 import io.smallrye.mutiny.Uni;
 
 import java.time.Duration;
+import java.util.concurrent.ExecutorService;
 
 /**
  * @see io.nats.client.Subscription
  */
 public interface Subscription extends Consumer {
 
+    static Subscription of(ImperativeSubscription subscription, Context context, ExecutorService executor) {
+        return new SubscriptionDelegate(subscription, context, executor);
+    }
 
     /**
      * @see io.nats.client.Subscription#getSubject()
      */
-    Uni<String> getSubject();
+    String getSubject();
 
     /**
      * @see io.nats.client.Subscription#getQueueName()
      */
-    Uni<String> getQueueName();
+    String getQueueName();
 
     /**
      * @see io.nats.client.Subscription#getDispatcher()
      */
-    Uni<Dispatcher> getDispatcher();
+    Dispatcher getDispatcher();
 
     /**
      * @see io.nats.client.Subscription#nextMessage(java.time.Duration)
@@ -46,4 +52,5 @@ public interface Subscription extends Consumer {
      */
     Uni<Subscription> unsubscribe(int after);
 
+    ImperativeSubscription delegate();
 }

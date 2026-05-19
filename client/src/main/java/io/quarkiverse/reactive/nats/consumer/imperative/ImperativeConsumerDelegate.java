@@ -1,9 +1,9 @@
-package io.quarkiverse.reactive.nats.consumer;
+package io.quarkiverse.reactive.nats.consumer.imperative;
 
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 
-record NativeConsumerDelegate(io.nats.client.Consumer delegate) implements NativeConsumer {
+record ImperativeConsumerDelegate(io.nats.client.Consumer delegate) implements ImperativeConsumer {
 
     @Override
     public void setPendingLimits(long maxMessages, long maxBytes) {

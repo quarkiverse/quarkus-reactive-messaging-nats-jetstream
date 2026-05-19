@@ -1,13 +1,14 @@
 package io.quarkiverse.reactive.nats.message;
 
 import io.quarkiverse.reactive.nats.Context;
+import io.quarkiverse.reactive.nats.message.imperative.ImperativeMessage;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.unchecked.Unchecked;
 
 import java.time.Duration;
 import java.util.Optional;
 
-public record MessageDelegate(io.nats.client.Message delegate, Context context) implements Message {
+record MessageDelegate(ImperativeMessage delegate, Context context) implements Message {
 
     @Override
     public String subject() {
