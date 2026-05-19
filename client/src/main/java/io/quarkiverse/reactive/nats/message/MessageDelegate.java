@@ -58,72 +58,65 @@ public record MessageDelegate(io.nats.client.Message delegate, Context context) 
 
     @Override
     public Uni<Void> acknowledge() {
-        return Uni.createFrom().item((Unchecked.supplier(() -> {
+        return Uni.createFrom().<Void>item((Unchecked.supplier(() -> {
                     delegate.ack();
                     return null;
                 })))
-                .emitOn(context::runOnContext)
-                .chain(v -> Uni.createFrom().voidItem());
+                .emitOn(context::runOnContext);
     }
 
     @Override
     public Uni<Void> acknowledge(Duration timeout) {
-        return Uni.createFrom().item((Unchecked.supplier(() -> {
+        return Uni.createFrom().<Void>item((Unchecked.supplier(() -> {
                     delegate.ackSync(timeout);
                     return null;
                 })))
-                .emitOn(context::runOnContext)
-                .chain(v -> Uni.createFrom().voidItem());
+                .emitOn(context::runOnContext);
     }
 
     @Override
     public Uni<Void> notAcknowledge() {
-        return Uni.createFrom().item((Unchecked.supplier(() -> {
+        return Uni.createFrom().<Void>item((Unchecked.supplier(() -> {
                     delegate.nak();;
                     return null;
                 })))
-                .emitOn(context::runOnContext)
-                .chain(v -> Uni.createFrom().voidItem());
+                .emitOn(context::runOnContext);
     }
 
     @Override
     public Uni<Void> notAcknowledgeWithDelay(Duration nakDelay) {
-        return Uni.createFrom().item((Unchecked.supplier(() -> {
+        return Uni.createFrom().<Void>item((Unchecked.supplier(() -> {
                     delegate.nakWithDelay(nakDelay);
                     return null;
                 })))
-                .emitOn(context::runOnContext)
-                .chain(v -> Uni.createFrom().voidItem());
+                .emitOn(context::runOnContext);
     }
 
     @Override
     public Uni<Void> notAcknowledgeWithDelay(long nakDelayMillis) {
-        return Uni.createFrom().item((Unchecked.supplier(() -> {
+        return Uni.createFrom().<Void>item((Unchecked.supplier(() -> {
                     delegate.nakWithDelay(nakDelayMillis);
                     return null;
                 })))
-                .emitOn(context::runOnContext)
-                .chain(v -> Uni.createFrom().voidItem());
+                .emitOn(context::runOnContext);
     }
 
     @Override
     public Uni<Void> terminate() {
-        return Uni.createFrom().item((Unchecked.supplier(() -> {
+        return Uni.createFrom().<Void>item((Unchecked.supplier(() -> {
                     delegate.term();
                     return null;
                 })))
-                .emitOn(context::runOnContext)
-                .chain(v -> Uni.createFrom().voidItem());
+                .emitOn(context::runOnContext);
     }
 
     @Override
     public Uni<Void> inProgress() {
-        return Uni.createFrom().item((Unchecked.supplier(() -> {
+        return Uni.createFrom().<Void>item((Unchecked.supplier(() -> {
                     delegate.inProgress();
                     return null;
                 })))
-                .emitOn(context::runOnContext)
-                .chain(v -> Uni.createFrom().voidItem());
+                .emitOn(context::runOnContext);
     }
 
     @Override

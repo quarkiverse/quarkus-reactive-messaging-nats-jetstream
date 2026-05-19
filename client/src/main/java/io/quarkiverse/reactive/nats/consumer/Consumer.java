@@ -12,47 +12,47 @@ public interface Consumer {
     /**
      * @see io.nats.client.Consumer#setPendingLimits(long, long)
      */
-    Uni<Void> setPendingLimits(long maxMessages, long maxBytes);
+    void setPendingLimits(long maxMessages, long maxBytes);
 
     /**
      * @see io.nats.client.Consumer#getPendingMessageLimit()
      */
-    Uni<Long> getPendingMessageLimit();
+    Long getPendingMessageLimit();
 
     /**
      * @see io.nats.client.Consumer#getPendingByteLimit()
      */
-    Uni<Long> getPendingByteLimit();
+    Long getPendingByteLimit();
 
     /**
      * @see io.nats.client.Consumer#getPendingMessageCount()
      */
-    Uni<Long> getPendingMessageCount();
+    Long getPendingMessageCount();
 
     /**
      * @see io.nats.client.Consumer#getPendingByteCount()
      */
-    Uni<Long> getPendingByteCount();
+    Long getPendingByteCount();
 
     /**
      * @see io.nats.client.Consumer#getDeliveredCount()
      */
-    Uni<Long> getDeliveredCount();
+    Long getDeliveredCount();
 
     /**
      * @see io.nats.client.Consumer#getDroppedCount()
      */
-    Uni<Long> getDroppedCount();
+    Long getDroppedCount();
 
     /**
      * @see io.nats.client.Consumer#clearDroppedCount()
      */
-    Uni<Void> clearDroppedCount();
+    void clearDroppedCount();
 
     /**
      * @see io.nats.client.Consumer#isActive()
      */
-    Uni<Boolean> isActive();
+    Boolean isActive();
 
     /**
      * @see io.nats.client.Consumer#drain(Duration)
