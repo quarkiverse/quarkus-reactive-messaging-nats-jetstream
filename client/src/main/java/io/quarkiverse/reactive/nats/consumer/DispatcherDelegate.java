@@ -1,8 +1,6 @@
 package io.quarkiverse.reactive.nats.consumer;
 
 import io.quarkiverse.reactive.nats.Context;
-import io.quarkiverse.reactive.nats.consumer.imperative.ImperativeDispatcher;
-import io.quarkiverse.reactive.nats.consumer.imperative.ImperativeSubscription;
 import io.quarkiverse.reactive.nats.message.Message;
 import io.quarkiverse.reactive.nats.message.MessageHandler;
 import io.quarkiverse.reactive.nats.message.imperative.ImperativeMessage;

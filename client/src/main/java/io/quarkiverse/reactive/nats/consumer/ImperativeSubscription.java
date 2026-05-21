@@ -1,6 +1,6 @@
-package io.quarkiverse.reactive.nats.consumer.imperative;
+package io.quarkiverse.reactive.nats.consumer;
 
-public interface ImperativeSubscription extends io.nats.client.Subscription {
+interface ImperativeSubscription extends io.nats.client.Subscription {
 
     static ImperativeSubscription of(io.nats.client.Subscription subscription) {
         return new ImperativeSubscriptionDelegate(subscription);

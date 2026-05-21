@@ -1,6 +1,6 @@
-package io.quarkiverse.reactive.nats.consumer.imperative;
+package io.quarkiverse.reactive.nats.consumer;
 
-public interface ImperativeConsumerContext extends io.nats.client.ConsumerContext {
+interface ImperativeConsumerContext extends io.nats.client.ConsumerContext {
     static ImperativeConsumerContext of(io.nats.client.ConsumerContext consumerContext) {
         return new ImperativeConsumerContextDelegate(consumerContext);
     }

@@ -1,4 +1,4 @@
-package io.quarkiverse.reactive.nats.consumer.imperative;
+package io.quarkiverse.reactive.nats.consumer;
 
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;

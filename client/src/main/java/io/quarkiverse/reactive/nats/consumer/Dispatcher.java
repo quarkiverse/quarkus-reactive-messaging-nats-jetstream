@@ -1,7 +1,6 @@
 package io.quarkiverse.reactive.nats.consumer;
 
 import io.quarkiverse.reactive.nats.Context;
-import io.quarkiverse.reactive.nats.consumer.imperative.ImperativeDispatcher;
 import io.quarkiverse.reactive.nats.message.MessageHandler;
 import io.smallrye.mutiny.Uni;
 

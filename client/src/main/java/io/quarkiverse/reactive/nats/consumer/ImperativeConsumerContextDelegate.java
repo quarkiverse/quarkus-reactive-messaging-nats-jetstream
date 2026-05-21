@@ -1,6 +1,12 @@
-package io.quarkiverse.reactive.nats.consumer.imperative;
+package io.quarkiverse.reactive.nats.consumer;
 
 import io.nats.client.*;
+import io.nats.client.ConsumeOptions;
+import io.nats.client.Dispatcher;
+import io.nats.client.FetchConsumeOptions;
+import io.nats.client.FetchConsumer;
+import io.nats.client.IterableConsumer;
+import io.nats.client.MessageConsumer;
 import io.nats.client.api.ConsumerInfo;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
@@ -41,12 +47,12 @@ record ImperativeConsumerContextDelegate(io.nats.client.ConsumerContext delegate
     }
 
     @Override
-    public @NonNull FetchConsumer fetchMessages(int maxMessages) throws IOException, JetStreamApiException {
+    public io.nats.client.@NonNull FetchConsumer fetchMessages(int maxMessages) throws IOException, JetStreamApiException {
         return delegate.fetchMessages(maxMessages);
     }
 
     @Override
-    public @NonNull FetchConsumer fetchBytes(int maxBytes) throws IOException, JetStreamApiException {
+    public io.nats.client.@NonNull FetchConsumer fetchBytes(int maxBytes) throws IOException, JetStreamApiException {
         return delegate.fetchBytes(maxBytes);
     }
 
@@ -56,27 +62,27 @@ record ImperativeConsumerContextDelegate(io.nats.client.ConsumerContext delegate
     }
 
     @Override
-    public @NonNull IterableConsumer iterate() throws IOException, JetStreamApiException {
+    public io.nats.client.@NonNull IterableConsumer iterate() throws IOException, JetStreamApiException {
         return delegate.iterate();
     }
 
     @Override
-    public @NonNull IterableConsumer iterate(@NonNull ConsumeOptions consumeOptions) throws IOException, JetStreamApiException {
+    public @NonNull IterableConsumer iterate(io.nats.client.@NonNull ConsumeOptions consumeOptions) throws IOException, JetStreamApiException {
         return delegate.iterate(consumeOptions);
     }
 
     @Override
-    public @NonNull MessageConsumer consume(@NonNull MessageHandler handler) throws IOException, JetStreamApiException {
+    public io.nats.client.@NonNull MessageConsumer consume(@NonNull MessageHandler handler) throws IOException, JetStreamApiException {
         return delegate.consume(handler);
     }
 
     @Override
-    public @NonNull MessageConsumer consume(@Nullable Dispatcher dispatcher, @NonNull MessageHandler handler) throws IOException, JetStreamApiException {
+    public io.nats.client.@NonNull MessageConsumer consume(io.nats.client.@Nullable Dispatcher dispatcher, @NonNull MessageHandler handler) throws IOException, JetStreamApiException {
         return delegate.consume(dispatcher, handler);
     }
 
     @Override
-    public @NonNull MessageConsumer consume(@NonNull ConsumeOptions consumeOptions, @NonNull MessageHandler handler) throws IOException, JetStreamApiException {
+    public io.nats.client.@NonNull MessageConsumer consume(io.nats.client.@NonNull ConsumeOptions consumeOptions, @NonNull MessageHandler handler) throws IOException, JetStreamApiException {
         return null;
     }
 
