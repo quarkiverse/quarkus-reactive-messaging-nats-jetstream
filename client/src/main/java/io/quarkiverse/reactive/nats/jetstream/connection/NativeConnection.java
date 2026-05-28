@@ -1,4 +1,4 @@
-package io.quarkiverse.reactive.nats.connection;
+package io.quarkiverse.reactive.nats.jetstream.connection;
 
 public interface NativeConnection extends io.nats.client.Connection {
 }

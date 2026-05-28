@@ -23,16 +23,12 @@
             <artifactId>mutiny</artifactId>
         </dependency>
         <dependency>
-            <groupId>io.vertx</groupId>
-            <artifactId>vertx-core</artifactId>
+            <groupId>io.smallrye.reactive</groupId>
+            <artifactId>smallrye-reactive-messaging-api</artifactId>
         </dependency>
         <dependency>
             <groupId>io.smallrye.reactive</groupId>
-            <artifactId>smallrye-mutiny-vertx-core</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.smallrye.reactive</groupId>
-            <artifactId>smallrye-mutiny-vertx-runtime</artifactId>
+            <artifactId>smallrye-reactive-messaging-provider</artifactId>
         </dependency>
     </dependencies>
     <build>

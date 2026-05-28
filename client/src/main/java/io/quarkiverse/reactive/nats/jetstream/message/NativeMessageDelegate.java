@@ -1,4 +1,4 @@
-package io.quarkiverse.reactive.nats.message.imperative;
+package io.quarkiverse.reactive.nats.jetstream.message;
 
 import io.nats.client.Connection;
 import io.nats.client.Subscription;
@@ -10,7 +10,7 @@ import io.nats.client.support.Status;
 import java.time.Duration;
 import java.util.concurrent.TimeoutException;
 
-record ImperativeMessageDelegate(io.nats.client.Message delegate) implements ImperativeMessage {
+record NativeMessageDelegate(io.nats.client.Message delegate) implements NativeMessage {
 
     @Override
     public String getSubject() {
@@ -94,7 +94,7 @@ record ImperativeMessageDelegate(io.nats.client.Message delegate) implements Imp
 
     @Override
     public void nakWithDelay(Duration nakDelay) {
-
+        delegate.nakWithDelay(nakDelay);
     }
 
     @Override

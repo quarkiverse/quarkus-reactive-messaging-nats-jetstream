@@ -1,4 +1,4 @@
-package io.quarkiverse.reactive.nats;
+package io.quarkiverse.reactive.nats.jetstream;
 
 public interface Context {
 

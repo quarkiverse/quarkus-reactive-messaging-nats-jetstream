@@ -1,9 +1,9 @@
 package io.quarkiverse.reactive.nats.consumer;
 
-import io.quarkiverse.reactive.nats.Context;
-import io.quarkiverse.reactive.nats.message.Message;
-import io.quarkiverse.reactive.nats.message.MessageHandler;
-import io.quarkiverse.reactive.nats.message.imperative.ImperativeMessage;
+import io.quarkiverse.reactive.nats.jetstream.Context;
+import io.quarkiverse.reactive.nats.jetstream.message.Message;
+import io.quarkiverse.reactive.nats.jetstream.message.MessageHandler;
+import io.quarkiverse.reactive.nats.jetstream.message.NativeMessage;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.unchecked.Unchecked;
 
@@ -37,14 +37,14 @@ record DispatcherDelegate(ImperativeDispatcher delegate, Context context, Execut
 
     @Override
     public Uni<Subscription> subscribe(String subject, MessageHandler handler) {
-        return Uni.createFrom().item(Unchecked.supplier(() -> delegate.subscribe(subject, msg -> handler.onMessage(Message.of(ImperativeMessage.of(msg), context)))))
+        return Uni.createFrom().item(Unchecked.supplier(() -> delegate.subscribe(subject, msg -> handler.onMessage(Message.of(NativeMessage.of(msg), context)))))
                 .onItem().ifNotNull().transform(subscription -> Subscription.of(ImperativeSubscription.of(subscription), context, executor))
                 .emitOn(context::runOnContext);
     }
 
     @Override
     public Uni<Subscription> subscribe(String subject, String queue, MessageHandler handler) {
-        return Uni.createFrom().item(Unchecked.supplier(() -> delegate.subscribe(subject, queue, msg -> handler.onMessage(Message.of(ImperativeMessage.of(msg), context)))))
+        return Uni.createFrom().item(Unchecked.supplier(() -> delegate.subscribe(subject, queue, msg -> handler.onMessage(Message.of(NativeMessage.of(msg), context)))))
                 .onItem().ifNotNull().transform(subscription -> Subscription.of(ImperativeSubscription.of(subscription), context, executor))
                 .emitOn(context::runOnContext);
     }

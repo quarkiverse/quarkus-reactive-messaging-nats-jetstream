@@ -1,7 +1,7 @@
 package io.quarkiverse.reactive.nats.consumer;
 
-import io.quarkiverse.reactive.nats.Context;
-import io.quarkiverse.reactive.nats.message.Message;
+import io.quarkiverse.reactive.nats.jetstream.Context;
+import io.quarkiverse.reactive.nats.jetstream.message.Message;
 import io.smallrye.mutiny.Uni;
 
 import java.time.Duration;

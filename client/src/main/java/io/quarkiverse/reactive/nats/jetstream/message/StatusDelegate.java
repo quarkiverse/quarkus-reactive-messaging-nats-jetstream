@@ -1,4 +1,4 @@
-package io.quarkiverse.reactive.nats.message;
+package io.quarkiverse.reactive.nats.jetstream.message;
 
 public record StatusDelegate(io.nats.client.support.Status delegate) implements Status {
 

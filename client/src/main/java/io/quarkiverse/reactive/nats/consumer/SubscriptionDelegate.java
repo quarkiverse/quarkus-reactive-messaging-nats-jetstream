@@ -1,8 +1,8 @@
 package io.quarkiverse.reactive.nats.consumer;
 
-import io.quarkiverse.reactive.nats.Context;
-import io.quarkiverse.reactive.nats.message.Message;
-import io.quarkiverse.reactive.nats.message.imperative.ImperativeMessage;
+import io.quarkiverse.reactive.nats.jetstream.Context;
+import io.quarkiverse.reactive.nats.jetstream.message.Message;
+import io.quarkiverse.reactive.nats.jetstream.message.NativeMessage;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.unchecked.Unchecked;
 
@@ -30,7 +30,7 @@ record SubscriptionDelegate(ImperativeSubscription delegate, Context context,
     @Override
     public Uni<Message> nextMessage(Duration timeout) {
         return Uni.createFrom().item(Unchecked.supplier(() -> delegate.nextMessage(timeout)))
-                .onItem().ifNotNull().transform(message -> Message.of(ImperativeMessage.of(message), context))
+                .onItem().ifNotNull().transform(message -> Message.of(NativeMessage.of(message), context))
                 .runSubscriptionOn(executor)
                 .emitOn(context::runOnContext);
     }
@@ -38,7 +38,7 @@ record SubscriptionDelegate(ImperativeSubscription delegate, Context context,
     @Override
     public Uni<Message> nextMessage(long timeoutMillis) {
         return Uni.createFrom().item(Unchecked.supplier(() -> delegate.nextMessage(timeoutMillis)))
-                .onItem().ifNotNull().transform(message -> Message.of(ImperativeMessage.of(message), context))
+                .onItem().ifNotNull().transform(message -> Message.of(NativeMessage.of(message), context))
                 .runSubscriptionOn(executor)
                 .emitOn(context::runOnContext);
     }
