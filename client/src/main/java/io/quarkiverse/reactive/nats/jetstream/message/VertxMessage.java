@@ -3,6 +3,8 @@ package io.quarkiverse.reactive.nats.jetstream.message;
 import io.smallrye.reactive.messaging.providers.helpers.VertxContext;
 import io.smallrye.reactive.messaging.providers.locals.LocalContextMetadata;
 import io.vertx.core.Context;
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 
 import java.time.Duration;
 import java.util.Optional;
@@ -19,9 +21,9 @@ final class VertxMessage implements Message {
     private org.eclipse.microprofile.reactive.messaging.Metadata metadata;
     private final Context context;
 
-    public VertxMessage(io.nats.client.Message message, Metadata metadata, Context context) {
+    public VertxMessage(io.nats.client.@NonNull Message message, @Nullable PublishMetadata publishMetadata, @NonNull Context context) {
         this.message = message;
-        this.metadata = captureContextMetadata(metadata);
+        this.metadata = publishMetadata != null ? captureContextMetadata(publishMetadata) : captureContextMetadata();
         this.context = context;
     }
 
@@ -54,8 +56,8 @@ final class VertxMessage implements Message {
     public CompletionStage<Void> ack() {
         return VertxContext.runOnContext(context, f -> {
             try {
-                final var messageMetadata = metadata.get(Metadata.class);
-                messageMetadata.flatMap(Metadata::acknowledgeTimeout)
+                final var messageMetadata = metadata.get(PublishMetadata.class);
+                messageMetadata.flatMap(PublishMetadata::acknowledgeTimeout)
                         .ifPresentOrElse(timeout -> {
                             try {
                                 message.ackSync(timeout);
@@ -74,7 +76,7 @@ final class VertxMessage implements Message {
     public CompletionStage<Void> nack(Throwable reason, org.eclipse.microprofile.reactive.messaging.Metadata metadata) {
         return VertxContext.runOnContext(context, f -> {
             try {
-                final var messageMetadata = metadata.get(Metadata.class);
+                final var messageMetadata = metadata.get(PublishMetadata.class);
                 messageMetadata.flatMap(this::getBackoff).ifPresentOrElse(message::nakWithDelay, message::nak);
                 this.runOnMessageContext(() -> f.complete(null));
             } catch (Exception e) {
@@ -116,15 +118,15 @@ final class VertxMessage implements Message {
         return this;
     }
 
-    private Optional<Duration> getBackoff(Metadata metadata) {
-        if (metadata.acknowledgeBackoff().isEmpty()) {
+    private Optional<Duration> getBackoff(PublishMetadata publishMetadata) {
+        if (publishMetadata.backoff().isEmpty()) {
             return Optional.empty();
-        } else if (metadata.deliveredCount() == 0) {
-            return Optional.of(metadata.acknowledgeBackoff().getFirst());
-        } else if (metadata.deliveredCount() >= metadata.acknowledgeBackoff().size()) {
-            return Optional.of(metadata.acknowledgeBackoff().getLast());
+        } else if (publishMetadata.deliveredCount() == 0) {
+            return Optional.of(publishMetadata.backoff().getFirst());
+        } else if (publishMetadata.deliveredCount() >= publishMetadata.backoff().size()) {
+            return Optional.of(publishMetadata.backoff().getLast());
         } else {
-            return Optional.of(metadata.acknowledgeBackoff().get(metadata.deliveredCount() - 1));
+            return Optional.of(publishMetadata.backoff().get(publishMetadata.deliveredCount() - 1));
         }
     }
 }

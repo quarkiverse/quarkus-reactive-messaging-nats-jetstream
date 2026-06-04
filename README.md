@@ -132,9 +132,9 @@ Native image configuration is handled in `runtime/src/main/java/.../graal/` for 
 ### Annotation Processors
 
 The build uses several annotation processors:
-- SmallRye Connector Attribute Processor: Generates connector configuration metadata
+- SmallRye Connector Attribute Processor: Generates connector configuration publishMetadata
 - Lombok: For code generation
-- Quarkus Extension Processor: Generates extension metadata
+- Quarkus Extension Processor: Generates extension publishMetadata
 
 ### Channel Configuration Requirements
 

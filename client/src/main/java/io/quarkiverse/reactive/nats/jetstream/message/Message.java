@@ -7,6 +7,10 @@ import java.util.Optional;
 
 public interface Message extends org.eclipse.microprofile.reactive.messaging.Message<byte[]>, ContextAwareMessage<byte[]>, MetadataInjectableMessage<byte[]> {
 
+    static Message of(org.eclipse.microprofile.reactive.messaging.Message<byte[]> message) {
+        return (Message) message;
+    }
+
     static Message of(NativeMessage message) {
         return null;
     }

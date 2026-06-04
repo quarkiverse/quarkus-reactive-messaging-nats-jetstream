@@ -16,7 +16,7 @@ import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
 
-public record NativeConnectionDelegate(NativeConnection delegate) implements NativeConnection {
+public record NativeConnectionDelegate(Connection delegate) implements NativeConnection {
 
     @Override
     public void addConnectionListener(@NonNull ConnectionListener connectionListener) {
