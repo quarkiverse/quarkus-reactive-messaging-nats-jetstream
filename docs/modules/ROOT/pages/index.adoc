@@ -140,7 +140,7 @@ The stream and Key/Value store configuration are optional. If they are omitted, 
 [cols="4",options="header"]
 |======
 | Property Name | Description | Type | Default Value
-| quarkus.messaging.nats.connection.servers | A comma-separated list of URI's nats://{host}:{port} to use for establishing the initial connection to the NATS cluster. | String | nats://localhost:4222
+| quarkus.messaging.nats.connection.servers | A comma-separated list of URI's nats://\{host\}:\{port\} to use for establishing the initial connection to the NATS cluster. | String | nats://localhost:4222
 | quarkus.messaging.nats.connection.username | The username to connect to the NATS server | String |
 | quarkus.messaging.nats.connection.password | The password to connect to the NATS server | String |
 | quarkus.messaging.nats.connection.token | The token to connect to the NATS server | String |

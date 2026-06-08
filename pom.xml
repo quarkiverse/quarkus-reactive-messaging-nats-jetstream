@@ -4,7 +4,7 @@
     <parent>
         <groupId>io.quarkiverse</groupId>
         <artifactId>quarkiverse-parent</artifactId>
-        <version>21</version>
+        <version>22</version>
     </parent>
     <groupId>io.quarkiverse.reactivemessaging.nats-jetstream</groupId>
     <artifactId>quarkus-messaging-nats-jetstream-parent</artifactId>
@@ -28,10 +28,10 @@
         <maven.compiler.release>17</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <quarkus.version>3.35.2</quarkus.version>
+        <quarkus.version>3.36.1</quarkus.version>
 
         <jnats.version>2.25.3</jnats.version>
-        <smallrye-connector-attribute-processor.version>4.34.0</smallrye-connector-attribute-processor.version>
+        <smallrye-connector-attribute-processor.version>4.35.0</smallrye-connector-attribute-processor.version>
         <assertj-core.version>3.27.7</assertj-core.version>
         <lombok.version>1.18.46</lombok.version>
     </properties>
