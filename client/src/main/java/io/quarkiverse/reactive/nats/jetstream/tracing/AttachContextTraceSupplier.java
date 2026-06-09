@@ -1,11 +1,11 @@
-package io.quarkiverse.reactive.messaging.nats.jetstream.client.tracing;
-
-import org.eclipse.microprofile.reactive.messaging.Message;
+package io.quarkiverse.reactive.nats.jetstream.tracing;
 
 import io.opentelemetry.context.Context;
+import io.quarkiverse.reactive.nats.jetstream.message.Message;
 import io.quarkus.opentelemetry.runtime.QuarkusContextStorage;
 import io.smallrye.reactive.messaging.TracingMetadata;
 import io.smallrye.reactive.messaging.providers.locals.LocalContextMetadata;
+import org.jspecify.annotations.NonNull;
 
 /**
  * For incoming messages, it fetches OpenTelemetry context from the message and attaches to the duplicated context of the
@@ -13,10 +13,11 @@ import io.smallrye.reactive.messaging.providers.locals.LocalContextMetadata;
  * Consumer methods will be called on this duplicated context, so the OpenTelemetry context associated with the incoming
  * message will be propagated.
  */
-public class AttachContextTraceSupplier<T> implements TraceSupplier<T> {
+public class AttachContextTraceSupplier implements TraceSupplier {
 
+    @SuppressWarnings("resource")
     @Override
-    public Message<T> get(Message<T> message) {
+    public @NonNull Message get(@NonNull Message message) {
         var messageContext = message.getMetadata(LocalContextMetadata.class)
                 .map(LocalContextMetadata::context)
                 .orElse(null);

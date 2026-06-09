@@ -11,15 +11,16 @@ import io.smallrye.mutiny.unchecked.Unchecked;
 import io.vertx.core.Context;
 import org.jspecify.annotations.NonNull;
 
+import java.util.Collection;
 import java.util.UUID;
 
 public record VertxClient(ClientConfiguration configuration, NativeConnection connection,
-                          Context context) implements Client {
+                          Context context, Collection<ClientListener> listeners) implements Client {
 
     @Override
-    public Uni<Message> publish(@NonNull Message message, @NonNull String stream, @NonNull String subject) {
+    public @NonNull Uni<Message> publish(@NonNull Message message, @NonNull String stream, @NonNull String subject) {
         return Uni.createFrom().item(Unchecked.supplier(() -> withMetadata(message, stream, subject)))
-                .onItem().transformToUni(this::withTrace)
+                .chain(this::withTrace)
                 .onItem().transformToUni(tuple -> jetStream(connection)
                         .onItem().transformToUni(jetStream -> Uni.createFrom().item(Unchecked.supplier(() -> jetStream.publish(
                                 tuple.getItem2().subject(),
@@ -35,7 +36,7 @@ public record VertxClient(ClientConfiguration configuration, NativeConnection co
     }
 
     @Override
-    public Multi<Message> publish(Multi<Message> messages, String stream, String subject) {
+    public @NonNull Multi<Message> publish(@NonNull Multi<Message> messages, @NonNull String stream, @NonNull String subject) {
         return null;
     }
 
@@ -60,5 +61,10 @@ public record VertxClient(ClientConfiguration configuration, NativeConnection co
         return message.getMetadata().get(PublishMetadata.class)
                 .map(PublishMetadata::headers)
                 .orElseGet(Headers::of);
+    }
+
+    private Uni<Tuple2<Message, PublishMetadata>> withTrace(Tuple2<Message, PublishMetadata> tuple) {
+        return tracerFactory.<T> create(TracerType.Publish).withTrace(tuple.getItem1(), m -> m)
+                .onItem().transform(message -> Tuple2.of(message, tuple.getItem2()));
     }
 }

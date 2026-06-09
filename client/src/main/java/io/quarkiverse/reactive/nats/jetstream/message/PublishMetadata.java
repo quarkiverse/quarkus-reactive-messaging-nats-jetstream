@@ -12,10 +12,9 @@ public interface PublishMetadata extends Metadata {
     static PublishMetadata of(@NonNull String stream,
                               @NonNull String subject,
                               @NonNull String messageId,
-                              @NonNull Headers headers,
                               @Nullable Duration acknowledgeTimeout,
                               @NonNull List<Duration> backoff) {
-        return new PublishMetadataRecord(stream, subject, messageId, headers, Optional.ofNullable(acknowledgeTimeout), backoff);
+        return new PublishMetadataRecord(stream, subject, messageId, Optional.ofNullable(acknowledgeTimeout), backoff);
     }
 
     @NonNull String stream();
@@ -24,10 +23,7 @@ public interface PublishMetadata extends Metadata {
 
     @NonNull String messageId();
 
-    @NonNull Headers headers();
-
     @NonNull Optional<Duration> acknowledgeTimeout();
 
-    @NonNull List<Duration> backoff();
-
+    @NonNull Class<?> getPayloadType();
 }

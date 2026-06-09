@@ -7,7 +7,7 @@ import io.nats.client.impl.Headers;
 import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
 
-public record NativeJetStreamDelegate(io.nats.client.JetStream delegate) implements NativeJetStream {
+record NativeJetStreamDelegate(io.nats.client.JetStream delegate) implements NativeJetStream {
 
     @Override
     public PublishAck publish(String subject, byte[] body) throws IOException, JetStreamApiException {

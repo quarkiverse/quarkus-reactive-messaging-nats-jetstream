@@ -19,16 +19,12 @@
             <artifactId>jnats</artifactId>
         </dependency>
         <dependency>
-            <groupId>io.smallrye.reactive</groupId>
-            <artifactId>mutiny</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-messaging</artifactId>
         </dependency>
         <dependency>
-            <groupId>io.smallrye.reactive</groupId>
-            <artifactId>smallrye-reactive-messaging-api</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.smallrye.reactive</groupId>
-            <artifactId>smallrye-reactive-messaging-provider</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-opentelemetry</artifactId>
         </dependency>
     </dependencies>
     <build>
