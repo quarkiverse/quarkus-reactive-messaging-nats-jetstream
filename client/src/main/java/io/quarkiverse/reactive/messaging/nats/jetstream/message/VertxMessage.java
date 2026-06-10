@@ -1,6 +1,12 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.message;
 
-import static io.smallrye.reactive.messaging.providers.locals.ContextAwareMessage.captureContextMetadata;
+import io.smallrye.reactive.messaging.providers.MetadataInjectableMessage;
+import io.smallrye.reactive.messaging.providers.helpers.VertxContext;
+import io.smallrye.reactive.messaging.providers.locals.ContextAwareMessage;
+import io.smallrye.reactive.messaging.providers.locals.LocalContextMetadata;
+import io.vertx.core.Context;
+import org.eclipse.microprofile.reactive.messaging.Message;
+import org.jspecify.annotations.NonNull;
 
 import java.time.Duration;
 import java.util.Optional;
@@ -10,15 +16,7 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import io.smallrye.reactive.messaging.providers.MetadataInjectableMessage;
-import io.smallrye.reactive.messaging.providers.locals.ContextAwareMessage;
-import org.eclipse.microprofile.reactive.messaging.Message;
-import org.jspecify.annotations.NonNull;
-import org.jspecify.annotations.Nullable;
-
-import io.smallrye.reactive.messaging.providers.helpers.VertxContext;
-import io.smallrye.reactive.messaging.providers.locals.LocalContextMetadata;
-import io.vertx.core.Context;
+import static io.smallrye.reactive.messaging.providers.locals.ContextAwareMessage.captureContextMetadata;
 
 final class VertxMessage<T> implements Message<T>, ContextAwareMessage<T>, MetadataInjectableMessage<T> {
     private final NativeMessage message;
@@ -55,12 +53,14 @@ final class VertxMessage<T> implements Message<T>, ContextAwareMessage<T>, Metad
         return this::ack;
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public CompletionStage<Void> ack() {
         return VertxContext.runOnContext(context, f -> {
             try {
-                final var messageMetadata = metadata.get(MessageConfiguration.class);
-                messageMetadata.flatMap(MessageConfiguration::acknowledgeTimeout)
+                final var configuration = metadata.get(MessageConfiguration.class)
+                        .map(c -> (MessageConfiguration<T>) c);
+                configuration.flatMap(MessageConfiguration::acknowledgeTimeout)
                         .ifPresentOrElse(timeout -> {
                             try {
                                 message.ackSync(timeout);
@@ -75,11 +75,17 @@ final class VertxMessage<T> implements Message<T>, ContextAwareMessage<T>, Metad
         });
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public CompletionStage<Void> nack(Throwable reason, org.eclipse.microprofile.reactive.messaging.Metadata metadata) {
         return VertxContext.runOnContext(context, f -> {
             try {
-                getBackoff(metadata.get(MessageConfiguration.class).orElse(null), metadata.get(SubscribeMetadata.class).orElse(null))
+                final var configuration = metadata.get(MessageConfiguration.class)
+                        .map(c -> (MessageConfiguration<T>) c)
+                        .orElseThrow(IllegalStateException::new);
+                final var subscribeMetadata = metadata.get(SubscribeMetadata.class)
+                        .orElseThrow(IllegalStateException::new);
+                getBackoff(configuration, subscribeMetadata)
                         .ifPresentOrElse(message::nakWithDelay, message::nak);
                 this.runOnMessageContext(() -> f.complete(null));
             } catch (Exception e) {
@@ -122,10 +128,8 @@ final class VertxMessage<T> implements Message<T>, ContextAwareMessage<T>, Metad
         return this;
     }
 
-    private Optional<Duration> getBackoff(@Nullable MessageConfiguration messageConfiguration, @Nullable SubscribeMetadata metadata) {
-        if (messageConfiguration == null || metadata == null) {
-            return Optional.empty();
-        } else if (messageConfiguration.backoff().isEmpty()) {
+    private Optional<Duration> getBackoff(@NonNull MessageConfiguration<T> messageConfiguration, @NonNull SubscribeMetadata metadata) {
+        if (messageConfiguration.backoff().isEmpty()) {
             return Optional.empty();
         } else if (metadata.deliveredCount() == 0) {
             return Optional.of(messageConfiguration.backoff().getFirst());
