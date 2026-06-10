@@ -3,12 +3,10 @@ package io.quarkiverse.reactive.nats.jetstream.connection;
 import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.ExecutorService;
 
 import javax.net.ssl.SSLContext;
 
 import io.nats.client.AuthHandler;
-import io.nats.client.ErrorListener;
 import io.nats.client.support.SSLUtils;
 
 public interface ConnectionConfiguration {
@@ -73,10 +71,5 @@ public interface ConnectionConfiguration {
      * The path to the credentials file for creating an {@link AuthHandler AuthHandler}
      */
     Optional<String> credentialPath();
-
-    /**
-     * The executor service to use for the connection.
-     */
-    ExecutorService executorService();
 
 }

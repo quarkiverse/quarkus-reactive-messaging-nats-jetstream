@@ -1,12 +1,4 @@
-package io.quarkiverse.reactive.nats.jetstream.tracing;
-
-import static io.opentelemetry.instrumentation.api.incubator.semconv.messaging.MessageOperation.PUBLISH;
-
-import java.util.Optional;
-
-import jakarta.enterprise.inject.Instance;
-
-import org.jspecify.annotations.NonNull;
+package io.quarkiverse.reactive.nats.jetstream.message.tracing;
 
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.OpenTelemetry;
@@ -14,25 +6,25 @@ import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
 import io.opentelemetry.instrumentation.api.instrumenter.Instrumenter;
 import io.opentelemetry.instrumentation.api.instrumenter.InstrumenterBuilder;
-import io.quarkiverse.reactive.nats.jetstream.message.Message;
-import io.quarkiverse.reactive.nats.jetstream.tracing.message.HeadersTextMapSetter;
-import io.quarkiverse.reactive.nats.jetstream.tracing.message.MessageSpanNameExtractor;
-import io.quarkiverse.reactive.nats.jetstream.tracing.message.PublishMessageAttributesExtractor;
-import io.quarkiverse.reactive.nats.jetstream.tracing.message.PublishMessageInfo;
 import io.quarkus.opentelemetry.runtime.QuarkusContextStorage;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.unchecked.Unchecked;
 import io.smallrye.reactive.messaging.TracingMetadata;
+import jakarta.enterprise.inject.Instance;
+import org.eclipse.microprofile.reactive.messaging.Message;
+import org.jspecify.annotations.NonNull;
 
-final class PublishTracer implements Tracer {
-    private final Instrumenter<Message, Void> instrumenter;
+import java.util.Optional;
+
+final class PublishTracer<T> implements Tracer<T> {
+    private final Instrumenter<Message<T>, Void> instrumenter;
 
     PublishTracer(Instance<OpenTelemetry> openTelemetryInstance) {
         this.instrumenter = instrumenter(openTelemetryInstance);
     }
 
     @Override
-    public @NonNull Uni<Message> withTrace(@NonNull Message message) {
+    public @NonNull Uni<Message<T>> withTrace(@NonNull Message<T> message) {
         return addTracingMetadata(message)
                 .chain(msg -> Uni.createFrom().item(Unchecked.supplier(() -> traceOutgoing(instrumenter, msg))));
     }
@@ -43,40 +35,34 @@ final class PublishTracer implements Tracer {
      * Reactive messaging outbound connectors, if tracing is supported, will use that context as parent span to trace outbound
      * message transmission.
      */
-    private Uni<Message> addTracingMetadata(final Message message) {
+    private Uni<Message<T>> addTracingMetadata(final Message<T> message) {
         return Uni.createFrom().item(Unchecked.supplier(() -> {
             if (message.getMetadata(TracingMetadata.class).isEmpty()) {
                 var otelContext = QuarkusContextStorage.INSTANCE.current();
-                return (Message) message.addMetadata(TracingMetadata.withCurrent(otelContext));
+                return message.addMetadata(TracingMetadata.withCurrent(otelContext));
             }
             return message;
         }));
     }
 
-    private Instrumenter<Message, Void> instrumenter(Instance<OpenTelemetry> openTelemetryInstance) {
-        final var attributesExtractor = new PublishMessageAttributesExtractor();
-        InstrumenterBuilder<Message, Void> builder = Instrumenter.builder(
+    private Instrumenter<Message<T>, Void> instrumenter(Instance<OpenTelemetry> openTelemetryInstance) {
+        final var attributesExtractor = new MessageAttributesExtractor<T>(Operation.PUBLISH);
+        InstrumenterBuilder<Message<T>, Void> builder = Instrumenter.builder(
                 getOpenTelemetry(openTelemetryInstance),
                 "io.smallrye.reactive.messaging.jetstream",
-                new MessageSpanNameExtractor(new PublishMessageInfo(), PUBLISH));
+                new MessageSpanNameExtractor<>(Operation.PUBLISH));
         return builder.addAttributesExtractor(attributesExtractor)
-                .buildProducerInstrumenter(new HeadersTextMapSetter());
+                .buildProducerInstrumenter(new HeadersTextMapSetter<>());
     }
 
-    private Message traceOutgoing(Instrumenter<Message, Void> instrumenter, Message message) {
+    private Message<T> traceOutgoing(Instrumenter<Message<T>, Void> instrumenter, Message<T> message) {
         Optional<TracingMetadata> tracingMetadata = TracingMetadata.fromMessage(message);
         Context parentContext = tracingMetadata.map(TracingMetadata::getCurrentContext).orElse(Context.current());
         boolean shouldStart = instrumenter.shouldStart(parentContext, message);
         if (shouldStart) {
-            Scope scope = null;
-            try {
-                Context spanContext = instrumenter.start(parentContext, message);
-                scope = spanContext.makeCurrent();
+            Context spanContext = instrumenter.start(parentContext, message);
+            try (Scope ignored = spanContext.makeCurrent()) {
                 instrumenter.end(spanContext, message, null, null);
-            } finally {
-                if (scope != null) {
-                    scope.close();
-                }
             }
         }
         return message;

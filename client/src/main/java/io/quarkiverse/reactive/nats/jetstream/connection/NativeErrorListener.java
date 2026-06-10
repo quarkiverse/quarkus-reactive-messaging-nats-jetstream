@@ -1,7 +1,6 @@
 package io.quarkiverse.reactive.nats.jetstream.connection;
 
 import io.nats.client.Consumer;
-import io.nats.client.ErrorListener;
 import io.nats.client.JetStreamSubscription;
 import io.nats.client.Message;
 import io.nats.client.support.Status;

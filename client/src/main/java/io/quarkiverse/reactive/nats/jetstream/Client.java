@@ -1,18 +1,17 @@
 package io.quarkiverse.reactive.nats.jetstream;
 
+import org.eclipse.microprofile.reactive.messaging.Message;
 import org.jspecify.annotations.NonNull;
 
-import io.quarkiverse.reactive.nats.jetstream.message.Message;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 
-public interface Client {
+public interface Client<T> extends AutoCloseable {
 
     @NonNull
-    Uni<Message> publish(@NonNull Message message, @NonNull String stream, @NonNull String subject);
+    Uni<Message<T>> publish(@NonNull Message<T> message, @NonNull String stream, @NonNull String subject);
 
     @NonNull
-    Multi<Message> publish(@NonNull Multi<Message> messages, @NonNull String stream, @NonNull String subject);
+    Multi<Message<T>> publish(@NonNull Multi<Message<T>> messages, @NonNull String stream, @NonNull String subject);
 
-    void addListener(@NonNull ClientListener listener);
 }

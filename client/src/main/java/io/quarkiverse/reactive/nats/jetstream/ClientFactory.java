@@ -1,7 +1,9 @@
 package io.quarkiverse.reactive.nats.jetstream;
 
+import io.smallrye.mutiny.Uni;
+
 public interface ClientFactory {
 
-    Client create(ClientConfiguration configuration);
+    <T> Uni<Client<T>> create(ClientConfiguration<T> configuration);
 
 }

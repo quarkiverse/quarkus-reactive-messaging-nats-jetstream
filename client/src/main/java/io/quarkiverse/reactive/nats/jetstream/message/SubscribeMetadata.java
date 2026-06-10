@@ -1,21 +1,10 @@
 package io.quarkiverse.reactive.nats.jetstream.message;
 
-import java.time.Duration;
-import java.time.ZonedDateTime;
-import java.util.List;
-
 import org.jspecify.annotations.NonNull;
 
-public interface SubscribeMetadata {
+import java.time.ZonedDateTime;
 
-    @NonNull
-    String stream();
-
-    @NonNull
-    String subject();
-
-    @NonNull
-    String messageId();
+public interface SubscribeMetadata extends Metadata {
 
     @NonNull
     Integer deliveredCount();
@@ -31,7 +20,4 @@ public interface SubscribeMetadata {
 
     @NonNull
     ZonedDateTime timestamp();
-
-
-
 }
