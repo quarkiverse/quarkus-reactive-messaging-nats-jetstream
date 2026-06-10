@@ -1,0 +1,369 @@
+package io.quarkiverse.reactive.messaging.nats.client.consumer;
+
+import java.time.Duration;
+import java.time.ZonedDateTime;
+import java.util.Objects;
+import java.util.Optional;
+
+import org.eclipse.microprofile.reactive.messaging.Message;
+
+import io.nats.client.*;
+import io.nats.client.api.ConsumerInfo;
+import io.quarkiverse.reactive.messaging.nats.client.ClientException;
+import io.quarkiverse.reactive.messaging.nats.client.api.Consumer;
+import io.quarkiverse.reactive.messaging.nats.client.api.ResolvedMessage;
+import io.quarkiverse.reactive.messaging.nats.client.connection.Connection;
+import io.quarkiverse.reactive.messaging.nats.client.connection.JetStreamAware;
+import io.quarkiverse.reactive.messaging.nats.client.context.ContextAware;
+import io.quarkiverse.reactive.messaging.nats.client.mapper.MessageMapper;
+import io.quarkiverse.reactive.messaging.nats.client.mapper.PayloadMapper;
+import io.quarkiverse.reactive.messaging.nats.client.stream.StreamContextAware;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.tracing.AttachContextTraceSupplier;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.tracing.TracerFactory;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.tracing.TracerType;
+import io.smallrye.mutiny.Multi;
+import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.unchecked.Unchecked;
+import io.smallrye.reactive.messaging.providers.connectors.ExecutionHolder;
+import lombok.extern.jbosslog.JBossLog;
+
+@JBossLog
+public class ConsumerAwareImpl extends ContextAware implements ConsumerAware, JetStreamAware, StreamContextAware {
+    private final ConsumerConfigurationMapper consumerConfigurationMapper;
+    private final ConsumerMapper consumerMapper;
+    private final MessageMapper messageMapper;
+    private final PayloadMapper payloadMapper;
+    private final Connection connection;
+    private final TracerFactory tracerFactory;
+
+    public ConsumerAwareImpl(ExecutionHolder executionHolder,
+            ConsumerConfigurationMapper consumerConfigurationMapper,
+            ConsumerMapper consumerMapper,
+            MessageMapper messageMapper,
+            PayloadMapper payloadMapper,
+            Connection connection,
+            TracerFactory tracerFactory) {
+        super(executionHolder);
+        this.consumerConfigurationMapper = consumerConfigurationMapper;
+        this.consumerMapper = consumerMapper;
+        this.messageMapper = messageMapper;
+        this.payloadMapper = payloadMapper;
+        this.connection = connection;
+        this.tracerFactory = tracerFactory;
+    }
+
+    @Override
+    public Uni<Consumer> addConsumerIfAbsent(final ConsumerConfiguration configuration) {
+        return withContext(context -> context
+                .execute(addConsumerIfAbsent(configuration.stream(), consumerConfigurationMapper.map(configuration))
+                        .onFailure().transform(ClientException::new)));
+    }
+
+    @Override
+    public Uni<Consumer> addConsumerIfAbsent(final ConsumerConfiguration configuration,
+            PushConfiguration pushConfiguration) {
+        return withContext(context -> context.execute(
+                addConsumerIfAbsent(configuration.stream(), consumerConfigurationMapper.map(configuration, pushConfiguration))
+                        .onFailure().transform(ClientException::new)));
+    }
+
+    @Override
+    public Uni<Consumer> addConsumerIfAbsent(final ConsumerConfiguration configuration,
+            PullConfiguration pullConfiguration) {
+        return withContext(context -> context.execute(
+                addConsumerIfAbsent(configuration.stream(), consumerConfigurationMapper.map(configuration, pullConfiguration))
+                        .onFailure().transform(ClientException::new)));
+    }
+
+    @Override
+    public Uni<Consumer> consumer(final String stream, final String consumerName) {
+        return withContext(context -> context.execute(consumerInfo(stream, consumerName)
+                .onItem().transform(consumerMapper::map)
+                .onFailure().transform(ClientException::new)));
+    }
+
+    @SuppressWarnings("ReactiveStreamsUnusedPublisher")
+    @Override
+    public Multi<String> consumerNames(final String streamName) {
+        return jetStreamManagement(connection).onItem()
+                .transformToMulti(jetStreamManagement -> Multi.createFrom()
+                        .items(Unchecked.supplier(() -> jetStreamManagement.getConsumerNames(streamName).stream()))
+                        .onFailure().transform(ClientException::new));
+    }
+
+    @Override
+    public Uni<Void> deleteConsumer(final String streamName, final String consumerName) {
+        return withContext(context -> context.execute(jetStreamManagement(connection).onItem()
+                .transformToUni(jetStreamManagement -> Uni.createFrom()
+                        .item(Unchecked.supplier(() -> jetStreamManagement.deleteConsumer(streamName, consumerName))))
+                .onItem()
+                .transformToUni(deleted -> deleted ? Uni.createFrom().voidItem()
+                        : Uni.createFrom().failure(() -> new ConsumerNotDeletedException(streamName, consumerName)))
+                .onFailure().transform(ClientException::new)));
+    }
+
+    @Override
+    public Uni<Void> pauseConsumer(final String streamName, final String consumerName, final ZonedDateTime pauseUntil) {
+        return withContext(context -> context.execute(jetStreamManagement(connection)
+                .onItem()
+                .transformToUni(jetStreamManagement -> Uni.createFrom().item(
+                        Unchecked.supplier(() -> jetStreamManagement.pauseConsumer(streamName, consumerName, pauseUntil))))
+                .onItem()
+                .transformToUni(response -> response.isPaused() ? Uni.createFrom().voidItem()
+                        : Uni.createFrom().failure(() -> new ConsumerNotPausedException(streamName, consumerName)))
+                .onFailure().transform(ClientException::new)));
+    }
+
+    @Override
+    public Uni<Void> resumeConsumer(final String streamName, final String consumerName) {
+        return withContext(context -> context.execute(jetStreamManagement(connection)
+                .onItem()
+                .transformToUni(jetStreamManagement -> Uni.createFrom()
+                        .item(Unchecked.supplier(() -> jetStreamManagement.resumeConsumer(streamName, consumerName))))
+                .onItem()
+                .transformToUni(response -> response ? Uni.createFrom().voidItem()
+                        : Uni.createFrom().failure(() -> new ConsumerNotResumedException(streamName, consumerName)))
+                .onFailure().transform(ClientException::new)));
+    }
+
+    @Override
+    public <T> Uni<Message<T>> next(final ConsumerConfiguration configuration, final Duration timeout) {
+        return next(configuration, timeout, null);
+    }
+
+    @Override
+    public <T> Uni<Message<T>> next(final ConsumerConfiguration configuration, final Duration timeout,
+            final Class<T> payloadType) {
+        return withContext(context -> context.execute(next(configuration.stream(), configuration.name(), timeout)
+                .onItem().ifNotNull().transform(message -> messageMapper.map(message, configuration, context, payloadType))
+                .onItem().ifNotNull()
+                .transformToUni(message -> tracerFactory.<T> create(TracerType.Subscribe).withTrace(message,
+                        new AttachContextTraceSupplier<>()))
+                .onFailure().transform(ClientException::new)));
+    }
+
+    @Override
+    public <T> Multi<Message<T>> fetch(final ConsumerConfiguration configuration,
+            final FetchConfiguration fetchConfiguration) {
+        return fetch(configuration, fetchConfiguration, null);
+    }
+
+    @SuppressWarnings({ "ReactiveStreamsUnusedPublisher" })
+    @Override
+    public <T> Multi<Message<T>> fetch(final ConsumerConfiguration configuration,
+            final FetchConfiguration fetchConfiguration,
+            final Class<T> payloadType) {
+        return withContext(context -> context.execute(subscription(configuration.stream(), configuration.name())
+                .onItem().transformToMulti(subscription -> fetch(subscription, fetchConfiguration)))
+                .onItem().transform(message -> messageMapper.map(message, configuration, context, payloadType))
+                .onItem()
+                .transformToUniAndMerge(message -> tracerFactory.<T> create(TracerType.Subscribe).withTrace(message,
+                        new AttachContextTraceSupplier<>()))
+                .onFailure().transform(ClientException::new));
+    }
+
+    @Override
+    public <T> Uni<Message<T>> resolve(final String streamName, final long sequence) {
+        return withContext(context -> context.execute(streamContext(connection, streamName)
+                .onItem()
+                .transformToUni(
+                        streamContext -> Uni.createFrom().item(Unchecked.supplier(() -> streamContext.getMessage(sequence))))
+                .onItem()
+                .<Message<T>> transform(messageInfo -> new ResolvedMessage<>(messageInfo, payloadMapper.map(messageInfo)))))
+                .onFailure().transform(ClientException::new);
+    }
+
+    @Override
+    public <T> Multi<Message<T>> subscribe(final ConsumerConfiguration configuration,
+            final PullConfiguration pullConfiguration) {
+        return subscribe(configuration, pullConfiguration, new ConsumerListenerImpl<>());
+    }
+
+    @Override
+    public <T> Multi<Message<T>> subscribe(final ConsumerConfiguration configuration,
+            final PushConfiguration pushConfiguration) {
+        return subscribe(configuration, pushConfiguration, new ConsumerListenerImpl<>());
+    }
+
+    @Override
+    public <T> Multi<Message<T>> subscribe(ConsumerConfiguration configuration, PullConfiguration pullConfiguration,
+            ConsumerListener<T> listener) {
+        return subscribe(configuration, pullConfiguration, listener, null);
+    }
+
+    @Override
+    public <T> Multi<Message<T>> subscribe(ConsumerConfiguration configuration, PullConfiguration pullConfiguration,
+            ConsumerListener<T> listener, Class<T> payloadType) {
+        final var tracer = tracerFactory.<T> create(TracerType.Subscribe);
+        return withContext(
+                context -> context.execute(subscribe(configuration.stream(), configuration.name(), pullConfiguration))
+                        .select().where(Objects::nonNull)
+                        .onItem().transform(message -> messageMapper.map(message, configuration, context, payloadType))
+                        .onItem().transformToUniAndMerge(message -> tracer.withTrace(message, msg -> msg)))
+                .onItem().invoke(listener::onMessage)
+                .onFailure().invoke(listener::onError)
+                .onFailure().transform(ClientException::new);
+    }
+
+    @Override
+    public <T> Multi<Message<T>> subscribe(ConsumerConfiguration configuration, PushConfiguration pushConfiguration,
+            ConsumerListener<T> listener) {
+        return subscribe(configuration, pushConfiguration, listener, null);
+    }
+
+    @Override
+    public <T> Multi<Message<T>> subscribe(ConsumerConfiguration configuration, PushConfiguration pushConfiguration,
+            ConsumerListener<T> listener, Class<T> payloadType) {
+        final var tracer = tracerFactory.<T> create(TracerType.Subscribe);
+        return withContext(context -> Multi.createFrom().<io.nats.client.Message> emitter(emitter -> {
+            try {
+                final var jetStream = connection.jetStream();
+                final var dispatcher = connection.createDispatcher();
+                final var pushOptions = pushSubscribeOptions(configuration.stream(), configuration.name(), pushConfiguration);
+                jetStream.subscribe(
+                        "", dispatcher,
+                        emitter::emit,
+                        false,
+                        pushOptions);
+            } catch (Exception e) {
+                emitter.fail(e);
+            }
+        })
+                .emitOn(context::runOnContext)
+                .select().where(Objects::nonNull)
+                .onItem().transform(message -> messageMapper.map(message, configuration, context, payloadType))
+                .onItem().transformToUniAndMerge(message -> tracer.withTrace(message, msg -> msg)))
+                .onItem().invoke(listener::onMessage)
+                .onFailure().invoke(listener::onError)
+                .onFailure().transform(ClientException::new);
+    }
+
+    @Override
+    public <T> Multi<Message<T>> subscribe(ConsumerConfiguration configuration, PullConfiguration pullConfiguration,
+            Class<T> payloadType) {
+        return subscribe(configuration, pullConfiguration, new ConsumerListenerImpl<>(), payloadType);
+    }
+
+    @Override
+    public <T> Multi<Message<T>> subscribe(ConsumerConfiguration configuration, PushConfiguration pushConfiguration,
+            Class<T> payloadType) {
+        return subscribe(configuration, pushConfiguration, new ConsumerListenerImpl<>(), payloadType);
+    }
+
+    private Uni<Consumer> addConsumerIfAbsent(final String stream,
+            final io.nats.client.api.ConsumerConfiguration configuration) {
+        return consumerInfo(stream, configuration.getName())
+                .onItem().ifNull().switchTo(() -> createConsumer(stream, configuration))
+                .onItem().transform(consumerMapper::map);
+    }
+
+    private Uni<ConsumerInfo> createConsumer(final String stream,
+            final io.nats.client.api.ConsumerConfiguration configuration) {
+        return jetStreamManagement(connection)
+                .onItem()
+                .transformToUni(jetStreamManagement -> Uni.createFrom()
+                        .item(Unchecked.supplier(() -> jetStreamManagement.createConsumer(stream, configuration))));
+    }
+
+    private Uni<ConsumerInfo> consumerInfo(final String stream, final String consumer) {
+        return jetStreamManagement(connection)
+                .onItem()
+                .transformToUni(jetStreamManagement -> Uni.createFrom()
+                        .item(Unchecked.supplier(() -> jetStreamManagement.getConsumerNames(stream)))
+                        .onItem().transformToUni(consumerNames -> {
+                            if (consumerNames.contains(consumer)) {
+                                return Uni.createFrom()
+                                        .item(Unchecked.supplier(() -> jetStreamManagement.getConsumerInfo(stream, consumer)));
+                            } else {
+                                return Uni.createFrom().nullItem();
+                            }
+                        }));
+    }
+
+    private Uni<io.nats.client.ConsumerContext> consumerContext(final String stream, final String consumer) {
+        return streamContext(connection, stream)
+                .onItem().transformToUni(streamContext -> Uni.createFrom()
+                        .item(Unchecked.supplier(() -> streamContext.getConsumerContext(consumer))));
+    }
+
+    private Uni<io.nats.client.JetStreamSubscription> subscription(final String stream, final String consumer) {
+        return jetStream(connection)
+                .onItem().transformToUni(jetStream -> Uni.createFrom()
+                        .item(Unchecked
+                                .supplier(() -> jetStream.subscribe(null, PullSubscribeOptions.bind(stream, consumer)))));
+    }
+
+    private Uni<io.nats.client.Message> next(final String stream, final String consumer, final Duration timeout) {
+        return consumerContext(stream, consumer)
+                .onItem()
+                .transformToUni(consumerContext -> next(consumerContext, timeout));
+    }
+
+    private Uni<io.nats.client.Message> next(final ConsumerContext consumerContext, final Duration timeout) {
+        return Uni.createFrom().emitter(emitter -> {
+            try {
+                emitter.complete(consumerContext.next(timeout));
+            } catch (JetStreamStatusException e) {
+                emitter.fail(e);
+            } catch (IllegalStateException | InterruptedException e) {
+                emitter.complete(null);
+            } catch (Exception e) {
+                emitter.fail(e);
+            }
+        });
+    }
+
+    private Multi<io.nats.client.Message> fetch(final JetStreamSubscription subscription,
+            final FetchConfiguration configuration) {
+        return Multi.createFrom().emitter(emitter -> {
+            try {
+                final var iterator = subscription.iterate(configuration.batchSize(),
+                        configuration.timeout().orElse(Duration.ofSeconds(1)));
+                while (iterator.hasNext()) {
+                    emitter.emit(iterator.next());
+                }
+                emitter.complete();
+            } catch (IllegalStateException e) {
+                emitter.complete(); // when the connection is closed
+            } catch (Exception failure) {
+                emitter.fail(failure);
+            }
+        });
+    }
+
+    @SuppressWarnings("ReactiveStreamsUnusedPublisher")
+    private Multi<io.nats.client.Message> subscribe(final String stream, final String consumer,
+            final PullConfiguration configuration) {
+        final var fetchConfiguration = toFetchConfiguration(configuration);
+        return subscription(stream, consumer)
+                .onItem().transformToMulti(subscription -> Multi.createBy().repeating()
+                        .uni(() -> Uni.createFrom().item(42))
+                        .whilst(v -> true)
+                        .onItem().transformToMultiAndConcatenate(v -> fetch(subscription, fetchConfiguration)));
+    }
+
+    private PushSubscribeOptions pushSubscribeOptions(final String stream,
+            final String consumer,
+            final PushConfiguration configuration) {
+        var builder = PushSubscribeOptions.builder()
+                .stream(stream)
+                .name(consumer)
+                .bind(true);
+        builder = configuration.deliverGroup().map(builder::deliverGroup).orElse(builder);
+        return builder.build();
+    }
+
+    private FetchConfiguration toFetchConfiguration(PullConfiguration configuration) {
+        return new FetchConfiguration() {
+            @Override
+            public Optional<Duration> timeout() {
+                return Optional.ofNullable(configuration.maxExpires());
+            }
+
+            @Override
+            public Integer batchSize() {
+                return configuration.batchSize();
+            }
+        };
+    }
+}

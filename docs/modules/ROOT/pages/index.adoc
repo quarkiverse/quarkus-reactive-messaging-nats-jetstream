@@ -128,7 +128,7 @@ By default, Java objects are serialized using `java.io.*` streams. If either the
 `quarkus-jsonb` dependency is present, objects are serialized as JSON instead.
 
 To use a custom serializer, create a CDI bean that implements the
-`io.quarkiverse.reactive.messaging.nats.jetstream.client.mapper.Serializer` interface.
+`io.quarkiverse.reactive.messaging.nats.client.mapper.Serializer` interface.
 
 == Open Telemetry Tracing
 To use Open Telemetry tracing, add the `quarkus-opentelemetry` dependency.

@@ -1,0 +1,118 @@
+package io.quarkiverse.reactive.messaging.nats.deployment;
+
+import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
+
+import io.nats.client.Options;
+import io.quarkiverse.reactive.messaging.nats.client.mapper.*;
+import io.quarkiverse.reactive.messaging.nats.configuration.mapper.*;
+import io.quarkiverse.reactive.messaging.nats.configuration.mapper.ConsumerConfigurationMapperImpl;
+import io.quarkiverse.reactive.messaging.nats.configuration.mapper.StreamConfigurationMapperImpl;
+import io.quarkiverse.reactive.messaging.nats.JetStreamConnector;
+import io.quarkiverse.reactive.messaging.nats.client.ClientImpl;
+import io.quarkiverse.reactive.messaging.nats.client.connection.ConnectionFactoryImpl;
+import io.quarkiverse.reactive.messaging.nats.client.connection.TlsContextFactoryImpl;
+import io.quarkiverse.reactive.messaging.nats.client.consumer.ConsumerMapperImpl;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.mapper.*;
+import io.quarkiverse.reactive.messaging.nats.client.store.KeyValueConfigurationMapperImpl;
+import io.quarkiverse.reactive.messaging.nats.client.stream.StreamStateMapperImpl;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.tracing.DefaultTracerFactory;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.tracing.OpenTelemetryTracerFactory;
+import io.quarkiverse.reactive.messaging.nats.configuration.JetStreamRecorder;
+import io.quarkiverse.reactive.messaging.nats.processors.publisher.MessagePublisherProcessorFactory;
+import io.quarkiverse.reactive.messaging.nats.processors.subscriber.MessageSubscriberProcessorFactory;
+import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.arc.deployment.SyntheticBeansRuntimeInitBuildItem;
+import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
+import io.quarkus.deployment.annotations.BuildProducer;
+import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.Consume;
+import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
+import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
+import io.smallrye.reactive.messaging.providers.connectors.ExecutionHolder;
+
+class JetStreamProcessor {
+    static final String FEATURE = "reactive-messaging-nats-jetstream";
+
+    @BuildStep
+    FeatureBuildItem feature() {
+        return new FeatureBuildItem(FEATURE);
+    }
+
+    @BuildStep
+    void registerReflectiveClasses(BuildProducer<ReflectiveClassBuildItem> producer) {
+        producer.produce(ReflectiveClassBuildItem.builder(Options.DEFAULT_DATA_PORT_TYPE).build());
+    }
+
+    @BuildStep
+    ExtensionSslNativeSupportBuildItem activateSslNativeSupport() {
+        return new ExtensionSslNativeSupportBuildItem(FEATURE);
+    }
+
+    @BuildStep
+    void initializeSecureRandomRelatedClassesAtRuntime(
+            BuildProducer<RuntimeInitializedClassBuildItem> runtimeInitializedClasses) {
+        runtimeInitializedClasses.produce(new RuntimeInitializedClassBuildItem("io.nats.client.support.RandomUtils"));
+        runtimeInitializedClasses.produce(new RuntimeInitializedClassBuildItem("io.nats.client.NUID"));
+    }
+
+    @BuildStep
+    void createJetStreamConnector(BuildProducer<AdditionalBeanBuildItem> buildProducer) {
+        buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(JetStreamConnector.class));
+        buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(ClientImpl.class));
+        buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(ConnectionFactoryImpl.class));
+        buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(io.quarkiverse.reactive.messaging.nats.client.consumer.ConsumerConfigurationMapperImpl.class));
+        buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(ConsumerMapperImpl.class));
+        buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(HeaderMapperImpl.class));
+        buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(MessageMapperImpl.class));
+        buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(PayloadMapperImpl.class));
+        buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(KeyValueConfigurationMapperImpl.class));
+        buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(io.quarkiverse.reactive.messaging.nats.client.stream.StreamConfigurationMapperImpl.class));
+        buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(StreamStateMapperImpl.class));
+        buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(
+                ConsumerConfigurationMapperImpl.class));
+        buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(
+                KeyValueStoreConfigurationMapperImpl.class));
+        buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(
+                PullConsumerConfigurationMapperImpl.class));
+        buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(
+                PushConsumerConfigurationMapperImpl.class));
+        buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(
+                StreamConfigurationMapperImpl.class));
+        buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(ExecutionHolder.class));
+
+        buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(MessagePublisherProcessorFactory.class));
+        buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(MessageSubscriberProcessorFactory.class));
+        buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(TlsContextFactoryImpl.class));
+    }
+
+    @BuildStep
+    void registerSerializer(BuildProducer<AdditionalBeanBuildItem> buildProducer, Capabilities capabilities) {
+        if (capabilities.isPresent(Capability.JACKSON)) {
+            buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(JacksonSerializer.class));
+        } else if (capabilities.isPresent(Capability.JSONB)) {
+            buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(JsonbSerializer.class));
+        } else {
+            buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(DefaultSerializer.class));
+        }
+    }
+
+    @BuildStep
+    void registerTracing(BuildProducer<AdditionalBeanBuildItem> buildProducer, Capabilities capabilities) {
+        if (capabilities.isPresent(Capability.OPENTELEMETRY_TRACER)) {
+            buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(OpenTelemetryTracerFactory.class));
+        } else {
+            buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(DefaultTracerFactory.class));
+        }
+    }
+
+    @BuildStep
+    @Record(RUNTIME_INIT)
+    @Consume(SyntheticBeansRuntimeInitBuildItem.class)
+    public void configureJetStream(JetStreamRecorder recorder) {
+        recorder.setup();
+    }
+}
