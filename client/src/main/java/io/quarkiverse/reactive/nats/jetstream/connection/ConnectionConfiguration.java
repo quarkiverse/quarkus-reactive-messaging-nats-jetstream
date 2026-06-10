@@ -1,14 +1,15 @@
 package io.quarkiverse.reactive.nats.jetstream.connection;
 
-import io.nats.client.AuthHandler;
-import io.nats.client.ErrorListener;
-import io.nats.client.support.SSLUtils;
-
-import javax.net.ssl.SSLContext;
 import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
+
+import javax.net.ssl.SSLContext;
+
+import io.nats.client.AuthHandler;
+import io.nats.client.ErrorListener;
+import io.nats.client.support.SSLUtils;
 
 public interface ConnectionConfiguration {
 

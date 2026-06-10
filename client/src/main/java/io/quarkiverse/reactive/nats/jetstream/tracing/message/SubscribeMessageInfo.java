@@ -7,7 +7,6 @@ public class SubscribeMessageInfo implements MessageInfo {
     @Override
     public String getDestination(Message message) {
 
-
         return String.format("%s.%s", metadata.stream(), metadata.subject());
     }
 
@@ -20,6 +19,5 @@ public class SubscribeMessageInfo implements MessageInfo {
     public String getMessageId(Message message) {
         return metadata.messageId();
     }
-
 
 }

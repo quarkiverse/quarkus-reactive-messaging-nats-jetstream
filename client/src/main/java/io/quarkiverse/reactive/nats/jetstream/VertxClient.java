@@ -1,5 +1,10 @@
 package io.quarkiverse.reactive.nats.jetstream;
 
+import java.util.Collection;
+import java.util.UUID;
+
+import org.jspecify.annotations.NonNull;
+
 import io.quarkiverse.reactive.nats.jetstream.connection.NativeConnection;
 import io.quarkiverse.reactive.nats.jetstream.message.Headers;
 import io.quarkiverse.reactive.nats.jetstream.message.Message;
@@ -9,13 +14,9 @@ import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple2;
 import io.smallrye.mutiny.unchecked.Unchecked;
 import io.vertx.core.Context;
-import org.jspecify.annotations.NonNull;
-
-import java.util.Collection;
-import java.util.UUID;
 
 public record VertxClient(ClientConfiguration configuration, NativeConnection connection,
-                          Context context, Collection<ClientListener> listeners) implements Client {
+        Context context, Collection<ClientListener> listeners) implements Client {
 
     @Override
     public @NonNull Uni<Message> publish(@NonNull Message message, @NonNull String stream, @NonNull String subject) {
@@ -42,11 +43,11 @@ public record VertxClient(ClientConfiguration configuration, NativeConnection co
 
     private Tuple2<Message, PublishMetadata> withMetadata(final Message message, final String stream, final String subject) {
         final var publishMetadata = PublishMetadata.of(stream,
-                        subject,
-                        messageId(message),
-                        headers(message),
-                        configuration.acknowledgeTimeout().orElse(null),
-                        configuration.backoff());
+                subject,
+                messageId(message),
+                headers(message),
+                configuration.acknowledgeTimeout().orElse(null),
+                configuration.backoff());
         final var metadata = message.getMetadata().without(PublishMetadata.class);
         return Tuple2.of(Message.of(message.withMetadata(metadata)), publishMetadata);
     }

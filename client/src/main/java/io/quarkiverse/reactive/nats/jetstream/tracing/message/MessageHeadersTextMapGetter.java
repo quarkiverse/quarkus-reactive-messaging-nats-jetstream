@@ -1,14 +1,14 @@
 package io.quarkiverse.reactive.nats.jetstream.tracing.message;
 
-import io.opentelemetry.context.propagation.TextMapGetter;
-import io.quarkiverse.reactive.nats.jetstream.message.Headers;
-
 import java.util.Collections;
 
-public class MessageHeadersTextMapGetter implements TextMapGetter<Headers> {
+import io.opentelemetry.context.propagation.TextMapGetter;
+import io.quarkiverse.reactive.nats.jetstream.message.Message;
+
+public class MessageHeadersTextMapGetter implements TextMapGetter<Message> {
 
     @Override
-    public Iterable<String> keys(Headers headers) {
+    public Iterable<String> keys(Message message) {
         if (headers != null) {
             return headers.keySet();
         }
@@ -16,7 +16,7 @@ public class MessageHeadersTextMapGetter implements TextMapGetter<Headers> {
     }
 
     @Override
-    public String get(Headers headers, String key) {
+    public String get(Message messages, String key) {
         if (headers != null) {
             final var value = headers.get(key);
             if (value != null) {

@@ -1,10 +1,6 @@
 package io.quarkiverse.reactive.nats.jetstream.message;
 
-import io.smallrye.reactive.messaging.providers.helpers.VertxContext;
-import io.smallrye.reactive.messaging.providers.locals.LocalContextMetadata;
-import io.vertx.core.Context;
-import org.jspecify.annotations.NonNull;
-import org.jspecify.annotations.Nullable;
+import static io.smallrye.reactive.messaging.providers.locals.ContextAwareMessage.captureContextMetadata;
 
 import java.time.Duration;
 import java.util.Optional;
@@ -14,14 +10,20 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import static io.smallrye.reactive.messaging.providers.locals.ContextAwareMessage.captureContextMetadata;
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
+
+import io.smallrye.reactive.messaging.providers.helpers.VertxContext;
+import io.smallrye.reactive.messaging.providers.locals.LocalContextMetadata;
+import io.vertx.core.Context;
 
 final class VertxMessage implements Message {
     private final io.nats.client.Message message;
     private org.eclipse.microprofile.reactive.messaging.Metadata metadata;
     private final Context context;
 
-    public VertxMessage(io.nats.client.@NonNull Message message, @Nullable PublishMetadata publishMetadata, @NonNull Context context) {
+    public VertxMessage(io.nats.client.@NonNull Message message, @Nullable PublishMetadata publishMetadata,
+            @NonNull Context context) {
         this.message = message;
         this.metadata = publishMetadata != null ? captureContextMetadata(publishMetadata) : captureContextMetadata();
         this.context = context;
@@ -113,7 +115,8 @@ final class VertxMessage implements Message {
     }
 
     @Override
-    public org.eclipse.microprofile.reactive.messaging.Message<byte[]> withMetadata(org.eclipse.microprofile.reactive.messaging.Metadata metadata) {
+    public org.eclipse.microprofile.reactive.messaging.Message<byte[]> withMetadata(
+            org.eclipse.microprofile.reactive.messaging.Metadata metadata) {
         this.metadata = this.metadata.with(metadata);
         return this;
     }

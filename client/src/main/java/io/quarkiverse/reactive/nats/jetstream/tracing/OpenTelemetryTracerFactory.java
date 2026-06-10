@@ -2,9 +2,10 @@ package io.quarkiverse.reactive.nats.jetstream.tracing;;
 
 import jakarta.enterprise.inject.Instance;
 
+import org.jspecify.annotations.NonNull;
+
 import io.opentelemetry.api.OpenTelemetry;
 import lombok.RequiredArgsConstructor;
-import org.jspecify.annotations.NonNull;
 
 @RequiredArgsConstructor
 public class OpenTelemetryTracerFactory implements TracerFactory {
@@ -12,7 +13,7 @@ public class OpenTelemetryTracerFactory implements TracerFactory {
 
     @Override
     public @NonNull Tracer publish() {
-        return null;
+        return new PublishTracer(openTelemetryInstance);
     }
 
     @Override

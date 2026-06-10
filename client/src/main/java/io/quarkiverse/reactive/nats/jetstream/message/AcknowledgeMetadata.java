@@ -1,9 +1,10 @@
 package io.quarkiverse.reactive.nats.jetstream.message;
 
-import io.nats.client.api.PublishAck;
+import java.util.Optional;
+
 import org.jspecify.annotations.NonNull;
 
-import java.util.Optional;
+import io.nats.client.api.PublishAck;
 
 public interface AcknowledgeMetadata extends Metadata {
 

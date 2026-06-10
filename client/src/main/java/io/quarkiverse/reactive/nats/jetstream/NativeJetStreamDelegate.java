@@ -1,11 +1,11 @@
 package io.quarkiverse.reactive.nats.jetstream;
 
+import java.io.IOException;
+import java.util.concurrent.CompletableFuture;
+
 import io.nats.client.*;
 import io.nats.client.api.PublishAck;
 import io.nats.client.impl.Headers;
-
-import java.io.IOException;
-import java.util.concurrent.CompletableFuture;
 
 record NativeJetStreamDelegate(io.nats.client.JetStream delegate) implements NativeJetStream {
 
@@ -25,7 +25,8 @@ record NativeJetStreamDelegate(io.nats.client.JetStream delegate) implements Nat
     }
 
     @Override
-    public PublishAck publish(String subject, Headers headers, byte[] body, PublishOptions options) throws IOException, JetStreamApiException {
+    public PublishAck publish(String subject, Headers headers, byte[] body, PublishOptions options)
+            throws IOException, JetStreamApiException {
         return delegate.publish(subject, headers, body, options);
     }
 
@@ -75,37 +76,44 @@ record NativeJetStreamDelegate(io.nats.client.JetStream delegate) implements Nat
     }
 
     @Override
-    public JetStreamSubscription subscribe(String subscribeSubject, PushSubscribeOptions options) throws IOException, JetStreamApiException {
+    public JetStreamSubscription subscribe(String subscribeSubject, PushSubscribeOptions options)
+            throws IOException, JetStreamApiException {
         return delegate.subscribe(subscribeSubject, options);
     }
 
     @Override
-    public JetStreamSubscription subscribe(String subscribeSubject, String queue, PushSubscribeOptions options) throws IOException, JetStreamApiException {
+    public JetStreamSubscription subscribe(String subscribeSubject, String queue, PushSubscribeOptions options)
+            throws IOException, JetStreamApiException {
         return delegate.subscribe(subscribeSubject, queue, options);
     }
 
     @Override
-    public JetStreamSubscription subscribe(String subscribeSubject, Dispatcher dispatcher, MessageHandler handler, boolean autoAck) throws IOException, JetStreamApiException {
+    public JetStreamSubscription subscribe(String subscribeSubject, Dispatcher dispatcher, MessageHandler handler,
+            boolean autoAck) throws IOException, JetStreamApiException {
         return delegate.subscribe(subscribeSubject, dispatcher, handler, autoAck);
     }
 
     @Override
-    public JetStreamSubscription subscribe(String subscribeSubject, Dispatcher dispatcher, MessageHandler handler, boolean autoAck, PushSubscribeOptions options) throws IOException, JetStreamApiException {
+    public JetStreamSubscription subscribe(String subscribeSubject, Dispatcher dispatcher, MessageHandler handler,
+            boolean autoAck, PushSubscribeOptions options) throws IOException, JetStreamApiException {
         return delegate.subscribe(subscribeSubject, dispatcher, handler, autoAck, options);
     }
 
     @Override
-    public JetStreamSubscription subscribe(String subscribeSubject, String queue, Dispatcher dispatcher, MessageHandler handler, boolean autoAck, PushSubscribeOptions options) throws IOException, JetStreamApiException {
+    public JetStreamSubscription subscribe(String subscribeSubject, String queue, Dispatcher dispatcher, MessageHandler handler,
+            boolean autoAck, PushSubscribeOptions options) throws IOException, JetStreamApiException {
         return delegate.subscribe(subscribeSubject, queue, dispatcher, handler, autoAck, options);
     }
 
     @Override
-    public JetStreamSubscription subscribe(String subscribeSubject, PullSubscribeOptions options) throws IOException, JetStreamApiException {
+    public JetStreamSubscription subscribe(String subscribeSubject, PullSubscribeOptions options)
+            throws IOException, JetStreamApiException {
         return delegate.subscribe(subscribeSubject, options);
     }
 
     @Override
-    public JetStreamSubscription subscribe(String subscribeSubject, Dispatcher dispatcher, MessageHandler handler, PullSubscribeOptions options) throws IOException, JetStreamApiException {
+    public JetStreamSubscription subscribe(String subscribeSubject, Dispatcher dispatcher, MessageHandler handler,
+            PullSubscribeOptions options) throws IOException, JetStreamApiException {
         return delegate.subscribe(subscribeSubject, dispatcher, handler, options);
     }
 
@@ -115,7 +123,8 @@ record NativeJetStreamDelegate(io.nats.client.JetStream delegate) implements Nat
     }
 
     @Override
-    public ConsumerContext getConsumerContext(String streamName, String consumerName) throws IOException, JetStreamApiException {
+    public ConsumerContext getConsumerContext(String streamName, String consumerName)
+            throws IOException, JetStreamApiException {
         return delegate.getConsumerContext(streamName, consumerName);
     }
 }

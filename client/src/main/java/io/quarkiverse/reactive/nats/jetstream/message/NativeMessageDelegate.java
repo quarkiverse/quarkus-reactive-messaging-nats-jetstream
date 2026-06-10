@@ -1,14 +1,14 @@
 package io.quarkiverse.reactive.nats.jetstream.message;
 
+import java.time.Duration;
+import java.util.concurrent.TimeoutException;
+
 import io.nats.client.Connection;
 import io.nats.client.Subscription;
 import io.nats.client.impl.AckType;
 import io.nats.client.impl.Headers;
 import io.nats.client.impl.NatsJetStreamMetaData;
 import io.nats.client.support.Status;
-
-import java.time.Duration;
-import java.util.concurrent.TimeoutException;
 
 record NativeMessageDelegate(io.nats.client.Message delegate) implements NativeMessage {
 

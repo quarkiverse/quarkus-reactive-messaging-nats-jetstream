@@ -8,7 +8,8 @@ public class PublishMessageInfo implements MessageInfo {
     @Override
     public String getDestination(Message message) {
         return message.getMetadata(PublishMetadata.class)
-                .map(metadata -> String.format("%s.%s", metadata.stream(), metadata.subject())).orElseThrow(() -> new IllegalArgumentException("Missing publish metadata"));
+                .map(metadata -> String.format("%s.%s", metadata.stream(), metadata.subject()))
+                .orElseThrow(() -> new IllegalArgumentException("Missing publish metadata"));
     }
 
     @Override

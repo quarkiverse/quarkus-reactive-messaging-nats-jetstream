@@ -8,15 +8,19 @@ import io.quarkiverse.reactive.nats.jetstream.message.PublishMetadata;
 
 import java.nio.charset.StandardCharsets;
 
+import static io.quarkiverse.reactive.nats.jetstream.tracing.message.MessageAttributes.*;
+
 public class PublishMessageAttributesExtractor implements AttributesExtractor<Message, Void> {
-    private static final String MESSAGE_PAYLOAD = "message.payload";
-    private static final String MESSAGE_TYPE = "message.type";
 
     @Override
     public void onStart(AttributesBuilder attributes, Context parentContext, Message message) {
         attributes.put(MESSAGE_PAYLOAD, new String(message.getPayload(), StandardCharsets.UTF_8));
-        message.getMetadata(PublishMetadata.class).map(metadata -> attributes.put(MESSAGE_TYPE, metadata.getPayloadType().toString()))
-                .orElseGet(() -> attributes.put(MESSAGE_TYPE, byte[].class.toString()));
+        message.getMetadata(PublishMetadata.class).ifPresent(metadata -> {
+            attributes.put(MESSAGE_TYPE, metadata.getPayloadType().toString());
+            attributes.put(MESSAGE_STREAM, metadata.stream());
+            attributes.put(MESSAGE_SUBJECT, metadata.subject());
+            attributes.put(MESSAGE_ID, metadata.messageId());
+        });
     }
 
     @Override

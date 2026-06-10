@@ -1,8 +1,8 @@
 package io.quarkiverse.reactive.nats.consumer;
 
-import io.smallrye.mutiny.Uni;
-
 import java.time.Duration;
+
+import io.smallrye.mutiny.Uni;
 
 /**
  * @see io.nats.client.Consumer

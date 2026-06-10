@@ -1,11 +1,11 @@
 package io.quarkiverse.reactive.nats.consumer;
 
+import java.time.Duration;
+import java.util.concurrent.CompletableFuture;
+
 import io.nats.client.Dispatcher;
 import io.nats.client.Message;
 import io.nats.client.Subscription;
-
-import java.time.Duration;
-import java.util.concurrent.CompletableFuture;
 
 record ImperativeSubscriptionDelegate(io.nats.client.Subscription delegate) implements ImperativeSubscription {
 

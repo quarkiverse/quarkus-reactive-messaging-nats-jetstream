@@ -43,4 +43,3 @@ class NativeConnectionListener implements io.nats.client.ConnectionListener {
         this.connectionEvent(conn, type);
     }
 }
-

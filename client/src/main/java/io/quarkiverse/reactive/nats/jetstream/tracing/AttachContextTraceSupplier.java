@@ -1,11 +1,14 @@
 package io.quarkiverse.reactive.nats.jetstream.tracing;
 
+import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.unchecked.Unchecked;
+import org.jspecify.annotations.NonNull;
+
 import io.opentelemetry.context.Context;
 import io.quarkiverse.reactive.nats.jetstream.message.Message;
 import io.quarkus.opentelemetry.runtime.QuarkusContextStorage;
 import io.smallrye.reactive.messaging.TracingMetadata;
 import io.smallrye.reactive.messaging.providers.locals.LocalContextMetadata;
-import org.jspecify.annotations.NonNull;
 
 /**
  * For incoming messages, it fetches OpenTelemetry context from the message and attaches to the duplicated context of the
@@ -17,16 +20,18 @@ public class AttachContextTraceSupplier implements TraceSupplier {
 
     @SuppressWarnings("resource")
     @Override
-    public @NonNull Message get(@NonNull Message message) {
-        var messageContext = message.getMetadata(LocalContextMetadata.class)
-                .map(LocalContextMetadata::context)
-                .orElse(null);
-        var otelContext = TracingMetadata.fromMessage(message)
-                .map(TracingMetadata::getCurrentContext)
-                .orElse(Context.current());
-        if (messageContext != null && otelContext != null) {
-            QuarkusContextStorage.INSTANCE.attach(messageContext, otelContext);
-        }
-        return message;
+    public @NonNull Uni<Message> get(@NonNull Message message) {
+        return Uni.createFrom().item(Unchecked.supplier(() -> {
+            var messageContext = message.getMetadata(LocalContextMetadata.class)
+                    .map(LocalContextMetadata::context)
+                    .orElse(null);
+            var otelContext = TracingMetadata.fromMessage(message)
+                    .map(TracingMetadata::getCurrentContext)
+                    .orElse(Context.current());
+            if (messageContext != null && otelContext != null) {
+                QuarkusContextStorage.INSTANCE.attach(messageContext, otelContext);
+            }
+            return message;
+        }));
     }
 }

@@ -1,20 +1,21 @@
 package io.quarkiverse.reactive.nats.jetstream.connection;
 
-import io.nats.client.*;
-import io.nats.client.ConnectionListener;
-import io.nats.client.ForceReconnectOptions;
-import io.nats.client.Options;
-import io.nats.client.api.ServerInfo;
-import io.nats.client.impl.Headers;
-import org.jspecify.annotations.NonNull;
-import org.jspecify.annotations.Nullable;
-
 import java.io.IOException;
 import java.net.InetAddress;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
+
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
+
+import io.nats.client.*;
+import io.nats.client.ConnectionListener;
+import io.nats.client.ForceReconnectOptions;
+import io.nats.client.Options;
+import io.nats.client.api.ServerInfo;
+import io.nats.client.impl.Headers;
 
 public record NativeConnectionDelegate(Connection delegate) implements NativeConnection {
 
@@ -70,19 +71,19 @@ public record NativeConnectionDelegate(Connection delegate) implements NativeCon
 
     @Override
     public @NonNull CompletableFuture<Message> request(@NonNull String subject, @Nullable Headers headers,
-                                                       byte @Nullable [] body) {
+            byte @Nullable [] body) {
         return delegate.request(subject, headers, body);
     }
 
     @Override
     public @NonNull CompletableFuture<Message> requestWithTimeout(@NonNull String subject, byte @Nullable [] body,
-                                                                  @Nullable Duration timeout) {
+            @Nullable Duration timeout) {
         return delegate.requestWithTimeout(subject, body, timeout);
     }
 
     @Override
     public @NonNull CompletableFuture<Message> requestWithTimeout(@NonNull String subject, @Nullable Headers headers,
-                                                                  byte @Nullable [] body, Duration timeout) {
+            byte @Nullable [] body, Duration timeout) {
         return delegate.requestWithTimeout(subject, headers, body, timeout);
     }
 
@@ -104,7 +105,7 @@ public record NativeConnectionDelegate(Connection delegate) implements NativeCon
 
     @Override
     public @Nullable Message request(@NonNull String subject, @Nullable Headers headers, byte @Nullable [] body,
-                                     @Nullable Duration timeout) throws InterruptedException {
+            @Nullable Duration timeout) throws InterruptedException {
         return delegate.request(subject, headers, body, timeout);
     }
 
@@ -237,7 +238,7 @@ public record NativeConnectionDelegate(Connection delegate) implements NativeCon
 
     @Override
     public @NonNull ConsumerContext getConsumerContext(@NonNull String streamName, @NonNull String consumerName,
-                                                       @Nullable JetStreamOptions options) throws IOException, JetStreamApiException {
+            @Nullable JetStreamOptions options) throws IOException, JetStreamApiException {
         return delegate.getConsumerContext(streamName, consumerName, options);
     }
 

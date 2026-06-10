@@ -1,11 +1,11 @@
 package io.quarkiverse.reactive.nats.consumer;
 
+import java.time.Duration;
+import java.util.concurrent.ExecutorService;
+
 import io.quarkiverse.reactive.nats.jetstream.Context;
 import io.quarkiverse.reactive.nats.jetstream.message.Message;
 import io.smallrye.mutiny.Uni;
-
-import java.time.Duration;
-import java.util.concurrent.ExecutorService;
 
 /**
  * @see io.nats.client.Subscription

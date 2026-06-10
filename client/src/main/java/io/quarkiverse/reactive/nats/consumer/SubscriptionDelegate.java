@@ -1,16 +1,16 @@
 package io.quarkiverse.reactive.nats.consumer;
 
+import java.time.Duration;
+import java.util.concurrent.ExecutorService;
+
 import io.quarkiverse.reactive.nats.jetstream.Context;
 import io.quarkiverse.reactive.nats.jetstream.message.Message;
 import io.quarkiverse.reactive.nats.jetstream.message.NativeMessage;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.unchecked.Unchecked;
 
-import java.time.Duration;
-import java.util.concurrent.ExecutorService;
-
 record SubscriptionDelegate(ImperativeSubscription delegate, Context context,
-                            ExecutorService executor) implements Subscription {
+        ExecutorService executor) implements Subscription {
 
     @Override
     public String getSubject() {
@@ -45,10 +45,10 @@ record SubscriptionDelegate(ImperativeSubscription delegate, Context context,
 
     @Override
     public Uni<Void> unsubscribe() {
-        return Uni.createFrom().<Void>item(Unchecked.supplier(() -> {
-                    delegate.unsubscribe();
-                    return null;
-                }))
+        return Uni.createFrom().<Void> item(Unchecked.supplier(() -> {
+            delegate.unsubscribe();
+            return null;
+        }))
                 .runSubscriptionOn(executor)
                 .emitOn(context::runOnContext);
     }
@@ -56,7 +56,8 @@ record SubscriptionDelegate(ImperativeSubscription delegate, Context context,
     @Override
     public Uni<Subscription> unsubscribe(int after) {
         return Uni.createFrom().item(Unchecked.supplier(() -> delegate.unsubscribe(after)))
-                .onItem().ifNotNull().transform(subscription -> Subscription.of(ImperativeSubscription.of(subscription), context, executor))
+                .onItem().ifNotNull()
+                .transform(subscription -> Subscription.of(ImperativeSubscription.of(subscription), context, executor))
                 .runSubscriptionOn(executor)
                 .emitOn(context::runOnContext);
     }

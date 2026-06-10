@@ -1,28 +1,34 @@
 package io.quarkiverse.reactive.nats.consumer;
 
-import org.jspecify.annotations.NonNull;
-import org.jspecify.annotations.Nullable;
-
 import java.time.Duration;
 import java.time.ZonedDateTime;
 import java.util.List;
+
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 
 /**
  * @see io.nats.client.api.ConsumerInfo
  */
 public interface ConsumerInfo {
 
-    @NonNull ConsumerConfiguration getConsumerConfiguration();
+    @NonNull
+    ConsumerConfiguration getConsumerConfiguration();
 
-    @NonNull String getName();
+    @NonNull
+    String getName();
 
-    @NonNull String getStreamName();
+    @NonNull
+    String getStreamName();
 
-    @NonNull ZonedDateTime getCreationTime();
+    @NonNull
+    ZonedDateTime getCreationTime();
 
-    @NonNull SequenceInfo getDelivered();
+    @NonNull
+    SequenceInfo getDelivered();
 
-    @NonNull SequenceInfo getAckFloor();
+    @NonNull
+    SequenceInfo getAckFloor();
 
     long getNumPending();
 
@@ -34,15 +40,19 @@ public interface ConsumerInfo {
 
     boolean getPaused();
 
-    @Nullable Duration getPauseRemaining();
+    @Nullable
+    Duration getPauseRemaining();
 
-    @Nullable ClusterInfo getClusterInfo();
+    @Nullable
+    ClusterInfo getClusterInfo();
 
     boolean isPushBound();
 
-    @Nullable ZonedDateTime getTimestamp();
+    @Nullable
+    ZonedDateTime getTimestamp();
 
-    @Nullable List<PriorityGroupState> getPriorityGroupStates();
+    @Nullable
+    List<PriorityGroupState> getPriorityGroupStates();
 
     long getCalculatedPending();
 

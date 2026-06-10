@@ -4,8 +4,10 @@ import org.jspecify.annotations.NonNull;
 
 public interface TracerFactory {
 
-    @NonNull Tracer publish();
+    @NonNull
+    Tracer publish();
 
-    @NonNull Tracer subscribe();
+    @NonNull
+    Tracer subscribe();
 
 }

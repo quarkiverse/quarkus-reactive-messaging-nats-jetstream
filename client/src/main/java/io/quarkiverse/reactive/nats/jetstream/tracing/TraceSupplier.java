@@ -1,10 +1,13 @@
 package io.quarkiverse.reactive.nats.jetstream.tracing;
 
-import io.quarkiverse.reactive.nats.jetstream.message.Message;
 import org.jspecify.annotations.NonNull;
+
+import io.quarkiverse.reactive.nats.jetstream.message.Message;
+import io.smallrye.mutiny.Uni;
 
 public interface TraceSupplier {
 
-    @NonNull Message get(@NonNull Message message);
+    @NonNull
+    Uni<Message> get(@NonNull Message message);
 
 }

@@ -1,10 +1,10 @@
 package io.quarkiverse.reactive.nats.jetstream.tracing.message;
 
+import java.util.List;
+
 import io.opentelemetry.context.propagation.TextMapSetter;
 import io.quarkiverse.reactive.nats.jetstream.message.Headers;
 import io.quarkiverse.reactive.nats.jetstream.message.Message;
-
-import java.util.List;
 
 public class HeadersTextMapSetter implements TextMapSetter<Message> {
 

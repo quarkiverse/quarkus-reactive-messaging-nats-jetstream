@@ -1,10 +1,10 @@
 package io.quarkiverse.reactive.nats.jetstream.connection;
 
+import static io.nats.client.Options.DEFAULT_RECONNECT_WAIT;
+
 import io.nats.client.ErrorListener;
 import io.nats.client.Nats;
 import io.nats.client.Options;
-
-import static io.nats.client.Options.DEFAULT_RECONNECT_WAIT;
 
 class DefaultNativeConnectionFactory implements NativeConnectionFactory {
 

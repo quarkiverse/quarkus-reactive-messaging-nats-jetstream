@@ -1,10 +1,10 @@
 package io.quarkiverse.reactive.nats.consumer;
 
+import java.util.concurrent.ExecutorService;
+
 import io.quarkiverse.reactive.nats.jetstream.Context;
 import io.quarkiverse.reactive.nats.jetstream.message.MessageHandler;
 import io.smallrye.mutiny.Uni;
-
-import java.util.concurrent.ExecutorService;
 
 /**
  * @see io.nats.client.Dispatcher
