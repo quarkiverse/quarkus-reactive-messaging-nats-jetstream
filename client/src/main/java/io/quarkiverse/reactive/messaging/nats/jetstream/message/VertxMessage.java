@@ -2,7 +2,7 @@ package io.quarkiverse.reactive.messaging.nats.jetstream.message;
 
 import io.smallrye.reactive.messaging.providers.helpers.VertxContext;
 import io.smallrye.reactive.messaging.providers.locals.LocalContextMetadata;
-import io.vertx.core.Context;
+import io.vertx.mutiny.core.Context;
 import org.jspecify.annotations.NonNull;
 
 import java.time.Duration;
@@ -49,7 +49,7 @@ final class VertxMessage implements Message {
 
     @Override
     public CompletionStage<Void> ack() {
-        return VertxContext.runOnContext(context, f -> {
+        return VertxContext.runOnContext(context.getDelegate(), f -> {
             try {
                 metadata.get(MessageConfiguration.class)
                         .flatMap(MessageConfiguration::acknowledgeTimeout)
@@ -69,7 +69,7 @@ final class VertxMessage implements Message {
 
     @Override
     public CompletionStage<Void> nack(Throwable reason, org.eclipse.microprofile.reactive.messaging.Metadata metadata) {
-        return VertxContext.runOnContext(context, f -> {
+        return VertxContext.runOnContext(context.getDelegate(), f -> {
             try {
                 final var configuration = metadata.get(MessageConfiguration.class)
                         .orElseThrow(IllegalStateException::new);

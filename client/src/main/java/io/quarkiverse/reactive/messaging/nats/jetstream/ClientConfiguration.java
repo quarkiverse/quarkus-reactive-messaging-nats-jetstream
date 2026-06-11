@@ -11,7 +11,7 @@ import java.util.concurrent.ExecutorService;
  * that interacts with a NATS messaging system. This interface provides access to configuration
  * details related to connections, message handling, and the execution environment.
  */
-public interface ClientConfiguration<T> {
+public interface ClientConfiguration {
 
     /**
      * Retrieves the {@link ConnectionConfiguration} associated with the client.
@@ -32,7 +32,7 @@ public interface ClientConfiguration<T> {
      * @return a non-null {@link MessageConfiguration} instance used for configuring and managing messages.
      */
     @NonNull
-    MessageConfiguration<T> message();
+    MessageConfiguration message();
 
     /**
      * Provides an {@link ExecutorService} instance used for asynchronous task execution.

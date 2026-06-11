@@ -4,6 +4,6 @@ import io.smallrye.mutiny.Uni;
 
 public interface ClientFactory {
 
-    <T> Uni<Client<T>> create(ClientConfiguration<T> configuration);
+    Uni<Client> create(ClientConfiguration configuration);
 
 }

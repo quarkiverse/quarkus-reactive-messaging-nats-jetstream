@@ -6,7 +6,6 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.connection.ConnectionCon
 import io.quarkiverse.reactive.messaging.nats.jetstream.connection.ConnectionListener;
 import io.quarkiverse.reactive.messaging.nats.jetstream.connection.ErrorListener;
 import io.quarkiverse.reactive.messaging.nats.jetstream.connection.NativeConnectionDelegate;
-import io.quarkiverse.reactive.nats.jetstream.connection.*;
 import io.quarkiverse.reactive.messaging.nats.jetstream.message.tracing.Operation;
 import io.quarkiverse.reactive.messaging.nats.jetstream.message.tracing.TracerFactory;
 import io.smallrye.mutiny.Uni;
@@ -24,17 +23,17 @@ public class VertxClientFactory implements ClientFactory {
     private final TracerFactory tracerFactory;
 
     @Override
-    public <T> Uni<Client<T>> create(ClientConfiguration<T> configuration) {
-        return Uni.createFrom().<Client<T>>item(Unchecked.supplier(() -> new VertxClient<>(
+    public Uni<Client> create(ClientConfiguration configuration) {
+        return Uni.createFrom().<Client>item(Unchecked.supplier(() -> new VertxClient(
                         configuration,
                         new NativeConnectionDelegate(Nats.connect(createConnectionOptions(configuration))),
-                        vertx,
+                        vertx.getOrCreateContext(),
                         tracerFactory.create(Operation.PUBLISH))))
                 .runSubscriptionOn(configuration.executorService())
                 .emitOn(this::runOnContext);
     }
 
-    private <T> Options createConnectionOptions(ClientConfiguration<T> configuration) throws Exception {
+    private Options createConnectionOptions(ClientConfiguration configuration) throws Exception {
         return createConnectionOptions(configuration.connection(), configuration.executorService());
     }
 
