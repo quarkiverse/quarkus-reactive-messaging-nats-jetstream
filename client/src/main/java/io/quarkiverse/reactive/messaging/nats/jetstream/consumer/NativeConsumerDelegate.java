@@ -1,48 +1,9 @@
-package io.quarkiverse.reactive.messaging.nats.consumer;
+package io.quarkiverse.reactive.messaging.nats.jetstream.consumer;
 
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 
-import io.nats.client.Dispatcher;
-import io.nats.client.Message;
-import io.nats.client.Subscription;
-
-record ImperativeSubscriptionDelegate(io.nats.client.Subscription delegate) implements ImperativeSubscription {
-
-    @Override
-    public String getSubject() {
-        return delegate.getSubject();
-    }
-
-    @Override
-    public String getQueueName() {
-        return delegate.getQueueName();
-    }
-
-    @Override
-    public Dispatcher getDispatcher() {
-        return delegate.getDispatcher();
-    }
-
-    @Override
-    public Message nextMessage(Duration timeout) throws InterruptedException, IllegalStateException {
-        return delegate.nextMessage(timeout);
-    }
-
-    @Override
-    public Message nextMessage(long timeoutMillis) throws InterruptedException, IllegalStateException {
-        return delegate.nextMessage(timeoutMillis);
-    }
-
-    @Override
-    public void unsubscribe() {
-        delegate.unsubscribe();
-    }
-
-    @Override
-    public Subscription unsubscribe(int after) {
-        return delegate.unsubscribe(after);
-    }
+record NativeConsumerDelegate(io.nats.client.Consumer delegate) implements NativeConsumer {
 
     @Override
     public void setPendingLimits(long maxMessages, long maxBytes) {

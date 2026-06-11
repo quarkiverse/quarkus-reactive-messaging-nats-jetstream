@@ -6,6 +6,7 @@ import java.util.concurrent.CompletableFuture;
 import io.nats.client.*;
 import io.nats.client.api.PublishAck;
 import io.nats.client.impl.Headers;
+import io.quarkiverse.reactive.messaging.nats.jetstream.consumer.NativeSubscription;
 
 record NativeJetStreamDelegate(io.nats.client.JetStream delegate) implements NativeJetStream {
 

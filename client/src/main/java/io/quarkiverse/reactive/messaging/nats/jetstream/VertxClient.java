@@ -1,8 +1,11 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream;
 
-import io.nats.client.JetStream;
+import io.nats.client.JetStreamStatusException;
 import io.nats.client.PublishOptions;
+import io.nats.client.PullSubscribeOptions;
 import io.quarkiverse.reactive.messaging.nats.jetstream.connection.NativeConnection;
+import io.quarkiverse.reactive.messaging.nats.jetstream.consumer.NativeConsumerContext;
+import io.quarkiverse.reactive.messaging.nats.jetstream.consumer.NativeSubscription;
 import io.quarkiverse.reactive.messaging.nats.jetstream.message.AcknowledgeMetadata;
 import io.quarkiverse.reactive.messaging.nats.jetstream.message.Headers;
 import io.quarkiverse.reactive.messaging.nats.jetstream.message.MessageConfiguration;
@@ -17,6 +20,7 @@ import lombok.extern.jbosslog.JBossLog;
 import org.eclipse.microprofile.reactive.messaging.Message;
 import org.jspecify.annotations.NonNull;
 
+import java.time.Duration;
 import java.util.UUID;
 
 @JBossLog
@@ -29,7 +33,7 @@ class VertxClient<T> implements Client<T> {
 
     @Override
     public @NonNull Uni<Message<T>> publish(@NonNull Message<T> message, @NonNull String stream, @NonNull String subject) {
-        return withMetadata(message, stream,subject)
+        return withMetadata(message, stream, subject)
                 .chain(publishTracer::withTrace)
                 .chain(this::publish)
                 .chain(this::acknowledge)
@@ -41,6 +45,13 @@ class VertxClient<T> implements Client<T> {
     @Override
     public @NonNull Multi<Message<T>> publish(@NonNull Multi<Message<T>> messages, @NonNull String stream, @NonNull String subject) {
         return messages.onItem().transformToUniAndMerge(message -> publish(message, stream, subject));
+    }
+
+    @Override
+    public @NonNull Uni<Message<T>> next(@NonNull String stream, @NonNull String consumer, @NonNull Duration timeout) {
+        return consumerContext(stream, consumer)
+                .chain(consumerContext -> next(consumerContext, timeout))
+                .onItem().ifNotNull().transform(message -> )
     }
 
     @Override
@@ -83,9 +94,9 @@ class VertxClient<T> implements Client<T> {
         }));
     }
 
-
-    private Uni<JetStream> jetStream() {
-        return Uni.createFrom().item(Unchecked.supplier(connection::jetStream));
+    private Uni<NativeJetStream> jetStream() {
+        return Uni.createFrom().item(Unchecked.supplier(connection::jetStream))
+                .map(NativeJetStreamDelegate::new);
     }
 
     private Uni<Message<T>> acknowledge(final Message<T> message) {
@@ -101,5 +112,33 @@ class VertxClient<T> implements Client<T> {
 
     private void runOnContext(Runnable action) {
         vertx.getOrCreateContext().runOnContext(action);
+    }
+
+    private Uni<NativeConsumerContext> consumerContext(final String stream, final String consumer) {
+        return jetStream()
+                .chain(jetStream -> Uni.createFrom().item(
+                        Unchecked.supplier(() -> jetStream.getConsumerContext(stream, consumer))))
+                .map(NativeConsumerContext::of);
+    }
+
+    private Uni<NativeSubscription> subscription(final String stream, final String consumer) {
+        return jetStream()
+                .chain(jetStream -> Uni.createFrom().item(
+                        Unchecked.supplier(() -> jetStream.subscribe(null, PullSubscribeOptions.bind(stream, consumer)))))
+                .map(NativeSubscription::of);
+    }
+
+    private Uni<io.nats.client.Message> next(final NativeConsumerContext consumerContext, final Duration timeout) {
+        return Uni.createFrom().emitter(emitter -> {
+            try {
+                emitter.complete(consumerContext.next(timeout));
+            } catch (JetStreamStatusException e) {
+                emitter.fail(e);
+            } catch (IllegalStateException | InterruptedException e) {
+                emitter.complete(null);
+            } catch (Exception e) {
+                emitter.fail(e);
+            }
+        });
     }
 }

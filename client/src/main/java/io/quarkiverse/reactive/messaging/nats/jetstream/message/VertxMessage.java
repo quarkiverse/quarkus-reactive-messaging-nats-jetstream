@@ -5,7 +5,6 @@ import io.smallrye.reactive.messaging.providers.helpers.VertxContext;
 import io.smallrye.reactive.messaging.providers.locals.ContextAwareMessage;
 import io.smallrye.reactive.messaging.providers.locals.LocalContextMetadata;
 import io.vertx.core.Context;
-import org.eclipse.microprofile.reactive.messaging.Message;
 import org.jspecify.annotations.NonNull;
 
 import java.time.Duration;
@@ -18,19 +17,16 @@ import java.util.function.Supplier;
 
 import static io.smallrye.reactive.messaging.providers.locals.ContextAwareMessage.captureContextMetadata;
 
-final class VertxMessage<T> implements Message<T>, ContextAwareMessage<T>, MetadataInjectableMessage<T> {
+final class VertxMessage implements Message<T>, ContextAwareMessage<T>, MetadataInjectableMessage<T> {
     private final NativeMessage message;
     private org.eclipse.microprofile.reactive.messaging.Metadata metadata;
     private final Context context;
-    private final T payload;
 
     public VertxMessage(@NonNull NativeMessage message,
-                        @NonNull Context context,
-                        @NonNull T payload) {
+                        @NonNull Context context) {
         this.message = message;
         this.metadata = captureContextMetadata();
         this.context = context;
-        this.payload = payload;
     }
 
     @Override
@@ -44,8 +40,8 @@ final class VertxMessage<T> implements Message<T>, ContextAwareMessage<T>, Metad
     }
 
     @Override
-    public T getPayload() {
-        return payload;
+    public byte[] getPayload() {
+        return message.getData();
     }
 
     @Override
