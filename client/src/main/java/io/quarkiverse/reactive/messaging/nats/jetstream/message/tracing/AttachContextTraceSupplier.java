@@ -1,8 +1,8 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.message.tracing;
 
+import io.quarkiverse.reactive.messaging.nats.jetstream.message.Message;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.unchecked.Unchecked;
-import org.eclipse.microprofile.reactive.messaging.Message;
 import org.jspecify.annotations.NonNull;
 
 import io.opentelemetry.context.Context;
@@ -16,11 +16,11 @@ import io.smallrye.reactive.messaging.providers.locals.LocalContextMetadata;
  * Consumer methods will be called in this duplicated context, so the OpenTelemetry context associated with the incoming
  * message will be propagated.
  */
-class AttachContextTraceSupplier<T> implements TraceSupplier<T> {
+class AttachContextTraceSupplier implements TraceSupplier {
 
     @SuppressWarnings("resource")
     @Override
-    public @NonNull Uni<Message<T>> get(@NonNull Message<T> message) {
+    public @NonNull Uni<Message> get(@NonNull Message message) {
         return Uni.createFrom().item(Unchecked.supplier(() -> {
             var messageContext = message.getMetadata(LocalContextMetadata.class)
                     .map(LocalContextMetadata::context)

@@ -1,7 +1,9 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.message;
 
+import org.jspecify.annotations.NonNull;
+
+import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -13,19 +15,23 @@ import java.util.Optional;
  * of headers, such as determining payload types, setting message types, and
  * accessing message IDs in a standardized way.
  */
-public interface Headers extends Map<String, List<String>>, Metadata {
-    String MESSAGE_TYPE_HEADER = "message.type";
+public final class Headers extends HashMap<String, List<String>> implements Metadata {
+    private final static String MESSAGE_TYPE_HEADER = "message.type";
 
-    static <T> Headers of(Class<T> type) {
-        final var result = new DefaultHeaders();
+    static <T> @NonNull Headers of(@NonNull Class<T> type) {
+        final var result = new Headers();
         result.put(MESSAGE_TYPE_HEADER, List.of(type.getName()));
         return result;
     }
 
-    static Headers of(io.nats.client.impl.Headers headers) {
-        final var result = new DefaultHeaders();
+    static @NonNull Headers of(io.nats.client.impl.@NonNull Headers headers) {
+        final var result = new Headers();
         headers.entrySet().forEach(entry -> result.put(entry.getKey(), entry.getValue()));
         return result;
+    }
+
+    private Headers() {
+        super();
     }
 
     /**
@@ -37,7 +43,7 @@ public interface Headers extends Map<String, List<String>>, Metadata {
      * @return a {@code io.nats.client.impl.Headers} object containing the entries
      *         from the current Headers instance.
      */
-    default io.nats.client.impl.Headers to() {
+    public io.nats.client.impl.Headers to() {
         final var result = new io.nats.client.impl.Headers();
         forEach(result::put);
         return result;
@@ -52,7 +58,7 @@ public interface Headers extends Map<String, List<String>>, Metadata {
      * @return an {@code Optional} containing the payload type as a {@code Class<T>} if
      *         present and successfully loaded, or an empty {@code Optional} otherwise
      */
-    default <T> Optional<Class<T>> payloadType() {
+    public <T> Optional<Class<T>> payloadType() {
         return Optional.ofNullable(get(MESSAGE_TYPE_HEADER)).map(List::getFirst).map(this::loadClass);
     }
 
@@ -63,7 +69,7 @@ public interface Headers extends Map<String, List<String>>, Metadata {
      *
      * @return an {@code Optional} containing the message ID if present, or an empty {@code Optional} otherwise
      */
-    default Optional<String> messageId() {
+    public Optional<String> messageId() {
         return Optional.ofNullable(get("Nats-Msg-Id")).map(List::getFirst);
     }
 
@@ -75,7 +81,7 @@ public interface Headers extends Map<String, List<String>>, Metadata {
      *
      * @param messageId the unique message identifier to be set in the headers
      */
-    default void setMessageId(String messageId) {
+    public void setMessageId(String messageId) {
         put("Nats-Msg-Id", List.of(messageId));
     }
 

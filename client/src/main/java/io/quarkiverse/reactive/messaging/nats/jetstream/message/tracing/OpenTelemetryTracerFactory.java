@@ -12,10 +12,10 @@ public class OpenTelemetryTracerFactory implements TracerFactory {
     private final Instance<OpenTelemetry> openTelemetryInstance;
 
     @Override
-    public @NonNull <T> Tracer<T> create(Operation operation) {
+    public @NonNull Tracer create(Operation operation) {
         return switch (operation) {
-            case PUBLISH -> new PublishTracer<>(openTelemetryInstance);
-            case RECEIVE -> new SubscribeTracer<>(openTelemetryInstance);
+            case PUBLISH -> new PublishTracer(openTelemetryInstance);
+            case RECEIVE -> new SubscribeTracer(openTelemetryInstance);
             case PROCESS -> null;
         };
     }

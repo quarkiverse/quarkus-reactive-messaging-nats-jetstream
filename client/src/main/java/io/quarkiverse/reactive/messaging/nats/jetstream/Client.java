@@ -1,6 +1,6 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream;
 
-import org.eclipse.microprofile.reactive.messaging.Message;
+import io.quarkiverse.reactive.messaging.nats.jetstream.message.Message;
 import org.jspecify.annotations.NonNull;
 
 import io.smallrye.mutiny.Multi;
@@ -8,16 +8,16 @@ import io.smallrye.mutiny.Uni;
 
 import java.time.Duration;
 
-public interface Client<T> extends AutoCloseable {
+public interface Client extends AutoCloseable {
 
     @NonNull
-    Uni<Message<T>> publish(@NonNull Message<T> message, @NonNull String stream, @NonNull String subject);
+    Uni<Message> publish(@NonNull Message message, @NonNull String stream, @NonNull String subject);
 
     @NonNull
-    Multi<Message<T>> publish(@NonNull Multi<Message<T>> messages, @NonNull String stream, @NonNull String subject);
+    Multi<Message> publish(@NonNull Multi<Message> messages, @NonNull String stream, @NonNull String subject);
 
     @NonNull
-    Uni<Message<T>> next(@NonNull String stream, @NonNull String consumer,  @NonNull Duration timeout);
+    Uni<Message> next(@NonNull String stream, @NonNull String consumer,  @NonNull Duration timeout);
 
     /**
     @NonNull

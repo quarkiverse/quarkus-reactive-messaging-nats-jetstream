@@ -6,39 +6,39 @@ import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
 import io.opentelemetry.instrumentation.api.instrumenter.Instrumenter;
 import io.opentelemetry.instrumentation.api.instrumenter.InstrumenterBuilder;
+import io.quarkiverse.reactive.messaging.nats.jetstream.message.Message;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.unchecked.Unchecked;
 import io.smallrye.reactive.messaging.TracingMetadata;
 import jakarta.enterprise.inject.Instance;
-import org.eclipse.microprofile.reactive.messaging.Message;
 import org.jspecify.annotations.NonNull;
 
-final class SubscribeTracer<T> implements Tracer<T> {
-    private final Instrumenter<Message<T>, Void> instrumenter;
-    private final TraceSupplier<T> traceSupplier;
+final class SubscribeTracer implements Tracer {
+    private final Instrumenter<Message, Void> instrumenter;
+    private final TraceSupplier traceSupplier;
 
     SubscribeTracer(Instance<OpenTelemetry> openTelemetryInstance) {
         this.instrumenter = instrumenter(openTelemetryInstance);
-        this.traceSupplier = new AttachContextTraceSupplier<>();
+        this.traceSupplier = new AttachContextTraceSupplier();
     }
 
     @Override
-    public @NonNull Uni<Message<T>> withTrace(@NonNull Message<T> message) {
+    public @NonNull Uni<Message> withTrace(@NonNull Message message) {
         return Uni.createFrom().item(Unchecked.supplier(() -> traceIncoming(instrumenter, message)))
                 .chain(traceSupplier::get);
     }
 
-    private Instrumenter<Message<T>, Void> instrumenter(Instance<OpenTelemetry> openTelemetryInstance) {
-        final var attributesExtractor = new MessageAttributesExtractor<T>(Operation.RECEIVE);
-        InstrumenterBuilder<Message<T>, Void> builder = Instrumenter.builder(
+    private Instrumenter<Message, Void> instrumenter(Instance<OpenTelemetry> openTelemetryInstance) {
+        final var attributesExtractor = new MessageAttributesExtractor(Operation.RECEIVE);
+        InstrumenterBuilder<Message, Void> builder = Instrumenter.builder(
                 getOpenTelemetry(openTelemetryInstance),
                 "io.smallrye.reactive.messaging.jetstream",
-                new MessageSpanNameExtractor<>(Operation.RECEIVE));
+                new MessageSpanNameExtractor(Operation.RECEIVE));
         return builder.addAttributesExtractor(attributesExtractor)
-                .buildConsumerInstrumenter(new MessageHeadersTextMapGetter<>());
+                .buildConsumerInstrumenter(new MessageHeadersTextMapGetter());
     }
 
-    private Message<T> traceIncoming(Instrumenter<Message<T>, Void> instrumenter, Message<T> message) {
+    private Message traceIncoming(Instrumenter<Message, Void> instrumenter, Message message) {
         TracingMetadata tracingMetadata = TracingMetadata.fromMessage(message).orElse(TracingMetadata.empty());
         Context parentContext = tracingMetadata.getPreviousContext();
         if (parentContext == null) {
@@ -52,7 +52,7 @@ final class SubscribeTracer<T> implements Tracer<T> {
                 TracingMetadata newTracingMetadata = TracingMetadata.with(spanContext, parentContext);
                 final var msg = message.addMetadata(newTracingMetadata);
                 instrumenter.end(spanContext, message, null, null);
-                return msg;
+                return (Message) msg;
             }
         }
         return message;

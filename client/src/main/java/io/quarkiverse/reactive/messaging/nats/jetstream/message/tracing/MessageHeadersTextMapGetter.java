@@ -6,12 +6,12 @@ import java.util.Optional;
 
 import io.opentelemetry.context.propagation.TextMapGetter;
 import io.quarkiverse.reactive.messaging.nats.jetstream.message.Headers;
-import org.eclipse.microprofile.reactive.messaging.Message;
+import io.quarkiverse.reactive.messaging.nats.jetstream.message.Message;
 
-class MessageHeadersTextMapGetter<T> implements TextMapGetter<Message<T>> {
+class MessageHeadersTextMapGetter implements TextMapGetter<Message> {
 
     @Override
-    public Iterable<String> keys(Message<T> message) {
+    public Iterable<String> keys(Message message) {
         if (message != null) {
             return message.getMetadata(Headers.class)
                     .map(Map::keySet).orElseGet(Collections::emptySet);
@@ -20,7 +20,7 @@ class MessageHeadersTextMapGetter<T> implements TextMapGetter<Message<T>> {
     }
 
     @Override
-    public String get(Message<T> message, String key) {
+    public String get(Message message, String key) {
         if (message != null) {
             return message.getMetadata(Headers.class)
                     .flatMap(headers -> Optional.ofNullable(headers.get(key)))

@@ -1,8 +1,6 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.message;
 
-import io.smallrye.reactive.messaging.providers.MetadataInjectableMessage;
 import io.smallrye.reactive.messaging.providers.helpers.VertxContext;
-import io.smallrye.reactive.messaging.providers.locals.ContextAwareMessage;
 import io.smallrye.reactive.messaging.providers.locals.LocalContextMetadata;
 import io.vertx.core.Context;
 import org.jspecify.annotations.NonNull;
@@ -17,7 +15,7 @@ import java.util.function.Supplier;
 
 import static io.smallrye.reactive.messaging.providers.locals.ContextAwareMessage.captureContextMetadata;
 
-final class VertxMessage implements Message<T>, ContextAwareMessage<T>, MetadataInjectableMessage<T> {
+final class VertxMessage implements Message {
     private final NativeMessage message;
     private org.eclipse.microprofile.reactive.messaging.Metadata metadata;
     private final Context context;
@@ -49,14 +47,12 @@ final class VertxMessage implements Message<T>, ContextAwareMessage<T>, Metadata
         return this::ack;
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     public CompletionStage<Void> ack() {
         return VertxContext.runOnContext(context, f -> {
             try {
-                final var configuration = metadata.get(MessageConfiguration.class)
-                        .map(c -> (MessageConfiguration<T>) c);
-                configuration.flatMap(MessageConfiguration::acknowledgeTimeout)
+                metadata.get(MessageConfiguration.class)
+                        .flatMap(MessageConfiguration::acknowledgeTimeout)
                         .ifPresentOrElse(timeout -> {
                             try {
                                 message.ackSync(timeout);
@@ -71,13 +67,11 @@ final class VertxMessage implements Message<T>, ContextAwareMessage<T>, Metadata
         });
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     public CompletionStage<Void> nack(Throwable reason, org.eclipse.microprofile.reactive.messaging.Metadata metadata) {
         return VertxContext.runOnContext(context, f -> {
             try {
                 final var configuration = metadata.get(MessageConfiguration.class)
-                        .map(c -> (MessageConfiguration<T>) c)
                         .orElseThrow(IllegalStateException::new);
                 final var subscribeMetadata = metadata.get(SubscribeMetadata.class)
                         .orElseThrow(IllegalStateException::new);
@@ -106,25 +100,25 @@ final class VertxMessage implements Message<T>, ContextAwareMessage<T>, Metadata
     }
 
     @Override
-    public org.eclipse.microprofile.reactive.messaging.Message<T> addMetadata(Object metadata) {
+    public Message addMetadata(Object metadata) {
         this.metadata = this.metadata.with(metadata);
         return this;
     }
 
     @Override
-    public org.eclipse.microprofile.reactive.messaging.Message<T> withMetadata(Iterable<Object> metadata) {
+    public Message withMetadata(Iterable<Object> metadata) {
         this.metadata = this.metadata.with(metadata);
         return this;
     }
 
     @Override
-    public org.eclipse.microprofile.reactive.messaging.Message<T> withMetadata(
+    public Message withMetadata(
             org.eclipse.microprofile.reactive.messaging.Metadata metadata) {
         this.metadata = this.metadata.with(metadata);
         return this;
     }
 
-    private Optional<Duration> getBackoff(@NonNull MessageConfiguration<T> messageConfiguration, @NonNull SubscribeMetadata metadata) {
+    private Optional<Duration> getBackoff(@NonNull MessageConfiguration messageConfiguration, @NonNull SubscribeMetadata metadata) {
         if (messageConfiguration.backoff().isEmpty()) {
             return Optional.empty();
         } else if (metadata.deliveredCount() == 0) {

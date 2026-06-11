@@ -6,7 +6,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 
-public interface MessageConfiguration<T> extends Metadata {
+public interface MessageConfiguration extends Metadata {
 
     /**
      * Retrieves an optional {@code Duration} that specifies the timeout for acknowledging messages.
@@ -24,12 +24,4 @@ public interface MessageConfiguration<T> extends Metadata {
     @NonNull
     List<Duration> backoff();
 
-    /**
-     * Retrieves an instance of {@code PayloadMapper} associated with the message configuration.
-     * The {@code PayloadMapper} is responsible for converting objects to byte arrays and
-     * deserializing byte arrays back into objects, facilitating the handling of message payloads.
-     *
-     * @return an instance of {@code PayloadMapper} for transforming message payloads.
-     */
-    PayloadMapper<T> payloadMapper();
 }

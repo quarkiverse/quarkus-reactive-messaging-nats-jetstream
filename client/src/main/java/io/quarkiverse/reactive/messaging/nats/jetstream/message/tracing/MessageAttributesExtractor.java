@@ -6,15 +6,11 @@ import io.opentelemetry.context.Context;
 import io.opentelemetry.instrumentation.api.instrumenter.AttributesExtractor;
 import io.opentelemetry.instrumentation.api.internal.SpanKey;
 import io.opentelemetry.instrumentation.api.internal.SpanKeyProvider;
-import io.quarkiverse.reactive.messaging.nats.jetstream.message.Headers;
-import io.quarkiverse.reactive.messaging.nats.jetstream.message.MessageConfiguration;
-import io.quarkiverse.reactive.messaging.nats.jetstream.message.PublishMetadata;
-import io.quarkiverse.reactive.messaging.nats.jetstream.message.SubscribeMetadata;
-import org.eclipse.microprofile.reactive.messaging.Message;
+import io.quarkiverse.reactive.messaging.nats.jetstream.message.*;
 
 import java.nio.charset.StandardCharsets;
 
-class MessageAttributesExtractor<T> implements AttributesExtractor<Message<T>, Void>, SpanKeyProvider {
+class MessageAttributesExtractor implements AttributesExtractor<Message, Void>, SpanKeyProvider {
     private final static AttributeKey<String> MESSAGING_DESTINATION_NAME = AttributeKey.stringKey("messaging.destination.name");
     private final static AttributeKey<String> MESSAGING_MESSAGE_ID = AttributeKey.stringKey("messaging.message.id");
     private final static AttributeKey<String> MESSAGING_OPERATION = AttributeKey.stringKey("messaging.operation");
@@ -36,12 +32,11 @@ class MessageAttributesExtractor<T> implements AttributesExtractor<Message<T>, V
     }
 
     @Override
-    public void onStart(AttributesBuilder attributes, Context parentContext, Message<T> message) {
+    public void onStart(AttributesBuilder attributes, Context parentContext, Message message) {
         attributes.put(MESSAGING_SYSTEM, "jetstream");
         attributes.put(MESSAGING_DESTINATION_NAME, getDestination(message));
         attributes.put(MESSAGING_OPERATION, operation.toString());
-        message.getMetadata(MessageConfiguration.class)
-                .ifPresent(metadata -> attributes.put(MESSAGING_MESSAGE_PAYLOAD, new String(metadata.payloadMapper().toBytes(message.getPayload()), StandardCharsets.UTF_8)));
+        attributes.put(MESSAGING_MESSAGE_PAYLOAD, new String(message.getPayload(), StandardCharsets.UTF_8));
         message.getMetadata(PublishMetadata.class).ifPresent(metadata -> {
             attributes.put(MESSAGING_STREAM, metadata.stream());
             attributes.put(MESSAGING_SUBJECT, metadata.subject());
@@ -62,7 +57,7 @@ class MessageAttributesExtractor<T> implements AttributesExtractor<Message<T>, V
     public void onEnd(
             AttributesBuilder attributes,
             Context context,
-            Message<T> request,
+            Message request,
             Void response,
             Throwable error) {
         attributes.put(MESSAGING_MESSAGE_ID, getMessageId(request));
@@ -84,11 +79,11 @@ class MessageAttributesExtractor<T> implements AttributesExtractor<Message<T>, V
         };
     }
 
-    private String getDestination(Message<T> message) {
+    private String getDestination(Message message) {
         return message.getMetadata(PublishMetadata.class).map(metadata -> String.format("%s.%s", metadata.stream(), metadata.subject())).orElse("");
     }
 
-    private String getMessageId(Message<T> message) {
+    private String getMessageId(Message message) {
         return message.getMetadata(Headers.class)
                 .flatMap(Headers::messageId).orElse("");
     }
