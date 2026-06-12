@@ -15,7 +15,7 @@ public class OpenTelemetryTracerFactory implements TracerFactory {
     public @NonNull Tracer create(Operation operation) {
         return switch (operation) {
             case PUBLISH -> new PublishTracer(openTelemetryInstance);
-            case RECEIVE -> new SubscribeTracer(openTelemetryInstance);
+            case RECEIVE -> new ConsumerTracer(openTelemetryInstance);
             case PROCESS -> null;
         };
     }

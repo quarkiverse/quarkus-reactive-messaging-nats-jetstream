@@ -1,8 +1,8 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.message.tracing;
 
 import io.opentelemetry.instrumentation.api.instrumenter.SpanNameExtractor;
+import io.quarkiverse.reactive.messaging.nats.jetstream.message.Headers;
 import io.quarkiverse.reactive.messaging.nats.jetstream.message.Message;
-import io.quarkiverse.reactive.messaging.nats.jetstream.message.PublishMetadata;
 
 record MessageSpanNameExtractor(Operation operation) implements SpanNameExtractor<Message> {
 
@@ -13,8 +13,8 @@ record MessageSpanNameExtractor(Operation operation) implements SpanNameExtracto
     }
 
     private String getDestination(Message message) {
-        return message.getMetadata(PublishMetadata.class)
-                .map(metadata -> String.format("%s.%s", metadata.stream(), metadata.subject()))
-                .orElseThrow(() -> new RuntimeException("Publish metadata not found"));
+        return message.getMetadata(Headers.class)
+                .map(metadata -> String.format("%s.%s", metadata.stream().orElse(""), metadata.subject().orElse("")))
+                .orElseThrow(() -> new RuntimeException("Headers not found"));
     }
 }

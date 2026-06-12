@@ -17,6 +17,8 @@ import java.util.Optional;
  */
 public final class Headers extends HashMap<String, List<String>> implements Metadata {
     private final static String MESSAGE_TYPE_HEADER = "message.type";
+    private final static String MESSAGE_SUBJECT_HEADER = "message.subject";
+    private final static String MESSAGE_STREAM_HEADER = "message.stream";
 
     static <T> @NonNull Headers of(@NonNull Class<T> type) {
         final var result = new Headers();
@@ -30,7 +32,7 @@ public final class Headers extends HashMap<String, List<String>> implements Meta
         return result;
     }
 
-    private Headers() {
+    Headers() {
         super();
     }
 
@@ -83,6 +85,22 @@ public final class Headers extends HashMap<String, List<String>> implements Meta
      */
     public void setMessageId(String messageId) {
         put("Nats-Msg-Id", List.of(messageId));
+    }
+
+    public @NonNull Optional<String> stream() {
+        return Optional.ofNullable(get(MESSAGE_STREAM_HEADER)).map(List::getFirst);
+    }
+
+    public void setStream(String stream) {
+        put(MESSAGE_STREAM_HEADER, List.of(stream));
+    }
+
+    public @NonNull Optional<String> subject() {
+        return Optional.ofNullable(get(MESSAGE_SUBJECT_HEADER)).map(List::getFirst);
+    }
+
+    public void setSubject(String subject) {
+        put(MESSAGE_SUBJECT_HEADER, List.of(subject));
     }
 
     @SuppressWarnings("unchecked")

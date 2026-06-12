@@ -6,7 +6,7 @@ import io.opentelemetry.context.propagation.TextMapSetter;
 import io.quarkiverse.reactive.messaging.nats.jetstream.message.Headers;
 import io.quarkiverse.reactive.messaging.nats.jetstream.message.Message;
 
-class HeadersTextMapSetter<T> implements TextMapSetter<Message> {
+class HeadersTextMapSetter implements TextMapSetter<Message> {
 
     @Override
     public void set(Message message, final String key, final String value) {

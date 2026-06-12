@@ -13,11 +13,11 @@ import io.smallrye.reactive.messaging.TracingMetadata;
 import jakarta.enterprise.inject.Instance;
 import org.jspecify.annotations.NonNull;
 
-final class SubscribeTracer implements Tracer {
+final class ConsumerTracer implements Tracer {
     private final Instrumenter<Message, Void> instrumenter;
     private final TraceSupplier traceSupplier;
 
-    SubscribeTracer(Instance<OpenTelemetry> openTelemetryInstance) {
+    ConsumerTracer(Instance<OpenTelemetry> openTelemetryInstance) {
         this.instrumenter = instrumenter(openTelemetryInstance);
         this.traceSupplier = new AttachContextTraceSupplier();
     }

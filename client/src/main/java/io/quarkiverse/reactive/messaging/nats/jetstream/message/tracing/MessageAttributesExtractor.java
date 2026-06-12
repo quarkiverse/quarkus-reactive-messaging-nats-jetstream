@@ -6,6 +6,7 @@ import io.opentelemetry.context.Context;
 import io.opentelemetry.instrumentation.api.instrumenter.AttributesExtractor;
 import io.opentelemetry.instrumentation.api.internal.SpanKey;
 import io.opentelemetry.instrumentation.api.internal.SpanKeyProvider;
+import io.quarkiverse.reactive.messaging.nats.jetstream.consumer.ConsumerMetadata;
 import io.quarkiverse.reactive.messaging.nats.jetstream.message.*;
 
 import java.nio.charset.StandardCharsets;
@@ -37,14 +38,12 @@ class MessageAttributesExtractor implements AttributesExtractor<Message, Void>, 
         attributes.put(MESSAGING_DESTINATION_NAME, getDestination(message));
         attributes.put(MESSAGING_OPERATION, operation.toString());
         attributes.put(MESSAGING_MESSAGE_PAYLOAD, new String(message.getPayload(), StandardCharsets.UTF_8));
-        message.getMetadata(PublishMetadata.class).ifPresent(metadata -> {
-            attributes.put(MESSAGING_STREAM, metadata.stream());
-            attributes.put(MESSAGING_SUBJECT, metadata.subject());
-        });
         message.getMetadata(Headers.class).ifPresent(metadata -> {
             attributes.put(MESSAGING_MESSAGE_TYPE, metadata.payloadType().map(Class::toString).orElse(""));
+            attributes.put(MESSAGING_STREAM, metadata.stream().orElse(""));
+            attributes.put(MESSAGING_SUBJECT, metadata.subject().orElse(""));
         });
-        message.getMetadata(SubscribeMetadata.class).ifPresent(metadata -> {
+        message.getMetadata(ConsumerMetadata.class).ifPresent(metadata -> {
             attributes.put(MESSAGING_STREAM_SEQUENCE, metadata.streamSequence());
             attributes.put(MESSAGING_CONSUMER_SEQUENCE, metadata.consumerSequence());
             attributes.put(MESSAGING_CONSUMER, metadata.consumer());
@@ -80,7 +79,7 @@ class MessageAttributesExtractor implements AttributesExtractor<Message, Void>, 
     }
 
     private String getDestination(Message message) {
-        return message.getMetadata(PublishMetadata.class).map(metadata -> String.format("%s.%s", metadata.stream(), metadata.subject())).orElse("");
+        return message.getMetadata(Headers.class).map(metadata -> String.format("%s.%s", metadata.stream().orElse(""), metadata.subject().orElse(""))).orElse("");
     }
 
     private String getMessageId(Message message) {

@@ -6,8 +6,10 @@ import io.nats.client.PullSubscribeOptions;
 import io.quarkiverse.reactive.messaging.nats.jetstream.connection.NativeConnection;
 import io.quarkiverse.reactive.messaging.nats.jetstream.consumer.NativeConsumerContext;
 import io.quarkiverse.reactive.messaging.nats.jetstream.consumer.NativeSubscription;
+import io.quarkiverse.reactive.messaging.nats.jetstream.consumer.SubscriptionWorkerThread;
 import io.quarkiverse.reactive.messaging.nats.jetstream.message.*;
 import io.quarkiverse.reactive.messaging.nats.jetstream.message.tracing.Tracer;
+import io.quarkiverse.reactive.messaging.nats.jetstream.stream.NativeStreamContext;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.unchecked.Unchecked;
@@ -15,9 +17,13 @@ import io.vertx.mutiny.core.Context;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.jbosslog.JBossLog;
 import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 
 import java.time.Duration;
+import java.util.Objects;
 import java.util.UUID;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 @JBossLog
 @RequiredArgsConstructor
@@ -26,9 +32,10 @@ class VertxClient implements Client {
     private final NativeConnection connection;
     private final Context context;
     private final Tracer publishTracer;
+    private final Tracer consumerTracer;
 
     @Override
-    public @NonNull Uni<Message> publish(@NonNull Message message, @NonNull String stream, @NonNull String subject) {
+    public @NonNull Uni<Message> publish(@NonNull final Message message, @NonNull final String stream, @NonNull final String subject) {
         return withMetadata(message, stream, subject)
                 .chain(publishTracer::withTrace)
                 .chain(this::publish)
@@ -39,18 +46,53 @@ class VertxClient implements Client {
     }
 
     @Override
-    public @NonNull Multi<Message> publish(@NonNull Multi<Message> messages, @NonNull String stream, @NonNull String subject) {
+    public @NonNull Multi<Message> publish(@NonNull final Multi<Message> messages, @NonNull final String stream, @NonNull final String subject) {
         return messages.onItem().transformToUniAndMerge(message -> publish(message, stream, subject));
     }
 
     @Override
-    public @NonNull Uni<Message> next(@NonNull String stream, @NonNull String consumer, @NonNull Duration timeout) {
+    public @NonNull Uni<Message> next(@NonNull final String stream, @NonNull final String consumer, @NonNull final Duration timeout) {
         return consumerContext(stream, consumer)
                 .chain(consumerContext -> next(consumerContext, timeout))
                 .onItem().ifNotNull().transform(NativeMessage::of)
                 .onItem().ifNotNull().transform(message -> Message.of(message, context))
                 .runSubscriptionOn(configuration.executorService())
                 .emitOn(this::runOnContext);
+    }
+
+    @Override
+    public @NonNull Multi<Message> fetch(@NonNull final String stream, @NonNull final String consumer, @NonNull final Duration timeout, final int batchSize) {
+        return subscription(stream, consumer)
+                .onItem().transformToMulti(subscription -> fetch(subscription, timeout, batchSize))
+                .onItem().transform(message -> Message.of(message, context))
+                .onItem().transformToUniAndMerge(consumerTracer::withTrace)
+                .runSubscriptionOn(configuration.executorService())
+                .emitOn(this::runOnContext);
+    }
+
+    @Override
+    public @NonNull Uni<MessageInfo> messageInfo(@NonNull final String stream, final long sequence) {
+        return streamContext(stream)
+                .chain(streamContext -> Uni.createFrom().item(Unchecked.supplier(() -> streamContext.getMessage(sequence))))
+                .map(MessageInfo::of)
+                .runSubscriptionOn(configuration.executorService())
+                .emitOn(this::runOnContext);
+    }
+
+    @Override
+    public @NonNull Multi<Message> subscribe(@NonNull final String stream, @NonNull final String consumer, @NonNull final Duration timeout, final int batchSize) {
+        final ExecutorService executorService = Executors.newSingleThreadExecutor(SubscriptionWorkerThread::new);
+        return subscription(stream, consumer)
+                .onItem().transformToMulti(subscription -> Multi.createBy().repeating()
+                        .uni(() -> Uni.createFrom().item(42))
+                        .whilst(v -> true)
+                        .onItem().transformToMultiAndConcatenate(v -> fetch(subscription, timeout, batchSize)))
+                .select().where(Objects::nonNull)
+                .onItem().transform(message -> Message.of(message, context))
+                .onItem().transformToUniAndMerge(consumerTracer::withTrace)
+                .runSubscriptionOn(executorService)
+                .emitOn(this::runOnContext)
+                .onTermination().invoke(executorService::shutdown);
     }
 
     @Override
@@ -61,15 +103,14 @@ class VertxClient implements Client {
     private Uni<Message> publish(final Message message) {
         return jetStream()
                 .chain(jetStream -> Uni.createFrom().item(Unchecked.supplier(() -> {
-                    final var publishMetadata = message.getMetadata(PublishMetadata.class).orElseThrow(() -> new RuntimeException("PublishMetadata is required"));
-                    final var headers = message.getMetadata(Headers.class).orElseThrow(() -> new RuntimeException("Headers is required"));
+                    final var headers = message.getMetadata(Headers.class).orElseThrow(() -> new IllegalArgumentException("Headers is required"));
                     return jetStream.publish(
-                            publishMetadata.subject(),
+                            headers.subject().orElseThrow(() -> new IllegalArgumentException("Subject header is required")),
                             headers.to(),
                             message.getPayload(),
                             PublishOptions.builder()
-                                    .messageId(headers.messageId().orElseThrow(() -> new RuntimeException("MessageId is required")))
-                                    .expectedStream(publishMetadata.stream())
+                                    .messageId(headers.messageId().orElseThrow(() -> new IllegalArgumentException("MessageId is required")))
+                                    .expectedStream(headers.stream().orElseThrow(() -> new IllegalArgumentException("Stream header is required")))
                                     .build());
                 })))
                 .map(Unchecked.function(publishAck -> {
@@ -80,14 +121,13 @@ class VertxClient implements Client {
 
     private Uni<Message> withMetadata(final Message message, final String stream, final String subject) {
         return Uni.createFrom().item(Unchecked.supplier(() -> {
-            final var publishMetadata = PublishMetadata.of(stream, subject);
-            final var headers = message.getMetadata(Headers.class).orElseThrow(() -> new RuntimeException("Headers is required"));
+            final var headers = message.getMetadata(Headers.class).orElseThrow(() -> new IllegalArgumentException("Headers is required"));
             if (headers.messageId().isEmpty()) {
                 headers.setMessageId(UUID.randomUUID().toString());
             }
-            return (Message) message.addMetadata(publishMetadata)
-                    .addMetadata(configuration.message())
-                    .addMetadata(headers);
+            headers.setStream(stream);
+            headers.setSubject(subject);
+            return (Message) message.addMetadata(configuration.message()).addMetadata(headers);
         }));
     }
 
@@ -137,5 +177,28 @@ class VertxClient implements Client {
                 emitter.fail(e);
             }
         });
+    }
+
+    private Multi<NativeMessage> fetch(final NativeSubscription subscription, @Nullable final Duration timeout, final int batchSize) {
+        return Multi.createFrom().<io.nats.client.Message>emitter(emitter -> {
+                    try {
+                        final var iterator = subscription.iterate(batchSize, timeout);
+                        while (iterator.hasNext()) {
+                            emitter.emit(iterator.next());
+                        }
+                        emitter.complete();
+                    } catch (IllegalStateException e) {
+                        emitter.complete(); // when the connection is closed
+                    } catch (Exception failure) {
+                        emitter.fail(failure);
+                    }
+                })
+                .onItem().transform(NativeMessage::of);
+    }
+
+    private Uni<NativeStreamContext> streamContext(@NonNull final String streamName) {
+        return jetStream()
+                .chain(jetStream -> Uni.createFrom().item(Unchecked.supplier(() -> jetStream.getStreamContext(streamName))))
+                .map(NativeStreamContext::of);
     }
 }

@@ -52,7 +52,7 @@ final class PublishTracer implements Tracer {
                 "io.smallrye.reactive.messaging.jetstream",
                 new MessageSpanNameExtractor(Operation.PUBLISH));
         return builder.addAttributesExtractor(attributesExtractor)
-                .buildProducerInstrumenter(new HeadersTextMapSetter<>());
+                .buildProducerInstrumenter(new HeadersTextMapSetter());
     }
 
     private Message traceOutgoing(Instrumenter<Message, Void> instrumenter, Message message) {

@@ -1,5 +1,6 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.message;
 
+import io.quarkiverse.reactive.messaging.nats.jetstream.consumer.ConsumerMetadata;
 import io.smallrye.reactive.messaging.providers.helpers.VertxContext;
 import io.smallrye.reactive.messaging.providers.locals.LocalContextMetadata;
 import io.vertx.mutiny.core.Context;
@@ -73,7 +74,7 @@ final class VertxMessage implements Message {
             try {
                 final var configuration = metadata.get(MessageConfiguration.class)
                         .orElseThrow(IllegalStateException::new);
-                final var subscribeMetadata = metadata.get(SubscribeMetadata.class)
+                final var subscribeMetadata = metadata.get(ConsumerMetadata.class)
                         .orElseThrow(IllegalStateException::new);
                 getBackoff(configuration, subscribeMetadata)
                         .ifPresentOrElse(message::nakWithDelay, message::nak);
@@ -118,7 +119,7 @@ final class VertxMessage implements Message {
         return this;
     }
 
-    private Optional<Duration> getBackoff(@NonNull MessageConfiguration messageConfiguration, @NonNull SubscribeMetadata metadata) {
+    private Optional<Duration> getBackoff(@NonNull MessageConfiguration messageConfiguration, @NonNull ConsumerMetadata metadata) {
         if (messageConfiguration.backoff().isEmpty()) {
             return Optional.empty();
         } else if (metadata.deliveredCount() == 0) {

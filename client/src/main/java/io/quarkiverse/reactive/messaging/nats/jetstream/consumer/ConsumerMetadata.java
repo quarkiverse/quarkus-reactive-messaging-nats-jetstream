@@ -1,10 +1,11 @@
-package io.quarkiverse.reactive.messaging.nats.jetstream.message;
+package io.quarkiverse.reactive.messaging.nats.jetstream.consumer;
 
+import io.quarkiverse.reactive.messaging.nats.jetstream.message.Metadata;
 import org.jspecify.annotations.NonNull;
 
 import java.time.ZonedDateTime;
 
-public interface SubscribeMetadata extends Metadata {
+public interface ConsumerMetadata extends Metadata {
 
     @NonNull
     Integer deliveredCount();

@@ -1,10 +1,10 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream;
 
 import io.quarkiverse.reactive.messaging.nats.jetstream.message.Message;
-import org.jspecify.annotations.NonNull;
-
+import io.quarkiverse.reactive.messaging.nats.jetstream.message.MessageInfo;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
+import org.jspecify.annotations.NonNull;
 
 import java.time.Duration;
 
@@ -19,14 +19,12 @@ public interface Client extends AutoCloseable {
     @NonNull
     Uni<Message> next(@NonNull String stream, @NonNull String consumer,  @NonNull Duration timeout);
 
-    /**
     @NonNull
-    Multi<Message<T>> fetch(@NonNull ConsumerConfiguration configuration, @NonNull FetchConfiguration fetchConfiguration);
+    Multi<Message> fetch(@NonNull String stream, @NonNull String consumer, @NonNull Duration timeout, int batchSize);
+
+     @NonNull
+    Uni<MessageInfo> messageInfo(@NonNull String stream, long sequence);
 
     @NonNull
-    Uni<Message<T>> resolve(@NonNull String stream, long sequence);
-
-    @NonNull
-    Multi<Message<T>> subscribe(@NonNull ConsumerConfiguration configuration, @NonNull PullConfiguration pullConfiguration);
-*/
+    Multi<Message> subscribe(@NonNull String stream, @NonNull String consumer, @NonNull Duration timeout, int batchSize);
 }
