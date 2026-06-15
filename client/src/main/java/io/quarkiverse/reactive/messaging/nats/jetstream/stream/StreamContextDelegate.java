@@ -11,7 +11,7 @@ import org.jspecify.annotations.Nullable;
 import java.io.IOException;
 import java.util.List;
 
-public record NativeStreamContextDelegate(io.nats.client.StreamContext delegate) implements NativeStreamContext {
+public record StreamContextDelegate(io.nats.client.StreamContext delegate) implements StreamContext {
 
     @Override
     public @NonNull String getStreamName() {
@@ -19,12 +19,12 @@ public record NativeStreamContextDelegate(io.nats.client.StreamContext delegate)
     }
 
     @Override
-    public @NonNull StreamInfo getStreamInfo() throws IOException, JetStreamApiException {
+    public  io.nats.client.api.@NonNull StreamInfo getStreamInfo() throws IOException, JetStreamApiException {
         return delegate.getStreamInfo();
     }
 
     @Override
-    public @NonNull StreamInfo getStreamInfo(@Nullable StreamInfoOptions options) throws IOException, JetStreamApiException {
+    public io.nats.client.api.@NonNull StreamInfo getStreamInfo(@Nullable StreamInfoOptions options) throws IOException, JetStreamApiException {
         return delegate.getStreamInfo(options);
     }
 

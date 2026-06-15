@@ -7,7 +7,7 @@ import io.nats.client.support.Status;
 import lombok.extern.jbosslog.JBossLog;
 
 @JBossLog
-class NativeErrorListener implements ErrorListener {
+class DefaultErrorListener implements ErrorListener {
 
     @Override
     public void errorOccurred(io.nats.client.Connection conn, String error) {

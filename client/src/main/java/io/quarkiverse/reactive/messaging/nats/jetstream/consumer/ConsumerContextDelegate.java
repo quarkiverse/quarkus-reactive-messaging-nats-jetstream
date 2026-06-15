@@ -8,7 +8,7 @@ import org.jspecify.annotations.Nullable;
 import java.io.IOException;
 import java.time.Duration;
 
-record NativeConsumerContextDelegate(ConsumerContext delegate) implements NativeConsumerContext {
+record ConsumerContextDelegate(io.nats.client.ConsumerContext delegate) implements ConsumerContext {
 
     @Override
     public @NonNull ConsumerInfo getConsumerInfo() throws IOException, JetStreamApiException {

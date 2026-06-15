@@ -3,7 +3,7 @@ package io.quarkiverse.reactive.messaging.nats.jetstream.consumer;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 
-record NativeConsumerDelegate(io.nats.client.Consumer delegate) implements NativeConsumer {
+record ConsumerDelegate(io.nats.client.Consumer delegate) implements Consumer {
 
     @Override
     public void setPendingLimits(long maxMessages, long maxBytes) {

@@ -17,7 +17,7 @@ import io.nats.client.Options;
 import io.nats.client.api.ServerInfo;
 import io.nats.client.impl.Headers;
 
-public record NativeConnectionDelegate(Connection delegate) implements NativeConnection {
+record ConnectionDelegate(io.nats.client.Connection delegate) implements Connection {
 
     @Override
     public void addConnectionListener(@NonNull ConnectionListener connectionListener) {

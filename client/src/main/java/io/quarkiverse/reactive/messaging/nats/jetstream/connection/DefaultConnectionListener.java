@@ -4,8 +4,8 @@ import org.jboss.logging.Logger;
 
 import io.nats.client.Connection;
 
-class NativeConnectionListener implements ConnectionListener {
-    private final static Logger log = Logger.getLogger(NativeConnectionListener.class);
+class DefaultConnectionListener implements ConnectionListener {
+    private final static Logger log = Logger.getLogger(DefaultConnectionListener.class);
 
     @SuppressWarnings("DeprecatedIsStillUsed")
     @Deprecated

@@ -1,4 +1,4 @@
-package io.quarkiverse.reactive.messaging.nats.jetstream;
+package io.quarkiverse.reactive.messaging.nats.jetstream.consumer;
 
 import io.nats.client.api.DeliverPolicy;
 import io.nats.client.api.ReplayPolicy;
@@ -9,13 +9,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-/**
- * Defines the configuration settings for a JetStream consumer.
- * This interface provides various configuration options for creating
- * and managing a consumer in a JetStream context, allowing fine-grained
- * control over message delivery, filtering, acknowledgement, replay policy,
- * and more.
- */
 public interface ConsumerConfiguration {
 
     /**
@@ -124,4 +117,14 @@ public interface ConsumerConfiguration {
      * The duration to wait for an ack confirmation
      */
     Duration acknowledgeTimeout();
+
+    /**
+     * Retrieves an optional configuration for pull-based consumers.
+     * This configuration specifies parameters such as the maximum expiry
+     * time for messages and the maximum number of waiting pull requests.
+     *
+     * @return an {@code Optional} containing the {@code PullConfiguration}
+     *         if pull-based configuration is enabled; otherwise, an empty {@code Optional}.
+     */
+    Optional<PullConfiguration> pull();
 }

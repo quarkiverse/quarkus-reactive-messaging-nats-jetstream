@@ -2,11 +2,10 @@ package io.quarkiverse.reactive.messaging.nats.jetstream;
 
 import io.nats.client.Nats;
 import io.nats.client.Options;
+import io.quarkiverse.reactive.messaging.nats.jetstream.connection.Connection;
 import io.quarkiverse.reactive.messaging.nats.jetstream.connection.ConnectionConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.connection.ConnectionListener;
 import io.quarkiverse.reactive.messaging.nats.jetstream.connection.ErrorListener;
-import io.quarkiverse.reactive.messaging.nats.jetstream.connection.NativeConnectionDelegate;
-import io.quarkiverse.reactive.messaging.nats.jetstream.message.tracing.Operation;
 import io.quarkiverse.reactive.messaging.nats.jetstream.message.tracing.TracerFactory;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.unchecked.Unchecked;
@@ -26,9 +25,9 @@ public class VertxClientFactory implements ClientFactory {
     public Uni<Client> create(ClientConfiguration configuration) {
         return Uni.createFrom().<Client>item(Unchecked.supplier(() -> new VertxClient(
                         configuration,
-                        new NativeConnectionDelegate(Nats.connect(createConnectionOptions(configuration))),
+                        Connection.of(Nats.connect(createConnectionOptions(configuration))),
                         vertx.getOrCreateContext(),
-                        tracerFactory.create(Operation.PUBLISH))))
+                        tracerFactory)))
                 .runSubscriptionOn(configuration.executorService())
                 .emitOn(this::runOnContext);
     }

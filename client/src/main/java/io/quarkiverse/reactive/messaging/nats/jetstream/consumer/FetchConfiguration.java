@@ -1,4 +1,4 @@
-package io.quarkiverse.reactive.messaging.nats.jetstream;
+package io.quarkiverse.reactive.messaging.nats.jetstream.consumer;
 
 import org.jspecify.annotations.NonNull;
 

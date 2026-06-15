@@ -8,10 +8,9 @@ import java.util.concurrent.CompletableFuture;
 
 import io.nats.client.*;
 import io.nats.client.Dispatcher;
-import io.nats.client.Subscription;
 import io.nats.client.api.ConsumerInfo;
 
-record NativeSubscriptionDelegate(JetStreamSubscription delegate) implements NativeSubscription {
+record SubscriptionDelegate(JetStreamSubscription delegate) implements Subscription {
 
     @Override
     public String getSubject() {
@@ -44,7 +43,7 @@ record NativeSubscriptionDelegate(JetStreamSubscription delegate) implements Nat
     }
 
     @Override
-    public Subscription unsubscribe(int after) {
+    public io.nats.client.Subscription unsubscribe(int after) {
         return delegate.unsubscribe(after);
     }
 
