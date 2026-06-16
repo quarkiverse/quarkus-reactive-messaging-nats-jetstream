@@ -1,15 +1,16 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.stream;
 
+import java.io.IOException;
+import java.util.List;
+
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
+
 import io.nats.client.ConsumerContext;
 import io.nats.client.JetStreamApiException;
 import io.nats.client.OrderedConsumerContext;
 import io.nats.client.PurgeOptions;
 import io.nats.client.api.*;
-import org.jspecify.annotations.NonNull;
-import org.jspecify.annotations.Nullable;
-
-import java.io.IOException;
-import java.util.List;
 
 public record StreamContextDelegate(io.nats.client.StreamContext delegate) implements StreamContext {
 
@@ -19,12 +20,13 @@ public record StreamContextDelegate(io.nats.client.StreamContext delegate) imple
     }
 
     @Override
-    public  io.nats.client.api.@NonNull StreamInfo getStreamInfo() throws IOException, JetStreamApiException {
+    public io.nats.client.api.@NonNull StreamInfo getStreamInfo() throws IOException, JetStreamApiException {
         return delegate.getStreamInfo();
     }
 
     @Override
-    public io.nats.client.api.@NonNull StreamInfo getStreamInfo(@Nullable StreamInfoOptions options) throws IOException, JetStreamApiException {
+    public io.nats.client.api.@NonNull StreamInfo getStreamInfo(@Nullable StreamInfoOptions options)
+            throws IOException, JetStreamApiException {
         return delegate.getStreamInfo(options);
     }
 
@@ -44,12 +46,14 @@ public record StreamContextDelegate(io.nats.client.StreamContext delegate) imple
     }
 
     @Override
-    public @NonNull ConsumerContext createOrUpdateConsumer(@NonNull ConsumerConfiguration config) throws IOException, JetStreamApiException {
+    public @NonNull ConsumerContext createOrUpdateConsumer(@NonNull ConsumerConfiguration config)
+            throws IOException, JetStreamApiException {
         return delegate.createOrUpdateConsumer(config);
     }
 
     @Override
-    public @NonNull OrderedConsumerContext createOrderedConsumer(@NonNull OrderedConsumerConfiguration config) throws IOException, JetStreamApiException {
+    public @NonNull OrderedConsumerContext createOrderedConsumer(@NonNull OrderedConsumerConfiguration config)
+            throws IOException, JetStreamApiException {
         return delegate.createOrderedConsumer(config);
     }
 

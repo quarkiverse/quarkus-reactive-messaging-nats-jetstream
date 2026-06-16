@@ -1,12 +1,12 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.message.tracing;
 
-import io.quarkiverse.reactive.messaging.nats.jetstream.message.Message;
-import io.smallrye.mutiny.Uni;
-import io.smallrye.mutiny.unchecked.Unchecked;
 import org.jspecify.annotations.NonNull;
 
 import io.opentelemetry.context.Context;
+import io.quarkiverse.reactive.messaging.nats.jetstream.message.Message;
 import io.quarkus.opentelemetry.runtime.QuarkusContextStorage;
+import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.unchecked.Unchecked;
 import io.smallrye.reactive.messaging.TracingMetadata;
 import io.smallrye.reactive.messaging.providers.locals.LocalContextMetadata;
 

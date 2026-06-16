@@ -1,10 +1,10 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.message;
 
-import org.jspecify.annotations.NonNull;
-
 import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
+
+import org.jspecify.annotations.NonNull;
 
 public interface MessageConfiguration extends Metadata {
 

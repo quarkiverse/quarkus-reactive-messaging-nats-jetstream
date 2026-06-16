@@ -1,9 +1,10 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream;
 
+import org.jspecify.annotations.NonNull;
+
 import io.quarkiverse.reactive.messaging.nats.jetstream.message.Message;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
-import org.jspecify.annotations.NonNull;
 
 public interface Publisher {
 

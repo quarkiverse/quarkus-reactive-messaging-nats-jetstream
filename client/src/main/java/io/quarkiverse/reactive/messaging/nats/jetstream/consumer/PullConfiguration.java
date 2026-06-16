@@ -8,10 +8,10 @@ public interface PullConfiguration {
     /**
      * The max amount of expiry time for the server to allow on pull requests.
      */
-    Optional<Duration> maxExpires();
+    Optional<Duration> maximumExpiryTimeOnPullRequests();
 
     /**
      * The maximum number of waiting pull requests.
      */
-    Optional<Integer> maxWaiting();
+    Optional<Integer> maximumWaitingPullRequests();
 }

@@ -3,17 +3,18 @@ package io.quarkiverse.reactive.messaging.nats.configuration.mapper;
 import java.util.List;
 import java.util.Optional;
 
-import io.quarkiverse.reactive.messaging.nats.configuration.KeyValueStoreConfiguration;
 import jakarta.enterprise.context.ApplicationScoped;
 
 import io.quarkiverse.reactive.messaging.nats.client.store.KeyValueStoreConfigurationImpl;
 import io.quarkiverse.reactive.messaging.nats.configuration.ConnectorConfiguration;
+import io.quarkiverse.reactive.messaging.nats.configuration.KeyValueStoreConfiguration;
 
 @ApplicationScoped
 public class KeyValueStoreConfigurationMapperImpl implements KeyValueStoreConfigurationMapper {
 
     @Override
-    public List<io.quarkiverse.reactive.messaging.nats.client.store.KeyValueStoreConfiguration> map(ConnectorConfiguration configuration) {
+    public List<io.quarkiverse.reactive.messaging.nats.client.store.KeyValueStoreConfiguration> map(
+            ConnectorConfiguration configuration) {
         return Optional.ofNullable(configuration.keyValueStores())
                 .map(keyValueStores -> keyValueStores.entrySet().stream().map(entry -> map(entry.getKey(), entry.getValue()))
                         .toList())
@@ -22,7 +23,7 @@ public class KeyValueStoreConfigurationMapperImpl implements KeyValueStoreConfig
     }
 
     private io.quarkiverse.reactive.messaging.nats.client.store.KeyValueStoreConfiguration map(String name,
-                                                                                               KeyValueStoreConfiguration configuration) {
+            KeyValueStoreConfiguration configuration) {
         return KeyValueStoreConfigurationImpl.builder()
                 .name(configuration.bucketName().orElse(name))
                 .description(configuration.description())

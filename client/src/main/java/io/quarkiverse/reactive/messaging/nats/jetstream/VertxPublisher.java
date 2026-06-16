@@ -1,5 +1,9 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream;
 
+import java.util.UUID;
+
+import org.jspecify.annotations.NonNull;
+
 import io.nats.client.PublishOptions;
 import io.quarkiverse.reactive.messaging.nats.jetstream.connection.Connection;
 import io.quarkiverse.reactive.messaging.nats.jetstream.message.AcknowledgeMetadata;
@@ -12,9 +16,6 @@ import io.smallrye.mutiny.unchecked.Unchecked;
 import io.vertx.mutiny.core.Context;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.jbosslog.JBossLog;
-import org.jspecify.annotations.NonNull;
-
-import java.util.UUID;
 
 @JBossLog
 @RequiredArgsConstructor
@@ -25,7 +26,8 @@ class VertxPublisher implements Publisher {
     private final Tracer tracer;
 
     @Override
-    public @NonNull Uni<Message> publish(@NonNull final Message message, @NonNull final String stream, @NonNull final String subject) {
+    public @NonNull Uni<Message> publish(@NonNull final Message message, @NonNull final String stream,
+            @NonNull final String subject) {
         return withMetadata(message, stream, subject)
                 .chain(tracer::withTrace)
                 .chain(this::publish)
@@ -36,21 +38,25 @@ class VertxPublisher implements Publisher {
     }
 
     @Override
-    public @NonNull Multi<Message> publish(@NonNull final Multi<Message> messages, @NonNull final String stream, @NonNull final String subject) {
+    public @NonNull Multi<Message> publish(@NonNull final Multi<Message> messages, @NonNull final String stream,
+            @NonNull final String subject) {
         return messages.onItem().transformToUniAndMerge(message -> publish(message, stream, subject));
     }
 
     private Uni<Message> publish(final Message message) {
         return jetStream()
                 .chain(jetStream -> Uni.createFrom().item(Unchecked.supplier(() -> {
-                    final var headers = message.getMetadata(Headers.class).orElseThrow(() -> new IllegalArgumentException("Headers is required"));
+                    final var headers = message.getMetadata(Headers.class)
+                            .orElseThrow(() -> new IllegalArgumentException("Headers is required"));
                     return jetStream.publish(
                             headers.subject().orElseThrow(() -> new IllegalArgumentException("Subject header is required")),
                             headers.to(),
                             message.getPayload(),
                             PublishOptions.builder()
-                                    .messageId(headers.messageId().orElseThrow(() -> new IllegalArgumentException("MessageId is required")))
-                                    .expectedStream(headers.stream().orElseThrow(() -> new IllegalArgumentException("Stream header is required")))
+                                    .messageId(headers.messageId()
+                                            .orElseThrow(() -> new IllegalArgumentException("MessageId is required")))
+                                    .expectedStream(headers.stream()
+                                            .orElseThrow(() -> new IllegalArgumentException("Stream header is required")))
                                     .build());
                 })))
                 .map(Unchecked.function(publishAck -> {
@@ -61,7 +67,8 @@ class VertxPublisher implements Publisher {
 
     private Uni<Message> withMetadata(final Message message, final String stream, final String subject) {
         return Uni.createFrom().item(Unchecked.supplier(() -> {
-            final var headers = message.getMetadata(Headers.class).orElseThrow(() -> new IllegalArgumentException("Headers is required"));
+            final var headers = message.getMetadata(Headers.class)
+                    .orElseThrow(() -> new IllegalArgumentException("Headers is required"));
             if (headers.messageId().isEmpty()) {
                 headers.setMessageId(UUID.randomUUID().toString());
             }

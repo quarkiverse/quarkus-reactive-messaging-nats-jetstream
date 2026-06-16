@@ -1,13 +1,13 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.consumer;
 
-import io.nats.client.api.DeliverPolicy;
-import io.nats.client.api.ReplayPolicy;
-
 import java.time.Duration;
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+
+import io.nats.client.api.DeliverPolicy;
+import io.nats.client.api.ReplayPolicy;
 
 public interface ConsumerConfiguration {
 
@@ -35,7 +35,7 @@ public interface ConsumerConfiguration {
      * The duration that the server will wait for an ack for any individual message once it has been delivered to a consumer.
      * If an ack is not received in time, the message will be re-delivered.
      */
-    Optional<Duration> ackWait();
+    Optional<Duration> acknowledgeWait();
 
     /**
      * The point in the stream to receive messages from, either DeliverAll, DeliverLast, DeliverNew, DeliverByStartSequence,
@@ -104,9 +104,9 @@ public interface ConsumerConfiguration {
     Map<String, String> metadata();
 
     /**
-     * The timing of re-deliveries as a comma-separated list of durations
+     * The timing of re-deliveries as a list of durations
      */
-    Optional<List<Duration>> backoff();
+    List<Duration> backoff();
 
     /**
      * The pause until

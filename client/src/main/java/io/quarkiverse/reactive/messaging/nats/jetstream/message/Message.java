@@ -1,11 +1,11 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.message;
 
+import static io.smallrye.reactive.messaging.providers.locals.ContextAwareMessage.captureContextMetadata;
+
 import io.smallrye.reactive.messaging.providers.MetadataInjectableMessage;
 import io.smallrye.reactive.messaging.providers.locals.ContextAwareMessage;
 import io.smallrye.reactive.messaging.providers.locals.LocalContextMetadata;
 import io.vertx.mutiny.core.Context;
-
-import static io.smallrye.reactive.messaging.providers.locals.ContextAwareMessage.captureContextMetadata;
 
 public interface Message extends ContextAwareMessage<byte[]>, MetadataInjectableMessage<byte[]> {
 

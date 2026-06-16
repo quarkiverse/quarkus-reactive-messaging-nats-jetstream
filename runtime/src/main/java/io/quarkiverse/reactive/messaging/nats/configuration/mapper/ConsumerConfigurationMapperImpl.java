@@ -2,9 +2,9 @@ package io.quarkiverse.reactive.messaging.nats.configuration.mapper;
 
 import java.util.List;
 
-import io.quarkiverse.reactive.messaging.nats.client.consumer.ConsumerConfiguration;
 import jakarta.enterprise.context.ApplicationScoped;
 
+import io.quarkiverse.reactive.messaging.nats.client.consumer.ConsumerConfiguration;
 import io.quarkiverse.reactive.messaging.nats.client.consumer.ConsumerConfigurationImpl;
 
 @ApplicationScoped
@@ -12,7 +12,7 @@ public class ConsumerConfigurationMapperImpl implements ConsumerConfigurationMap
 
     @Override
     public ConsumerConfiguration map(String stream,
-                                     String name, io.quarkiverse.reactive.messaging.nats.configuration.ConsumerConfiguration configuration) {
+            String name, io.quarkiverse.reactive.messaging.nats.configuration.ConsumerConfiguration configuration) {
         return ConsumerConfigurationImpl.builder()
                 .stream(stream)
                 .name(configuration.name().orElse(name))

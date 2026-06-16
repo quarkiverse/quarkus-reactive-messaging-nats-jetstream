@@ -1,5 +1,9 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream;
 
+import static io.nats.client.Options.DEFAULT_RECONNECT_WAIT;
+
+import java.util.concurrent.ExecutorService;
+
 import io.nats.client.Nats;
 import io.nats.client.Options;
 import io.quarkiverse.reactive.messaging.nats.jetstream.connection.Connection;
@@ -12,10 +16,6 @@ import io.smallrye.mutiny.unchecked.Unchecked;
 import io.vertx.mutiny.core.Vertx;
 import lombok.RequiredArgsConstructor;
 
-import java.util.concurrent.ExecutorService;
-
-import static io.nats.client.Options.DEFAULT_RECONNECT_WAIT;
-
 @RequiredArgsConstructor
 public class VertxClientFactory implements ClientFactory {
     private final Vertx vertx;
@@ -23,11 +23,11 @@ public class VertxClientFactory implements ClientFactory {
 
     @Override
     public Uni<Client> create(ClientConfiguration configuration) {
-        return Uni.createFrom().<Client>item(Unchecked.supplier(() -> new VertxClient(
-                        configuration,
-                        Connection.of(Nats.connect(createConnectionOptions(configuration))),
-                        vertx.getOrCreateContext(),
-                        tracerFactory)))
+        return Uni.createFrom().<Client> item(Unchecked.supplier(() -> new VertxClient(
+                configuration,
+                Connection.of(Nats.connect(createConnectionOptions(configuration))),
+                vertx.getOrCreateContext(),
+                tracerFactory)))
                 .runSubscriptionOn(configuration.executorService())
                 .emitOn(this::runOnContext);
     }
@@ -36,7 +36,8 @@ public class VertxClientFactory implements ClientFactory {
         return createConnectionOptions(configuration.connection(), configuration.executorService());
     }
 
-    private Options createConnectionOptions(ConnectionConfiguration configuration, ExecutorService executorService) throws Exception {
+    private Options createConnectionOptions(ConnectionConfiguration configuration, ExecutorService executorService)
+            throws Exception {
         final var optionsBuilder = new Options.Builder();
         final var servers = configuration.servers();
         optionsBuilder.servers(servers.toArray(new String[0]));

@@ -1,5 +1,7 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.message.tracing;
 
+import java.nio.charset.StandardCharsets;
+
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.AttributesBuilder;
 import io.opentelemetry.context.Context;
@@ -8,8 +10,6 @@ import io.opentelemetry.instrumentation.api.internal.SpanKey;
 import io.opentelemetry.instrumentation.api.internal.SpanKeyProvider;
 import io.quarkiverse.reactive.messaging.nats.jetstream.consumer.ConsumerMetadata;
 import io.quarkiverse.reactive.messaging.nats.jetstream.message.*;
-
-import java.nio.charset.StandardCharsets;
 
 class MessageAttributesExtractor implements AttributesExtractor<Message, Void>, SpanKeyProvider {
     private final static AttributeKey<String> MESSAGING_DESTINATION_NAME = AttributeKey.stringKey("messaging.destination.name");
@@ -22,9 +22,11 @@ class MessageAttributesExtractor implements AttributesExtractor<Message, Void>, 
     private final static AttributeKey<Long> MESSAGING_STREAM_SEQUENCE = AttributeKey.longKey("messaging.stream.sequence");
     private final static AttributeKey<Long> MESSAGING_CONSUMER_SEQUENCE = AttributeKey.longKey("messaging.consumer.sequence");
     private final static AttributeKey<String> MESSAGING_CONSUMER = AttributeKey.stringKey("messaging.consumer.name");
-    private final static AttributeKey<Long> MESSAGING_MESSAGE_DELIVERED_COUNT = AttributeKey.longKey("messaging.message.delivered.count");
+    private final static AttributeKey<Long> MESSAGING_MESSAGE_DELIVERED_COUNT = AttributeKey
+            .longKey("messaging.message.delivered.count");
     private final static AttributeKey<String> MESSAGING_MESSAGE_TYPE = AttributeKey.stringKey("messaging.message.type");
-    private final static AttributeKey<String> MESSAGING_MESSAGE_TIMESTAMP = AttributeKey.stringKey("messaging.message.timestamp");
+    private final static AttributeKey<String> MESSAGING_MESSAGE_TIMESTAMP = AttributeKey
+            .stringKey("messaging.message.timestamp");
 
     private final Operation operation;
 
@@ -79,7 +81,9 @@ class MessageAttributesExtractor implements AttributesExtractor<Message, Void>, 
     }
 
     private String getDestination(Message message) {
-        return message.getMetadata(Headers.class).map(metadata -> String.format("%s.%s", metadata.stream().orElse(""), metadata.subject().orElse(""))).orElse("");
+        return message.getMetadata(Headers.class)
+                .map(metadata -> String.format("%s.%s", metadata.stream().orElse(""), metadata.subject().orElse("")))
+                .orElse("");
     }
 
     private String getMessageId(Message message) {

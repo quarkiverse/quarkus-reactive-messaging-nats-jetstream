@@ -6,9 +6,9 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import io.quarkiverse.reactive.messaging.nats.client.stream.StreamConfiguration;
 import jakarta.enterprise.context.ApplicationScoped;
 
+import io.quarkiverse.reactive.messaging.nats.client.stream.StreamConfiguration;
 import io.quarkiverse.reactive.messaging.nats.client.stream.StreamConfigurationImpl;
 import io.quarkiverse.reactive.messaging.nats.configuration.ConnectorConfiguration;
 

@@ -1,14 +1,15 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.message;
 
-import io.smallrye.reactive.messaging.providers.MetadataInjectableMessage;
-import lombok.AllArgsConstructor;
-import org.eclipse.microprofile.reactive.messaging.Metadata;
-
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
+
+import org.eclipse.microprofile.reactive.messaging.Metadata;
+
+import io.smallrye.reactive.messaging.providers.MetadataInjectableMessage;
+import lombok.AllArgsConstructor;
 
 @AllArgsConstructor
 class MessageDelegate implements Message {
@@ -124,7 +125,8 @@ class MessageDelegate implements Message {
     }
 
     @Override
-    public <R> org.eclipse.microprofile.reactive.messaging.Message<R> thenApply(Function<org.eclipse.microprofile.reactive.messaging.Message<byte[]>, org.eclipse.microprofile.reactive.messaging.Message<R>> modifier) {
+    public <R> org.eclipse.microprofile.reactive.messaging.Message<R> thenApply(
+            Function<org.eclipse.microprofile.reactive.messaging.Message<byte[]>, org.eclipse.microprofile.reactive.messaging.Message<R>> modifier) {
         return delegate.thenApply(modifier);
     }
 }

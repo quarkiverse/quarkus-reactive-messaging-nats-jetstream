@@ -6,8 +6,8 @@ import lombok.Builder;
 
 @Builder
 public record Replica(String name,
-                      Boolean current,
-                      Boolean offline,
-                      Duration active,
-                      Long lag) {
+        Boolean current,
+        Boolean offline,
+        Duration active,
+        Long lag) {
 }

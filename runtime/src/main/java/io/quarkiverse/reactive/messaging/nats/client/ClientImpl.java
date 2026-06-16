@@ -3,8 +3,6 @@ package io.quarkiverse.reactive.messaging.nats.client;
 import java.time.Duration;
 import java.time.ZonedDateTime;
 
-import io.quarkiverse.reactive.messaging.nats.client.consumer.*;
-import io.quarkiverse.reactive.messaging.nats.client.stream.*;
 import jakarta.enterprise.context.ApplicationScoped;
 
 import org.eclipse.microprofile.reactive.messaging.Message;
@@ -14,7 +12,7 @@ import io.quarkiverse.reactive.messaging.nats.client.api.PurgeResult;
 import io.quarkiverse.reactive.messaging.nats.client.api.StreamResult;
 import io.quarkiverse.reactive.messaging.nats.client.api.StreamState;
 import io.quarkiverse.reactive.messaging.nats.client.connection.Connection;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer.*;
+import io.quarkiverse.reactive.messaging.nats.client.consumer.*;
 import io.quarkiverse.reactive.messaging.nats.client.mapper.MessageMapper;
 import io.quarkiverse.reactive.messaging.nats.client.mapper.PayloadMapper;
 import io.quarkiverse.reactive.messaging.nats.client.publisher.PublishListener;
@@ -24,6 +22,8 @@ import io.quarkiverse.reactive.messaging.nats.client.store.KeyValueConfiguration
 import io.quarkiverse.reactive.messaging.nats.client.store.KeyValueStoreAware;
 import io.quarkiverse.reactive.messaging.nats.client.store.KeyValueStoreAwareImpl;
 import io.quarkiverse.reactive.messaging.nats.client.store.KeyValueStoreConfiguration;
+import io.quarkiverse.reactive.messaging.nats.client.stream.*;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer.*;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.stream.*;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.tracing.TracerFactory;
 import io.smallrye.mutiny.Multi;

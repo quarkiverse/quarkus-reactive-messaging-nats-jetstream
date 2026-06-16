@@ -1,9 +1,9 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.consumer;
 
-import org.jspecify.annotations.NonNull;
-
 import java.time.Duration;
 import java.util.Optional;
+
+import org.jspecify.annotations.NonNull;
 
 /**
  * Represents the configuration settings for fetching messages from a messaging system.

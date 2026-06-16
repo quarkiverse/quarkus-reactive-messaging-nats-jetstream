@@ -5,5 +5,5 @@ import io.quarkiverse.reactive.messaging.nats.client.consumer.ConsumerConfigurat
 public interface ConsumerConfigurationMapper {
 
     ConsumerConfiguration map(String stream,
-                              String name, io.quarkiverse.reactive.messaging.nats.configuration.ConsumerConfiguration configuration);
+            String name, io.quarkiverse.reactive.messaging.nats.configuration.ConsumerConfiguration configuration);
 }

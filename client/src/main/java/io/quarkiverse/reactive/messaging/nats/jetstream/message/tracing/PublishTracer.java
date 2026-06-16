@@ -1,5 +1,11 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.message.tracing;
 
+import java.util.Optional;
+
+import jakarta.enterprise.inject.Instance;
+
+import org.jspecify.annotations.NonNull;
+
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.context.Context;
@@ -11,10 +17,6 @@ import io.quarkus.opentelemetry.runtime.QuarkusContextStorage;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.unchecked.Unchecked;
 import io.smallrye.reactive.messaging.TracingMetadata;
-import jakarta.enterprise.inject.Instance;
-import org.jspecify.annotations.NonNull;
-
-import java.util.Optional;
 
 final class PublishTracer implements Tracer {
     private final Instrumenter<Message, Void> instrumenter;

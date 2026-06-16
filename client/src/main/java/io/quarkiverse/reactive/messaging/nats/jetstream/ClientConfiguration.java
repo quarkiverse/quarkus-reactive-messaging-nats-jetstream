@@ -1,10 +1,11 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream;
 
-import io.quarkiverse.reactive.messaging.nats.jetstream.connection.ConnectionConfiguration;
-import io.quarkiverse.reactive.messaging.nats.jetstream.message.MessageConfiguration;
+import java.util.concurrent.ExecutorService;
+
 import org.jspecify.annotations.NonNull;
 
-import java.util.concurrent.ExecutorService;
+import io.quarkiverse.reactive.messaging.nats.jetstream.connection.ConnectionConfiguration;
+import io.quarkiverse.reactive.messaging.nats.jetstream.message.MessageConfiguration;
 
 /**
  * The {@code ClientConfiguration} interface defines the configuration settings for a client

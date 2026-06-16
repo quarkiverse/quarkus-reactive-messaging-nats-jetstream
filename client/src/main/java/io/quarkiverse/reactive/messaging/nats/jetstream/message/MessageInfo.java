@@ -1,43 +1,49 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.message;
 
-import org.jspecify.annotations.NonNull;
-
 import java.time.ZonedDateTime;
-import java.util.Optional;
 
-public interface MessageInfo {
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 
-    static MessageInfo of(io.nats.client.api.MessageInfo messageInfo) {
-        return new MessageInfoRecord(messageInfo);
+import lombok.Builder;
+
+@Builder
+public record MessageInfo(@Nullable String subject,
+        long sequence,
+        byte @Nullable [] payload,
+        @Nullable ZonedDateTime timestamp,
+        @NonNull Headers headers,
+        @Nullable String stream,
+        long lastSequence,
+        long numberOfPendingMessages,
+        @Nullable Status status) {
+
+    public static MessageInfo of(io.nats.client.api.MessageInfo messageInfo) {
+        return MessageInfo.builder()
+                .subject(messageInfo.getSubject())
+                .sequence(messageInfo.getSeq())
+                .payload(messageInfo.getData())
+                .timestamp(messageInfo.getTime())
+                .headers(messageInfo.getHeaders() != null ? Headers.of(messageInfo.getHeaders()) : new Headers())
+                .stream(messageInfo.getStream())
+                .lastSequence(messageInfo.getLastSeq())
+                .numberOfPendingMessages(messageInfo.getNumPending())
+                .status(messageInfo.getStatus() != null ? new Status() {
+                    @Override
+                    public String message() {
+                        return messageInfo.getStatus().getMessage();
+                    }
+
+                    @Override
+                    public int code() {
+                        return messageInfo.getStatus().getCode();
+                    }
+
+                    @Override
+                    public boolean isError() {
+                        return messageInfo.isErrorStatus();
+                    }
+                } : null)
+                .build();
     }
-
-    @NonNull Optional<String> subject();
-
-    long sequence();
-
-    @NonNull Optional<byte[]> payload();
-
-    @NonNull Optional<ZonedDateTime> timestamp();
-
-    @NonNull Headers headers();
-
-    /**
-     * Get the name of the stream. Not always set.
-     * @return the stream name or null if the name is not known.
-     */
-    @NonNull Optional<String> stream();
-
-    /**
-     * Get the sequence number of the last message in the stream. Not always set.
-     * @return the last sequence or -1 if the value is not known.
-     */
-    long lastSequence();
-
-    /**
-     * Amount of pending messages that can be requested with a subsequent batch request.
-     * @return number of pending messages
-     */
-    long numberOfPendingMessages();
-
-    Optional<Status> status();
 }

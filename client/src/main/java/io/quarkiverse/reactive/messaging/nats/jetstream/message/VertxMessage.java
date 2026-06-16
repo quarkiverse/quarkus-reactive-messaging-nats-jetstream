@@ -1,10 +1,6 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.message;
 
-import io.quarkiverse.reactive.messaging.nats.jetstream.consumer.ConsumerMetadata;
-import io.smallrye.reactive.messaging.providers.helpers.VertxContext;
-import io.smallrye.reactive.messaging.providers.locals.LocalContextMetadata;
-import io.vertx.mutiny.core.Context;
-import org.jspecify.annotations.NonNull;
+import static io.smallrye.reactive.messaging.providers.locals.ContextAwareMessage.captureContextMetadata;
 
 import java.time.Duration;
 import java.util.Optional;
@@ -14,7 +10,12 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import static io.smallrye.reactive.messaging.providers.locals.ContextAwareMessage.captureContextMetadata;
+import org.jspecify.annotations.NonNull;
+
+import io.quarkiverse.reactive.messaging.nats.jetstream.consumer.ConsumerMetadata;
+import io.smallrye.reactive.messaging.providers.helpers.VertxContext;
+import io.smallrye.reactive.messaging.providers.locals.LocalContextMetadata;
+import io.vertx.mutiny.core.Context;
 
 final class VertxMessage implements Message {
     private final NativeMessage message;
@@ -22,7 +23,7 @@ final class VertxMessage implements Message {
     private final Context context;
 
     public VertxMessage(@NonNull NativeMessage message,
-                        @NonNull Context context) {
+            @NonNull Context context) {
         this.message = message;
         this.metadata = captureContextMetadata();
         this.context = context;
@@ -119,7 +120,8 @@ final class VertxMessage implements Message {
         return this;
     }
 
-    private Optional<Duration> getBackoff(@NonNull MessageConfiguration messageConfiguration, @NonNull ConsumerMetadata metadata) {
+    private Optional<Duration> getBackoff(@NonNull MessageConfiguration messageConfiguration,
+            @NonNull ConsumerMetadata metadata) {
         if (messageConfiguration.backoff().isEmpty()) {
             return Optional.empty();
         } else if (metadata.deliveredCount() == 0) {

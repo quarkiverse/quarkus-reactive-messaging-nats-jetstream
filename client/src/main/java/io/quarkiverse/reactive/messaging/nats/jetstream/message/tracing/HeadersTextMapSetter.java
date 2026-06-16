@@ -11,7 +11,8 @@ class HeadersTextMapSetter implements TextMapSetter<Message> {
     @Override
     public void set(Message message, final String key, final String value) {
         if (message != null) {
-            final var headers = message.getMetadata(Headers.class).orElseThrow(() -> new IllegalStateException("Headers not found"));
+            final var headers = message.getMetadata(Headers.class)
+                    .orElseThrow(() -> new IllegalStateException("Headers not found"));
             headers.put(key, List.of(value));
         }
     }

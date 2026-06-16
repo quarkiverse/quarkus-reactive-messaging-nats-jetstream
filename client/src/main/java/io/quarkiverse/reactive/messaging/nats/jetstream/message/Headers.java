@@ -1,10 +1,10 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.message;
 
-import org.jspecify.annotations.NonNull;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
+
+import org.jspecify.annotations.NonNull;
 
 /**
  * The {@code Headers} interface extends both {@code Map<String, List<String>>}

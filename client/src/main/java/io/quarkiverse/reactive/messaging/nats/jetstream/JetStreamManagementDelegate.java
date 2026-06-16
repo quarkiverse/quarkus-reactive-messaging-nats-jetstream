@@ -1,12 +1,12 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream;
 
-import io.nats.client.*;
-import io.nats.client.JetStream;
-import io.nats.client.api.*;
-
 import java.io.IOException;
 import java.time.ZonedDateTime;
 import java.util.List;
+
+import io.nats.client.*;
+import io.nats.client.JetStream;
+import io.nats.client.api.*;
 
 record JetStreamManagementDelegate(io.nats.client.JetStreamManagement delegate) implements JetStreamManagement {
 
@@ -51,17 +51,20 @@ record JetStreamManagementDelegate(io.nats.client.JetStreamManagement delegate) 
     }
 
     @Override
-    public ConsumerInfo addOrUpdateConsumer(String streamName, ConsumerConfiguration config) throws IOException, JetStreamApiException {
+    public ConsumerInfo addOrUpdateConsumer(String streamName, ConsumerConfiguration config)
+            throws IOException, JetStreamApiException {
         return delegate.addOrUpdateConsumer(streamName, config);
     }
 
     @Override
-    public ConsumerInfo createConsumer(String streamName, ConsumerConfiguration config) throws IOException, JetStreamApiException {
+    public ConsumerInfo createConsumer(String streamName, ConsumerConfiguration config)
+            throws IOException, JetStreamApiException {
         return delegate.createConsumer(streamName, config);
     }
 
     @Override
-    public ConsumerInfo updateConsumer(String streamName, ConsumerConfiguration config) throws IOException, JetStreamApiException {
+    public ConsumerInfo updateConsumer(String streamName, ConsumerConfiguration config)
+            throws IOException, JetStreamApiException {
         return delegate.updateConsumer(streamName, config);
     }
 
@@ -71,7 +74,8 @@ record JetStreamManagementDelegate(io.nats.client.JetStreamManagement delegate) 
     }
 
     @Override
-    public ConsumerPauseResponse pauseConsumer(String streamName, String consumerName, ZonedDateTime pauseUntil) throws IOException, JetStreamApiException {
+    public ConsumerPauseResponse pauseConsumer(String streamName, String consumerName, ZonedDateTime pauseUntil)
+            throws IOException, JetStreamApiException {
         return delegate.pauseConsumer(streamName, consumerName, pauseUntil);
     }
 
@@ -121,7 +125,8 @@ record JetStreamManagementDelegate(io.nats.client.JetStreamManagement delegate) 
     }
 
     @Override
-    public MessageInfo getMessage(String streamName, MessageGetRequest messageGetRequest) throws IOException, JetStreamApiException {
+    public MessageInfo getMessage(String streamName, MessageGetRequest messageGetRequest)
+            throws IOException, JetStreamApiException {
         return delegate.getMessage(streamName, messageGetRequest);
     }
 
@@ -141,7 +146,8 @@ record JetStreamManagementDelegate(io.nats.client.JetStreamManagement delegate) 
     }
 
     @Override
-    public MessageInfo getFirstMessage(String streamName, ZonedDateTime startTime, String subject) throws IOException, JetStreamApiException {
+    public MessageInfo getFirstMessage(String streamName, ZonedDateTime startTime, String subject)
+            throws IOException, JetStreamApiException {
         return delegate.getFirstMessage(streamName, startTime, subject);
     }
 
@@ -161,7 +167,8 @@ record JetStreamManagementDelegate(io.nats.client.JetStreamManagement delegate) 
     }
 
     @Override
-    public boolean unpinConsumer(String streamName, String consumerName, String consumerGroup) throws IOException, JetStreamApiException {
+    public boolean unpinConsumer(String streamName, String consumerName, String consumerGroup)
+            throws IOException, JetStreamApiException {
         return delegate.unpinConsumer(streamName, consumerName, consumerGroup);
     }
 
@@ -171,7 +178,8 @@ record JetStreamManagementDelegate(io.nats.client.JetStreamManagement delegate) 
     }
 
     @Override
-    public ConsumerInfo resetConsumer(String streamName, String consumerName, long sequence) throws IOException, JetStreamApiException {
+    public ConsumerInfo resetConsumer(String streamName, String consumerName, long sequence)
+            throws IOException, JetStreamApiException {
         return delegate.resetConsumer(streamName, consumerName, sequence);
     }
 

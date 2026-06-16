@@ -1,5 +1,9 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.message.tracing;
 
+import jakarta.enterprise.inject.Instance;
+
+import org.jspecify.annotations.NonNull;
+
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.context.Context;
@@ -10,8 +14,6 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.message.Message;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.unchecked.Unchecked;
 import io.smallrye.reactive.messaging.TracingMetadata;
-import jakarta.enterprise.inject.Instance;
-import org.jspecify.annotations.NonNull;
 
 final class ConsumerTracer implements Tracer {
     private final Instrumenter<Message, Void> instrumenter;
