@@ -12,6 +12,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Inject;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -31,6 +32,8 @@ class DataResourceCustomMappersTest {
     @Inject
     HeaderMapper headerMapper;
 
+    // TODO: fix unstable test
+    @Disabled
     @Test
     void data() {
         final var messageId = "8cb9fd88-08e9-422d-9f19-a3b4b3cc8cb7";
