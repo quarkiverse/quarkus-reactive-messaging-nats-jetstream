@@ -2,6 +2,7 @@ package io.quarkiverse.reactive.messaging.nats.jetstream;
 
 import java.time.Duration;
 
+import io.quarkiverse.reactive.messaging.nats.jetstream.consumer.ConsumerConfigurationMapper;
 import org.jspecify.annotations.NonNull;
 
 import io.quarkiverse.reactive.messaging.nats.jetstream.connection.Connection;
@@ -14,6 +15,7 @@ import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.core.Context;
 import lombok.extern.jbosslog.JBossLog;
+import org.mapstruct.factory.Mappers;
 
 @JBossLog
 class VertxClient implements Client {
@@ -25,7 +27,7 @@ class VertxClient implements Client {
     public VertxClient(ClientConfiguration configuration, Connection connection, Context context, TracerFactory tracerFactory) {
         this.connection = connection;
         this.publisher = new VertxPublisher(configuration, connection, context, tracerFactory.create(Operation.PUBLISH));
-        this.consumer = new VertxConsumer(configuration, connection, context, tracerFactory.create(Operation.RECEIVE));
+        this.consumer = new VertxConsumer(configuration, connection, context, tracerFactory.create(Operation.RECEIVE), Mappers.getMapper(ConsumerConfigurationMapper.class));
         this.management = new VertxStreamManagement(configuration, connection, context, this);
     }
 

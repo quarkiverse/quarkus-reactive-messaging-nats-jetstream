@@ -74,7 +74,7 @@ class VertxPublisher implements Publisher {
             }
             headers.setStream(stream);
             headers.setSubject(subject);
-            return (Message) message.addMetadata(configuration.message()).addMetadata(headers);
+            return (Message) message.addMetadata(configuration.messageConfiguration()).addMetadata(headers);
         }));
     }
 

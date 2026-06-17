@@ -20,10 +20,8 @@ public final class Headers extends HashMap<String, List<String>> implements Meta
     private final static String MESSAGE_SUBJECT_HEADER = "message.subject";
     private final static String MESSAGE_STREAM_HEADER = "message.stream";
 
-    static <T> @NonNull Headers of(@NonNull Class<T> type) {
-        final var result = new Headers();
-        result.put(MESSAGE_TYPE_HEADER, List.of(type.getName()));
-        return result;
+    static @NonNull Headers of() {
+        return new Headers();
     }
 
     static @NonNull Headers of(io.nats.client.impl.@NonNull Headers headers) {
@@ -32,7 +30,7 @@ public final class Headers extends HashMap<String, List<String>> implements Meta
         return result;
     }
 
-    Headers() {
+    private Headers() {
         super();
     }
 

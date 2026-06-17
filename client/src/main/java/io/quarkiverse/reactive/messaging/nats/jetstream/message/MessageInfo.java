@@ -24,7 +24,7 @@ public record MessageInfo(@Nullable String subject,
                 .sequence(messageInfo.getSeq())
                 .payload(messageInfo.getData())
                 .timestamp(messageInfo.getTime())
-                .headers(messageInfo.getHeaders() != null ? Headers.of(messageInfo.getHeaders()) : new Headers())
+                .headers(messageInfo.getHeaders() != null ? Headers.of(messageInfo.getHeaders()) : Headers.of())
                 .stream(messageInfo.getStream())
                 .lastSequence(messageInfo.getLastSeq())
                 .numberOfPendingMessages(messageInfo.getNumPending())

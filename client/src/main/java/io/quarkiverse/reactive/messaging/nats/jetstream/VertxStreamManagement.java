@@ -22,9 +22,9 @@ class VertxStreamManagement implements StreamManagement {
     private final Consumer consumer;
 
     @Override
-    public @NonNull Uni<ConsumerInfo> addConsumerIfAbsent(@NonNull final ConsumerConfiguration configuration) {
-        return this.consumer.consumer(configuration.stream(), configuration.name())
-                .onItem().ifNull().switchTo(() -> createConsumer(configuration));
+    public @NonNull Uni<ConsumerInfo> addConsumerIfAbsent(@NonNull final String stream, @NonNull final ConsumerConfiguration configuration) {
+        return this.consumer.consumer(stream, configuration.name())
+                .onItem().ifNull().switchTo(() -> createConsumer(stream, configuration));
     }
 
     @Override
@@ -34,21 +34,21 @@ class VertxStreamManagement implements StreamManagement {
                         .item(Unchecked.supplier(() -> jetStreamManagement.deleteConsumer(stream, consumer))))
                 .chain(deleted -> deleted ? Uni.createFrom().voidItem()
                         : Uni.createFrom()
-                                .failure(() -> new RuntimeException(
-                                        String.format("Consumer %s in stream %s not deleted", consumer, stream))))
+                        .failure(() -> new RuntimeException(
+                                String.format("Consumer %s in stream %s not deleted", consumer, stream))))
                 .runSubscriptionOn(this.configuration.executorService())
                 .emitOn(this::runOnContext);
     }
 
     @Override
     public @NonNull Uni<Void> pauseConsumer(@NonNull final String stream, @NonNull final String consumer,
-            @NonNull final ZonedDateTime pauseUntil) {
+                                            @NonNull final ZonedDateTime pauseUntil) {
         return jetStreamManagement().chain(jetStreamManagement -> Uni.createFrom().item(
-                Unchecked.supplier(() -> jetStreamManagement.pauseConsumer(stream, consumer, pauseUntil))))
+                        Unchecked.supplier(() -> jetStreamManagement.pauseConsumer(stream, consumer, pauseUntil))))
                 .chain(response -> response.isPaused() ? Uni.createFrom().voidItem()
                         : Uni.createFrom()
-                                .failure(() -> new RuntimeException(
-                                        String.format("Consumer %s in stream %s not paused", consumer, stream))))
+                        .failure(() -> new RuntimeException(
+                                String.format("Consumer %s in stream %s not paused", consumer, stream))))
                 .runSubscriptionOn(this.configuration.executorService())
                 .emitOn(this::runOnContext);
     }
@@ -60,17 +60,17 @@ class VertxStreamManagement implements StreamManagement {
                         .item(Unchecked.supplier(() -> jetStreamManagement.resumeConsumer(stream, consumer))))
                 .chain(response -> response ? Uni.createFrom().voidItem()
                         : Uni.createFrom()
-                                .failure(() -> new RuntimeException(
-                                        String.format("Consumer %s in stream %s not resumed", consumer, stream))))
+                        .failure(() -> new RuntimeException(
+                                String.format("Consumer %s in stream %s not resumed", consumer, stream))))
                 .runSubscriptionOn(this.configuration.executorService())
                 .emitOn(this::runOnContext);
     }
 
-    private Uni<ConsumerInfo> createConsumer(final ConsumerConfiguration configuration) {
+    private Uni<ConsumerInfo> createConsumer(final String stream, final ConsumerConfiguration configuration) {
         return jetStreamManagement()
                 .chain(jetStreamManagement -> Uni.createFrom()
                         .item(Unchecked.supplier(
-                                () -> jetStreamManagement.createConsumer(configuration.stream(), map(configuration)))))
+                                () -> jetStreamManagement.createConsumer(stream, map(configuration)))))
                 .map(ConsumerInfo::of)
                 .runSubscriptionOn(this.configuration.executorService())
                 .emitOn(this::runOnContext);
@@ -81,7 +81,8 @@ class VertxStreamManagement implements StreamManagement {
         if (configuration.durable()) {
             builder = builder.durable(configuration.name());
         }
-        builder = builder.filterSubjects(configuration.filterSubjects());
+        builder = configuration.filterSubject().map(builder::filterSubject).orElse(builder);
+        builder = builder.filterSubjects(configuration.filterSubjects().stream().toList());
         builder = builder.name(configuration.name());
         builder = builder.ackPolicy(AckPolicy.Explicit);
         builder = configuration.acknowledgeWait().map(builder::ackWait).orElse(builder);
@@ -90,7 +91,7 @@ class VertxStreamManagement implements StreamManagement {
         builder = configuration.startTime().map(builder::startTime).orElse(builder);
         builder = configuration.description().map(builder::description).orElse(builder);
         builder = configuration.inactiveThreshold().map(builder::inactiveThreshold).orElse(builder);
-        builder = configuration.maxAckPending().map(builder::maxAckPending).orElse(builder);
+        builder = configuration.maxAcknowledgePending().map(builder::maxAckPending).orElse(builder);
         builder = configuration.maxDeliver().map(builder::maxDeliver).orElse(builder);
         builder = builder.replayPolicy(configuration.replayPolicy());
         builder = configuration.replicas().map(builder::numReplicas).orElse(builder);
@@ -99,14 +100,12 @@ class VertxStreamManagement implements StreamManagement {
         if (!configuration.metadata().isEmpty()) {
             builder = builder.metadata(configuration.metadata());
         }
-        builder = configuration.backoff().map(backoff -> backoff.toArray(new Duration[0]))
-                .map(builder::backoff).orElse(builder);
-        builder = configuration.pauseUntil().map(builder::pauseUntil).orElse(builder);
-        if (configuration.pull().isPresent()) {
-            final var pullConfiguration = configuration.pull().get();
-            builder = pullConfiguration.maximumWaitingPullRequests().map(builder::maxPullWaiting).orElse(builder);
-            builder = pullConfiguration.maximumExpiryTimeOnPullRequests().map(builder::maxExpires).orElse(builder);
-        }
+        builder = builder.backoff(configuration.backoff().toArray(new Duration[0]));
+        final var pullConfiguration = configuration.pullConfiguration();
+        builder = pullConfiguration.maxWaiting().map(builder::maxPullWaiting).orElse(builder);
+        builder = pullConfiguration.maxRequestExpires().map(builder::maxExpires).orElse(builder);
+        builder = pullConfiguration.maxRequestBatch().map(builder::maxBatch).orElse(builder);
+        builder = pullConfiguration.maxRequestMaxBytes().map(builder::maxBytes).orElse(builder);
         return builder.build();
     }
 

@@ -10,6 +10,7 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import io.quarkiverse.reactive.messaging.nats.jetstream.consumer.ConsumerConfiguration;
 import org.jspecify.annotations.NonNull;
 
 import io.quarkiverse.reactive.messaging.nats.jetstream.consumer.ConsumerMetadata;
@@ -23,9 +24,9 @@ final class VertxMessage implements Message {
     private final Context context;
 
     public VertxMessage(@NonNull NativeMessage message,
-            @NonNull Context context) {
+            @NonNull Context context, @NonNull ConsumerConfiguration consumerConfiguration) {
         this.message = message;
-        this.metadata = captureContextMetadata();
+        this.metadata = captureContextMetadata(consumerConfiguration);
         this.context = context;
     }
 
@@ -73,7 +74,7 @@ final class VertxMessage implements Message {
     public CompletionStage<Void> nack(Throwable reason, org.eclipse.microprofile.reactive.messaging.Metadata metadata) {
         return VertxContext.runOnContext(context.getDelegate(), f -> {
             try {
-                final var configuration = metadata.get(MessageConfiguration.class)
+                final var configuration = metadata.get(ConsumerConfiguration.class)
                         .orElseThrow(IllegalStateException::new);
                 final var subscribeMetadata = metadata.get(ConsumerMetadata.class)
                         .orElseThrow(IllegalStateException::new);
@@ -120,16 +121,16 @@ final class VertxMessage implements Message {
         return this;
     }
 
-    private Optional<Duration> getBackoff(@NonNull MessageConfiguration messageConfiguration,
+    private Optional<Duration> getBackoff(@NonNull ConsumerConfiguration configuration,
             @NonNull ConsumerMetadata metadata) {
-        if (messageConfiguration.backoff().isEmpty()) {
+        if (configuration.backoff().isEmpty()) {
             return Optional.empty();
         } else if (metadata.deliveredCount() == 0) {
-            return Optional.of(messageConfiguration.backoff().getFirst());
-        } else if (metadata.deliveredCount() >= messageConfiguration.backoff().size()) {
-            return Optional.of(messageConfiguration.backoff().getLast());
+            return Optional.of(configuration.backoff().getFirst());
+        } else if (metadata.deliveredCount() >= configuration.backoff().size()) {
+            return Optional.of(configuration.backoff().getLast());
         } else {
-            return Optional.of(messageConfiguration.backoff().get(metadata.deliveredCount() - 1));
+            return Optional.of(configuration.backoff().get(metadata.deliveredCount() - 1));
         }
     }
 }

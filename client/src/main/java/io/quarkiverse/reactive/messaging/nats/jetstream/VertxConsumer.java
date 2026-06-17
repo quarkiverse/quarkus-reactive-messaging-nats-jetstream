@@ -5,16 +5,14 @@ import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import io.quarkiverse.reactive.messaging.nats.jetstream.consumer.*;
+import io.smallrye.mutiny.tuples.Tuple2;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 
 import io.nats.client.JetStreamStatusException;
 import io.nats.client.PullSubscribeOptions;
 import io.quarkiverse.reactive.messaging.nats.jetstream.connection.Connection;
-import io.quarkiverse.reactive.messaging.nats.jetstream.consumer.ConsumerContext;
-import io.quarkiverse.reactive.messaging.nats.jetstream.consumer.ConsumerInfo;
-import io.quarkiverse.reactive.messaging.nats.jetstream.consumer.Subscription;
-import io.quarkiverse.reactive.messaging.nats.jetstream.consumer.SubscriptionWorkerThread;
 import io.quarkiverse.reactive.messaging.nats.jetstream.message.Message;
 import io.quarkiverse.reactive.messaging.nats.jetstream.message.MessageInfo;
 import io.quarkiverse.reactive.messaging.nats.jetstream.message.NativeMessage;
@@ -32,14 +30,14 @@ class VertxConsumer implements Consumer {
     private final Connection connection;
     private final Context context;
     private final Tracer tracer;
+    private final ConsumerConfigurationMapper mapper;
 
     @Override
     public @NonNull Uni<Message> next(@NonNull final String stream, @NonNull final String consumer,
             @NonNull final Duration timeout) {
         return consumerContext(stream, consumer)
                 .chain(consumerContext -> next(consumerContext, timeout))
-                .onItem().ifNotNull().transform(NativeMessage::of)
-                .onItem().ifNotNull().transform(message -> Message.of(message, context))
+                .onItem().ifNotNull().transform(this::toMessage)
                 .runSubscriptionOn(configuration.executorService())
                 .emitOn(this::runOnContext);
     }
@@ -49,7 +47,7 @@ class VertxConsumer implements Consumer {
             @NonNull final Duration timeout, final int batchSize) {
         return subscription(stream, consumer)
                 .onItem().transformToMulti(subscription -> fetch(subscription, timeout, batchSize))
-                .onItem().transform(message -> Message.of(message, context))
+                .onItem().transform(this::toMessage)
                 .onItem().transformToUniAndMerge(tracer::withTrace)
                 .runSubscriptionOn(configuration.executorService())
                 .emitOn(this::runOnContext);
@@ -74,7 +72,7 @@ class VertxConsumer implements Consumer {
                         .whilst(v -> true)
                         .onItem().transformToMultiAndConcatenate(v -> fetch(subscription, timeout, batchSize)))
                 .select().where(Objects::nonNull)
-                .onItem().transform(message -> Message.of(message, context))
+                .onItem().transform(this::toMessage)
                 .onItem().transformToUniAndMerge(tracer::withTrace)
                 .runSubscriptionOn(executorService)
                 .emitOn(this::runOnContext)
@@ -124,10 +122,15 @@ class VertxConsumer implements Consumer {
                 .map(Subscription::of);
     }
 
-    private Uni<io.nats.client.Message> next(final ConsumerContext consumerContext, final Duration timeout) {
+    private Uni<Tuple2<NativeMessage, ConsumerConfiguration>> next(final ConsumerContext consumerContext, final Duration timeout) {
         return Uni.createFrom().emitter(emitter -> {
             try {
-                emitter.complete(consumerContext.next(timeout));
+                final var message = consumerContext.next(timeout);
+                if (message != null) {
+                    emitter.complete(Tuple2.of(NativeMessage.of(message), mapper.map(consumerContext.getConsumerInfo().getConsumerConfiguration())));
+                } else {
+                    emitter.complete(null);
+                }
             } catch (JetStreamStatusException e) {
                 emitter.fail(e);
             } catch (IllegalStateException | InterruptedException e) {
@@ -138,12 +141,13 @@ class VertxConsumer implements Consumer {
         });
     }
 
-    private Multi<NativeMessage> fetch(final Subscription subscription, @Nullable final Duration timeout, final int batchSize) {
-        return Multi.createFrom().<io.nats.client.Message> emitter(emitter -> {
+    private Multi<Tuple2<NativeMessage, ConsumerConfiguration>> fetch(final Subscription subscription, @Nullable final Duration timeout, final int batchSize) {
+        return Multi.createFrom().emitter(emitter -> {
             try {
+                final var consumerConfiguration = mapper.map(subscription.getConsumerInfo().getConsumerConfiguration());
                 final var iterator = subscription.iterate(batchSize, timeout);
                 while (iterator.hasNext()) {
-                    emitter.emit(iterator.next());
+                    emitter.emit(Tuple2.of(NativeMessage.of(iterator.next()), consumerConfiguration));
                 }
                 emitter.complete();
             } catch (IllegalStateException e) {
@@ -151,8 +155,7 @@ class VertxConsumer implements Consumer {
             } catch (Exception failure) {
                 emitter.fail(failure);
             }
-        })
-                .onItem().transform(NativeMessage::of);
+        });
     }
 
     private Uni<StreamContext> streamContext(@NonNull final String streamName) {
@@ -169,6 +172,10 @@ class VertxConsumer implements Consumer {
     private Uni<JetStreamManagement> jetStreamManagement() {
         return Uni.createFrom().item(Unchecked.supplier(connection::jetStreamManagement))
                 .map(JetStreamManagement::of);
+    }
+
+    private Message toMessage(final Tuple2<NativeMessage, ConsumerConfiguration> tuple) {
+        return Message.of(tuple.getItem1(), context, tuple.getItem2());
     }
 
     private void runOnContext(Runnable action) {

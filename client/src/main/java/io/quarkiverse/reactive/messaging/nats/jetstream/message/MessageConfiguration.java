@@ -1,10 +1,9 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.message;
 
-import java.time.Duration;
-import java.util.List;
-import java.util.Optional;
-
 import org.jspecify.annotations.NonNull;
+
+import java.time.Duration;
+import java.util.Optional;
 
 public interface MessageConfiguration extends Metadata {
 
@@ -17,11 +16,5 @@ public interface MessageConfiguration extends Metadata {
      */
     @NonNull
     Optional<Duration> acknowledgeTimeout();
-
-    /**
-     * Backoff strategy for handling message acknowledgment retries.
-     */
-    @NonNull
-    List<Duration> backoff();
 
 }

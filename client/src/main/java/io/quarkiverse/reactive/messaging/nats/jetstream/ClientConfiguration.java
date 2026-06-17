@@ -1,5 +1,6 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream;
 
+import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 
 import org.jspecify.annotations.NonNull;
@@ -23,17 +24,19 @@ public interface ClientConfiguration {
      * @return a non-null {@link ConnectionConfiguration} instance used for configuring and managing the connection.
      */
     @NonNull
-    ConnectionConfiguration connection();
+    ConnectionConfiguration connectionConfiguration();
 
     /**
-     * Retrieves the {@link MessageConfiguration} associated with the client.
-     * The {@link MessageConfiguration} provides details about message handling,
-     * such as acknowledgment timeouts, backoff strategies, payload mapping, and tracing configurations.
+     * Retrieves an optional {@link MessageConfiguration} that contains configuration settings
+     * related to message handling for the client.
+     * If the {@link MessageConfiguration} is available, it may include details such as
+     * acknowledgment timeouts and other message-specific behaviors.
      *
-     * @return a non-null {@link MessageConfiguration} instance used for configuring and managing messages.
+     * @return a non-null {@code Optional} containing the {@link MessageConfiguration} if specified,
+     *         or an empty {@code Optional} if no message-specific configuration is defined.
      */
     @NonNull
-    MessageConfiguration message();
+    MessageConfiguration messageConfiguration();
 
     /**
      * Provides an {@link ExecutorService} instance used for asynchronous task execution.

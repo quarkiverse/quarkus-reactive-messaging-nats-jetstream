@@ -33,7 +33,7 @@ public class VertxClientFactory implements ClientFactory {
     }
 
     private Options createConnectionOptions(ClientConfiguration configuration) throws Exception {
-        return createConnectionOptions(configuration.connection(), configuration.executorService());
+        return createConnectionOptions(configuration.connectionConfiguration(), configuration.executorService());
     }
 
     private Options createConnectionOptions(ConnectionConfiguration configuration, ExecutorService executorService)

@@ -11,7 +11,7 @@ import io.smallrye.mutiny.Uni;
 public interface StreamManagement {
 
     @NonNull
-    Uni<ConsumerInfo> addConsumerIfAbsent(@NonNull ConsumerConfiguration configuration);
+    Uni<ConsumerInfo> addConsumerIfAbsent(@NonNull String stream, @NonNull ConsumerConfiguration configuration);
 
     @NonNull
     Uni<Void> deleteConsumer(@NonNull String stream, @NonNull String consumer);
