@@ -1,13 +1,13 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.consumer;
 
-import java.time.Duration;
-import java.time.ZonedDateTime;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-
+import io.nats.client.api.AckPolicy;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+
+import java.time.Duration;
+import java.time.ZonedDateTime;
+import java.util.Map;
+import java.util.Optional;
 
 @Mapper
 public interface ConsumerConfigurationMapper {
@@ -36,6 +36,39 @@ public interface ConsumerConfigurationMapper {
     @Mapping(target = "pullConfiguration", source = ".")
     ConsumerConfiguration map(io.nats.client.api.ConsumerConfiguration source);
 
+    default io.nats.client.api.ConsumerConfiguration map(final ConsumerConfiguration configuration) {
+        var builder = io.nats.client.api.ConsumerConfiguration.builder();
+        if (configuration.durable()) {
+            builder = builder.durable(configuration.name());
+        }
+        builder = configuration.filterSubject().map(builder::filterSubject).orElse(builder);
+        builder = builder.filterSubjects(configuration.filterSubjects().stream().toList());
+        builder = builder.name(configuration.name());
+        builder = builder.ackPolicy(AckPolicy.Explicit);
+        builder = configuration.acknowledgeWait().map(builder::ackWait).orElse(builder);
+        builder = builder.deliverPolicy(configuration.deliverPolicy());
+        builder = configuration.startSequence().map(builder::startSequence).orElse(builder);
+        builder = configuration.startTime().map(builder::startTime).orElse(builder);
+        builder = configuration.description().map(builder::description).orElse(builder);
+        builder = configuration.inactiveThreshold().map(builder::inactiveThreshold).orElse(builder);
+        builder = configuration.maxAcknowledgePending().map(builder::maxAckPending).orElse(builder);
+        builder = configuration.maxDeliver().map(builder::maxDeliver).orElse(builder);
+        builder = builder.replayPolicy(configuration.replayPolicy());
+        builder = configuration.replicas().map(builder::numReplicas).orElse(builder);
+        builder = configuration.memoryStorage().map(builder::memStorage).orElse(builder);
+        builder = configuration.sampleFrequency().map(builder::sampleFrequency).orElse(builder);
+        if (!configuration.metadata().isEmpty()) {
+            builder = builder.metadata(configuration.metadata());
+        }
+        builder = builder.backoff(configuration.backoff().toArray(new Duration[0]));
+        final var pullConfiguration = configuration.pullConfiguration();
+        builder = pullConfiguration.maxWaiting().map(builder::maxPullWaiting).orElse(builder);
+        builder = pullConfiguration.maxRequestExpires().map(builder::maxExpires).orElse(builder);
+        builder = pullConfiguration.maxRequestBatch().map(builder::maxBatch).orElse(builder);
+        builder = pullConfiguration.maxRequestMaxBytes().map(builder::maxBytes).orElse(builder);
+        return builder.build();
+    }
+
     default Optional<Duration> mapDuration(Duration duration) {
         return Optional.ofNullable(duration);
     }
@@ -58,10 +91,6 @@ public interface ConsumerConfigurationMapper {
 
     default Optional<String> mapString(String value) {
         return Optional.ofNullable(value);
-    }
-
-    default List<Duration> mapDurationList(Duration[] durations) {
-        return durations == null ? List.of() : List.of(durations);
     }
 
     default Map<String, String> mapMetadata(Map<String, String> metadata) {

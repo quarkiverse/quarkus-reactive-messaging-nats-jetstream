@@ -1,18 +1,20 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream;
 
-import java.time.Duration;
-import java.time.ZonedDateTime;
-
-import org.jspecify.annotations.NonNull;
-
-import io.nats.client.api.AckPolicy;
 import io.quarkiverse.reactive.messaging.nats.jetstream.connection.Connection;
 import io.quarkiverse.reactive.messaging.nats.jetstream.consumer.ConsumerConfiguration;
+import io.quarkiverse.reactive.messaging.nats.jetstream.consumer.ConsumerConfigurationMapper;
 import io.quarkiverse.reactive.messaging.nats.jetstream.consumer.ConsumerInfo;
+import io.quarkiverse.reactive.messaging.nats.jetstream.stream.PurgeResult;
+import io.quarkiverse.reactive.messaging.nats.jetstream.stream.StreamConfiguration;
+import io.quarkiverse.reactive.messaging.nats.jetstream.stream.StreamInfo;
+import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.unchecked.Unchecked;
 import io.vertx.mutiny.core.Context;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.NonNull;
+
+import java.time.ZonedDateTime;
 
 @RequiredArgsConstructor
 class VertxStreamManagement implements StreamManagement {
@@ -20,6 +22,7 @@ class VertxStreamManagement implements StreamManagement {
     private final Connection connection;
     private final Context context;
     private final Consumer consumer;
+    private final ConsumerConfigurationMapper consumerConfigurationMapper;
 
     @Override
     public @NonNull Uni<ConsumerInfo> addConsumerIfAbsent(@NonNull final String stream, @NonNull final ConsumerConfiguration configuration) {
@@ -66,47 +69,49 @@ class VertxStreamManagement implements StreamManagement {
                 .emitOn(this::runOnContext);
     }
 
+    @Override
+    public Uni<PurgeResult> purge(String streamName) {
+        return null;
+    }
+
+    @Override
+    public Uni<Long> firstSequence(String streamName) {
+        return null;
+    }
+
+    @Override
+    public Uni<Void> deleteMessage(String stream, long sequence, boolean erase) {
+        return null;
+    }
+
+    @Override
+    public Multi<PurgeResult> purgeAll() {
+        return null;
+    }
+
+    @Override
+    public Uni<Void> addSubject(String streamName, String subject) {
+        return null;
+    }
+
+    @Override
+    public Uni<Void> removeSubject(String streamName, String subject) {
+        return null;
+    }
+
+    @Override
+    public Uni<StreamInfo> addStreamIfAbsent(StreamConfiguration configuration) {
+        return null;
+    }
+
     private Uni<ConsumerInfo> createConsumer(final String stream, final ConsumerConfiguration configuration) {
         return jetStreamManagement()
                 .chain(jetStreamManagement -> Uni.createFrom()
                         .item(Unchecked.supplier(
-                                () -> jetStreamManagement.createConsumer(stream, map(configuration)))))
+                                () -> jetStreamManagement.createConsumer(stream, consumerConfigurationMapper.map(configuration)))))
                 .map(ConsumerInfo::of)
                 .runSubscriptionOn(this.configuration.executorService())
                 .emitOn(this::runOnContext);
-    }
-
-    private io.nats.client.api.ConsumerConfiguration map(final ConsumerConfiguration configuration) {
-        var builder = io.nats.client.api.ConsumerConfiguration.builder();
-        if (configuration.durable()) {
-            builder = builder.durable(configuration.name());
-        }
-        builder = configuration.filterSubject().map(builder::filterSubject).orElse(builder);
-        builder = builder.filterSubjects(configuration.filterSubjects().stream().toList());
-        builder = builder.name(configuration.name());
-        builder = builder.ackPolicy(AckPolicy.Explicit);
-        builder = configuration.acknowledgeWait().map(builder::ackWait).orElse(builder);
-        builder = builder.deliverPolicy(configuration.deliverPolicy());
-        builder = configuration.startSequence().map(builder::startSequence).orElse(builder);
-        builder = configuration.startTime().map(builder::startTime).orElse(builder);
-        builder = configuration.description().map(builder::description).orElse(builder);
-        builder = configuration.inactiveThreshold().map(builder::inactiveThreshold).orElse(builder);
-        builder = configuration.maxAcknowledgePending().map(builder::maxAckPending).orElse(builder);
-        builder = configuration.maxDeliver().map(builder::maxDeliver).orElse(builder);
-        builder = builder.replayPolicy(configuration.replayPolicy());
-        builder = configuration.replicas().map(builder::numReplicas).orElse(builder);
-        builder = configuration.memoryStorage().map(builder::memStorage).orElse(builder);
-        builder = configuration.sampleFrequency().map(builder::sampleFrequency).orElse(builder);
-        if (!configuration.metadata().isEmpty()) {
-            builder = builder.metadata(configuration.metadata());
-        }
-        builder = builder.backoff(configuration.backoff().toArray(new Duration[0]));
-        final var pullConfiguration = configuration.pullConfiguration();
-        builder = pullConfiguration.maxWaiting().map(builder::maxPullWaiting).orElse(builder);
-        builder = pullConfiguration.maxRequestExpires().map(builder::maxExpires).orElse(builder);
-        builder = pullConfiguration.maxRequestBatch().map(builder::maxBatch).orElse(builder);
-        builder = pullConfiguration.maxRequestMaxBytes().map(builder::maxBytes).orElse(builder);
-        return builder.build();
     }
 
     private Uni<JetStreamManagement> jetStreamManagement() {

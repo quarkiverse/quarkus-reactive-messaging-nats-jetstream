@@ -3,6 +3,7 @@ package io.quarkiverse.reactive.messaging.nats.jetstream;
 import java.time.Duration;
 
 import io.quarkiverse.reactive.messaging.nats.jetstream.consumer.ConsumerConfigurationMapper;
+import io.quarkiverse.reactive.messaging.nats.jetstream.stream.StreamInfo;
 import org.jspecify.annotations.NonNull;
 
 import io.quarkiverse.reactive.messaging.nats.jetstream.connection.Connection;
@@ -27,8 +28,9 @@ class VertxClient implements Client {
     public VertxClient(ClientConfiguration configuration, Connection connection, Context context, TracerFactory tracerFactory) {
         this.connection = connection;
         this.publisher = new VertxPublisher(configuration, connection, context, tracerFactory.create(Operation.PUBLISH));
-        this.consumer = new VertxConsumer(configuration, connection, context, tracerFactory.create(Operation.RECEIVE), Mappers.getMapper(ConsumerConfigurationMapper.class));
-        this.management = new VertxStreamManagement(configuration, connection, context, this);
+        final var consumerConfigurationMapper = Mappers.getMapper(ConsumerConfigurationMapper.class);
+        this.consumer = new VertxConsumer(configuration, connection, context, tracerFactory.create(Operation.RECEIVE), consumerConfigurationMapper);
+        this.management = new VertxStreamManagement(configuration, connection, context, this.consumer, consumerConfigurationMapper);
     }
 
     @Override
@@ -78,6 +80,16 @@ class VertxClient implements Client {
     @Override
     public StreamManagement management() {
         return management;
+    }
+
+    @Override
+    public Uni<StreamInfo> stream(String stream) {
+        return null;
+    }
+
+    @Override
+    public Multi<StreamInfo> streams() {
+        return null;
     }
 
     @Override
