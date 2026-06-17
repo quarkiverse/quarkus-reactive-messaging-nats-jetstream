@@ -3,7 +3,10 @@ package io.quarkiverse.reactive.messaging.nats.jetstream;
 import java.time.Duration;
 
 import io.quarkiverse.reactive.messaging.nats.jetstream.consumer.ConsumerConfigurationMapper;
+import io.quarkiverse.reactive.messaging.nats.jetstream.stream.StreamConfigurationMapper;
 import io.quarkiverse.reactive.messaging.nats.jetstream.stream.StreamInfo;
+import io.quarkiverse.reactive.messaging.nats.jetstream.stream.StreamInfoMapper;
+import io.smallrye.mutiny.unchecked.Unchecked;
 import org.jspecify.annotations.NonNull;
 
 import io.quarkiverse.reactive.messaging.nats.jetstream.connection.Connection;
@@ -24,13 +27,22 @@ class VertxClient implements Client {
     private final Publisher publisher;
     private final Consumer consumer;
     private final StreamManagement management;
+    private final StreamInfoMapper streamInfoMapper;
+    private final Context context;
+    private final ClientConfiguration configuration;
 
     public VertxClient(ClientConfiguration configuration, Connection connection, Context context, TracerFactory tracerFactory) {
         this.connection = connection;
-        this.publisher = new VertxPublisher(configuration, connection, context, tracerFactory.create(Operation.PUBLISH));
+        this.streamInfoMapper = Mappers.getMapper(StreamInfoMapper.class);
+        this.context = context;
+        this.configuration = configuration;
+
         final var consumerConfigurationMapper = Mappers.getMapper(ConsumerConfigurationMapper.class);
-        this.consumer = new VertxConsumer(configuration, connection, context, tracerFactory.create(Operation.RECEIVE), consumerConfigurationMapper);
-        this.management = new VertxStreamManagement(configuration, connection, context, this.consumer, consumerConfigurationMapper);
+        final var streamConfigurationMapper = Mappers.getMapper(StreamConfigurationMapper.class);
+
+        this.publisher = new VertxPublisher(this, tracerFactory.create(Operation.PUBLISH));
+        this.consumer = new VertxConsumer(this, tracerFactory.create(Operation.RECEIVE), consumerConfigurationMapper);
+        this.management = new VertxStreamManagement(this, consumerConfigurationMapper, streamConfigurationMapper, this.streamInfoMapper);
     }
 
     @Override
@@ -78,22 +90,57 @@ class VertxClient implements Client {
     }
 
     @Override
-    public StreamManagement management() {
+    public @NonNull StreamManagement management() {
         return management;
     }
 
     @Override
-    public Uni<StreamInfo> stream(String stream) {
-        return null;
+    public @NonNull Uni<StreamInfo> stream(@NonNull final String stream) {
+        return jetStreamManagement()
+                .chain(jetStreamManagement -> Uni.createFrom()
+                        .item(Unchecked.supplier(() -> jetStreamManagement.getStreamInfo(stream))))
+                .onItem().ifNotNull().transform(streamInfoMapper::map)
+                .runSubscriptionOn(this.configuration.executorService())
+                .emitOn(this::runOnContext);
     }
 
     @Override
-    public Multi<StreamInfo> streams() {
-        return null;
+    public @NonNull Multi<StreamInfo> streams() {
+        return jetStreamManagement()
+                .chain(jetStreamManagement -> Uni.createFrom()
+                .item(Unchecked.supplier(jetStreamManagement::getStreams)))
+                .onItem().transformToMulti(streams -> Multi.createFrom().iterable(streams))
+                .onItem().transform(streamInfoMapper::map)
+                .runSubscriptionOn(this.configuration.executorService())
+                .emitOn(this::runOnContext);
+    }
+
+    @Override
+    public @NonNull ClientConfiguration configuration() {
+        return configuration;
+    }
+
+    @Override
+    public @NonNull Connection connection() {
+        return connection;
+    }
+
+    @Override
+    public @NonNull Context context() {
+        return context;
     }
 
     @Override
     public void close() throws Exception {
         connection.close();
+    }
+
+    private Uni<JetStreamManagement> jetStreamManagement() {
+        return Uni.createFrom().item(Unchecked.supplier(connection::jetStreamManagement))
+                .map(JetStreamManagement::of);
+    }
+
+    private void runOnContext(Runnable action) {
+        context.runOnContext(action);
     }
 }

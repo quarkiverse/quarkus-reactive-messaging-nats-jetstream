@@ -26,9 +26,7 @@ import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
 class VertxConsumer implements Consumer {
-    private final ClientConfiguration configuration;
-    private final Connection connection;
-    private final Context context;
+    private final Client client;
     private final Tracer tracer;
     private final ConsumerConfigurationMapper mapper;
 
@@ -38,7 +36,7 @@ class VertxConsumer implements Consumer {
         return consumerContext(stream, consumer)
                 .chain(consumerContext -> next(consumerContext, timeout))
                 .onItem().ifNotNull().transform(this::toMessage)
-                .runSubscriptionOn(configuration.executorService())
+                .runSubscriptionOn(configuration().executorService())
                 .emitOn(this::runOnContext);
     }
 
@@ -49,7 +47,7 @@ class VertxConsumer implements Consumer {
                 .onItem().transformToMulti(subscription -> fetch(subscription, timeout, batchSize))
                 .onItem().transform(this::toMessage)
                 .onItem().transformToUniAndMerge(tracer::withTrace)
-                .runSubscriptionOn(configuration.executorService())
+                .runSubscriptionOn(configuration().executorService())
                 .emitOn(this::runOnContext);
     }
 
@@ -58,7 +56,7 @@ class VertxConsumer implements Consumer {
         return streamContext(stream)
                 .chain(streamContext -> Uni.createFrom().item(Unchecked.supplier(() -> streamContext.getMessage(sequence))))
                 .map(MessageInfo::of)
-                .runSubscriptionOn(configuration.executorService())
+                .runSubscriptionOn(configuration().executorService())
                 .emitOn(this::runOnContext);
     }
 
@@ -93,7 +91,7 @@ class VertxConsumer implements Consumer {
                             }
                         }))
                 .onItem().ifNotNull().transform(ConsumerInfo::of)
-                .runSubscriptionOn(this.configuration.executorService())
+                .runSubscriptionOn(configuration().executorService())
                 .emitOn(this::runOnContext);
     }
 
@@ -104,7 +102,7 @@ class VertxConsumer implements Consumer {
                         .item(Unchecked.supplier(() -> jetStreamManagement.getConsumerNames(stream))))
                 .onItem().transformToMulti(consumers -> Multi.createFrom().items(consumers.stream()))
                 .onItem().transformToUniAndMerge(consumer -> consumer(stream, consumer))
-                .runSubscriptionOn(this.configuration.executorService())
+                .runSubscriptionOn(configuration().executorService())
                 .emitOn(this::runOnContext);
     }
 
@@ -165,20 +163,32 @@ class VertxConsumer implements Consumer {
     }
 
     private Uni<JetStream> jetStream() {
-        return Uni.createFrom().item(Unchecked.supplier(connection::jetStream))
+        return Uni.createFrom().item(Unchecked.supplier(connection()::jetStream))
                 .map(JetStreamDelegate::new);
     }
 
     private Uni<JetStreamManagement> jetStreamManagement() {
-        return Uni.createFrom().item(Unchecked.supplier(connection::jetStreamManagement))
+        return Uni.createFrom().item(Unchecked.supplier(connection()::jetStreamManagement))
                 .map(JetStreamManagement::of);
     }
 
     private Message toMessage(final Tuple2<NativeMessage, ConsumerConfiguration> tuple) {
-        return Message.of(tuple.getItem1(), context, tuple.getItem2());
+        return Message.of(tuple.getItem1(), context(), tuple.getItem2());
+    }
+
+    private ClientConfiguration configuration() {
+        return client.configuration();
+    }
+
+    private Connection connection() {
+        return client.connection();
+    }
+
+    private Context context() {
+        return client.context();
     }
 
     private void runOnContext(Runnable action) {
-        context.runOnContext(action);
+        context().runOnContext(action);
     }
 }

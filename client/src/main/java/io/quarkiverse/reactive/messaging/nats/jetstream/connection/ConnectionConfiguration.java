@@ -7,7 +7,6 @@ import java.util.Optional;
 import javax.net.ssl.SSLContext;
 
 import io.nats.client.AuthHandler;
-import io.nats.client.support.SSLUtils;
 
 public interface ConnectionConfiguration {
 
@@ -58,7 +57,7 @@ public interface ConnectionConfiguration {
     Optional<Integer> bufferSize();
 
     /**
-     * The tls algorithm. Default is {@value SSLUtils#DEFAULT_TLS_ALGORITHM}
+     * The tls algorithm. Default is {@value "SunX509"}
      */
     Optional<String> tlsAlgorithm();
 

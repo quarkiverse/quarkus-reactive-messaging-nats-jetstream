@@ -1,7 +1,5 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.consumer;
 
-import io.nats.client.api.DeliverPolicy;
-import io.nats.client.api.ReplayPolicy;
 import lombok.Builder;
 
 import java.time.Duration;

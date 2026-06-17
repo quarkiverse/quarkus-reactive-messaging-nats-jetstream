@@ -1,6 +1,5 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.stream;
 
-import io.nats.client.api.StreamState;
 import lombok.Builder;
 
 import java.time.ZonedDateTime;

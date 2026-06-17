@@ -4,6 +4,8 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
 import java.time.Duration;
+import java.util.List;
+import java.util.Map;
 
 @Mapper
 public interface StreamConfigurationMapper {
@@ -16,6 +18,49 @@ public interface StreamConfigurationMapper {
 
     @Mapping(target = "maxMsgSize", source = "maximumMessageSize")
     io.nats.client.api.StreamConfiguration map(StreamConfiguration source);
+
+/**
+    String description,
+    RetentionPolicy retentionPolicy,
+    CompressionOption compressionOption,
+    long maxConsumers,
+    long maxMessages,
+    long maxMessagesPerSubject,
+    long maxBytes,
+    Duration maxAge,
+    int maximumMessageSize,
+    StorageType storageType,
+    int replicas,
+    boolean noAck,
+    String templateOwner,
+    DiscardPolicy discardPolicy,
+    Duration duplicateWindow,
+    Placement placement,
+    Republish republish,
+    SubjectTransform subjectTransform,
+    ConsumerLimits consumerLimits,
+    Mirror mirror,
+    List<Source> sources,
+    boolean sealed,
+    boolean allowRollup,
+    boolean allowDirect,
+    boolean mirrorDirect,
+    boolean denyDelete,
+    boolean denyPurge,
+    boolean discardNewPerSubject,
+    Map<String, String> metadata,
+    long firstSequence,
+    Duration subjectDeleteMarkerTtl,
+    boolean allowMessageTtl,
+    boolean allowMessageSchedules,
+    boolean allowMessageCounter,
+    boolean allowAtomicPublish,
+    boolean allowBatched,
+    PersistMode persistMode) {*/
+
+    @Mapping(target = "subjects", source = "subjects")
+    @Mapping(target = "description", source = "source.description")
+    StreamConfiguration map(StreamConfiguration source, List<String> subjects);
 
     default long map(Duration value) {
         return value.toNanos();

@@ -7,4 +7,6 @@ import io.quarkiverse.reactive.messaging.nats.client.stream.StreamAware;
 
 public interface Client extends PublisherAware, ConsumerAware, StreamAware, KeyValueStoreAware {
 
+
+
 }

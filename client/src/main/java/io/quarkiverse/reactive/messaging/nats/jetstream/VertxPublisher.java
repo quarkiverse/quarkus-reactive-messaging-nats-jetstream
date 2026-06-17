@@ -1,9 +1,5 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream;
 
-import java.util.UUID;
-
-import org.jspecify.annotations.NonNull;
-
 import io.nats.client.PublishOptions;
 import io.quarkiverse.reactive.messaging.nats.jetstream.connection.Connection;
 import io.quarkiverse.reactive.messaging.nats.jetstream.message.AcknowledgeMetadata;
@@ -13,17 +9,17 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.message.tracing.Tracer;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.unchecked.Unchecked;
-import io.vertx.mutiny.core.Context;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.jbosslog.JBossLog;
+import org.jspecify.annotations.NonNull;
+
+import java.util.UUID;
 
 @JBossLog
 @RequiredArgsConstructor
 class VertxPublisher implements Publisher {
-    private final ClientConfiguration configuration;
-    private final Connection connection;
-    private final Context context;
-    private final Tracer tracer;
+    private final @NonNull Client client;
+    private final @NonNull Tracer tracer;
 
     @Override
     public @NonNull Uni<Message> publish(@NonNull final Message message, @NonNull final String stream,
@@ -33,7 +29,7 @@ class VertxPublisher implements Publisher {
                 .chain(this::publish)
                 .chain(this::acknowledge)
                 .onFailure().recoverWithUni(failure -> notAcknowledge(message, failure))
-                .runSubscriptionOn(configuration.executorService())
+                .runSubscriptionOn(configuration().executorService())
                 .emitOn(this::runOnContext);
     }
 
@@ -74,12 +70,12 @@ class VertxPublisher implements Publisher {
             }
             headers.setStream(stream);
             headers.setSubject(subject);
-            return (Message) message.addMetadata(configuration.messageConfiguration()).addMetadata(headers);
+            return (Message) message.addMetadata(configuration().messageConfiguration()).addMetadata(headers);
         }));
     }
 
     private Uni<JetStream> jetStream() {
-        return Uni.createFrom().item(Unchecked.supplier(connection::jetStream))
+        return Uni.createFrom().item(Unchecked.supplier(connection()::jetStream))
                 .map(JetStreamDelegate::new);
     }
 
@@ -94,8 +90,16 @@ class VertxPublisher implements Publisher {
                 .chain(v -> Uni.createFrom().item(message));
     }
 
+    private ClientConfiguration configuration() {
+        return client.configuration();
+    }
+
+    private Connection connection() {
+        return client.connection();
+    }
+
     private void runOnContext(Runnable action) {
-        context.runOnContext(action);
+        client.context().runOnContext(action);
     }
 
 }

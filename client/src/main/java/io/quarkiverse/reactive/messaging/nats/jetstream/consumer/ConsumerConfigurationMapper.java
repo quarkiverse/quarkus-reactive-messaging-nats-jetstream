@@ -46,14 +46,14 @@ public interface ConsumerConfigurationMapper {
         builder = builder.name(configuration.name());
         builder = builder.ackPolicy(AckPolicy.Explicit);
         builder = configuration.acknowledgeWait().map(builder::ackWait).orElse(builder);
-        builder = builder.deliverPolicy(configuration.deliverPolicy());
+        builder = builder.deliverPolicy(map(configuration.deliverPolicy()));
         builder = configuration.startSequence().map(builder::startSequence).orElse(builder);
         builder = configuration.startTime().map(builder::startTime).orElse(builder);
         builder = configuration.description().map(builder::description).orElse(builder);
         builder = configuration.inactiveThreshold().map(builder::inactiveThreshold).orElse(builder);
         builder = configuration.maxAcknowledgePending().map(builder::maxAckPending).orElse(builder);
         builder = configuration.maxDeliver().map(builder::maxDeliver).orElse(builder);
-        builder = builder.replayPolicy(configuration.replayPolicy());
+        builder = builder.replayPolicy(map(configuration.replayPolicy()));
         builder = configuration.replicas().map(builder::numReplicas).orElse(builder);
         builder = configuration.memoryStorage().map(builder::memStorage).orElse(builder);
         builder = configuration.sampleFrequency().map(builder::sampleFrequency).orElse(builder);
@@ -68,6 +68,10 @@ public interface ConsumerConfigurationMapper {
         builder = pullConfiguration.maxRequestMaxBytes().map(builder::maxBytes).orElse(builder);
         return builder.build();
     }
+
+    io.nats.client.api.DeliverPolicy map(DeliverPolicy source);
+
+    io.nats.client.api.ReplayPolicy map(ReplayPolicy source);
 
     default Optional<Duration> mapDuration(Duration duration) {
         return Optional.ofNullable(duration);
