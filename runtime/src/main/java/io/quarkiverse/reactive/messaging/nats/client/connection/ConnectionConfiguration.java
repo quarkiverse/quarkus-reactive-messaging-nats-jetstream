@@ -47,7 +47,7 @@ public interface ConnectionConfiguration {
     Optional<Duration> connectionBackoff();
 
     /**
-     * The maximum number of attempts to attempt to re-connect to NATS.
+     * The maximum number of maximumReconnects to attempt to re-connect to NATS.
      * The default is -1 that means unlimited.
      */
     @WithDefault("-1")

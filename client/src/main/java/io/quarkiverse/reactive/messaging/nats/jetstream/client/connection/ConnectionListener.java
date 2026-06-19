@@ -1,0 +1,9 @@
+package io.quarkiverse.reactive.messaging.nats.jetstream.client.connection;
+
+public interface ConnectionListener extends io.nats.client.ConnectionListener {
+
+    static ConnectionListener of() {
+        return new DefaultConnectionListener();
+    }
+
+}
