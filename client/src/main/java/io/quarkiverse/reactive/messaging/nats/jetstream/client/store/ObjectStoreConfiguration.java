@@ -8,8 +8,7 @@ import java.util.Objects;
 import java.util.Optional;
 
 @Builder
-public record KeyValueStoreConfiguration(/* Name of Key-Value store */
-        /* Name of Key-Value store */
+public record ObjectStoreConfiguration(        /* Name of Key-Value store */
         @NonNull String name,
         /* Description of Key-Value store */
         @NonNull Optional<String> description,
@@ -26,9 +25,11 @@ public record KeyValueStoreConfiguration(/* Name of Key-Value store */
         /* The number of replicas for this bucket */
         @NonNull Optional<Integer> replicas,
         /* Sets whether to use compression */
-        @NonNull Optional<Boolean> compressed) {
+        @NonNull Optional<Boolean> compressed,
+        /* The placement directive */
+        @NonNull Optional<Placement> placement) {
 
-    public KeyValueStoreConfiguration {
+    public ObjectStoreConfiguration {
         Objects.requireNonNull(name, "name");
         Objects.requireNonNull(description, "description");
         Objects.requireNonNull(storageType, "storageType");
@@ -38,5 +39,6 @@ public record KeyValueStoreConfiguration(/* Name of Key-Value store */
         Objects.requireNonNull(ttl, "ttl");
         Objects.requireNonNull(replicas, "replicas");
         Objects.requireNonNull(compressed, "compressed");
+        Objects.requireNonNull(placement, "placement");
     }
 }

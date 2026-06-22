@@ -3,7 +3,7 @@ package io.quarkiverse.reactive.messaging.nats.jetstream.client;
 import java.time.ZonedDateTime;
 
 import io.nats.client.api.ObjectStoreConfiguration;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.store.KeyValueStoreConfiguration;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.store.KeyValueConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.stream.PurgeResult;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.stream.StreamConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.stream.StreamInfo;
@@ -58,11 +58,14 @@ public interface StreamManagement {
     Uni<StreamInfo> addStreamIfAbsent(@NonNull StreamConfiguration configuration);
 
     /**
-     * Add key value store.
+     * Add key value store if absent.
      */
     @NonNull
-    Uni<Void> addKeyValueStoreIfAbsent(@NonNull KeyValueStoreConfiguration configuration);
+    Uni<Void> addKeyValueIfAbsent(@NonNull KeyValueConfiguration configuration);
 
+    /**
+     * Add object value store if absent.
+     */
     @NonNull
     Uni<Void> addObjectStoreIfAbsent(@NonNull ObjectStoreConfiguration configuration);
 
