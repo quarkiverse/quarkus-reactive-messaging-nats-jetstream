@@ -22,7 +22,7 @@ public record ObjectStoreConfiguration( /* Name of Key-Value store */
         /* The number of replicas for this bucket */
         @NonNull Optional<Integer> replicas,
         /* Sets whether to use compression */
-        @NonNull Optional<Boolean> compressed,
+        @NonNull Optional<Boolean> compression,
         /* The placement directive */
         @NonNull Optional<Placement> placement) {
 
@@ -33,7 +33,7 @@ public record ObjectStoreConfiguration( /* Name of Key-Value store */
         Objects.requireNonNull(maxBucketSize, "maxBucketSize");
         Objects.requireNonNull(ttl, "ttl");
         Objects.requireNonNull(replicas, "replicas");
-        Objects.requireNonNull(compressed, "compressed");
+        Objects.requireNonNull(compression, "compression");
         Objects.requireNonNull(placement, "placement");
     }
 }

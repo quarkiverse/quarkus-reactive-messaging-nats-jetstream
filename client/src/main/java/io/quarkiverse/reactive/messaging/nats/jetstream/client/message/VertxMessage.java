@@ -10,6 +10,7 @@ import org.jspecify.annotations.NonNull;
 import java.time.Duration;
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.TimeoutException;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -52,7 +53,15 @@ final class VertxMessage implements Message {
     public CompletionStage<Void> ack() {
         return VertxContext.runOnContext(context.getDelegate(), f -> {
             try {
-                message.ack();
+                metadata.get(ConsumerConfiguration.class)
+                        .flatMap(ConsumerConfiguration::acknowledgeTimeout)
+                        .ifPresentOrElse(timeout -> {
+                            try {
+                                message.ackSync(timeout);
+                            } catch (TimeoutException | InterruptedException e) {
+                                throw new RuntimeException(e);
+                            }
+                        }, message::ack);
                 this.runOnMessageContext(() -> f.complete(null));
             } catch (Exception e) {
                 this.runOnMessageContext(() -> f.completeExceptionally(e));

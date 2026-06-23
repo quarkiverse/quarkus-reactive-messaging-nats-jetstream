@@ -6,10 +6,12 @@ import java.util.Optional;
 import org.mapstruct.Mapper;
 import org.mapstruct.ObjectFactory;
 
-@Mapper
+@Mapper(uses = OptionalMapper.class)
 interface PlacementMapper {
 
     Placement map(io.nats.client.api.Placement placement);
+
+    io.nats.client.api.Placement map(Placement placement);
 
     @ObjectFactory
     default Placement create(io.nats.client.api.Placement placement) {

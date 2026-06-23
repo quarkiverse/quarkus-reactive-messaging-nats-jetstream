@@ -6,9 +6,12 @@ import org.mapstruct.Mapping;
 import org.mapstruct.factory.Mappers;
 
 import java.time.Duration;
+import java.util.Map;
+import java.util.Optional;
 
 @Mapper(uses = { OptionalMapper.class, PullConfigurationMapper.class })
 public interface ConsumerConfigurationMapper {
+    String ACKNOWLEDGE_TIMEOUT = "acknowledgeTimeout";
 
     @Mapping(target = "name", source = "name")
     @Mapping(target = "durable", source = "durable")
@@ -31,6 +34,7 @@ public interface ConsumerConfigurationMapper {
     @Mapping(target = "pauseUntil", source = "pauseUntil")
     @Mapping(target = "headersOnly", source = "headersOnly")
     @Mapping(target = "pullConfiguration", source = ".")
+    @Mapping(target = "acknowledgeTimeout", expression = "java(acknowledgeTimeout(source))")
     ConsumerConfiguration map(io.nats.client.api.ConsumerConfiguration source);
 
     default io.nats.client.api.ConsumerConfiguration map(final ConsumerConfiguration configuration) {
@@ -69,6 +73,15 @@ public interface ConsumerConfigurationMapper {
             builder = pullConfiguration.maxRequestBatch().map(builder::maxBatch).orElse(builder);
             builder = pullConfiguration.maxRequestMaxBytes().map(builder::maxBytes).orElse(builder);
         }
+        if (configuration.acknowledgeTimeout().isPresent()) {
+            builder = builder.metadata(Map.of(ACKNOWLEDGE_TIMEOUT, String.valueOf(configuration.acknowledgeTimeout().get().toNanos())));
+        }
         return builder.build();
+    }
+
+    default Optional<Duration> acknowledgeTimeout(io.nats.client.api.ConsumerConfiguration configuration) {
+        return Optional.ofNullable(configuration.getMetadata().get(ACKNOWLEDGE_TIMEOUT))
+                .map(Long::parseLong)
+                .map(Duration::ofNanos);
     }
 }

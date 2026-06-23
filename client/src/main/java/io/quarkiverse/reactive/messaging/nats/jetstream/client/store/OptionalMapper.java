@@ -44,4 +44,9 @@ interface OptionalMapper {
     default Optional<ObjectLink> map(ObjectLink objectLink) {
         return Optional.ofNullable(objectLink);
     }
+
+    @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
+    default String map(Optional<String> value) {
+        return value.orElse(null);
+    }
 }

@@ -5,7 +5,7 @@ import java.time.ZonedDateTime;
 import java.util.*;
 
 import lombok.Builder;
-import lombok.NonNull;
+import org.jspecify.annotations.NonNull;
 
 @Builder
 public record ConsumerConfiguration(
@@ -28,11 +28,15 @@ public record ConsumerConfiguration(
          */
         @NonNull Set<String> filterSubjects,
         /*
-         * The duration that the server will wait for an ack for any individual message once it has been delivered to a
+         * The duration that the server will wait for an acknowledge for any individual message once it has been delivered to a
          * consumer.
          * If an ack is not received in time, the message will be re-delivered.
          */
         @NonNull Optional<Duration> acknowledgeWait,
+        /*
+         * The duration to wait for an acknowledge confirmation
+         */
+        @NonNull Optional<Duration> acknowledgeTimeout,
         /*
          * The point in the stream to receive messages from, either DeliverAll, DeliverLast, DeliverNew, DeliverByStartSequence,
          * DeliverByStartTime, or DeliverLastPerSubject

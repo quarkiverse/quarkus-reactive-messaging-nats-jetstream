@@ -3,6 +3,8 @@ package io.quarkiverse.reactive.messaging.nats.jetstream.client;
 import java.time.Duration;
 import java.util.concurrent.ExecutorService;
 
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.store.KeyValueConfigurationMapper;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.store.ObjectStoreConfigurationMapper;
 import org.jspecify.annotations.NonNull;
 import org.mapstruct.factory.Mappers;
 
@@ -40,11 +42,13 @@ class VertxClient implements Client {
 
         final var consumerConfigurationMapper = Mappers.getMapper(ConsumerConfigurationMapper.class);
         final var streamConfigurationMapper = Mappers.getMapper(StreamConfigurationMapper.class);
+        final var keyValueConfigurationMapper = Mappers.getMapper(KeyValueConfigurationMapper.class);
+        final var objectStoreConfigurationMapper = Mappers.getMapper(ObjectStoreConfigurationMapper.class);
 
         this.publisher = new VertxPublisher(this, tracerFactory.create(Operation.PUBLISH));
         this.consumer = new VertxConsumer(this, tracerFactory.create(Operation.RECEIVE), consumerConfigurationMapper);
         this.management = new VertxStreamManagement(this, consumerConfigurationMapper, streamConfigurationMapper,
-                this.streamInfoMapper);
+                this.streamInfoMapper, keyValueConfigurationMapper, objectStoreConfigurationMapper);
     }
 
     @Override

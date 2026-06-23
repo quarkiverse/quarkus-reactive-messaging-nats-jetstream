@@ -2,9 +2,9 @@ package io.quarkiverse.reactive.messaging.nats.jetstream.client;
 
 import java.time.ZonedDateTime;
 
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.store.ObjectStoreConfiguration;
 import org.jspecify.annotations.NonNull;
 
-import io.nats.client.api.ObjectStoreConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer.ConsumerConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer.ConsumerInfo;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.store.KeyValueConfiguration;
