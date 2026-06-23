@@ -116,12 +116,12 @@ class VertxClient implements Client {
     }
 
     @Override
-    public @NonNull ObjectStore objectStore(@NonNull String bucketName) {
-        return null;
+    public @NonNull ObjectStore objectStore(@NonNull final String bucketName) {
+        return new VertxObjectStore(bucketName, this);
     }
 
     @Override
-    public @NonNull KeyValue keyValue(@NonNull String bucketName) {
+    public @NonNull KeyValue keyValue(@NonNull final String bucketName) {
         return new VertxKeyValue(bucketName, this);
     }
 

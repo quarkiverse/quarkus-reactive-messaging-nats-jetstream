@@ -8,7 +8,7 @@ import java.util.Objects;
 
 @Builder
 public record ObjectInfo(@NonNull String bucket,
-                         @NonNull String nuid,
+                         @NonNull String nuId,
                          @NonNull Long size,
                          @NonNull Long chunks,
                          @NonNull String digest,
@@ -18,7 +18,7 @@ public record ObjectInfo(@NonNull String bucket,
 
     public ObjectInfo {
         Objects.requireNonNull(bucket, "bucket");
-        Objects.requireNonNull(nuid, "nuid");
+        Objects.requireNonNull(nuId, "nuId");
         Objects.requireNonNull(size, "size");
         Objects.requireNonNull(chunks, "chunks");
         Objects.requireNonNull(digest, "digest");

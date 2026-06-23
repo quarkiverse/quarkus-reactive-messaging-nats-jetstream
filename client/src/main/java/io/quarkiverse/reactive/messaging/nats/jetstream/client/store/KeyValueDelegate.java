@@ -11,7 +11,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
 
-public record KeyValueDelegate(io.nats.client.KeyValue delegate) implements KeyValue {
+record KeyValueDelegate(io.nats.client.KeyValue delegate) implements KeyValue {
 
     @Override
     public String getBucketName() {

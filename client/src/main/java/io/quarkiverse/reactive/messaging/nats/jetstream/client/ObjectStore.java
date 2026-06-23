@@ -80,7 +80,7 @@ public interface ObjectStore {
      * @param store the store object to link to
      * @return the ObjectInfo for the link as saved or throws an exception
      */
-    @NonNull Uni<ObjectInfo> link(String objectName, ObjectStore store);
+    @NonNull Uni<ObjectInfo> link(@NonNull String objectName, @NonNull ObjectStore store);
 
     /**
      * Close (seal) the bucket to changes. The store (bucket) will be read only.
