@@ -1,15 +1,15 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client.store;
 
+import java.io.IOException;
+import java.util.List;
+import java.util.concurrent.LinkedBlockingQueue;
+
 import io.nats.client.JetStreamApiException;
 import io.nats.client.MessageTtl;
 import io.nats.client.api.*;
 import io.nats.client.api.KeyValueEntry;
 import io.nats.client.api.KeyValueStatus;
 import io.nats.client.impl.NatsKeyValueWatchSubscription;
-
-import java.io.IOException;
-import java.util.List;
-import java.util.concurrent.LinkedBlockingQueue;
 
 record KeyValueDelegate(io.nats.client.KeyValue delegate) implements KeyValue {
 
@@ -94,32 +94,38 @@ record KeyValueDelegate(io.nats.client.KeyValue delegate) implements KeyValue {
     }
 
     @Override
-    public NatsKeyValueWatchSubscription watch(String key, KeyValueWatcher watcher, KeyValueWatchOption... watchOptions) throws IOException, JetStreamApiException, InterruptedException {
+    public NatsKeyValueWatchSubscription watch(String key, KeyValueWatcher watcher, KeyValueWatchOption... watchOptions)
+            throws IOException, JetStreamApiException, InterruptedException {
         return delegate.watch(key, watcher, watchOptions);
     }
 
     @Override
-    public NatsKeyValueWatchSubscription watch(String key, KeyValueWatcher watcher, long fromRevision, KeyValueWatchOption... watchOptions) throws IOException, JetStreamApiException, InterruptedException {
+    public NatsKeyValueWatchSubscription watch(String key, KeyValueWatcher watcher, long fromRevision,
+            KeyValueWatchOption... watchOptions) throws IOException, JetStreamApiException, InterruptedException {
         return delegate.watch(key, watcher, fromRevision, watchOptions);
     }
 
     @Override
-    public NatsKeyValueWatchSubscription watch(List<String> keys, KeyValueWatcher watcher, KeyValueWatchOption... watchOptions) throws IOException, JetStreamApiException, InterruptedException {
+    public NatsKeyValueWatchSubscription watch(List<String> keys, KeyValueWatcher watcher, KeyValueWatchOption... watchOptions)
+            throws IOException, JetStreamApiException, InterruptedException {
         return delegate.watch(keys, watcher, watchOptions);
     }
 
     @Override
-    public NatsKeyValueWatchSubscription watch(List<String> keys, KeyValueWatcher watcher, long fromRevision, KeyValueWatchOption... watchOptions) throws IOException, JetStreamApiException, InterruptedException {
+    public NatsKeyValueWatchSubscription watch(List<String> keys, KeyValueWatcher watcher, long fromRevision,
+            KeyValueWatchOption... watchOptions) throws IOException, JetStreamApiException, InterruptedException {
         return delegate.watch(keys, watcher, fromRevision, watchOptions);
     }
 
     @Override
-    public NatsKeyValueWatchSubscription watchAll(KeyValueWatcher watcher, KeyValueWatchOption... watchOptions) throws IOException, JetStreamApiException, InterruptedException {
+    public NatsKeyValueWatchSubscription watchAll(KeyValueWatcher watcher, KeyValueWatchOption... watchOptions)
+            throws IOException, JetStreamApiException, InterruptedException {
         return delegate.watchAll(watcher, watchOptions);
     }
 
     @Override
-    public NatsKeyValueWatchSubscription watchAll(KeyValueWatcher watcher, long fromRevision, KeyValueWatchOption... watchOptions) throws IOException, JetStreamApiException, InterruptedException {
+    public NatsKeyValueWatchSubscription watchAll(KeyValueWatcher watcher, long fromRevision,
+            KeyValueWatchOption... watchOptions) throws IOException, JetStreamApiException, InterruptedException {
         return delegate.watchAll(watcher, fromRevision, watchOptions);
     }
 

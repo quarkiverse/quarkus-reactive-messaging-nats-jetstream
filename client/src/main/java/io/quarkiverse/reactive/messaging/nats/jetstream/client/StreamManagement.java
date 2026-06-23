@@ -2,16 +2,16 @@ package io.quarkiverse.reactive.messaging.nats.jetstream.client;
 
 import java.time.ZonedDateTime;
 
+import org.jspecify.annotations.NonNull;
+
 import io.nats.client.api.ObjectStoreConfiguration;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer.ConsumerConfiguration;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer.ConsumerInfo;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.store.KeyValueConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.stream.PurgeResult;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.stream.StreamConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.stream.StreamInfo;
 import io.smallrye.mutiny.Multi;
-import org.jspecify.annotations.NonNull;
-
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer.ConsumerConfiguration;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer.ConsumerInfo;
 import io.smallrye.mutiny.Uni;
 
 public interface StreamManagement {

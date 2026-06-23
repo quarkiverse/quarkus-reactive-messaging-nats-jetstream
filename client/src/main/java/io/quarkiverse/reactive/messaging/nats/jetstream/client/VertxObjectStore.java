@@ -1,16 +1,17 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+
+import org.jspecify.annotations.NonNull;
+import org.mapstruct.factory.Mappers;
+
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.connection.Connection;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.store.*;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.unchecked.Unchecked;
 import io.vertx.mutiny.core.Context;
-import org.jspecify.annotations.NonNull;
-import org.mapstruct.factory.Mappers;
-
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 
 class VertxObjectStore implements ObjectStore {
     private final String bucketName;
@@ -41,7 +42,7 @@ class VertxObjectStore implements ObjectStore {
                     }
                 })))
                 .map(objectInfoMapper::map)
-                .runSubscriptionOn(configuration().executorService())
+                .runSubscriptionOn(client.executorService())
                 .emitOn(this::runOnContext);
     }
 
@@ -50,7 +51,7 @@ class VertxObjectStore implements ObjectStore {
         return objectStore(bucketName)
                 .chain(objectStore -> Uni.createFrom().item(Unchecked.supplier(() -> objectStore.put(objectName, data))))
                 .map(objectInfoMapper::map)
-                .runSubscriptionOn(configuration().executorService())
+                .runSubscriptionOn(client.executorService())
                 .emitOn(this::runOnContext);
     }
 
@@ -63,7 +64,7 @@ class VertxObjectStore implements ObjectStore {
                         return ObjectEntry.builder().info(objectInfoMapper.map(info)).data(outputStream.toByteArray()).build();
                     }
                 })))
-                .runSubscriptionOn(configuration().executorService())
+                .runSubscriptionOn(client.executorService())
                 .emitOn(this::runOnContext);
     }
 
@@ -72,25 +73,27 @@ class VertxObjectStore implements ObjectStore {
         return objectStore(bucketName)
                 .chain(objectStore -> Uni.createFrom().item(Unchecked.supplier(() -> objectStore.getInfo(objectName))))
                 .map(objectInfoMapper::map)
-                .runSubscriptionOn(configuration().executorService())
+                .runSubscriptionOn(client.executorService())
                 .emitOn(this::runOnContext);
     }
 
     @Override
     public @NonNull Uni<ObjectInfo> info(@NonNull final String objectName, final boolean includingDeleted) {
         return objectStore(bucketName)
-                .chain(objectStore -> Uni.createFrom().item(Unchecked.supplier(() -> objectStore.getInfo(objectName, includingDeleted))))
+                .chain(objectStore -> Uni.createFrom()
+                        .item(Unchecked.supplier(() -> objectStore.getInfo(objectName, includingDeleted))))
                 .map(objectInfoMapper::map)
-                .runSubscriptionOn(configuration().executorService())
+                .runSubscriptionOn(client.executorService())
                 .emitOn(this::runOnContext);
     }
 
     @Override
     public @NonNull Uni<ObjectInfo> update(@NonNull String objectName, @NonNull ObjectMetadata metadata) {
         return objectStore(bucketName)
-                .chain(objectStore -> Uni.createFrom().item(Unchecked.supplier(() -> objectStore.updateMeta(objectName, objectMetadataMapper.map(metadata)))))
+                .chain(objectStore -> Uni.createFrom()
+                        .item(Unchecked.supplier(() -> objectStore.updateMeta(objectName, objectMetadataMapper.map(metadata)))))
                 .map(objectInfoMapper::map)
-                .runSubscriptionOn(configuration().executorService())
+                .runSubscriptionOn(client.executorService())
                 .emitOn(this::runOnContext);
     }
 
@@ -99,25 +102,27 @@ class VertxObjectStore implements ObjectStore {
         return objectStore(bucketName)
                 .chain(objectStore -> Uni.createFrom().item(Unchecked.supplier(() -> objectStore.delete(objectName))))
                 .map(objectInfoMapper::map)
-                .runSubscriptionOn(configuration().executorService())
+                .runSubscriptionOn(client.executorService())
                 .emitOn(this::runOnContext);
     }
 
     @Override
     public @NonNull Uni<ObjectInfo> link(@NonNull String objectName, @NonNull ObjectInfo toInfo) {
         return objectStore(bucketName)
-                .chain(objectStore -> Uni.createFrom().item(Unchecked.supplier(() -> objectStore.addLink(objectName, objectInfoMapper.map(toInfo)))))
+                .chain(objectStore -> Uni.createFrom()
+                        .item(Unchecked.supplier(() -> objectStore.addLink(objectName, objectInfoMapper.map(toInfo)))))
                 .map(objectInfoMapper::map)
-                .runSubscriptionOn(configuration().executorService())
+                .runSubscriptionOn(client.executorService())
                 .emitOn(this::runOnContext);
     }
 
     @Override
     public @NonNull Uni<ObjectInfo> link(@NonNull final String objectName, @NonNull final ObjectStore store) {
         return objectStore(bucketName)
-                .chain(objectStore -> nativeObjectStore(store.bucketName()).chain(nativeObjectStore -> Uni.createFrom().item(Unchecked.supplier(() -> objectStore.addBucketLink(objectName, nativeObjectStore)))))
+                .chain(objectStore -> nativeObjectStore(store.bucketName()).chain(nativeObjectStore -> Uni.createFrom()
+                        .item(Unchecked.supplier(() -> objectStore.addBucketLink(objectName, nativeObjectStore)))))
                 .map(objectInfoMapper::map)
-                .runSubscriptionOn(configuration().executorService())
+                .runSubscriptionOn(client.executorService())
                 .emitOn(this::runOnContext);
     }
 
@@ -126,7 +131,7 @@ class VertxObjectStore implements ObjectStore {
         return objectStore(bucketName)
                 .chain(objectStore -> Uni.createFrom().item(Unchecked.supplier(objectStore::seal)))
                 .map(objectStoreStatusMapper::map)
-                .runSubscriptionOn(configuration().executorService())
+                .runSubscriptionOn(client.executorService())
                 .emitOn(this::runOnContext);
     }
 
@@ -135,7 +140,7 @@ class VertxObjectStore implements ObjectStore {
         return objectStore(bucketName)
                 .chain(objectStore -> Uni.createFrom().item(Unchecked.supplier(objectStore::getStatus)))
                 .map(objectStoreStatusMapper::map)
-                .runSubscriptionOn(configuration().executorService())
+                .runSubscriptionOn(client.executorService())
                 .emitOn(this::runOnContext);
     }
 
@@ -145,22 +150,20 @@ class VertxObjectStore implements ObjectStore {
                 .chain(objectStore -> Uni.createFrom().item(Unchecked.supplier(objectStore::getList)))
                 .onItem().transformToMulti(list -> Multi.createFrom().iterable(list))
                 .onItem().transform(objectInfoMapper::map)
-                .runSubscriptionOn(configuration().executorService())
+                .runSubscriptionOn(client.executorService())
                 .emitOn(this::runOnContext);
     }
 
-    private Uni<io.quarkiverse.reactive.messaging.nats.jetstream.client.store.ObjectStore> objectStore(final String bucketName) {
+    private Uni<io.quarkiverse.reactive.messaging.nats.jetstream.client.store.ObjectStore> objectStore(
+            final String bucketName) {
         return nativeObjectStore(bucketName)
                 .map(io.quarkiverse.reactive.messaging.nats.jetstream.client.store.ObjectStore::of);
     }
 
     private Uni<io.nats.client.ObjectStore> nativeObjectStore(final String bucketName) {
         return jetStreamManagement()
-                .chain(jetStreamManagement -> Uni.createFrom().item(Unchecked.supplier(() -> jetStreamManagement.objectStore(bucketName))));
-    }
-
-    private ClientConfiguration configuration() {
-        return client.configuration();
+                .chain(jetStreamManagement -> Uni.createFrom()
+                        .item(Unchecked.supplier(() -> jetStreamManagement.objectStore(bucketName))));
     }
 
     private Connection connection() {

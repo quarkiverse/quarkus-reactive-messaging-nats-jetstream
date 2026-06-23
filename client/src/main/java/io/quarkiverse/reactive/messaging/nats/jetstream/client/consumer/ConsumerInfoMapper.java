@@ -20,7 +20,7 @@ public interface ConsumerInfoMapper {
     @Mapping(target = "acknowledgePending", source = "numAckPending")
     @Mapping(target = "cluster", source = "clusterInfo")
     ConsumerInfo to(io.nats.client.api.ConsumerInfo source);
-    
+
     private Optional<Duration> mapDuration(Duration duration) {
         return Optional.ofNullable(duration);
     }

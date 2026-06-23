@@ -1,5 +1,8 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client;
 
+import org.jspecify.annotations.NonNull;
+import org.mapstruct.factory.Mappers;
+
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.connection.Connection;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.store.KeyValueEntry;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.store.KeyValueEntryMapper;
@@ -9,8 +12,6 @@ import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.unchecked.Unchecked;
 import io.vertx.mutiny.core.Context;
-import org.jspecify.annotations.NonNull;
-import org.mapstruct.factory.Mappers;
 
 class VertxKeyValue implements KeyValue {
     private final String bucketName;
@@ -35,7 +36,7 @@ class VertxKeyValue implements KeyValue {
         return keyValue(bucketName)
                 .chain(keyValue -> Uni.createFrom().item(Unchecked.supplier(() -> keyValue.get(key))))
                 .map(keyValueEntryMapper::map)
-                .runSubscriptionOn(configuration().executorService())
+                .runSubscriptionOn(client.executorService())
                 .emitOn(this::runOnContext);
     }
 
@@ -44,7 +45,7 @@ class VertxKeyValue implements KeyValue {
         return keyValue(bucketName)
                 .chain(keyValue -> Uni.createFrom().item(Unchecked.supplier(() -> keyValue.get(key, revision))))
                 .map(keyValueEntryMapper::map)
-                .runSubscriptionOn(configuration().executorService())
+                .runSubscriptionOn(client.executorService())
                 .emitOn(this::runOnContext);
     }
 
@@ -53,7 +54,7 @@ class VertxKeyValue implements KeyValue {
         return keyValue(bucketName)
                 .chain(keyValue -> Uni.createFrom().item(Unchecked.supplier(() -> keyValue.put(key, value))))
                 .chain(revision -> get(key, revision))
-                .runSubscriptionOn(configuration().executorService())
+                .runSubscriptionOn(client.executorService())
                 .emitOn(this::runOnContext);
     }
 
@@ -65,7 +66,7 @@ class VertxKeyValue implements KeyValue {
                     return keyValue;
                 })))
                 .chain(keyValue -> Uni.createFrom().voidItem())
-                .runSubscriptionOn(configuration().executorService())
+                .runSubscriptionOn(client.executorService())
                 .emitOn(this::runOnContext);
     }
 
@@ -77,7 +78,7 @@ class VertxKeyValue implements KeyValue {
                     return keyValue;
                 })))
                 .chain(keyValue -> Uni.createFrom().voidItem())
-                .runSubscriptionOn(configuration().executorService())
+                .runSubscriptionOn(client.executorService())
                 .emitOn(this::runOnContext);
     }
 
@@ -89,7 +90,7 @@ class VertxKeyValue implements KeyValue {
                     return keyValue;
                 })))
                 .chain(keyValue -> Uni.createFrom().voidItem())
-                .runSubscriptionOn(configuration().executorService())
+                .runSubscriptionOn(client.executorService())
                 .emitOn(this::runOnContext);
     }
 
@@ -101,7 +102,7 @@ class VertxKeyValue implements KeyValue {
                     return keyValue;
                 })))
                 .chain(keyValue -> Uni.createFrom().voidItem())
-                .runSubscriptionOn(configuration().executorService())
+                .runSubscriptionOn(client.executorService())
                 .emitOn(this::runOnContext);
     }
 
@@ -110,7 +111,7 @@ class VertxKeyValue implements KeyValue {
         return keyValue(bucketName)
                 .chain(keyValue -> Uni.createFrom().item(Unchecked.supplier(keyValue::keys)))
                 .onItem().transformToMulti(keys -> Multi.createFrom().iterable(keys))
-                .runSubscriptionOn(configuration().executorService())
+                .runSubscriptionOn(client.executorService())
                 .emitOn(this::runOnContext);
     }
 
@@ -119,18 +120,15 @@ class VertxKeyValue implements KeyValue {
         return keyValue(bucketName)
                 .chain(keyValue -> Uni.createFrom().item(Unchecked.supplier(keyValue::getStatus)))
                 .map(keyValueStatusMapper::map)
-                .runSubscriptionOn(configuration().executorService())
+                .runSubscriptionOn(client.executorService())
                 .emitOn(this::runOnContext);
     }
 
     private Uni<io.quarkiverse.reactive.messaging.nats.jetstream.client.store.KeyValue> keyValue(final String bucketName) {
         return jetStreamManagement()
-                .chain(jetStreamManagement -> Uni.createFrom().item(Unchecked.supplier(() -> jetStreamManagement.keyValue(bucketName))))
+                .chain(jetStreamManagement -> Uni.createFrom()
+                        .item(Unchecked.supplier(() -> jetStreamManagement.keyValue(bucketName))))
                 .map(io.quarkiverse.reactive.messaging.nats.jetstream.client.store.KeyValue::of);
-    }
-
-    private ClientConfiguration configuration() {
-        return client.configuration();
     }
 
     private Connection connection() {
@@ -145,6 +143,7 @@ class VertxKeyValue implements KeyValue {
         context().runOnContext(action);
     }
 
+    @SuppressWarnings("resource")
     private Uni<JetStreamManagement> jetStreamManagement() {
         return Uni.createFrom().item(Unchecked.supplier(connection()::jetStreamManagement))
                 .map(JetStreamManagement::of);

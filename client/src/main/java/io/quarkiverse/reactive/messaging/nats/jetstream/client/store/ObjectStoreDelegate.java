@@ -1,17 +1,17 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client.store;
 
-import io.nats.client.JetStreamApiException;
-import io.nats.client.api.*;
-import io.nats.client.api.ObjectInfo;
-import io.nats.client.api.ObjectStoreStatus;
-import io.nats.client.impl.NatsObjectStoreWatchSubscription;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.security.NoSuchAlgorithmException;
 import java.util.List;
+
+import io.nats.client.JetStreamApiException;
+import io.nats.client.api.*;
+import io.nats.client.api.ObjectInfo;
+import io.nats.client.api.ObjectStoreStatus;
+import io.nats.client.impl.NatsObjectStoreWatchSubscription;
 
 public record ObjectStoreDelegate(io.nats.client.ObjectStore delegate) implements ObjectStore {
 
@@ -21,12 +21,14 @@ public record ObjectStoreDelegate(io.nats.client.ObjectStore delegate) implement
     }
 
     @Override
-    public ObjectInfo put(ObjectMeta meta, InputStream inputStream) throws IOException, JetStreamApiException, NoSuchAlgorithmException {
+    public ObjectInfo put(ObjectMeta meta, InputStream inputStream)
+            throws IOException, JetStreamApiException, NoSuchAlgorithmException {
         return delegate.put(meta, inputStream);
     }
 
     @Override
-    public ObjectInfo put(String objectName, InputStream inputStream) throws IOException, JetStreamApiException, NoSuchAlgorithmException {
+    public ObjectInfo put(String objectName, InputStream inputStream)
+            throws IOException, JetStreamApiException, NoSuchAlgorithmException {
         return delegate.put(objectName, inputStream);
     }
 
@@ -41,7 +43,8 @@ public record ObjectStoreDelegate(io.nats.client.ObjectStore delegate) implement
     }
 
     @Override
-    public ObjectInfo get(String objectName, OutputStream outputStream) throws IOException, JetStreamApiException, InterruptedException, NoSuchAlgorithmException {
+    public ObjectInfo get(String objectName, OutputStream outputStream)
+            throws IOException, JetStreamApiException, InterruptedException, NoSuchAlgorithmException {
         return delegate.get(objectName, outputStream);
     }
 
@@ -71,7 +74,8 @@ public record ObjectStoreDelegate(io.nats.client.ObjectStore delegate) implement
     }
 
     @Override
-    public ObjectInfo addBucketLink(String objectName, io.nats.client.ObjectStore toStore) throws IOException, JetStreamApiException {
+    public ObjectInfo addBucketLink(String objectName, io.nats.client.ObjectStore toStore)
+            throws IOException, JetStreamApiException {
         return delegate.addBucketLink(objectName, toStore);
     }
 
@@ -86,7 +90,8 @@ public record ObjectStoreDelegate(io.nats.client.ObjectStore delegate) implement
     }
 
     @Override
-    public NatsObjectStoreWatchSubscription watch(ObjectStoreWatcher watcher, ObjectStoreWatchOption... watchOptions) throws IOException, JetStreamApiException, InterruptedException {
+    public NatsObjectStoreWatchSubscription watch(ObjectStoreWatcher watcher, ObjectStoreWatchOption... watchOptions)
+            throws IOException, JetStreamApiException, InterruptedException {
         return delegate.watch(watcher, watchOptions);
     }
 

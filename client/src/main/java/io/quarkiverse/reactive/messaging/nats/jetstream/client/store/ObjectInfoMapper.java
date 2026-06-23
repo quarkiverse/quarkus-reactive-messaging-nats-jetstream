@@ -4,7 +4,7 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.factory.Mappers;
 
-@Mapper(uses = {OptionalMapper.class, HeadersMapper.class, ObjectMetadataMapper.class})
+@Mapper(uses = { OptionalMapper.class, HeadersMapper.class, ObjectMetadataMapper.class })
 public interface ObjectInfoMapper {
 
     @Mapping(target = "nuId", source = "nuid")
@@ -35,5 +35,3 @@ public interface ObjectInfoMapper {
         return builder.build();
     }
 }
-
-

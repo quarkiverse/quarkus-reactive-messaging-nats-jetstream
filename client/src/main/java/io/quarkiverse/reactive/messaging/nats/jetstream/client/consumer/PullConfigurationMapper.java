@@ -1,10 +1,10 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer;
 
+import java.util.Optional;
+
 import org.mapstruct.Mapper;
 import org.mapstruct.ObjectFactory;
 import org.mapstruct.factory.Mappers;
-
-import java.util.Optional;
 
 @Mapper
 public interface PullConfigurationMapper {

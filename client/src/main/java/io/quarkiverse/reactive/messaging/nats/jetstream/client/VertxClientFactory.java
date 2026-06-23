@@ -1,5 +1,9 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client;
 
+import java.util.concurrent.ExecutorService;
+
+import org.jspecify.annotations.NonNull;
+
 import io.nats.client.Nats;
 import io.nats.client.Options;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.connection.Connection;
@@ -12,26 +16,21 @@ import io.smallrye.mutiny.unchecked.Unchecked;
 import io.vertx.mutiny.core.Vertx;
 import lombok.RequiredArgsConstructor;
 
-import java.util.concurrent.ExecutorService;
-
 @RequiredArgsConstructor
 public class VertxClientFactory implements ClientFactory {
     private final Vertx vertx;
     private final TracerFactory tracerFactory;
 
     @Override
-    public Uni<Client> create(ClientConfiguration configuration) {
+    public @NonNull Uni<Client> create(@NonNull final ConnectionConfiguration configuration,
+            @NonNull final ExecutorService executorService) {
         return Uni.createFrom().<Client> item(Unchecked.supplier(() -> new VertxClient(
-                configuration,
-                Connection.of(Nats.connect(createConnectionOptions(configuration))),
+                Connection.of(Nats.connect(createConnectionOptions(configuration, executorService))),
                 vertx.getOrCreateContext(),
+                executorService,
                 tracerFactory)))
-                .runSubscriptionOn(configuration.executorService())
+                .runSubscriptionOn(executorService)
                 .emitOn(this::runOnContext);
-    }
-
-    private Options createConnectionOptions(ClientConfiguration configuration) throws Exception {
-        return createConnectionOptions(configuration.connectionConfiguration(), configuration.executorService());
     }
 
     private Options createConnectionOptions(ConnectionConfiguration configuration, ExecutorService executorService)
@@ -41,8 +40,7 @@ public class VertxClientFactory implements ClientFactory {
         optionsBuilder.maxReconnects(configuration.maximumReconnects().orElse(-1));
         optionsBuilder.connectionListener(ConnectionListener.of());
         optionsBuilder.errorListener(getErrorListener(configuration));
-        configuration.username().ifPresent(username ->
-                optionsBuilder.userInfo(username, configuration.password().orElse("")));
+        configuration.username().ifPresent(username -> optionsBuilder.userInfo(username, configuration.password().orElse("")));
         configuration.token().map(String::toCharArray).ifPresent(optionsBuilder::token);
         configuration.credentialPath().ifPresent(optionsBuilder::credentialPath);
         configuration.bufferSize().ifPresent(optionsBuilder::bufferSize);

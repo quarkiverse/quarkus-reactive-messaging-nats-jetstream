@@ -189,7 +189,7 @@ record JetStreamManagementDelegate(io.nats.client.JetStreamManagement delegate) 
     }
 
     @Override
-    public KeyValue keyValue(String bucketName) throws IOException {
+    public io.nats.client.KeyValue keyValue(String bucketName) throws IOException {
         return delegate.keyValue(bucketName);
     }
 
@@ -199,7 +199,7 @@ record JetStreamManagementDelegate(io.nats.client.JetStreamManagement delegate) 
     }
 
     @Override
-    public ObjectStore objectStore(String bucketName) throws IOException {
+    public io.nats.client.ObjectStore objectStore(String bucketName) throws IOException {
         return delegate.objectStore(bucketName);
     }
 

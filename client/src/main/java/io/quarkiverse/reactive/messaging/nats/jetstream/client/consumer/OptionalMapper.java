@@ -1,11 +1,11 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer;
 
-import org.mapstruct.Mapper;
-
 import java.time.Duration;
 import java.time.ZonedDateTime;
 import java.util.Map;
 import java.util.Optional;
+
+import org.mapstruct.Mapper;
 
 @Mapper
 interface OptionalMapper {

@@ -1,11 +1,11 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer;
 
-import lombok.Builder;
-import lombok.NonNull;
-
 import java.time.Duration;
 import java.util.Objects;
 import java.util.Optional;
+
+import lombok.Builder;
+import lombok.NonNull;
 
 @Builder
 public record PullConfiguration(

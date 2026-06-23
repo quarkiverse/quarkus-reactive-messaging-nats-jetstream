@@ -5,14 +5,13 @@ import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer.*;
-import io.smallrye.mutiny.tuples.Tuple2;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 
 import io.nats.client.JetStreamStatusException;
 import io.nats.client.PullSubscribeOptions;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.connection.Connection;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer.*;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.Message;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.MessageInfo;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.NativeMessage;
@@ -20,6 +19,7 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.tracing.T
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.stream.StreamContext;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.tuples.Tuple2;
 import io.smallrye.mutiny.unchecked.Unchecked;
 import io.vertx.mutiny.core.Context;
 import lombok.RequiredArgsConstructor;
@@ -36,7 +36,7 @@ class VertxConsumer implements Consumer {
         return consumerContext(stream, consumer)
                 .chain(consumerContext -> next(consumerContext, timeout))
                 .onItem().ifNotNull().transform(this::toMessage)
-                .runSubscriptionOn(configuration().executorService())
+                .runSubscriptionOn(client.executorService())
                 .emitOn(this::runOnContext);
     }
 
@@ -47,7 +47,7 @@ class VertxConsumer implements Consumer {
                 .onItem().transformToMulti(subscription -> fetch(subscription, timeout, batchSize))
                 .onItem().transform(this::toMessage)
                 .onItem().transformToUniAndMerge(tracer::withTrace)
-                .runSubscriptionOn(configuration().executorService())
+                .runSubscriptionOn(client.executorService())
                 .emitOn(this::runOnContext);
     }
 
@@ -56,7 +56,7 @@ class VertxConsumer implements Consumer {
         return streamContext(stream)
                 .chain(streamContext -> Uni.createFrom().item(Unchecked.supplier(() -> streamContext.getMessage(sequence))))
                 .map(MessageInfo::of)
-                .runSubscriptionOn(configuration().executorService())
+                .runSubscriptionOn(client.executorService())
                 .emitOn(this::runOnContext);
     }
 
@@ -91,7 +91,7 @@ class VertxConsumer implements Consumer {
                             }
                         }))
                 .onItem().ifNotNull().transform(ConsumerInfo::of)
-                .runSubscriptionOn(configuration().executorService())
+                .runSubscriptionOn(client.executorService())
                 .emitOn(this::runOnContext);
     }
 
@@ -102,7 +102,7 @@ class VertxConsumer implements Consumer {
                         .item(Unchecked.supplier(() -> jetStreamManagement.getConsumerNames(stream))))
                 .onItem().transformToMulti(consumers -> Multi.createFrom().items(consumers.stream()))
                 .onItem().transformToUniAndMerge(consumer -> consumer(stream, consumer))
-                .runSubscriptionOn(configuration().executorService())
+                .runSubscriptionOn(client.executorService())
                 .emitOn(this::runOnContext);
     }
 
@@ -120,12 +120,14 @@ class VertxConsumer implements Consumer {
                 .map(Subscription::of);
     }
 
-    private Uni<Tuple2<NativeMessage, ConsumerConfiguration>> next(final ConsumerContext consumerContext, final Duration timeout) {
+    private Uni<Tuple2<NativeMessage, ConsumerConfiguration>> next(final ConsumerContext consumerContext,
+            final Duration timeout) {
         return Uni.createFrom().emitter(emitter -> {
             try {
                 final var message = consumerContext.next(timeout);
                 if (message != null) {
-                    emitter.complete(Tuple2.of(NativeMessage.of(message), mapper.map(consumerContext.getConsumerInfo().getConsumerConfiguration())));
+                    emitter.complete(Tuple2.of(NativeMessage.of(message),
+                            mapper.map(consumerContext.getConsumerInfo().getConsumerConfiguration())));
                 } else {
                     emitter.complete(null);
                 }
@@ -139,7 +141,8 @@ class VertxConsumer implements Consumer {
         });
     }
 
-    private Multi<Tuple2<NativeMessage, ConsumerConfiguration>> fetch(final Subscription subscription, @Nullable final Duration timeout, final int batchSize) {
+    private Multi<Tuple2<NativeMessage, ConsumerConfiguration>> fetch(final Subscription subscription,
+            @Nullable final Duration timeout, final int batchSize) {
         return Multi.createFrom().emitter(emitter -> {
             try {
                 final var consumerConfiguration = mapper.map(subscription.getConsumerInfo().getConsumerConfiguration());
@@ -162,11 +165,13 @@ class VertxConsumer implements Consumer {
                 .map(StreamContext::of);
     }
 
+    @SuppressWarnings("resource")
     private Uni<JetStream> jetStream() {
         return Uni.createFrom().item(Unchecked.supplier(connection()::jetStream))
                 .map(JetStreamDelegate::new);
     }
 
+    @SuppressWarnings("resource")
     private Uni<JetStreamManagement> jetStreamManagement() {
         return Uni.createFrom().item(Unchecked.supplier(connection()::jetStreamManagement))
                 .map(JetStreamManagement::of);
@@ -174,10 +179,6 @@ class VertxConsumer implements Consumer {
 
     private Message toMessage(final Tuple2<NativeMessage, ConsumerConfiguration> tuple) {
         return Message.of(tuple.getItem1(), context(), tuple.getItem2());
-    }
-
-    private ClientConfiguration configuration() {
-        return client.configuration();
     }
 
     private Connection connection() {

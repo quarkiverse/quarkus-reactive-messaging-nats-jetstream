@@ -1,11 +1,12 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client.store;
 
-import lombok.Builder;
-import org.jspecify.annotations.NonNull;
-
 import java.time.Duration;
 import java.util.Objects;
 import java.util.Optional;
+
+import org.jspecify.annotations.NonNull;
+
+import lombok.Builder;
 
 @Builder
 public record KeyValueConfiguration(

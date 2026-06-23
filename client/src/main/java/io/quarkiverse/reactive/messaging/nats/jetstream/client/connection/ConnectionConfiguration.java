@@ -1,13 +1,15 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client.connection;
 
-import lombok.Builder;
-import org.jspecify.annotations.NonNull;
-
-import javax.net.ssl.SSLContext;
 import java.time.Duration;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+
+import javax.net.ssl.SSLContext;
+
+import org.jspecify.annotations.NonNull;
+
+import lombok.Builder;
 
 @Builder
 public record ConnectionConfiguration(

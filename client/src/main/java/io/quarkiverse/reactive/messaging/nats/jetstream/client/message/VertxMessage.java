@@ -1,22 +1,20 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client.message;
 
-import static io.smallrye.reactive.messaging.providers.locals.ContextAwareMessage.captureContextMetadata;
-
-import java.time.Duration;
-import java.util.Optional;
-import java.util.concurrent.CompletionStage;
-import java.util.concurrent.TimeoutException;
-import java.util.function.BiFunction;
-import java.util.function.Function;
-import java.util.function.Supplier;
-
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer.ConsumerConfiguration;
-import org.jspecify.annotations.NonNull;
-
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer.ConsumerMetadata;
 import io.smallrye.reactive.messaging.providers.helpers.VertxContext;
 import io.smallrye.reactive.messaging.providers.locals.LocalContextMetadata;
 import io.vertx.mutiny.core.Context;
+import org.jspecify.annotations.NonNull;
+
+import java.time.Duration;
+import java.util.Optional;
+import java.util.concurrent.CompletionStage;
+import java.util.function.BiFunction;
+import java.util.function.Function;
+import java.util.function.Supplier;
+
+import static io.smallrye.reactive.messaging.providers.locals.ContextAwareMessage.captureContextMetadata;
 
 final class VertxMessage implements Message {
     private final NativeMessage message;
@@ -54,15 +52,7 @@ final class VertxMessage implements Message {
     public CompletionStage<Void> ack() {
         return VertxContext.runOnContext(context.getDelegate(), f -> {
             try {
-                metadata.get(MessageConfiguration.class)
-                        .flatMap(MessageConfiguration::acknowledgeTimeout)
-                        .ifPresentOrElse(timeout -> {
-                            try {
-                                message.ackSync(timeout);
-                            } catch (TimeoutException | InterruptedException e) {
-                                throw new RuntimeException(e);
-                            }
-                        }, message::ack);
+                message.ack();
                 this.runOnMessageContext(() -> f.complete(null));
             } catch (Exception e) {
                 this.runOnMessageContext(() -> f.completeExceptionally(e));

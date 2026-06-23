@@ -57,6 +57,7 @@ public interface StreamInfoMapper {
         if (subjects == null) {
             return Map.of();
         }
-        return subjects.stream().collect(Collectors.toMap(io.nats.client.api.Subject::getName, io.nats.client.api.Subject::getCount));
+        return subjects.stream()
+                .collect(Collectors.toMap(io.nats.client.api.Subject::getName, io.nats.client.api.Subject::getCount));
     }
 }

@@ -7,7 +7,7 @@ import org.mapstruct.factory.Mappers;
 
 import java.time.Duration;
 
-@Mapper(uses = {OptionalMapper.class, PullConfigurationMapper.class})
+@Mapper(uses = { OptionalMapper.class, PullConfigurationMapper.class })
 public interface ConsumerConfigurationMapper {
 
     @Mapping(target = "name", source = "name")
@@ -62,7 +62,6 @@ public interface ConsumerConfigurationMapper {
         }
         builder = builder.backoff(configuration.backoff().toArray(new Duration[0]));
         builder = configuration.pauseUntil().map(builder::pauseUntil).orElse(builder);
-
         if (configuration.pullConfiguration().isPresent()) {
             final var pullConfiguration = configuration.pullConfiguration().get();
             builder = pullConfiguration.maxWaiting().map(builder::maxPullWaiting).orElse(builder);

@@ -4,7 +4,7 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.factory.Mappers;
 
-@Mapper(uses = {OptionalMapper.class, HeadersMapper.class, ObjectMetadataOptionsMapper.class})
+@Mapper(uses = { OptionalMapper.class, HeadersMapper.class, ObjectMetadataOptionsMapper.class })
 public interface ObjectMetadataMapper {
 
     @Mapping(target = "options", source = "objectMetaOptions")

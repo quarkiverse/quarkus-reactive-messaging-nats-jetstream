@@ -1,11 +1,11 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer;
 
-import lombok.Builder;
-import lombok.NonNull;
-
 import java.time.Duration;
 import java.time.ZonedDateTime;
 import java.util.*;
+
+import lombok.Builder;
+import lombok.NonNull;
 
 @Builder
 public record ConsumerConfiguration(
@@ -28,7 +28,8 @@ public record ConsumerConfiguration(
          */
         @NonNull Set<String> filterSubjects,
         /*
-         * The duration that the server will wait for an ack for any individual message once it has been delivered to a consumer.
+         * The duration that the server will wait for an ack for any individual message once it has been delivered to a
+         * consumer.
          * If an ack is not received in time, the message will be re-delivered.
          */
         @NonNull Optional<Duration> acknowledgeWait,
@@ -143,5 +144,4 @@ public record ConsumerConfiguration(
         Objects.requireNonNull(pullConfiguration, "pullConfiguration");
         Objects.requireNonNull(pauseUntil, "pauseUntil");
     }
-
 }

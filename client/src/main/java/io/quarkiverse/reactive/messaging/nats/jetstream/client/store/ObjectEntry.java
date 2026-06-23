@@ -1,9 +1,10 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client.store;
 
-import lombok.Builder;
+import java.util.Objects;
+
 import org.jspecify.annotations.NonNull;
 
-import java.util.Objects;
+import lombok.Builder;
 
 @Builder
 public record ObjectEntry(byte @NonNull [] data, @NonNull ObjectInfo info) {

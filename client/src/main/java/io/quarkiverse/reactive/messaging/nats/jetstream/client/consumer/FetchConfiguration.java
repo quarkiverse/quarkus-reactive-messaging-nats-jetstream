@@ -4,8 +4,9 @@ import java.time.Duration;
 import java.util.Objects;
 import java.util.Optional;
 
-import lombok.Builder;
 import org.jspecify.annotations.NonNull;
+
+import lombok.Builder;
 
 /**
  * Represents the configuration settings for fetching messages from a messaging system.
