@@ -30,7 +30,7 @@
         <quarkus.version>3.37.0</quarkus.version>
 
         <jnats.version>2.25.3</jnats.version>
-        <smallrye-connector-attribute-processor.version>4.35.0</smallrye-connector-attribute-processor.version>
+        <smallrye-connector-attribute-processor.version>4.36.0</smallrye-connector-attribute-processor.version>
         <assertj-core.version>3.27.7</assertj-core.version>
         <lombok.version>1.18.46</lombok.version>
     </properties>
