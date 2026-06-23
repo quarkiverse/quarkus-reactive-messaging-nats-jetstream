@@ -115,6 +115,16 @@ class VertxClient implements Client {
                 .emitOn(this::runOnContext);
     }
 
+    @Override
+    public @NonNull ObjectStore objectStore(@NonNull String bucketName) {
+        return null;
+    }
+
+    @Override
+    public @NonNull KeyValue keyValue(@NonNull String bucketName) {
+        return new VertxKeyValue(bucketName, this);
+    }
+
     @NonNull ClientConfiguration configuration() {
         return configuration;
     }

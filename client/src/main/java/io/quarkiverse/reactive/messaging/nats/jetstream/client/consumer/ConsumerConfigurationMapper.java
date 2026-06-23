@@ -61,11 +61,14 @@ public interface ConsumerConfigurationMapper {
             builder = builder.metadata(configuration.metadata());
         }
         builder = builder.backoff(configuration.backoff().toArray(new Duration[0]));
-        final var pullConfiguration = configuration.pullConfiguration();
-        builder = pullConfiguration.maxWaiting().map(builder::maxPullWaiting).orElse(builder);
-        builder = pullConfiguration.maxRequestExpires().map(builder::maxExpires).orElse(builder);
-        builder = pullConfiguration.maxRequestBatch().map(builder::maxBatch).orElse(builder);
-        builder = pullConfiguration.maxRequestMaxBytes().map(builder::maxBytes).orElse(builder);
+
+        if (configuration.pullConfiguration().isPresent()) {
+            final var pullConfiguration = configuration.pullConfiguration().get();
+            builder = pullConfiguration.maxWaiting().map(builder::maxPullWaiting).orElse(builder);
+            builder = pullConfiguration.maxRequestExpires().map(builder::maxExpires).orElse(builder);
+            builder = pullConfiguration.maxRequestBatch().map(builder::maxBatch).orElse(builder);
+            builder = pullConfiguration.maxRequestMaxBytes().map(builder::maxBytes).orElse(builder);
+        }
         return builder.build();
     }
 
@@ -73,35 +76,35 @@ public interface ConsumerConfigurationMapper {
 
     io.nats.client.api.ReplayPolicy map(ReplayPolicy source);
 
-    default Optional<Duration> mapDuration(Duration duration) {
+    private Optional<Duration> mapDuration(Duration duration) {
         return Optional.ofNullable(duration);
     }
 
-    default Optional<Long> mapLong(Long value) {
+    private Optional<Long> mapLong(Long value) {
         return Optional.ofNullable(value);
     }
 
-    default Optional<Boolean> mapBoolean(Boolean value) {
+    private Optional<Boolean> mapBoolean(Boolean value) {
         return Optional.ofNullable(value);
     }
 
-    default Optional<ZonedDateTime> mapZonedDateTime(ZonedDateTime value) {
+    private Optional<ZonedDateTime> mapZonedDateTime(ZonedDateTime value) {
         return Optional.ofNullable(value);
     }
 
-    default Optional<Integer> mapInteger(Integer value) {
+    private Optional<Integer> mapInteger(Integer value) {
         return Optional.ofNullable(value);
     }
 
-    default Optional<String> mapString(String value) {
+    private Optional<String> mapString(String value) {
         return Optional.ofNullable(value);
     }
 
-    default Map<String, String> mapMetadata(Map<String, String> metadata) {
+    private Map<String, String> mapMetadata(Map<String, String> metadata) {
         return metadata == null ? Map.of() : metadata;
     }
 
-    default PullConfiguration mapPull(io.nats.client.api.ConsumerConfiguration configuration) {
+    private PullConfiguration mapPull(io.nats.client.api.ConsumerConfiguration configuration) {
         if (configuration == null) {
             return null;
         }

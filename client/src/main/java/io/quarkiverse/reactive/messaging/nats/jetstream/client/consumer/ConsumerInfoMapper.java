@@ -21,37 +21,35 @@ public interface ConsumerInfoMapper {
     @Mapping(target = "cluster", source = "clusterInfo")
     ConsumerInfo to(io.nats.client.api.ConsumerInfo source);
     
-    default Optional<Duration> mapDuration(Duration duration) {
+    private Optional<Duration> mapDuration(Duration duration) {
         return Optional.ofNullable(duration);
     }
 
-    default Optional<Long> mapLong(Long value) {
+    private Optional<Long> mapLong(Long value) {
         return Optional.ofNullable(value);
     }
 
-    default Optional<Boolean> mapBoolean(Boolean value) {
+    private Optional<Boolean> mapBoolean(Boolean value) {
         return Optional.ofNullable(value);
     }
 
-    default Optional<ZonedDateTime> mapZonedDateTime(ZonedDateTime value) {
+    private Optional<ZonedDateTime> mapZonedDateTime(ZonedDateTime value) {
         return Optional.ofNullable(value);
     }
 
-    default Optional<Integer> mapInteger(Integer value) {
+    private Optional<Integer> mapInteger(Integer value) {
         return Optional.ofNullable(value);
     }
 
-    default Optional<String> mapString(String value) {
+    private Optional<String> mapString(String value) {
         return Optional.ofNullable(value);
     }
 
-    default List<Duration> mapDurationList(Duration[] durations) {
+    private List<Duration> mapDurationList(Duration[] durations) {
         return durations == null ? List.of() : List.of(durations);
     }
 
-    default Map<String, String> mapMetadata(Map<String, String> metadata) {
+    private Map<String, String> mapMetadata(Map<String, String> metadata) {
         return metadata == null ? Map.of() : metadata;
     }
-
-    
 }
