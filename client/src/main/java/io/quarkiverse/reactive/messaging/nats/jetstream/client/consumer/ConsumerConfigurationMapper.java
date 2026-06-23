@@ -3,13 +3,11 @@ package io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer;
 import io.nats.client.api.AckPolicy;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import org.mapstruct.factory.Mappers;
 
 import java.time.Duration;
-import java.time.ZonedDateTime;
-import java.util.Map;
-import java.util.Optional;
 
-@Mapper
+@Mapper(uses = {OptionalMapper.class, PullConfigurationMapper.class})
 public interface ConsumerConfigurationMapper {
 
     @Mapping(target = "name", source = "name")
@@ -32,11 +30,13 @@ public interface ConsumerConfigurationMapper {
     @Mapping(target = "backoff", source = "backoff")
     @Mapping(target = "pauseUntil", source = "pauseUntil")
     @Mapping(target = "headersOnly", source = "headersOnly")
-    @Mapping(target = "acknowledgeTimeout", ignore = true)
     @Mapping(target = "pullConfiguration", source = ".")
     ConsumerConfiguration map(io.nats.client.api.ConsumerConfiguration source);
 
     default io.nats.client.api.ConsumerConfiguration map(final ConsumerConfiguration configuration) {
+        final var deliverPolicyMapper = Mappers.getMapper(DeliverPolicyMapper.class);
+        final var replayPolicyMapper = Mappers.getMapper(ReplayPolicyMapper.class);
+
         var builder = io.nats.client.api.ConsumerConfiguration.builder();
         if (configuration.durable()) {
             builder = builder.durable(configuration.name());
@@ -46,14 +46,14 @@ public interface ConsumerConfigurationMapper {
         builder = builder.name(configuration.name());
         builder = builder.ackPolicy(AckPolicy.Explicit);
         builder = configuration.acknowledgeWait().map(builder::ackWait).orElse(builder);
-        builder = builder.deliverPolicy(map(configuration.deliverPolicy()));
+        builder = builder.deliverPolicy(deliverPolicyMapper.map(configuration.deliverPolicy()));
         builder = configuration.startSequence().map(builder::startSequence).orElse(builder);
         builder = configuration.startTime().map(builder::startTime).orElse(builder);
         builder = configuration.description().map(builder::description).orElse(builder);
         builder = configuration.inactiveThreshold().map(builder::inactiveThreshold).orElse(builder);
         builder = configuration.maxAcknowledgePending().map(builder::maxAckPending).orElse(builder);
         builder = configuration.maxDeliver().map(builder::maxDeliver).orElse(builder);
-        builder = builder.replayPolicy(map(configuration.replayPolicy()));
+        builder = builder.replayPolicy(replayPolicyMapper.map(configuration.replayPolicy()));
         builder = configuration.replicas().map(builder::numReplicas).orElse(builder);
         builder = configuration.memoryStorage().map(builder::memStorage).orElse(builder);
         builder = configuration.sampleFrequency().map(builder::sampleFrequency).orElse(builder);
@@ -61,6 +61,7 @@ public interface ConsumerConfigurationMapper {
             builder = builder.metadata(configuration.metadata());
         }
         builder = builder.backoff(configuration.backoff().toArray(new Duration[0]));
+        builder = configuration.pauseUntil().map(builder::pauseUntil).orElse(builder);
 
         if (configuration.pullConfiguration().isPresent()) {
             final var pullConfiguration = configuration.pullConfiguration().get();
@@ -70,49 +71,5 @@ public interface ConsumerConfigurationMapper {
             builder = pullConfiguration.maxRequestMaxBytes().map(builder::maxBytes).orElse(builder);
         }
         return builder.build();
-    }
-
-    io.nats.client.api.DeliverPolicy map(DeliverPolicy source);
-
-    io.nats.client.api.ReplayPolicy map(ReplayPolicy source);
-
-    private Optional<Duration> mapDuration(Duration duration) {
-        return Optional.ofNullable(duration);
-    }
-
-    private Optional<Long> mapLong(Long value) {
-        return Optional.ofNullable(value);
-    }
-
-    private Optional<Boolean> mapBoolean(Boolean value) {
-        return Optional.ofNullable(value);
-    }
-
-    private Optional<ZonedDateTime> mapZonedDateTime(ZonedDateTime value) {
-        return Optional.ofNullable(value);
-    }
-
-    private Optional<Integer> mapInteger(Integer value) {
-        return Optional.ofNullable(value);
-    }
-
-    private Optional<String> mapString(String value) {
-        return Optional.ofNullable(value);
-    }
-
-    private Map<String, String> mapMetadata(Map<String, String> metadata) {
-        return metadata == null ? Map.of() : metadata;
-    }
-
-    private PullConfiguration mapPull(io.nats.client.api.ConsumerConfiguration configuration) {
-        if (configuration == null) {
-            return null;
-        }
-        return PullConfiguration.builder()
-                .maxWaiting(mapLong(configuration.getMaxPullWaiting()))
-                .maxRequestExpires(mapDuration(configuration.getMaxExpires()))
-                .maxRequestBatch(mapLong(configuration.getMaxBatch()))
-                .maxRequestMaxBytes(mapLong(configuration.getMaxBytes()))
-                .build();
     }
 }

@@ -6,8 +6,8 @@
         <artifactId>quarkus-messaging-nats-jetstream-parent</artifactId>
         <version>3.37.0-SNAPSHOT</version>
     </parent>
-    <artifactId>nats-reactive-client</artifactId>
-    <name>NATS Reactive Client</name>
+    <artifactId>quarkus-messaging-nats-jetstream-client</artifactId>
+    <name>Quarkus Messaging Nats Jetstream - NATS Reactive Client</name>
     <properties>
         <org.mapstruct.version>1.6.3</org.mapstruct.version>
     </properties>

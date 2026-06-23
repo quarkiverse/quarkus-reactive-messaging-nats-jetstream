@@ -11,7 +11,7 @@
     <dependencies>
         <dependency>
             <groupId>${project.groupId}</groupId>
-            <artifactId>nats-reactive-client</artifactId>
+            <artifactId>uarkus-messaging-nats-jetstream-client</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>

@@ -110,6 +110,10 @@ public record ConsumerConfiguration(
          */
         @NonNull Optional<Boolean> headersOnly,
         /*
+         * the time until the consumer is paused
+         */
+        @NonNull Optional<ZonedDateTime> pauseUntil,
+        /*
          * Retrieves an optional configuration for pull-based consumers.
          * This configuration specifies parameters such as the maximum expiry
          * time for messages and the maximum number of waiting pull requests.
@@ -131,12 +135,13 @@ public record ConsumerConfiguration(
         Objects.requireNonNull(maxDeliver, "maxDeliver");
         Objects.requireNonNull(backoff, "backoff");
         Objects.requireNonNull(replayPolicy, "replayPolicy");
-        Objects.requireNonNull(replicas);
-        Objects.requireNonNull(memoryStorage);
-        Objects.requireNonNull(sampleFrequency);
-        Objects.requireNonNull(metadata);
-        Objects.requireNonNull(headersOnly);
-        Objects.requireNonNull(pullConfiguration);
+        Objects.requireNonNull(replicas, "replicas");
+        Objects.requireNonNull(memoryStorage, "memoryStorage");
+        Objects.requireNonNull(sampleFrequency, "sampleFrequency");
+        Objects.requireNonNull(metadata, "metadata");
+        Objects.requireNonNull(headersOnly, "headersOnly");
+        Objects.requireNonNull(pullConfiguration, "pullConfiguration");
+        Objects.requireNonNull(pauseUntil, "pauseUntil");
     }
 
 }

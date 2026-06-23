@@ -12,10 +12,10 @@ record AcknowledgeMetadataRecord(long sequenceNumber,
         boolean duplicate,
         Optional<String> counterValue,
         Optional<String> batchId,
-        int batchSize) implements AcknowledgeMetadata {
+        int batchSize) implements Metadata {
 
     static AcknowledgeMetadata of(PublishAck ack) {
-        return AcknowledgeMetadataRecord.builder()
+        return AcknowledgeMetadata.builder()
                 .sequenceNumber(ack.getSeqno())
                 .stream(ack.getStream())
                 .domain(Optional.ofNullable(ack.getDomain()))
