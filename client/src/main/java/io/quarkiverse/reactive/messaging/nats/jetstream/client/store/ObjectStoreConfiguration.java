@@ -16,10 +16,6 @@ public record ObjectStoreConfiguration(        /* Name of Key-Value store */
         @NonNull StorageType storageType,
         /* The maximum number of bytes for this bucket */
         @NonNull Optional<Long> maxBucketSize,
-        /* The maximum number of history for any one key. Includes the current value. */
-        @NonNull Optional<Integer> maxHistoryPerKey,
-        /* The maximum size for an individual value in the bucket. */
-        @NonNull Optional<Integer> maxValueSize,
         /* The maximum age for a value in this bucket */
         @NonNull Optional<Duration> ttl,
         /* The number of replicas for this bucket */
@@ -34,8 +30,6 @@ public record ObjectStoreConfiguration(        /* Name of Key-Value store */
         Objects.requireNonNull(description, "description");
         Objects.requireNonNull(storageType, "storageType");
         Objects.requireNonNull(maxBucketSize, "maxBucketSize");
-        Objects.requireNonNull(maxHistoryPerKey, "maxHistoryPerKey");
-        Objects.requireNonNull(maxValueSize, "maxValueSize");
         Objects.requireNonNull(ttl, "ttl");
         Objects.requireNonNull(replicas, "replicas");
         Objects.requireNonNull(compressed, "compressed");

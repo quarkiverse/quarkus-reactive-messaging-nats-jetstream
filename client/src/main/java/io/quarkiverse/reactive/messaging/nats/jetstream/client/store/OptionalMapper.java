@@ -40,4 +40,8 @@ interface OptionalMapper {
     default Optional<Placement> map(Placement placement) {
         return Optional.ofNullable(placement);
     }
+
+    default Optional<ObjectLink> map(ObjectLink objectLink) {
+        return Optional.ofNullable(objectLink);
+    }
 }

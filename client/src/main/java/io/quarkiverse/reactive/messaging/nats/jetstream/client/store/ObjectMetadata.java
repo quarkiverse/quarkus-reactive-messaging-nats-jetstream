@@ -12,12 +12,12 @@ public record ObjectMetadata(@NonNull String objectName,
                              @NonNull Optional<String> description,
                              @NonNull Headers headers,
                              @NonNull Map<String, String> metadata,
-                             @NonNull ObjectMetadataOptions metadataOptions) {
+                             @NonNull ObjectMetadataOptions options) {
     public ObjectMetadata {
         Objects.requireNonNull(objectName, "objectName");
         Objects.requireNonNull(description, "description");
         Objects.requireNonNull(headers, "headers");
         Objects.requireNonNull(metadata, "metadata");
-        Objects.requireNonNull(metadataOptions, "metadataOptions");
+        Objects.requireNonNull(options, "options");
     }
 }
