@@ -1,4 +1,4 @@
-package io.quarkiverse.reactive.messaging.nats.processors;
+package io.quarkiverse.reactive.messaging.nats.jetstream.connector.processors;
 
 public interface MessageProcessor {
 

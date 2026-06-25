@@ -1,4 +1,4 @@
-package io.quarkiverse.reactive.messaging.nats;
+package io.quarkiverse.reactive.messaging.nats.jetstream.connector;
 
 import static io.smallrye.reactive.messaging.annotations.ConnectorAttribute.Direction.*;
 
@@ -7,6 +7,8 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Flow;
 
+import io.quarkiverse.reactive.messaging.nats.JetStreamConnectorIncomingConfiguration;
+import io.quarkiverse.reactive.messaging.nats.JetStreamConnectorOutgoingConfiguration;
 import jakarta.enterprise.context.ApplicationScoped;
 
 import org.eclipse.microprofile.config.Config;
@@ -14,9 +16,9 @@ import org.eclipse.microprofile.reactive.messaging.Message;
 import org.eclipse.microprofile.reactive.messaging.spi.Connector;
 
 import io.quarkiverse.reactive.messaging.nats.configuration.ConfigurationException;
-import io.quarkiverse.reactive.messaging.nats.processors.MessageProcessor;
-import io.quarkiverse.reactive.messaging.nats.processors.publisher.MessagePublisherProcessorFactory;
-import io.quarkiverse.reactive.messaging.nats.processors.subscriber.MessageSubscriberProcessorFactory;
+import io.quarkiverse.reactive.messaging.nats.jetstream.connector.processors.MessageProcessor;
+import io.quarkiverse.reactive.messaging.nats.jetstream.connector.processors.publisher.MessagePublisherProcessorFactory;
+import io.quarkiverse.reactive.messaging.nats.jetstream.connector.processors.subscriber.MessageSubscriberProcessorFactory;
 import io.smallrye.reactive.messaging.annotations.ConnectorAttribute;
 import io.smallrye.reactive.messaging.connector.InboundConnector;
 import io.smallrye.reactive.messaging.connector.OutboundConnector;
@@ -30,6 +32,7 @@ import io.smallrye.reactive.messaging.health.HealthReporter;
 @ConnectorAttribute(name = "consumer", description = "The name of the consumer", direction = INCOMING, type = "String")
 @ConnectorAttribute(name = "payload-type", description = "The payload type", direction = INCOMING, type = "String")
 @ConnectorAttribute(name = "retry-backoff", description = "The retry backoff in milliseconds for retry processing messages", direction = INCOMING_AND_OUTGOING, type = "Long", defaultValue = "10000")
+@ConnectorAttribute(name = "datasource", description = "The name of the datasource", direction = INCOMING_AND_OUTGOING, type = "String")
 public class JetStreamConnector implements InboundConnector, OutboundConnector, HealthReporter {
     public static final String CONNECTOR_NAME = "quarkus-jetstream";
 

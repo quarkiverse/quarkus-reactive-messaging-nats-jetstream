@@ -1,4 +1,4 @@
-package io.quarkiverse.reactive.messaging.nats.graal;
+package io.quarkiverse.reactive.messaging.nats.jetstream.connector.graal;
 
 import io.quarkus.runtime.annotations.RegisterForReflection;
 

@@ -1,4 +1,4 @@
-package io.quarkiverse.reactive.messaging.nats.processors.subscriber;
+package io.quarkiverse.reactive.messaging.nats.jetstream.connector.processors.subscriber;
 
 import java.time.Duration;
 import java.util.concurrent.Flow;
@@ -9,8 +9,8 @@ import org.eclipse.microprofile.reactive.messaging.Message;
 import io.quarkiverse.reactive.messaging.nats.client.Client;
 import io.quarkiverse.reactive.messaging.nats.client.api.PublishMessageMetadata;
 import io.quarkiverse.reactive.messaging.nats.client.publisher.PublishListener;
-import io.quarkiverse.reactive.messaging.nats.processors.Health;
-import io.quarkiverse.reactive.messaging.nats.processors.MessageProcessor;
+import io.quarkiverse.reactive.messaging.nats.jetstream.connector.processors.Health;
+import io.quarkiverse.reactive.messaging.nats.jetstream.connector.processors.MessageProcessor;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.reactive.messaging.providers.helpers.MultiUtils;
 import lombok.extern.jbosslog.JBossLog;

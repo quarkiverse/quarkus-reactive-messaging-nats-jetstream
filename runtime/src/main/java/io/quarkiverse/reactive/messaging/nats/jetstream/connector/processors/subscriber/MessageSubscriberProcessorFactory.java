@@ -1,4 +1,4 @@
-package io.quarkiverse.reactive.messaging.nats.processors.subscriber;
+package io.quarkiverse.reactive.messaging.nats.jetstream.connector.processors.subscriber;
 
 import java.time.Duration;
 import java.util.Optional;
