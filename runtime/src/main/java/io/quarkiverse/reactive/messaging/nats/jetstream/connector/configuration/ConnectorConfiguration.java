@@ -16,6 +16,21 @@ public interface ConnectorConfiguration {
      */
     DatasourceConfiguration datasource();
 
+    /**
+     * The stream configurations. The map key is the name of the stream.
+     */
+    Map<String, StreamConfiguration> streams();
+
+    /**
+     * The consumer configurations. The map key is the name of the consumer.
+     */
+    Map<String, ConsumerConfiguration> consumers();
+
+    /**
+     * The key value configurations. The map key is the bucket name of the key value.
+     */
+    Map<String, KeyValueConfiguration> keyValues();
+
     interface DatasourceConfiguration extends ConnectionConfiguration {
 
         /**
