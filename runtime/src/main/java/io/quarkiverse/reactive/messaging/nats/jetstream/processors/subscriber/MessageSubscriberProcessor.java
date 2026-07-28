@@ -23,6 +23,8 @@ public class MessageSubscriberProcessor<T> implements MessageProcessor, PublishL
     private final Client client;
     private final Duration retryBackoff;
 
+    private volatile boolean stopped = false;
+
     private final AtomicReference<Health> health;
 
     public MessageSubscriberProcessor(final String channel,
@@ -44,7 +46,12 @@ public class MessageSubscriberProcessor<T> implements MessageProcessor, PublishL
 
     private Multi<Message<T>> subscribe(Multi<Message<T>> subscription) {
         return client.publish(subscription, stream, subject, this)
-                .onFailure().retry().withBackOff(retryBackoff).indefinitely();
+                .onFailure().retry().withBackOff(retryBackoff).until(failure -> stopped);
+    }
+
+    @Override
+    public void stop() {
+        this.stopped = true;
     }
 
     @Override

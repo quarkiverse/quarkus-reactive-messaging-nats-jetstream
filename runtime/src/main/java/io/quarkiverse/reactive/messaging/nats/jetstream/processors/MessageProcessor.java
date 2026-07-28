@@ -8,4 +8,6 @@ public interface MessageProcessor {
 
     Health health();
 
+    default void stop() {
+    }
 }

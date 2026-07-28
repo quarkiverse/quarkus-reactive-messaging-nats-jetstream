@@ -19,6 +19,7 @@ public abstract class MessagePublisherProcessor<T> implements MessageProcessor, 
     private final AtomicReference<Health> health;
     private final Duration retryBackoff;
     private final Class<T> payloadType;
+    private volatile boolean stopped = false;
 
     public MessagePublisherProcessor(final String channel,
             final String stream,
@@ -63,6 +64,11 @@ public abstract class MessagePublisherProcessor<T> implements MessageProcessor, 
         health.set(new Health(false, String.format("Publish processor unhealthy for channel: %s", channel())));
     }
 
+    @Override
+    public void stop() {
+        this.stopped = true;
+    }
+
     public Multi<org.eclipse.microprofile.reactive.messaging.Message<T>> publisher() {
         return subscribe(payloadType)
                 .onSubscription()
@@ -70,7 +76,7 @@ public abstract class MessagePublisherProcessor<T> implements MessageProcessor, 
                         .set(new Health(true, String.format("Publish processor healthy for channel: %s", channel()))))
                 .onFailure()
                 .invoke(failure -> log.errorf(failure, "Failed to subscribe with message: %s", failure.getMessage()))
-                .onFailure().retry().withBackOff(retryBackoff).indefinitely();
+                .onFailure().retry().withBackOff(retryBackoff).until(failure -> stopped);
     }
 
     protected abstract Multi<Message<T>> subscribe(Class<T> payloadType);

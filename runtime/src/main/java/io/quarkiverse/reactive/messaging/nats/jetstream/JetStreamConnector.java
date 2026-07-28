@@ -8,6 +8,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Flow;
 
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Observes;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.reactive.messaging.Message;
@@ -17,6 +18,7 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.configuration.Configurat
 import io.quarkiverse.reactive.messaging.nats.jetstream.processors.MessageProcessor;
 import io.quarkiverse.reactive.messaging.nats.jetstream.processors.publisher.MessagePublisherProcessorFactory;
 import io.quarkiverse.reactive.messaging.nats.jetstream.processors.subscriber.MessageSubscriberProcessorFactory;
+import io.quarkus.runtime.ShutdownEvent;
 import io.smallrye.reactive.messaging.annotations.ConnectorAttribute;
 import io.smallrye.reactive.messaging.connector.InboundConnector;
 import io.smallrye.reactive.messaging.connector.OutboundConnector;
@@ -92,6 +94,10 @@ public class JetStreamConnector implements InboundConnector, OutboundConnector, 
                 processor.health().healthy(),
                 processor.health().message())));
         return builder.build();
+    }
+
+    public void onShutdown(@Observes ShutdownEvent event) {
+        processors.forEach(MessageProcessor::stop);
     }
 
     @SuppressWarnings("unchecked")
