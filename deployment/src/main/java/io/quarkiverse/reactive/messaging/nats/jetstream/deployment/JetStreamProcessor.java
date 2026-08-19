@@ -18,6 +18,9 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.client.tracing.OpenTelem
 import io.quarkiverse.reactive.messaging.nats.jetstream.configuration.JetStreamRecorder;
 import io.quarkiverse.reactive.messaging.nats.jetstream.processors.publisher.MessagePublisherProcessorFactory;
 import io.quarkiverse.reactive.messaging.nats.jetstream.processors.subscriber.MessageSubscriberProcessorFactory;
+import io.quarkiverse.reactive.messaging.nats.jetstream.reply.JetStreamRequestReplyFactory;
+import io.quarkiverse.reactive.messaging.nats.jetstream.reply.JetStreamRequestReplyProducer;
+import io.quarkiverse.reactive.messaging.nats.jetstream.reply.UuidCorrelationIdHandler;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeansRuntimeInitBuildItem;
 import io.quarkus.deployment.Capabilities;
@@ -85,6 +88,10 @@ class JetStreamProcessor {
         buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(MessagePublisherProcessorFactory.class));
         buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(MessageSubscriberProcessorFactory.class));
         buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(TlsContextFactoryImpl.class));
+
+        buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(JetStreamRequestReplyFactory.class));
+        buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(JetStreamRequestReplyProducer.class));
+        buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(UuidCorrelationIdHandler.class));
     }
 
     @BuildStep

@@ -77,6 +77,12 @@ This is a multi-module Maven project with a standard Quarkus extension structure
 - Located in `runtime/src/main/java/.../processors/`
 - Each processor tracks its own health status
 
+**Request/Reply** (`runtime/src/main/java/.../reply/`):
+- **JetStreamRequestReply**: request/reply emitter injectable via `@Channel`; publishes on the channel subject and awaits a correlation-matched reply on a shared reply subject (non-durable consumer per instance, `deliver_policy=new`)
+- **JetStreamRequestReplyFactory** / **JetStreamRequestReplyProducer**: SmallRye `EmitterFactory` SPI + CDI producer that make the type injectable; emitters are closed on shutdown
+- **CorrelationIdHandler** / **ReplyFailureHandler**: pluggable correlation-id and failure strategies, selected per channel via `reply.correlation-id.handler` / `reply.failure.handler`
+- See the user documentation (Request/Reply section in `docs/modules/ROOT/pages/index.adoc`) for examples and the `reply.*` configuration reference
+
 **Client Layer** (`runtime/src/main/java/.../client/`):
 - **connection/**: Manages NATS connections and configuration
 - **context/**: Handles JetStream context creation and management
