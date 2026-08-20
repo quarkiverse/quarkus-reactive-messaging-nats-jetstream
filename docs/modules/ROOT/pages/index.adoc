@@ -71,6 +71,111 @@ public class DataConsumer {
 ----
 If you want more examples, please take a look at the tests of the extension.
 
+== Request/Reply (JetStreamRequestReply)
+
+Instead of plain pub/sub, you can use request/reply semantics: inject `JetStreamRequestReply<Req, Rep>` on an outgoing channel and call `request()`. Each call publishes the payload on the channel's subject and returns a `Uni` that completes when the matching reply arrives, or fails with `JetStreamRequestTimeoutException` if no reply arrives within `reply.timeout`.
+
+IMPORTANT: The stream MUST cover both the request subject and the reply subject. If the reply subject is not covered by the stream, replies can never be persisted or delivered and every request fails with a timeout (NATS happily accepts creating the consumer either way). If the stream does not exist at all, the first request fails with `JetStreamRequestSubscriptionException`; the next request re-subscribes automatically.
+
+=== Requestor
+
+Configure an outgoing channel for the requests:
+
+----
+mp.messaging.outgoing.orders.connector=quarkus-jetstream
+mp.messaging.outgoing.orders.stream=orders
+mp.messaging.outgoing.orders.subject=orders
+# Optional - defaults to '<subject>.replies'
+mp.messaging.outgoing.orders.reply.subject=orders.replies
+# Optional - default 5000 ms
+mp.messaging.outgoing.orders.reply.timeout=10000
+----
+
+Then inject the requestor and send requests:
+
+----
+package outbound;
+
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+
+import org.eclipse.microprofile.reactive.messaging.Channel;
+
+import io.quarkiverse.reactive.messaging.nats.jetstream.reply.JetStreamRequestReply;
+import io.smallrye.mutiny.Uni;
+
+@ApplicationScoped
+public class OrderService {
+
+    @Inject
+    @Channel("orders")
+    JetStreamRequestReply<String, String> requestor;
+
+    public Uni<String> placeOrder(String order) {
+        return requestor.request(order);
+    }
+
+}
+----
+
+=== Replier
+
+The replier is a plain `@Incoming`/`@Outgoing` method. The connector reads the reply subject advertised by the requestor (the `REPLY_SUBJECT` header) and routes the returned payload there automatically, echoing the correlation id (`REPLY_CORRELATION_ID`) so concurrent requestors never receive each other's replies:
+
+----
+package inbound;
+
+import jakarta.enterprise.context.ApplicationScoped;
+
+import org.eclipse.microprofile.reactive.messaging.Incoming;
+import org.eclipse.microprofile.reactive.messaging.Outgoing;
+
+@ApplicationScoped
+public class OrderReplier {
+
+    @Incoming("orders-in")
+    @Outgoing("orders-out")
+    public String reply(String order) {
+        return "accepted:" + order;
+    }
+
+}
+----
+
+Bind the channels to the same stream:
+
+----
+mp.messaging.incoming.orders-in.connector=quarkus-jetstream
+mp.messaging.incoming.orders-in.stream=orders
+mp.messaging.incoming.orders-in.consumer=orders-replier
+
+mp.messaging.outgoing.orders-out.connector=quarkus-jetstream
+mp.messaging.outgoing.orders-out.stream=orders
+mp.messaging.outgoing.orders-out.subject=orders
+----
+
+=== Requestor channel configuration
+
+[cols="4",options="header"]
+|======
+| Property Name | Description | Type | Default Value
+| mp.messaging.outgoing.[channel-name].reply.subject | The subject on which replies are expected | String | `<subject>.replies`
+| mp.messaging.outgoing.[channel-name].reply.timeout | How long to wait for a reply in milliseconds | Long | 5000
+| mp.messaging.outgoing.[channel-name].reply.inactive-threshold | How long NATS keeps an idle request/reply consumer before reclaiming it, in milliseconds | Long | 60000
+| mp.messaging.outgoing.[channel-name].reply.correlation-id.handler | The `@Identifier` of the `CorrelationIdHandler` bean used to generate and parse correlation ids | String | uuid
+| mp.messaging.outgoing.[channel-name].reply.failure.handler | The `@Identifier` of the `ReplyFailureHandler` bean used to turn reply payloads into failures | String |
+|======
+
+The correlation id travels in the NATS message header `REPLY_CORRELATION_ID`; the requestor advertises its reply subject via the `REPLY_SUBJECT` header. Both names are fixed for this version.
+
+=== Scaling model and failure semantics
+
+- Every requestor instance creates its own *non-durable* consumer on the shared reply subject (`deliver_policy=new`, `max_deliver=1`) and receives every reply; replies are demultiplexed by correlation id and non-matches are acknowledged and discarded. This trades a little extra network traffic for zero instance identity: requestors and repliers can scale independently.
+- Idle consumers are reclaimed by NATS after `reply.inactive-threshold`, so no consumer leaks accumulate.
+- If publishing the request fails, the returned `Uni` fails with `JetStreamRequestPublishException`.
+- If a reply payload should be treated as an error, provide a CDI bean implementing `ReplyFailureHandler` (selected per channel via `reply.failure.handler`) and return the failure from it; the caller's `Uni` fails with that error.
+- To observe in-flight requests, use `JetStreamRequestReply.getPendingReplies()`; pending entries are removed on completion, failure, timeout and shutdown.
+
 == Using NATS Key/Value store
 If you want to use the Key/Value store in NATS, then configure your as follows:
 

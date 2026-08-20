@@ -15,12 +15,14 @@ import io.nats.client.impl.Headers;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.ClientException;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.PublishMessageMetadata;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.SerializedPayload;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.api.SubscribeMessageMetadata;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.connection.Connection;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.connection.JetStreamAware;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.context.ContextAware;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.mapper.PayloadMapper;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.tracing.TracerFactory;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.tracing.TracerType;
+import io.quarkiverse.reactive.messaging.nats.jetstream.reply.JetStreamRequestReply;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple2;
@@ -104,6 +106,15 @@ public class PublisherAwareImpl extends ContextAware implements PublisherAware, 
     }
 
     private <T> String subject(final Message<T> message, final String subject) {
+        // Replier auto-routing: a reply flowing from an incoming channel carries the requestor's advertised reply
+        // subject; it wins over the channel-configured subject (which may only be a prefix).
+        final var replySubject = message.getMetadata().get(SubscribeMessageMetadata.class)
+                .map(subscribeMetadata -> subscribeMetadata.headers().get(JetStreamRequestReply.REPLY_SUBJECT_HEADER))
+                .filter(values -> !values.isEmpty())
+                .map(values -> values.get(0));
+        if (replySubject.isPresent()) {
+            return replySubject.get();
+        }
         final var result = message.getMetadata().get(PublishMessageMetadata.class)
                 .map(PublishMessageMetadata::subject)
                 .orElse(subject);
@@ -123,6 +134,12 @@ public class PublisherAwareImpl extends ContextAware implements PublisherAware, 
         final var headers = new HashMap<>(message.getMetadata().get(PublishMessageMetadata.class)
                 .map(PublishMessageMetadata::headers)
                 .orElseGet(Map::of));
+        // Replier auto-routing: carry the requestor's correlation id back on the reply so it can be matched. An
+        // explicitly set header always wins.
+        message.getMetadata().get(SubscribeMessageMetadata.class)
+                .map(subscribeMetadata -> subscribeMetadata.headers().get(JetStreamRequestReply.CORRELATION_ID_HEADER))
+                .filter(values -> !values.isEmpty())
+                .ifPresent(values -> headers.putIfAbsent(JetStreamRequestReply.CORRELATION_ID_HEADER, values));
         headers.put(MESSAGE_TYPE_HEADER, List.of(message.getPayload().getClass().getName()));
         return headers;
     }

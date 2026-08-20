@@ -32,6 +32,11 @@ import io.smallrye.reactive.messaging.health.HealthReporter;
 @ConnectorAttribute(name = "consumer", description = "The name of the consumer", direction = INCOMING, type = "String")
 @ConnectorAttribute(name = "payload-type", description = "The payload type", direction = INCOMING, type = "String")
 @ConnectorAttribute(name = "retry-backoff", description = "The retry backoff in milliseconds for retry processing messages", direction = INCOMING_AND_OUTGOING, type = "Long", defaultValue = "10000")
+@ConnectorAttribute(name = "reply.subject", description = "The subject on which replies are expected when using JetStreamRequestReply. Defaults to the channel subject with '.replies' appended.", direction = OUTGOING, type = "String")
+@ConnectorAttribute(name = "reply.timeout", description = "How long to wait for a reply in milliseconds when using JetStreamRequestReply", direction = OUTGOING, type = "Long", defaultValue = "5000")
+@ConnectorAttribute(name = "reply.inactive-threshold", description = "How long NATS keeps an idle request/reply consumer before reclaiming it, in milliseconds", direction = OUTGOING, type = "Long", defaultValue = "60000")
+@ConnectorAttribute(name = "reply.correlation-id.handler", description = "The @Identifier of the CorrelationIdHandler bean used to generate and parse correlation ids (default 'uuid')", direction = OUTGOING, type = "String")
+@ConnectorAttribute(name = "reply.failure.handler", description = "The @Identifier of the ReplyFailureHandler bean used to turn reply payloads into failures", direction = OUTGOING, type = "String")
 public class JetStreamConnector implements InboundConnector, OutboundConnector, HealthReporter {
     public static final String CONNECTOR_NAME = "quarkus-jetstream";
 
