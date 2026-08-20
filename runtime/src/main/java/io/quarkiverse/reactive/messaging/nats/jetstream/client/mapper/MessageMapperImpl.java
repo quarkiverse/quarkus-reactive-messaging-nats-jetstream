@@ -33,8 +33,7 @@ public class MessageMapperImpl implements MessageMapper {
             return new SubscribeMessage<>(message,
                     payload,
                     context,
-                    configuration.acknowledgeTimeout(),
-                    configuration.backoff().orElseGet(List::of));
+                    configuration.acknowledgeTimeout());
         } catch (ClassCastException e) {
             throw new RuntimeException(e);
         }
