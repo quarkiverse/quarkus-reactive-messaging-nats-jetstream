@@ -1,0 +1,9 @@
+package io.quarkiverse.reactive.messaging.nats.jetstream.client.stream.configuration;
+
+import org.jspecify.annotations.NonNull;
+
+import lombok.Builder;
+
+@Builder
+record SubjectTransformImpl(@NonNull String source, @NonNull String destination) implements SubjectTransform {
+}
