@@ -6,6 +6,8 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 
+import io.quarkiverse.reactive.messaging.nats.jetstream.connector.reply.UuidCorrelationIdHandler;
+
 class UuidCorrelationIdHandlerTest {
 
     private final UuidCorrelationIdHandler handler = new UuidCorrelationIdHandler();

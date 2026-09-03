@@ -1,0 +1,203 @@
+= Migration Guide
+
+include::./includes/attributes.adoc[]
+
+This guide covers migrating from version `3.38.0` (the last release before the client and configuration were
+reworked) to the current version. If you are still running `3.38.0` or earlier and are not ready to migrate yet,
+the documentation for that release is available on
+https://github.com/quarkiverse/quarkus-reactive-messaging-nats-jetstream/blob/3.38.0/docs/modules/ROOT/pages/index.adoc[GitHub].
+
+== Consumers are no longer nested under streams
+
+Pull and push consumers used to be declared as nested maps under each stream
+(`quarkus.messaging.nats.streams.[stream-name].pull-consumers.[consumer-name].*` and
+`.push-consumers.[consumer-name].*`). Consumers are now a single flat map under
+`quarkus.messaging.nats.consumers`, and each entry points back at its stream with a new `stream` property.
+
+[source,properties]
+----
+# Before
+quarkus.messaging.nats.streams.test.pull-consumers.data-consumer.consumer-configuration.durable=true
+quarkus.messaging.nats.streams.test.pull-consumers.data-consumer.consumer-configuration.filter-subjects=data
+quarkus.messaging.nats.streams.test.pull-consumers.data-consumer.pull-configuration.batch-size=100
+
+# After
+quarkus.messaging.nats.consumers.data-consumer.stream.name=data-consumer
+quarkus.messaging.nats.consumers.data-consumer.stream=test
+quarkus.messaging.nats.consumers.data-consumer.durable=true
+quarkus.messaging.nats.consumers.data-consumer.filter-subject=data
+mp.messaging.incoming.data.batch-size=100
+----
+
+Notes:
+
+* `consumer-configuration.` and `pull-configuration.`/`push-configuration.` prefixes are gone; consumer properties
+  are now set directly on `quarkus.messaging.nats.consumers.[consumer-name]`, with pull- or push-specific settings
+  under `pull-options.*` / `push-options.*`.
+* `filter-subjects` (comma-separated) still exists, but a single-subject `filter-subject` shorthand was added.
+* `batch-size` (previously `pull-configuration.batch-size`) and `timeout` are now set on the *channel*
+  (`mp.messaging.incoming.[channel-name].batch-size` / `.timeout`), not on the consumer.
+* `push-configuration.headers-only` moved to the consumer itself as `headers-only`, since it is no longer
+  push-specific.
+* Channels still bind to a consumer by name via `mp.messaging.incoming.[channel-name].consumer` — that part is
+  unchanged.
+
+=== Renamed consumer properties
+
+[cols="2,2",options="header"]
+|======
+| 3.38.0 | Current
+| `ack-wait` | `acknowledge-wait`
+| `max-ack-pending` | `max-acknowledge-pending`
+| `back-off` | `backoff`
+| `meta-data` | `metadata`
+| `push-configuration.deliver-group` | `push-options.deliver-group`
+| `push-configuration.flow-control` (Duration) | `push-options.flow-control` (Boolean)
+| `push-configuration.idle-heart-beat` | `push-options.idle-heartbeat`
+| `push-configuration.rate-limit` | `push-options.rate-limit`
+| `pull-configuration.max-waiting` | `pull-options.max-waiting`
+| `pull-configuration.max-expires` | `pull-options.max-expires`
+|======
+
+See xref:index.adoc#_consumer_configuration[Consumer configuration] for the full, current property list.
+
+== Stream configuration is no longer nested under `configuration`
+
+Stream properties used to live under `quarkus.messaging.nats.streams.[stream-name].configuration.*`. They are now
+set directly on `quarkus.messaging.nats.streams.[stream-name].*`.
+
+[source,properties]
+----
+# Before
+quarkus.messaging.nats.streams.test.configuration.subjects=data
+quarkus.messaging.nats.streams.test.configuration.storage-type=Memory
+
+# After
+quarkus.messaging.nats.streams.test.subjects=data
+quarkus.messaging.nats.streams.test.storage-type=Memory
+----
+
+`quarkus.messaging.nats.streams.[stream-name].name` must now be set explicitly (it previously defaulted to the map
+key).
+
+=== Renamed stream properties
+
+[cols="2,2",options="header"]
+|======
+| 3.38.0 | Current
+| `configuration.compression-option` | `compression`
+| `configuration.maximum-consumers` | `max-consumers`
+| `configuration.maximum-messages` | `max-messages`
+| `configuration.maximum-messages-per-subject` | `max-messages-per-subject`
+| `configuration.maximum-bytes` | `max-bytes`
+| `configuration.maximum-age` | `max-age`
+| `configuration.maximum-message-size` | `maximum-message-size`
+|======
+
+The rest of the `configuration.*` properties (`replicas`, `storage-type`, `retention-policy`, `subjects`,
+`description`, `discard-policy`, `duplicate-window`, `allow-rollup`, `allow-direct`, `mirror-direct`, `deny-delete`,
+`deny-purge`, `discard-new-per-subject`, `first-sequence`, `template-owner`) keep their names, just without the
+`configuration.` prefix.
+
+A number of stream properties are new (not renames), including `no-ack`, `placement`, `republish`,
+`subject-transform`, `consumer-limits`, `mirror`, `sources`, `sealed`, `subject-delete-marker-ttl`,
+`allow-message-ttl`, `allow-message-schedules`, `allow-message-counter`, `allow-atomic-publish`, `allow-batched`,
+`persist-mode` and `metadata`. See the "NATS JetStream Stream configuration" table in
+xref:index.adoc#_configuration[Configuration] for details.
+
+== Key/Value store: config root and client API changed
+
+The configuration root moved from `key-value-stores` to `key-values`:
+
+[source,properties]
+----
+# Before
+quarkus.messaging.nats.key-value-stores.test.storage-type=Memory
+quarkus.messaging.nats.key-value-stores.test.description=Test bucket
+
+# After
+quarkus.messaging.nats.key-values.test.storage-type=Memory
+quarkus.messaging.nats.key-values.test.description=Test bucket
+----
+
+Renamed properties: `max-value-size` -> `maximum-value-size`, `compressed` -> `compression`. The default for
+`max-history-per-key` is now `64`. New properties: `limit-marker-ttl`, `republish`, `placement`, `mirror`,
+`sources`, `metadata`.
+
+The `Client` API for the Key/Value store also changed. It used to take a target type and return/accept it directly;
+it now works with `byte[]` through a `keyValue(bucketName)` accessor:
+
+[source,java]
+----
+// Before
+client.getValue("test", key, Data.class);
+client.putValue("test", key, data);
+client.deleteValue("test", key);
+
+// After
+client.keyValue("test").get(key).onItem().transform(entry -> entry.value().orElse(null));
+client.keyValue("test").put(key, value); // value is byte[]
+client.keyValue("test").delete(key);
+----
+
+If you relied on automatic JSON/object (de)serialization of Key/Value entries, serialize/deserialize the payload
+yourself around the `byte[]` value (the same `Serializer` bean used for channel payloads, see below, can be reused
+for this).
+
+== NATS Object Store (new)
+
+There was no NATS Object Store support in `3.38.0`. It is available now under
+`quarkus.messaging.nats.object-stores.*` and `Client.objectStore(bucketName)`. See
+xref:index.adoc#_using_nats_object_store[Using NATS Object Store].
+
+== Request/Reply: renamed types and headers
+
+`JetStreamRequestReply` was renamed to `RequestReply` and moved package:
+
+[cols="2,2",options="header"]
+|======
+| 3.38.0 | Current
+| `io.quarkiverse.reactive.messaging.nats.jetstream.reply.JetStreamRequestReply` | `io.quarkiverse.reactive.messaging.nats.jetstream.connector.reply.RequestReply`
+| `JetStreamRequestTimeoutException` | `TimeoutException` (`...connector.reply.TimeoutException`)
+| `JetStreamRequestSubscriptionException` | `ConsumerManagementException` (`...client.consumer.ConsumerManagementException`)
+| `JetStreamRequestPublishException` | `PublishException` (`...client.PublishException`)
+|======
+
+The fixed header names `REPLY_SUBJECT` / `REPLY_CORRELATION_ID` were replaced by `message.reply-subject` /
+`message.correlation-id`. If any code reads these headers directly (rather than going through `RequestReply`),
+update the header names.
+
+Two new per-channel options let you plug in custom behavior that previously wasn't configurable:
+`reply.correlation-id.handler` (a `CorrelationIdHandler` bean) and `reply.failure.handler` (a `ReplyFailureHandler`
+bean). Existing code that just injects `RequestReply` and calls `request()` needs no changes beyond the rename
+above.
+
+== Serializer package moved
+
+The `Serializer` interface used for custom payload (de)serialization moved package:
+
+[source]
+----
+# Before
+io.quarkiverse.reactive.messaging.nats.jetstream.client.mapper.Serializer
+
+# After
+io.quarkiverse.reactive.messaging.nats.jetstream.client.message.Serializer
+----
+
+== Suggested migration steps
+
+1. Update the dependency version to `{project-version}`.
+2. Flatten stream configuration: drop the `configuration.` prefix under `quarkus.messaging.nats.streams.[stream-name]`
+   and rename the properties listed above.
+3. Move every `pull-consumers`/`push-consumers` entry out from under its stream into a top-level entry under
+   `quarkus.messaging.nats.consumers`, adding the `stream` property and renaming properties as listed above.
+4. Move `batch-size` (and add `timeout`, if you need a non-default value) from the consumer to the corresponding
+   `mp.messaging.incoming.[channel-name]` channel properties.
+5. Rename `quarkus.messaging.nats.key-value-stores.*` to `quarkus.messaging.nats.key-values.*` and update any
+   direct `Client` Key/Value calls to the new `keyValue(bucketName)` / `byte[]`-based API.
+6. If you use JetStream request/reply, update imports from `JetStreamRequestReply` to `RequestReply` and the
+   associated exception types.
+7. If you implement a custom `Serializer`, update its package import.
+8. Rebuild and start the application; any configuration property that no longer exists is reported at build time,
+   so remaining renames are easy to catch.

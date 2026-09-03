@@ -14,6 +14,8 @@
     <modules>
         <module>deployment</module>
         <module>runtime</module>
+        <module>client</module>
+        <module>test</module>
     </modules>
     <scm>
         <connection>scm:git:git@github.com:quarkiverse/quarkus-reactive-messaging-nats-jetstream.git</connection>
@@ -33,6 +35,7 @@
         <smallrye-connector-attribute-processor.version>4.37.0</smallrye-connector-attribute-processor.version>
         <assertj-core.version>3.27.7</assertj-core.version>
         <lombok.version>1.18.46</lombok.version>
+        <org.mapstruct.version>1.6.3</org.mapstruct.version>
     </properties>
     <dependencyManagement>
         <dependencies>
@@ -59,7 +62,12 @@
                 <version>${assertj-core.version}</version>
                 <scope>test</scope>
             </dependency>
-        </dependencies>
+            <dependency>
+                <groupId>org.mapstruct</groupId>
+                <artifactId>mapstruct</artifactId>
+                <version>${org.mapstruct.version}</version>
+            </dependency>
+          </dependencies>
     </dependencyManagement>
     <build>
         <pluginManagement>

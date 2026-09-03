@@ -65,6 +65,7 @@ release.properties
 /qodana.yaml
 
 CLAUDE.md
+.junie
 
 /.opencode/
 /openspec/
