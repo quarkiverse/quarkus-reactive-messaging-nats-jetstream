@@ -7,7 +7,7 @@ import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.DotName;
 
 import io.nats.client.Options;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.JacksonSerializer;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.Serializer;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.tracing.DisabledTracerFactory;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.tracing.OpenTelemetryTracerFactory;
 import io.quarkiverse.reactive.messaging.nats.jetstream.connector.JetStreamConnector;
@@ -85,7 +85,6 @@ class JetStreamProcessor {
     void createJetStreamConnector(BuildProducer<AdditionalBeanBuildItem> buildProducer) {
         buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(JetStreamConnector.class));
         buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(VertxClientRegistry.class));
-        buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(JacksonSerializer.class));
         buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(MessagePublisherProcessorFactory.class));
         buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(MessageSubscriberProcessorFactory.class));
         buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(ConnectionConfigurationMapperImpl.class));
@@ -99,8 +98,23 @@ class JetStreamProcessor {
     @BuildStep
     void registerSerializer(BuildProducer<AdditionalBeanBuildItem> buildProducer,
             JetStreamBuildTimeConfiguration configuration) {
+        String serializerFqcn = configuration.serializer();
+        Class<?> serializerClass;
+        try {
+            serializerClass = Class.forName(serializerFqcn, true, JetStreamProcessor.class.getClassLoader());
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException(
+                    "quarkus.messaging.nats.serializer is set to '" + serializerFqcn
+                            + "', but this class could not be found on the application classpath.",
+                    e);
+        }
+        if (!Serializer.class.isAssignableFrom(serializerClass)) {
+            throw new RuntimeException(
+                    "quarkus.messaging.nats.serializer is set to '" + serializerFqcn
+                            + "', but this class does not implement io.quarkiverse.reactive.messaging.nats.jetstream.client.message.Serializer.");
+        }
         buildProducer.produce(AdditionalBeanBuildItem.builder()
-                .addBeanClass(configuration.serializer())
+                .addBeanClass(serializerClass)
                 .setDefaultScope(BuiltinScope.APPLICATION.getName())
                 .setUnremovable()
                 .build());

@@ -290,8 +290,15 @@ class ObjectStoreResource {
 By default, Java objects are serialized using `java.io.*` streams. If either the `quarkus-jackson` or
 `quarkus-jsonb` dependency is present, objects are serialized as JSON instead.
 
-To use a custom serializer, create a CDI bean that implements the
-`io.quarkiverse.reactive.messaging.nats.jetstream.client.message.Serializer` interface.
+To use a custom serializer, set the build-time property `quarkus.messaging.nats.serializer` to the
+fully-qualified class name of a class that implements
+`io.quarkiverse.reactive.messaging.nats.jetstream.client.message.Serializer`. The default value is
+`io.quarkiverse.reactive.messaging.nats.jetstream.client.message.JacksonSerializer`.
+
+[source,properties]
+----
+quarkus.messaging.nats.serializer=com.example.MySerializer
+----
 
 == Open Telemetry Tracing
 To use Open Telemetry tracing, add the `quarkus-opentelemetry` dependency.

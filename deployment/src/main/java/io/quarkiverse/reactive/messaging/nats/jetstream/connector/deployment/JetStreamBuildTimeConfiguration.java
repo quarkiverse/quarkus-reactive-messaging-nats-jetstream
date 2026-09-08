@@ -1,6 +1,5 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.connector.deployment;
 
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.Serializer;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.smallrye.config.ConfigMapping;
@@ -18,14 +17,16 @@ import io.smallrye.config.WithDefault;
 public interface JetStreamBuildTimeConfiguration {
 
     /**
-     * Retrieves the serializer implementation used for message serialization and deserialization.
-     * The default implementation is
+     * The fully-qualified class name of the serializer implementation used for message serialization
+     * and deserialization. The class must implement
+     * {@code io.quarkiverse.reactive.messaging.nats.jetstream.client.message.Serializer}.
+     * The default is
      * {@code io.quarkiverse.reactive.messaging.nats.jetstream.client.message.JacksonSerializer}.
      *
-     * @return the {@link Serializer} instance used for handling serialization of messages.
+     * @return the fully-qualified class name of the serializer implementation.
      */
     @WithDefault("io.quarkiverse.reactive.messaging.nats.jetstream.client.message.JacksonSerializer")
-    Class<? extends Serializer> serializer();
+    String serializer();
 
     /**
      * Dev Services configuration.

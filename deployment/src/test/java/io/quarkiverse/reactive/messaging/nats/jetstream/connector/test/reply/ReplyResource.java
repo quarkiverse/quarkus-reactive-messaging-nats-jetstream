@@ -26,7 +26,9 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.connector.reply.TimeoutE
 @Path("/rr")
 public class ReplyResource {
 
-    private static final Duration BOUND = Duration.ofSeconds(10);
+    // Outer safety cap for awaiting a reply. Kept comfortably above every configured reply.timeout (max is the
+    // 8s 'missing' requestor) so a slow-but-valid reply completes before this await can preempt it.
+    private static final Duration BOUND = Duration.ofSeconds(20);
 
     @Inject
     @Channel("requests")
