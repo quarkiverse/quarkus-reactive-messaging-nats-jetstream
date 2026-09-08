@@ -39,11 +39,6 @@ public record ClientConsumerConfiguration(String consumer, Set<String> subjects)
     }
 
     @Override
-    public @NonNull Duration acknowledgeTimeout() {
-        return Duration.ofSeconds(10);
-    }
-
-    @Override
     public @NonNull DeliverPolicy deliverPolicy() {
         return DeliverPolicy.All;
     }

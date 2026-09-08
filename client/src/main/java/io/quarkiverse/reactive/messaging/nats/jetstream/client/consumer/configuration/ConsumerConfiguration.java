@@ -88,15 +88,6 @@ public interface ConsumerConfiguration {
     Optional<Duration> acknowledgeWait();
 
     /*
-     * The duration to wait for an acknowledge confirmation
-     *
-     * @return the acknowledge timeout
-     */
-    @WithDefault("10s")
-    @NonNull
-    Duration acknowledgeTimeout();
-
-    /*
      * The point in the stream to receive messages from; either DeliverAll; DeliverLast; DeliverNew; DeliverByStartSequence;
      * DeliverByStartTime; or DeliverLastPerSubject
      *

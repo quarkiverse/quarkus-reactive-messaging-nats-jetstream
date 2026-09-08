@@ -110,12 +110,6 @@ public record ConsumerConfiguration(String name,
         return Optional.empty();
     }
 
-    @NonNull
-    @Override
-    public Duration acknowledgeTimeout() {
-        return Duration.ofMillis(1000);
-    }
-
     @Override
     public @NonNull Optional<String> filterSubject() {
         return Optional.empty();

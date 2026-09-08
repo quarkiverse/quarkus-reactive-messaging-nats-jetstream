@@ -52,10 +52,7 @@ final class MessageImpl implements Message {
     public CompletionStage<Void> ack() {
         return context.runOnContext(this, () -> {
             try {
-                final var configuration = getMetadata(ConsumerConfiguration.class)
-                        .orElseThrow(() -> new IllegalStateException("Consumer configuration not found"));
-                final var timeout = configuration.acknowledgeTimeout();
-                message.ackSync(timeout);
+                message.ack();
                 return null;
             } catch (Exception e) {
                 throw new RuntimeException(e);
@@ -67,7 +64,7 @@ final class MessageImpl implements Message {
     public CompletionStage<Void> nack(Throwable reason, org.eclipse.microprofile.reactive.messaging.Metadata metadata) {
         return context.runOnContext(this, () -> {
             try {
-                final var withDelay = getMetadata(metadata, NotAcknowledgeMetadata.class)
+                final var withDelay = getMetadata(NotAcknowledgeMetadata.class)
                         .flatMap(NotAcknowledgeMetadata::withDelay);
                 if (withDelay.isPresent()) {
                     message.nakWithDelay(withDelay.get());
@@ -133,20 +130,6 @@ final class MessageImpl implements Message {
     @Override
     public Message withNackWithMetadata(BiFunction<Throwable, Metadata, CompletionStage<Void>> nack) {
         throw new UnsupportedOperationException("Not implemented yet");
-    }
-
-    @SuppressWarnings("unchecked")
-    private <M> Optional<M> getMetadata(org.eclipse.microprofile.reactive.messaging.Metadata metadata,
-            Class<? extends M> clazz) {
-        if (clazz == null) {
-            throw new IllegalArgumentException("`clazz` must not be `null`");
-        }
-        for (Object item : metadata) {
-            if (clazz.isInstance(item)) {
-                return Optional.of((M) item);
-            }
-        }
-        return Optional.empty();
     }
 
 }

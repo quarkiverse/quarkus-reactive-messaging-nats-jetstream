@@ -1,7 +1,6 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer.configuration;
 
 import java.time.Duration;
-import java.util.Map;
 import java.util.Optional;
 
 import org.jspecify.annotations.NonNull;
@@ -13,8 +12,6 @@ import io.nats.client.api.AckPolicy;
 
 @Mapper(uses = { OptionalMapper.class, PullOptionsMapper.class, PushOptionsMapper.class })
 interface ConsumerConfigurationMapper {
-    String ACKNOWLEDGE_TIMEOUT = "acknowledgeTimeout";
-
     @Mapping(target = "name", source = "name")
     @Mapping(target = "durable", expression = "java(source.getDurable() != null)")
     @Mapping(target = "filterSubject", expression = "java(Optional.ofNullable(source.getFilterSubject()))")
@@ -34,7 +31,6 @@ interface ConsumerConfigurationMapper {
     @Mapping(target = "backoff", expression = "java(source.getBackoff() != null ? java.util.Optional.of(source.getBackoff()) : java.util.Optional.empty())")
     @Mapping(target = "pauseUntil", source = "pauseUntil")
     @Mapping(target = "headersOnly", source = "headersOnly")
-    @Mapping(target = "acknowledgeTimeout", expression = "java(acknowledgeTimeout(source))")
     @Mapping(target = "metadata", expression = "java(Optional.ofNullable(source.getMetadata()).orElseGet(java.util.Map::of))")
     @Mapping(target = "pullOptions", expression = "java(pullOptions(source))")
     @Mapping(target = "pushOptions", expression = "java(pushOptions(source))")
@@ -91,20 +87,9 @@ interface ConsumerConfigurationMapper {
         builder = consumerConfiguration.pushOptions().flatMap(PushOptions::deliverGroup).map(builder::deliverGroup)
                 .orElse(builder);
 
-        Map<String, String> metadata = new java.util.HashMap<>(consumerConfiguration.metadata());
-        metadata.put(ACKNOWLEDGE_TIMEOUT, String.valueOf(consumerConfiguration.acknowledgeTimeout().toNanos()));
-        builder = builder.metadata(metadata);
+        builder = builder.metadata(consumerConfiguration.metadata());
 
         return builder.build();
-    }
-
-    @SuppressWarnings("OptionalOfNullableMisuse")
-    default Duration acknowledgeTimeout(io.nats.client.api.ConsumerConfiguration configuration) {
-        return Optional.ofNullable(configuration.getMetadata())
-                .map(m -> m.get(ACKNOWLEDGE_TIMEOUT))
-                .map(Long::parseLong)
-                .map(Duration::ofNanos)
-                .orElse(Duration.ofSeconds(10));
     }
 
     default Optional<PullOptions> pullOptions(io.nats.client.api.ConsumerConfiguration configuration) {

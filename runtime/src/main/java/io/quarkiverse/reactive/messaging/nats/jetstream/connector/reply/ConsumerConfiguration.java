@@ -49,11 +49,6 @@ record ConsumerConfiguration(@NonNull String name,
     }
 
     @Override
-    public @NonNull Duration acknowledgeTimeout() {
-        return Duration.ofSeconds(1);
-    }
-
-    @Override
     public @NonNull DeliverPolicy deliverPolicy() {
         return DeliverPolicy.New;
     }

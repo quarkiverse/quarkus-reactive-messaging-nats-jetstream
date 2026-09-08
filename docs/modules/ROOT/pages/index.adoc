@@ -383,7 +383,6 @@ Unlike streams, consumers are configured as a single, flat map under `quarkus.me
 | quarkus.messaging.nats.consumers.[consumer-name].start-sequence | Used with the `ByStartSequence` deliver policy | Long | 0
 | quarkus.messaging.nats.consumers.[consumer-name].start-time | Used with the `ByStartTime` deliver policy | ZonedDateTime |
 | quarkus.messaging.nats.consumers.[consumer-name].acknowledge-wait | The duration the server will wait for an ack for any individual message once it has been delivered to a consumer. If an ack is not received in time, the message will be redelivered | Duration |
-| quarkus.messaging.nats.consumers.[consumer-name].acknowledge-timeout | The duration to wait for an ack confirmation | Duration | 10s
 | quarkus.messaging.nats.consumers.[consumer-name].inactive-threshold | Duration that instructs the server to clean up the consumer once inactive for that long | Duration |
 | quarkus.messaging.nats.consumers.[consumer-name].max-acknowledge-pending | The maximum number of messages, without an acknowledgement, that can be outstanding | Long |
 | quarkus.messaging.nats.consumers.[consumer-name].max-deliver | The maximum number of times a specific message delivery will be attempted | Long |
