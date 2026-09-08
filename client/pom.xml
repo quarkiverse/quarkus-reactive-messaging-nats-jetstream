@@ -28,6 +28,10 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-jackson</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
             <artifactId>quarkus-opentelemetry</artifactId>
             <optional>true</optional>
         </dependency>
@@ -56,11 +60,6 @@
             <groupId>${project.groupId}</groupId>
             <artifactId>quarkus-messaging-nats-jetstream-test</artifactId>
             <version>${project.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>

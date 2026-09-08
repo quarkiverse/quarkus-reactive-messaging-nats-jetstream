@@ -20,11 +20,11 @@ public interface JetStreamBuildTimeConfiguration {
     /**
      * Retrieves the serializer implementation used for message serialization and deserialization.
      * The default implementation is
-     * {@code io.quarkiverse.reactive.messaging.nats.jetstream.connector.message.JacksonSerializer}.
+     * {@code io.quarkiverse.reactive.messaging.nats.jetstream.client.message.JacksonSerializer}.
      *
      * @return the {@link Serializer} instance used for handling serialization of messages.
      */
-    @WithDefault("io.quarkiverse.reactive.messaging.nats.jetstream.connector.message.JacksonSerializer")
+    @WithDefault("io.quarkiverse.reactive.messaging.nats.jetstream.client.message.JacksonSerializer")
     Class<? extends Serializer> serializer();
 
     /**

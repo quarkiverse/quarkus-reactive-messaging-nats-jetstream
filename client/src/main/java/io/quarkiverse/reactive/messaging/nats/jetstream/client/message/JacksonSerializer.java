@@ -1,17 +1,11 @@
-package io.quarkiverse.reactive.messaging.nats.jetstream.connector.message;
-
-import jakarta.enterprise.context.ApplicationScoped;
+package io.quarkiverse.reactive.messaging.nats.jetstream.client.message;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.Serializer;
-import io.quarkus.arc.DefaultBean;
 import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
-@ApplicationScoped
-@DefaultBean
 public class JacksonSerializer implements Serializer {
     private final ObjectMapper objectMapper;
 

@@ -7,6 +7,7 @@ import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.DotName;
 
 import io.nats.client.Options;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.JacksonSerializer;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.tracing.DisabledTracerFactory;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.tracing.OpenTelemetryTracerFactory;
 import io.quarkiverse.reactive.messaging.nats.jetstream.connector.JetStreamConnector;
@@ -15,7 +16,6 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.connector.client.TlsCont
 import io.quarkiverse.reactive.messaging.nats.jetstream.connector.client.VertxClientRegistry;
 import io.quarkiverse.reactive.messaging.nats.jetstream.connector.configuration.ChannelConfigurationFactoryImpl;
 import io.quarkiverse.reactive.messaging.nats.jetstream.connector.configuration.JetStreamRecorder;
-import io.quarkiverse.reactive.messaging.nats.jetstream.connector.message.JacksonSerializer;
 import io.quarkiverse.reactive.messaging.nats.jetstream.connector.processors.publisher.MessagePublisherProcessorFactory;
 import io.quarkiverse.reactive.messaging.nats.jetstream.connector.processors.subscriber.MessageSubscriberProcessorFactory;
 import io.quarkiverse.reactive.messaging.nats.jetstream.connector.reply.RequestReplyFactory;
