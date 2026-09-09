@@ -98,26 +98,24 @@ class JetStreamProcessor {
     @BuildStep
     void registerSerializer(BuildProducer<AdditionalBeanBuildItem> buildProducer,
             JetStreamBuildTimeConfiguration configuration) {
-        String serializerFqcn = configuration.serializer();
-        Class<?> serializerClass;
         try {
-            serializerClass = Class.forName(serializerFqcn, true, JetStreamProcessor.class.getClassLoader());
+            Class<?> serializerClass = Class.forName(configuration.serializer(), true,
+                    JetStreamProcessor.class.getClassLoader());
+            if (!Serializer.class.isAssignableFrom(serializerClass)) {
+                throw new RuntimeException(String.format(
+                        "quarkus.messaging.nats.serializer is set to '%s', but this class does not implement io.quarkiverse.reactive.messaging.nats.jetstream.client.message.Serializer.",
+                        configuration.serializer()));
+            }
+            buildProducer.produce(AdditionalBeanBuildItem.builder()
+                    .addBeanClass(serializerClass)
+                    .setDefaultScope(BuiltinScope.APPLICATION.getName())
+                    .setUnremovable()
+                    .build());
         } catch (ClassNotFoundException e) {
-            throw new RuntimeException(
-                    "quarkus.messaging.nats.serializer is set to '" + serializerFqcn
-                            + "', but this class could not be found on the application classpath.",
-                    e);
+            throw new RuntimeException(String.format(
+                    "quarkus.messaging.nats.serializer is set to '%s', but this class could not be found on the application classpath.",
+                    configuration.serializer()));
         }
-        if (!Serializer.class.isAssignableFrom(serializerClass)) {
-            throw new RuntimeException(
-                    "quarkus.messaging.nats.serializer is set to '" + serializerFqcn
-                            + "', but this class does not implement io.quarkiverse.reactive.messaging.nats.jetstream.client.message.Serializer.");
-        }
-        buildProducer.produce(AdditionalBeanBuildItem.builder()
-                .addBeanClass(serializerClass)
-                .setDefaultScope(BuiltinScope.APPLICATION.getName())
-                .setUnremovable()
-                .build());
     }
 
     @BuildStep
