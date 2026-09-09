@@ -12,7 +12,7 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.client.connection.ErrorL
 import lombok.Builder;
 
 @Builder
-record ConnectionConfigurationRecord(@NonNull List<String> servers,
+public record ConnectionConfigurationRecord(@NonNull List<String> servers,
         @NonNull Optional<String> username,
         @NonNull Optional<String> password,
         @NonNull Optional<String> token,
@@ -22,7 +22,8 @@ record ConnectionConfigurationRecord(@NonNull List<String> servers,
         @NonNull Optional<Integer> bufferSize,
         @NonNull Optional<String> tlsAlgorithm,
         @NonNull Optional<SSLContext> sslContext,
-        @NonNull Optional<String> credentialPath)
+        @NonNull Optional<String> credentialPath,
+        @NonNull Optional<String> inboxPrefix)
         implements
             io.quarkiverse.reactive.messaging.nats.jetstream.client.connection.ConnectionConfiguration {
 }

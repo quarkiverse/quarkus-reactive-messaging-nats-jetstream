@@ -69,4 +69,9 @@ public record ClientConnectionConfiguration(JetStreamContainer jetStreamContaine
     public @NonNull Optional<String> credentialPath() {
         return Optional.empty();
     }
+
+    @Override
+    public @NonNull Optional<String> inboxPrefix() {
+        return Optional.empty();
+    }
 }

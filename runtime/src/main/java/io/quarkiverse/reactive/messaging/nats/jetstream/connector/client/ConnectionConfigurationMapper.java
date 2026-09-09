@@ -25,6 +25,7 @@ public interface ConnectionConfigurationMapper {
     @Mapping(target = "tlsAlgorithm", expression = "java(configuration.tlsAlgorithm())")
     @Mapping(target = "credentialPath", expression = "java(configuration.credentialPath())")
     @Mapping(target = "sslContext", expression = "java(sslContext(configuration))")
+    @Mapping(target = "inboxPrefix", expression = "java(configuration.inboxPrefix())")
     ConnectionConfigurationRecord map(ConnectionConfiguration configuration);
 
     default Optional<SSLContext> sslContext(final ConnectionConfiguration configuration) {

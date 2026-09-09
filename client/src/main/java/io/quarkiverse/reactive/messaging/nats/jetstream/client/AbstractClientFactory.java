@@ -48,6 +48,7 @@ abstract class AbstractClientFactory implements ClientFactory {
         }
         configuration.tlsAlgorithm().ifPresent(optionsBuilder::tlsAlgorithm);
         optionsBuilder.executor(executorService);
+        configuration.inboxPrefix().ifPresent(optionsBuilder::inboxPrefix);
         return optionsBuilder.build();
     }
 

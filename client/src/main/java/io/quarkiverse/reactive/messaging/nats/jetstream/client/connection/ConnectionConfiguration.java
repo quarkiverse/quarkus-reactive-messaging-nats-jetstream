@@ -100,4 +100,13 @@ public interface ConnectionConfiguration {
     @NonNull
     Optional<String> credentialPath();
 
+    /**
+     * Retrieves the optional inbox prefix used for communication.
+     * The inbox prefix allows customization of the subscriber's inbox name.
+     *
+     * @return an {@link Optional} containing the inbox prefix if set, or an empty {@link Optional} if no prefix is defined
+     */
+    @NonNull
+    Optional<String> inboxPrefix();
+
 }
