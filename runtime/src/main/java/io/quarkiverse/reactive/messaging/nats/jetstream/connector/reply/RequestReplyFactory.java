@@ -9,7 +9,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import org.eclipse.microprofile.config.Config;
 
 import io.quarkiverse.reactive.messaging.nats.jetstream.connector.client.ClientRegistry;
-import io.quarkiverse.reactive.messaging.nats.jetstream.connector.configuration.ChannelConfigurationFactory;
+import io.quarkiverse.reactive.messaging.nats.jetstream.connector.configuration.PublisherChannelConfigurationFactory;
 import io.smallrye.reactive.messaging.EmitterConfiguration;
 import io.smallrye.reactive.messaging.EmitterFactory;
 import io.smallrye.reactive.messaging.annotations.EmitterFactoryFor;
@@ -25,13 +25,13 @@ import io.smallrye.reactive.messaging.annotations.EmitterFactoryFor;
 public class RequestReplyFactory implements EmitterFactory<RequestReplyImpl<Object, Object>> {
     private final ClientRegistry clientRegistry;
     private final Config config;
-    private final ChannelConfigurationFactory channelConfigurationFactory;
+    private final PublisherChannelConfigurationFactory channelConfigurationFactory;
 
     private final Set<RequestReplyImpl<?, ?>> emitters = ConcurrentHashMap.newKeySet();
 
     public RequestReplyFactory(final ClientRegistry clientRegistry,
             final Config config,
-            final ChannelConfigurationFactory channelConfigurationFactory) {
+            final PublisherChannelConfigurationFactory channelConfigurationFactory) {
         this.clientRegistry = clientRegistry;
         this.config = config;
         this.channelConfigurationFactory = channelConfigurationFactory;

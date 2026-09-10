@@ -2,6 +2,8 @@ package io.quarkiverse.reactive.messaging.nats.jetstream.connector.processors;
 
 import org.jspecify.annotations.NonNull;
 
+import io.quarkiverse.reactive.messaging.nats.jetstream.connector.configuration.ChannelConfiguration;
+
 /**
  * Represents a processor responsible for handling messages within a messaging system.
  * Implementations of this interface can define specific behavior for consuming,
@@ -11,24 +13,14 @@ import org.jspecify.annotations.NonNull;
 public interface MessageProcessor {
 
     /**
-     * Returns the name of the channel associated with the message processor.
-     * This method identifies the specific channel used by the messaging system for communication
-     * and is essential for tracking or debugging operations related to the processor.
+     * Retrieves the channel configuration associated with the message processor.
+     * This configuration provides details about the channel, including its name,
+     * associated stream, retry backoff settings, and the underlying datasource.
      *
-     * @return a non-null string representing the name of the channel.
+     * @return a non-null {@code ChannelConfiguration} object representing the channel configuration.
      */
     @NonNull
-    String channel();
-
-    /**
-     * Retrieves the name of the stream associated with the message processor.
-     * This method provides the specific identifier for the stream being utilized by the message
-     * processor, which can be used for monitoring or managing message streams in the system.
-     *
-     * @return a non-null string representing the name of the stream.
-     */
-    @NonNull
-    String stream();
+    ChannelConfiguration channelConfiguration();
 
     /**
      * Retrieves the health status of the message processor.
