@@ -3,8 +3,6 @@ package io.quarkiverse.reactive.messaging.nats.jetstream.connector.configuration
 import java.time.Duration;
 import java.util.Optional;
 
-import io.quarkiverse.reactive.messaging.nats.jetstream.connector.JetStreamConnector;
-import io.smallrye.reactive.messaging.providers.impl.Configs;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Any;
 import jakarta.enterprise.inject.Instance;
@@ -12,12 +10,14 @@ import jakarta.enterprise.inject.Instance;
 import org.eclipse.microprofile.config.Config;
 import org.jspecify.annotations.NonNull;
 
+import io.quarkiverse.reactive.messaging.nats.jetstream.connector.JetStreamConnector;
 import io.quarkiverse.reactive.messaging.nats.jetstream.connector.JetStreamConnectorOutgoingConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.connector.client.ClientRegistry;
 import io.quarkiverse.reactive.messaging.nats.jetstream.connector.reply.CorrelationIdHandler;
 import io.quarkiverse.reactive.messaging.nats.jetstream.connector.reply.ReplyFailureHandler;
 import io.quarkiverse.reactive.messaging.nats.jetstream.connector.reply.UuidCorrelationIdHandler;
 import io.smallrye.reactive.messaging.providers.helpers.CDIUtils;
+import io.smallrye.reactive.messaging.providers.impl.Configs;
 
 @ApplicationScoped
 public class PublisherChannelConfigurationFactoryImpl implements PublisherChannelConfigurationFactory {
@@ -68,10 +68,12 @@ public class PublisherChannelConfigurationFactoryImpl implements PublisherChanne
         final var failureHandlerId = channelConfig.getReplyFailureHandler();
         return PublisherChannelConfigurationImpl.builder()
                 .name(name)
-                .stream(channelConfig.getStream().orElseThrow(() -> new IllegalArgumentException(String.format("Missing stream for channel: %s", name))))
+                .stream(channelConfig.getStream()
+                        .orElseThrow(() -> new IllegalArgumentException(String.format("Missing stream for channel: %s", name))))
                 .retryBackoff(channelConfig.getRetryBackoff().map(Duration::ofMillis))
                 .datasource(channelConfig.getDatasource().orElse(ClientRegistry.DEFAULT_CLIENT_NAME))
-                .subject(channelConfig.getSubject().orElseThrow(() -> new IllegalArgumentException(String.format("Missing subject for channel: %s", name))))
+                .subject(channelConfig.getSubject().orElseThrow(
+                        () -> new IllegalArgumentException(String.format("Missing subject for channel: %s", name))))
                 .replySubject(channelConfig.getReplySubject())
                 .replyTimeout(Optional.of(Duration.ofMillis(channelConfig.getReplyTimeout())))
                 .replyInactiveThreshold(Optional.of(Duration.ofMillis(channelConfig.getReplyInactiveThreshold())))

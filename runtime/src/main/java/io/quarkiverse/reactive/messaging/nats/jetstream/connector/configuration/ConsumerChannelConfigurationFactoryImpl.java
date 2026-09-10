@@ -18,7 +18,9 @@ public class ConsumerChannelConfigurationFactoryImpl implements ConsumerChannelC
         final var channelConfig = new JetStreamConnectorIncomingConfiguration(config);
         return ConsumerChannelConfigurationImpl.builder()
                 .name(channelConfig.getChannel())
-                .stream(channelConfig.getStream().orElseThrow(() -> new IllegalArgumentException(String.format("Missing stream for channel: %s", channelConfig.getChannel()))))
+                .stream(channelConfig.getStream()
+                        .orElseThrow(() -> new IllegalArgumentException(
+                                String.format("Missing stream for channel: %s", channelConfig.getChannel()))))
                 .retryBackoff(channelConfig.getRetryBackoff().map(Duration::ofMillis))
                 .datasource(channelConfig.getDatasource().orElse(ClientRegistry.DEFAULT_CLIENT_NAME))
                 .consumer(channelConfig.getConsumer())
