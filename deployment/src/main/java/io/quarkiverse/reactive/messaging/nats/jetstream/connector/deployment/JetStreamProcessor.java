@@ -14,8 +14,9 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.connector.JetStreamConne
 import io.quarkiverse.reactive.messaging.nats.jetstream.connector.client.ConnectionConfigurationMapperImpl;
 import io.quarkiverse.reactive.messaging.nats.jetstream.connector.client.TlsContextFactoryImpl;
 import io.quarkiverse.reactive.messaging.nats.jetstream.connector.client.VertxClientRegistry;
-import io.quarkiverse.reactive.messaging.nats.jetstream.connector.configuration.ChannelConfigurationFactoryImpl;
+import io.quarkiverse.reactive.messaging.nats.jetstream.connector.configuration.ConsumerChannelConfigurationFactoryImpl;
 import io.quarkiverse.reactive.messaging.nats.jetstream.connector.configuration.JetStreamRecorder;
+import io.quarkiverse.reactive.messaging.nats.jetstream.connector.configuration.PublisherChannelConfigurationFactoryImpl;
 import io.quarkiverse.reactive.messaging.nats.jetstream.connector.processors.publisher.MessagePublisherProcessorFactory;
 import io.quarkiverse.reactive.messaging.nats.jetstream.connector.processors.subscriber.MessageSubscriberProcessorFactory;
 import io.quarkiverse.reactive.messaging.nats.jetstream.connector.reply.RequestReplyFactory;
@@ -92,7 +93,8 @@ class JetStreamProcessor {
         buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(RequestReplyFactory.class));
         buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(RequestReplyProducer.class));
         buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(UuidCorrelationIdHandler.class));
-        buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(ChannelConfigurationFactoryImpl.class));
+        buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(PublisherChannelConfigurationFactoryImpl.class));
+        buildProducer.produce(AdditionalBeanBuildItem.unremovableOf(ConsumerChannelConfigurationFactoryImpl.class));
     }
 
     @BuildStep

@@ -31,7 +31,7 @@ import io.smallrye.reactive.messaging.health.HealthReporter;
 @ConnectorAttribute(name = "payload-type", description = "The payload type", direction = INCOMING, type = "String")
 @ConnectorAttribute(name = "batch-size", description = "The batch size", direction = INCOMING, type = "Integer", defaultValue = "100")
 @ConnectorAttribute(name = "timeout", description = "The timeout in milliseconds for pulling messages", direction = INCOMING, type = "Long", defaultValue = "1000")
-@ConnectorAttribute(name = "retry-backoff", description = "The retry backoff in milliseconds for retry processing messages", direction = INCOMING_AND_OUTGOING, type = "Long", defaultValue = "10000")
+@ConnectorAttribute(name = "retry-backoff", description = "The retry backoff in milliseconds for retry processing messages", direction = INCOMING_AND_OUTGOING, type = "Long")
 @ConnectorAttribute(name = "datasource", description = "The name of the datasource", direction = INCOMING_AND_OUTGOING, type = "String")
 @ConnectorAttribute(name = "reply.subject", description = "The subject on which replies are expected when using JetStreamRequestReply. Defaults to the channel subject with '.replies' appended.", direction = OUTGOING, type = "String")
 @ConnectorAttribute(name = "reply.timeout", description = "How long to wait for a reply in milliseconds when using JetStreamRequestReply", direction = OUTGOING, type = "Long", defaultValue = "5000")
@@ -55,16 +55,14 @@ public class JetStreamConnector implements InboundConnector, OutboundConnector, 
     @SuppressWarnings("ReactiveStreamsUnusedPublisher")
     @Override
     public Flow.Publisher<? extends Message<?>> getPublisher(Config config) {
-        final var configuration = new JetStreamConnectorIncomingConfiguration(config);
-        final var processor = messagePublisherProcessorFactory.create(configuration);
+        final var processor = messagePublisherProcessorFactory.create(config);
         processors.add(processor);
         return processor.publisher();
     }
 
     @Override
     public Flow.Subscriber<? extends Message<?>> getSubscriber(Config config) {
-        final var configuration = new JetStreamConnectorOutgoingConfiguration(config);
-        final var processor = messageSubscriberProcessorFactory.create(configuration);
+        final var processor = messageSubscriberProcessorFactory.create(config);
         processors.add(processor);
         return processor.subscriber();
     }
@@ -73,7 +71,7 @@ public class JetStreamConnector implements InboundConnector, OutboundConnector, 
     public HealthReport getReadiness() {
         final HealthReport.HealthReportBuilder builder = HealthReport.builder();
         processors.forEach(processor -> builder.add(new HealthReport.ChannelInfo(
-                processor.channel(),
+                processor.channelConfiguration().name(),
                 processor.health().healthy(),
                 processor.health().message())));
         return builder.build();
@@ -83,7 +81,7 @@ public class JetStreamConnector implements InboundConnector, OutboundConnector, 
     public HealthReport getLiveness() {
         final HealthReport.HealthReportBuilder builder = HealthReport.builder();
         processors.forEach(processor -> builder.add(new HealthReport.ChannelInfo(
-                processor.channel(),
+                processor.channelConfiguration().name(),
                 processor.health().healthy(),
                 processor.health().message())));
         return builder.build();

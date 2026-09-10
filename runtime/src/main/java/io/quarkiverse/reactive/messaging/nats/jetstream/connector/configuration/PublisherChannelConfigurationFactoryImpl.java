@@ -3,33 +3,41 @@ package io.quarkiverse.reactive.messaging.nats.jetstream.connector.configuration
 import java.time.Duration;
 import java.util.Optional;
 
+import io.quarkiverse.reactive.messaging.nats.jetstream.connector.JetStreamConnector;
+import io.smallrye.reactive.messaging.providers.impl.Configs;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Any;
 import jakarta.enterprise.inject.Instance;
 
 import org.eclipse.microprofile.config.Config;
+import org.jspecify.annotations.NonNull;
 
-import io.quarkiverse.reactive.messaging.nats.jetstream.connector.JetStreamConnector;
+import io.quarkiverse.reactive.messaging.nats.jetstream.connector.JetStreamConnectorOutgoingConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.connector.client.ClientRegistry;
 import io.quarkiverse.reactive.messaging.nats.jetstream.connector.reply.CorrelationIdHandler;
 import io.quarkiverse.reactive.messaging.nats.jetstream.connector.reply.ReplyFailureHandler;
 import io.quarkiverse.reactive.messaging.nats.jetstream.connector.reply.UuidCorrelationIdHandler;
 import io.smallrye.reactive.messaging.providers.helpers.CDIUtils;
-import io.smallrye.reactive.messaging.providers.impl.Configs;
 
 @ApplicationScoped
-public class ChannelConfigurationFactoryImpl implements ChannelConfigurationFactory {
+public class PublisherChannelConfigurationFactoryImpl implements PublisherChannelConfigurationFactory {
     private final Instance<CorrelationIdHandler> correlationIdHandlers;
     private final Instance<ReplyFailureHandler> failureHandlers;
 
-    public ChannelConfigurationFactoryImpl(@Any Instance<CorrelationIdHandler> correlationIdHandlers,
+    public PublisherChannelConfigurationFactoryImpl(@Any Instance<CorrelationIdHandler> correlationIdHandlers,
             @Any Instance<ReplyFailureHandler> failureHandlers) {
         this.correlationIdHandlers = correlationIdHandlers;
         this.failureHandlers = failureHandlers;
     }
 
     @Override
-    public PublisherChannelConfiguration create(String channel, Config config) {
+    public @NonNull PublisherChannelConfiguration create(@NonNull Config config) {
+        final var channelConfig = new JetStreamConnectorOutgoingConfiguration(config);
+        return create(channelConfig.getChannel(), channelConfig);
+    }
+
+    @Override
+    public @NonNull PublisherChannelConfiguration create(@NonNull String channel, @NonNull Config config) {
         final var channelConfig = Configs.outgoing(config, JetStreamConnector.CONNECTOR_NAME, channel);
         final var correlationIdHandlerId = nonBlank(
                 channelConfig.getOptionalValue("reply.correlation-id.handler", String.class))
@@ -50,6 +58,29 @@ public class ChannelConfigurationFactoryImpl implements ChannelConfigurationFact
                         "reply.correlation-id.handler", correlationIdHandlerId))
                 .replyFailureHandler(failureHandlerId.map(
                         id -> resolveHandler(failureHandlers, ReplyFailureHandler.class, channel, "reply.failure.handler", id)))
+                .build();
+    }
+
+    private PublisherChannelConfiguration create(@NonNull String name,
+            @NonNull JetStreamConnectorOutgoingConfiguration channelConfig) {
+        final var correlationIdHandlerId = channelConfig.getReplyCorrelationIdHandler()
+                .orElse(UuidCorrelationIdHandler.ID);
+        final var failureHandlerId = channelConfig.getReplyFailureHandler();
+        return PublisherChannelConfigurationImpl.builder()
+                .name(name)
+                .stream(channelConfig.getStream().orElseThrow(() -> new IllegalArgumentException(String.format("Missing stream for channel: %s", name))))
+                .retryBackoff(channelConfig.getRetryBackoff().map(Duration::ofMillis))
+                .datasource(channelConfig.getDatasource().orElse(ClientRegistry.DEFAULT_CLIENT_NAME))
+                .subject(channelConfig.getSubject().orElseThrow(() -> new IllegalArgumentException(String.format("Missing subject for channel: %s", name))))
+                .replySubject(channelConfig.getReplySubject())
+                .replyTimeout(Optional.of(Duration.ofMillis(channelConfig.getReplyTimeout())))
+                .replyInactiveThreshold(Optional.of(Duration.ofMillis(channelConfig.getReplyInactiveThreshold())))
+                .replyCorrelationIdHandler(
+                        resolveHandler(correlationIdHandlers, CorrelationIdHandler.class, name,
+                                "reply.correlation-id.handler", correlationIdHandlerId))
+                .replyFailureHandler(failureHandlerId.map(
+                        id -> resolveHandler(failureHandlers, ReplyFailureHandler.class, name,
+                                "reply.failure.handler", id)))
                 .build();
     }
 
