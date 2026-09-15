@@ -46,9 +46,7 @@ public class PublisherChannelConfigurationFactoryImpl implements PublisherChanne
                 .name(channel)
                 .stream(channelConfig.getValue("stream", String.class))
                 .retryBackoff(channelConfig.getOptionalValue("retry-backoff", Long.class).map(Duration::ofMillis))
-                .datasource(
-                        channelConfig.getOptionalValue("datasource", String.class)
-                                .orElse(JetStreamConnector.DEFAULT_DATASOURCE))
+                .datasource(channelConfig.getOptionalValue("datasource", String.class))
                 .subject(channelConfig.getValue("subject", String.class))
                 .replySubject(nonBlank(channelConfig.getOptionalValue("reply.subject", String.class)))
                 .replyTimeout(channelConfig.getOptionalValue("reply.timeout", Long.class).map(Duration::ofMillis))
@@ -71,7 +69,7 @@ public class PublisherChannelConfigurationFactoryImpl implements PublisherChanne
                 .stream(channelConfig.getStream()
                         .orElseThrow(() -> new IllegalArgumentException(String.format("Missing stream for channel: %s", name))))
                 .retryBackoff(channelConfig.getRetryBackoff().map(Duration::ofMillis))
-                .datasource(channelConfig.getDatasource().orElse(JetStreamConnector.DEFAULT_DATASOURCE))
+                .datasource(channelConfig.getDatasource())
                 .subject(channelConfig.getSubject().orElseThrow(
                         () -> new IllegalArgumentException(String.format("Missing subject for channel: %s", name))))
                 .replySubject(channelConfig.getReplySubject())

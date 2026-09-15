@@ -1,5 +1,7 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.connector.processors.subscriber;
 
+import static io.quarkiverse.reactive.messaging.nats.jetstream.connector.configuration.ConnectorConfiguration.DEFAULT_DATASOURCE;
+
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Any;
 import jakarta.enterprise.inject.Instance;
@@ -26,7 +28,7 @@ public class MessageSubscriberProcessorFactory {
         final var channelConfiguration = publisherChannelConfigurationFactory.create(configuration);
         return new MessageSubscriberProcessor<>(
                 channelConfiguration,
-                CDIUtils.getInstanceById(clients, channelConfiguration.datasource()).get());
+                CDIUtils.getInstanceById(clients, channelConfiguration.datasource().orElse(DEFAULT_DATASOURCE)).get());
     }
 
 }

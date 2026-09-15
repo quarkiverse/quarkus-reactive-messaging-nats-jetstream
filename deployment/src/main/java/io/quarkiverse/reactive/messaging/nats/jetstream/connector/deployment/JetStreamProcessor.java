@@ -1,5 +1,6 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.connector.deployment;
 
+import static io.quarkiverse.reactive.messaging.nats.jetstream.connector.configuration.ConnectorConfiguration.DEFAULT_DATASOURCE;
 import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 
 import java.util.LinkedHashSet;
@@ -7,6 +8,7 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Default;
 
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.jandex.AnnotationInstance;
@@ -162,27 +164,35 @@ class JetStreamProcessor {
 
     /**
      * Registers one {@code @ApplicationScoped} {@link Client} CDI bean per configured datasource (the default
-     * datasource plus every key under {@code quarkus.messaging.nats.data-sources}), each qualified with
-     * {@code @Identifier(datasource-name)} so it can be injected directly (for the default/a known datasource) or
-     * looked up dynamically via {@code @Any Instance<Client>} plus
-     * {@code io.smallrye.reactive.messaging.providers.helpers.CDIUtils.getInstanceById(...)} (for a datasource
-     * resolved at runtime, e.g. from a channel's {@code datasource} attribute). The actual {@link Client} instance
-     * is created by {@link JetStreamRecorder#createClient(String)} and closed by {@link ClientBeanDestroyer} on
+     * datasource plus every key under {@code quarkus.messaging.nats.data-sources}). Every one of them is qualified
+     * with {@code @Identifier(datasource-name)}, so any of them can be looked up dynamically via
+     * {@code @Any Instance<Client>} plus
+     * {@code io.smallrye.reactive.messaging.providers.helpers.CDIUtils.getInstanceById(...)} (used where the
+     * datasource is resolved at runtime, e.g. from a channel's {@code datasource} attribute). The default
+     * datasource's {@link Client} additionally carries the CDI {@code @Default} qualifier, so it can also be
+     * injected with a plain, unqualified {@code @Inject Client client}. The actual {@link Client} instance is
+     * created by {@link JetStreamRecorder#createClient(String)} and closed by {@link ClientBeanDestroyer} on
      * application shutdown.
      */
     @BuildStep
     @Record(RUNTIME_INIT)
     void createClients(JetStreamRecorder recorder, BuildProducer<SyntheticBeanBuildItem> syntheticBeans) {
         for (String datasource : datasourceNames()) {
-            syntheticBeans.produce(SyntheticBeanBuildItem.configure(Client.class)
+            final var configurator = SyntheticBeanBuildItem.configure(Client.class)
                     .types(Client.class)
                     .scope(ApplicationScoped.class)
                     .addQualifier().annotation(Identifier.class).addValue("value", datasource).done()
                     .unremovable()
                     .setRuntimeInit()
                     .createWith(recorder.createClient(datasource))
-                    .destroyer(ClientBeanDestroyer.class)
-                    .done());
+                    .destroyer(ClientBeanDestroyer.class);
+            if (DEFAULT_DATASOURCE.equals(datasource)) {
+                // Also expose the default datasource's Client as the CDI @Default bean, so it can be injected
+                // with a plain @Inject Client client (unqualified), not just @Inject @Identifier("default") Client
+                // client. Named datasources only get the @Identifier qualifier, so @Default stays unambiguous.
+                configurator.addQualifier(Default.class);
+            }
+            syntheticBeans.produce(configurator.done());
         }
     }
 
@@ -190,11 +200,11 @@ class JetStreamProcessor {
      * Discovers the configured datasource names from the raw configuration property names, since
      * {@code quarkus.messaging.nats.data-sources} is a {@code RUN_TIME}-phase config map and its keys are
      * therefore not otherwise visible at build time. Always includes
-     * {@link JetStreamConnector#DEFAULT_DATASOURCE}.
+     * {@link io.quarkiverse.reactive.messaging.nats.jetstream.connector.configuration.ConnectorConfiguration#DEFAULT_DATASOURCE}.
      */
     private Set<String> datasourceNames() {
         final Set<String> names = new LinkedHashSet<>();
-        names.add(JetStreamConnector.DEFAULT_DATASOURCE);
+        names.add(DEFAULT_DATASOURCE);
         for (String propertyName : ConfigProvider.getConfig().getPropertyNames()) {
             if (propertyName.startsWith(DATA_SOURCES_CONFIG_PREFIX)) {
                 final var remainder = propertyName.substring(DATA_SOURCES_CONFIG_PREFIX.length());

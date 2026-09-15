@@ -16,11 +16,9 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.Client;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.NotAcknowledgeMetadata;
-import io.quarkiverse.reactive.messaging.nats.jetstream.connector.JetStreamConnector;
 import io.quarkiverse.reactive.messaging.nats.jetstream.connector.test.MessageConsumer;
 import io.quarkiverse.reactive.messaging.nats.jetstream.connector.test.TestSpanExporter;
 import io.quarkus.test.QuarkusExtensionTest;
-import io.smallrye.common.annotation.Identifier;
 
 @SuppressWarnings("resource")
 public class FetchMessagesTest implements MessageConsumer<Object> {
@@ -34,7 +32,6 @@ public class FetchMessagesTest implements MessageConsumer<Object> {
             .withConfigurationResource("application-fetch.properties");
 
     @Inject
-    @Identifier(JetStreamConnector.DEFAULT_DATASOURCE)
     Client client;
 
     @BeforeEach

@@ -186,6 +186,35 @@ The correlation id travels in the NATS message header `message.correlation-id`; 
 - If a reply payload should be treated as an error, provide a CDI bean implementing `ReplyFailureHandler` (selected per channel via `reply.failure.handler`) and return the failure from it; the caller's `Uni` fails with that error.
 - To observe in-flight requests, use `RequestReply.getPendingReplies()`; pending entries are removed on completion, failure, timeout and shutdown.
 
+== Injecting the JetStream `Client`
+
+Each configured datasource (see the "Datasources" section below) is exposed as an `@ApplicationScoped` CDI bean of
+type `io.quarkiverse.reactive.messaging.nats.jetstream.client.Client`. The extension creates and registers these
+beans itself - there is nothing to produce or configure - and closes them automatically on application shutdown.
+You can inject a `Client` wherever you need direct access to the NATS JetStream API, for example to reach the
+Key/Value or Object store (see below) or to publish/subscribe outside of a declarative channel.
+
+For the *default* (unnamed) datasource, inject it directly with a plain, unqualified `Client`:
+
+----
+@Inject
+Client client;
+----
+
+For an additional, *named* datasource configured under `quarkus.messaging.nats.data-sources.[datasource-name]`,
+qualify the injection point with `@Identifier("[datasource-name]")`:
+
+----
+import io.smallrye.common.annotation.Identifier;
+
+@Inject
+@Identifier("orders-db")
+Client client;
+----
+
+If the datasource to use is only known at runtime, inject `@Any Instance<Client> clients` and resolve it by name
+yourself, for instance with SmallRye's `CDIUtils.getInstanceById(clients, datasourceName)`.
+
 == Using NATS Key/Value store
 If you want to use the Key/Value store in NATS, then configure your application as follows:
 
@@ -326,6 +355,28 @@ The stream, consumer, key-value store and object store configurations are all op
 | quarkus.messaging.nats.connection.inbox-prefix | Retrieves the optional inbox prefix used for communication. The inbox prefix allows customization of the subscriber's inbox name. | String |
 |======
 
+=== Datasources
+
+The connection, streams, consumers, key-value stores and object stores configured directly under
+`quarkus.messaging.nats.*` (as shown in the table above, and in the tables below) belong to the *default*
+datasource. For symmetry with named datasources, the same properties can also be set under
+`quarkus.messaging.nats.default.*` (for example `quarkus.messaging.nats.default.connection.servers`) - both
+spellings are aliases for exactly the same configuration, so use whichever reads better in your application.
+
+Additional, named datasources - each with their own connection, streams, consumers, key-value stores and object
+stores - are configured under `quarkus.messaging.nats.data-sources.[datasource-name]`, using the same property
+shape as the default datasource:
+
+----
+quarkus.messaging.nats.data-sources.orders-db.connection.servers=nats://orders-nats:4222
+quarkus.messaging.nats.data-sources.orders-db.streams.orders.name=orders
+quarkus.messaging.nats.data-sources.orders-db.streams.orders.subjects=orders.*
+----
+
+Every configured datasource - default and named - gets its own `Client` CDI bean; see "Injecting the JetStream
+`Client`" above. A channel picks which datasource it uses via its `datasource` attribute (see "Channel
+configuration" below), and defaults to the default datasource when unset.
+
 Each entry in the `quarkus.messaging.nats.streams` map is created (if absent) with `[stream-name]` as its map key; `name` must be set explicitly and is conventionally the same value as `[stream-name]`.
 
 .NATS JetStream Stream configuration
@@ -424,7 +475,7 @@ At the channel level, `mp.messaging.incoming.[channel-name]` always binds to the
 | mp.messaging.outgoing.[channel-name].stream | The stream to publish messages to | String |
 | mp.messaging.outgoing.[channel-name].subject | The subject to publish messages to | String |
 | mp.messaging.outgoing.[channel-name].retry-backoff | The retry backoff in milliseconds for retrying failed publishes | Long | 10000
-| mp.messaging.outgoing.[channel-name].datasource | The name of the datasource (as configured under `quarkus.messaging.nats.data-sources`) to use | String |
+| mp.messaging.outgoing.[channel-name].datasource | The name of the datasource (as configured under `quarkus.messaging.nats.data-sources`) to use | String | default
 |======
 
 .Publisher processor attributes (incoming channels)
@@ -437,7 +488,7 @@ At the channel level, `mp.messaging.incoming.[channel-name]` always binds to the
 | mp.messaging.incoming.[channel-name].timeout | The timeout in milliseconds for pulling messages | Long | 1000
 | mp.messaging.incoming.[channel-name].retry-backoff | The retry backoff in milliseconds for retrying the subscription after a failure | Long | 10000
 | mp.messaging.incoming.[channel-name].payload-type | The class name of the payload type | String |
-| mp.messaging.incoming.[channel-name].datasource | The name of the datasource (as configured under `quarkus.messaging.nats.data-sources`) to use | String |
+| mp.messaging.incoming.[channel-name].datasource | The name of the datasource (as configured under `quarkus.messaging.nats.data-sources`) to use | String | default
 |======
 
 === Key/Value Store configuration

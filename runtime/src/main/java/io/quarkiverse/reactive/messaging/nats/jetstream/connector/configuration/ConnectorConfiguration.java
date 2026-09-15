@@ -15,6 +15,9 @@ import io.smallrye.config.WithName;
 @ConfigRoot(phase = ConfigPhase.RUN_TIME)
 public interface ConnectorConfiguration extends DataSourceConfiguration {
 
+    /** The datasource name used when a channel or resource does not specify one explicitly. */
+    String DEFAULT_DATASOURCE = "default";
+
     /**
      * Retrieves a map of named datasource configurations. Each entry in the map represents
      * a datasource configuration, where the key is the name of the datasource and the value

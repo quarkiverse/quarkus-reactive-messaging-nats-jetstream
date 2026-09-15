@@ -14,7 +14,7 @@ record PublisherChannelConfigurationImpl(
         @NonNull String name,
         @NonNull String stream,
         @NonNull Optional<Duration> retryBackoff,
-        @NonNull String datasource,
+        @NonNull Optional<String> datasource,
         @NonNull String subject,
         @NonNull Optional<String> replySubject,
         @NonNull Optional<Duration> replyTimeout,

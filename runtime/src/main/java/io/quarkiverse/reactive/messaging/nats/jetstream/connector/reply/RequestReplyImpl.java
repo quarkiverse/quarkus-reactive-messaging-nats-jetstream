@@ -1,5 +1,7 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.connector.reply;
 
+import static io.quarkiverse.reactive.messaging.nats.jetstream.connector.configuration.ConnectorConfiguration.DEFAULT_DATASOURCE;
+
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
@@ -149,7 +151,7 @@ public class RequestReplyImpl<Req, Rep> extends MutinyEmitterImpl<Req> implement
 
     private Uni<Cancellable> subscribe() {
         return Uni.createFrom().item(Unchecked.supplier(
-                () -> CDIUtils.getInstanceById(clients, channelConfiguration.datasource()).get()))
+                () -> CDIUtils.getInstanceById(clients, channelConfiguration.datasource().orElse(DEFAULT_DATASOURCE)).get()))
                 .chain(client -> getConsumer(client).map(consumer -> Tuple2.of(client, consumer)))
                 .chain(tuple -> getSubscription(tuple.getItem1(), tuple.getItem2()))
                 .onFailure().invoke(this::reset);
@@ -187,7 +189,6 @@ public class RequestReplyImpl<Req, Rep> extends MutinyEmitterImpl<Req> implement
         return client.consumerManagement(channelConfiguration.stream()).addIfAbsent(configuration);
     }
 
-    @SuppressWarnings("resource")
     void reset() {
         subscriptionReference.updateAndGet(subscription -> {
             if (subscription != null) {
@@ -201,7 +202,8 @@ public class RequestReplyImpl<Req, Rep> extends MutinyEmitterImpl<Req> implement
         });
         consumerReference.updateAndGet(consumer -> {
             if (consumer != null) {
-                final var client = CDIUtils.getInstanceById(clients, channelConfiguration.datasource()).get();
+                final var client = CDIUtils
+                        .getInstanceById(clients, channelConfiguration.datasource().orElse(DEFAULT_DATASOURCE)).get();
                 client.consumerManagement(channelConfiguration.stream()).delete(consumer.name());
             }
             return null;

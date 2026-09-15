@@ -1,5 +1,7 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.connector.configuration;
 
+import static io.quarkiverse.reactive.messaging.nats.jetstream.connector.configuration.ConnectorConfiguration.DEFAULT_DATASOURCE;
+
 import java.util.Collection;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
@@ -19,7 +21,6 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.tracing.T
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.store.configuration.KeyValueConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.store.configuration.ObjectStoreConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.stream.configuration.StreamConfiguration;
-import io.quarkiverse.reactive.messaging.nats.jetstream.connector.JetStreamConnector;
 import io.quarkiverse.reactive.messaging.nats.jetstream.connector.client.ConnectionConfigurationMapper;
 import io.quarkus.arc.SyntheticCreationalContext;
 import io.quarkus.runtime.RuntimeValue;
@@ -51,7 +52,7 @@ public class JetStreamRecorder {
      * {@code SyntheticBeanBuildItem}; the returned function itself only runs at runtime, when CDI actually
      * instantiates the bean.
      *
-     * @param datasource the datasource name; either {@link JetStreamConnector#DEFAULT_DATASOURCE} or one of the
+     * @param datasource the datasource name; either {@link ConnectorConfiguration#DEFAULT_DATASOURCE} or one of the
      *        keys of {@code quarkus.messaging.nats.data-sources}
      */
     public Function<SyntheticCreationalContext<Client>, Client> createClient(String datasource) {
@@ -85,7 +86,7 @@ public class JetStreamRecorder {
      * @throws RuntimeException if any failures occur during the configuration of JetStream resources.
      */
     public void setup() {
-        addJetstreamResources(JetStreamConnector.DEFAULT_DATASOURCE, configuration.getValue());
+        addJetstreamResources(DEFAULT_DATASOURCE, configuration.getValue());
         configuration.getValue().namedDatasource().forEach(this::addJetstreamResources);
     }
 
@@ -157,7 +158,7 @@ public class JetStreamRecorder {
     }
 
     private @NonNull DataSourceConfiguration dataSourceConfiguration(@NonNull String datasource) {
-        if (JetStreamConnector.DEFAULT_DATASOURCE.equals(datasource)) {
+        if (DEFAULT_DATASOURCE.equals(datasource)) {
             return configuration.getValue();
         }
         return Optional.ofNullable(configuration.getValue().namedDatasource().get(datasource))

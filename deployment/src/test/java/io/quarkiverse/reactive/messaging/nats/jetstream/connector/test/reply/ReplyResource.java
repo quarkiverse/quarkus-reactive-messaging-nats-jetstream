@@ -18,10 +18,8 @@ import org.eclipse.microprofile.reactive.messaging.Channel;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.Client;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.Message;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.PublishHeaders;
-import io.quarkiverse.reactive.messaging.nats.jetstream.connector.JetStreamConnector;
 import io.quarkiverse.reactive.messaging.nats.jetstream.connector.reply.RequestReply;
 import io.quarkiverse.reactive.messaging.nats.jetstream.connector.reply.TimeoutException;
-import io.smallrye.common.annotation.Identifier;
 
 @SuppressWarnings("resource")
 @ApplicationScoped
@@ -61,7 +59,6 @@ public class ReplyResource {
     RequestReply<String, String> requestorMissing;
 
     @Inject
-    @Identifier(JetStreamConnector.DEFAULT_DATASOURCE)
     Client client;
 
     @POST

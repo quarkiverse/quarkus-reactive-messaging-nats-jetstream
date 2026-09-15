@@ -7,7 +7,6 @@ import jakarta.enterprise.context.ApplicationScoped;
 import org.eclipse.microprofile.config.Config;
 import org.jspecify.annotations.NonNull;
 
-import io.quarkiverse.reactive.messaging.nats.jetstream.connector.JetStreamConnector;
 import io.quarkiverse.reactive.messaging.nats.jetstream.connector.JetStreamConnectorIncomingConfiguration;
 
 @ApplicationScoped
@@ -22,7 +21,7 @@ public class ConsumerChannelConfigurationFactoryImpl implements ConsumerChannelC
                         .orElseThrow(() -> new IllegalArgumentException(
                                 String.format("Missing stream for channel: %s", channelConfig.getChannel()))))
                 .retryBackoff(channelConfig.getRetryBackoff().map(Duration::ofMillis))
-                .datasource(channelConfig.getDatasource().orElse(JetStreamConnector.DEFAULT_DATASOURCE))
+                .datasource(channelConfig.getDatasource())
                 .consumer(channelConfig.getConsumer())
                 .batchSize(channelConfig.getBatchSize())
                 .timeout(Duration.ofMillis(channelConfig.getTimeout()))

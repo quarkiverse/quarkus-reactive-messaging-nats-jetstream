@@ -7,8 +7,6 @@ import jakarta.ws.rs.*;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.Client;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.Serializer;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.store.api.KeyValueEntry;
-import io.quarkiverse.reactive.messaging.nats.jetstream.connector.JetStreamConnector;
-import io.smallrye.common.annotation.Identifier;
 import io.smallrye.mutiny.Uni;
 
 @Path("/key-value")
@@ -19,7 +17,7 @@ class KeyValueStoreResource {
     private final Serializer serializer;
 
     @Inject
-    public KeyValueStoreResource(@Identifier(JetStreamConnector.DEFAULT_DATASOURCE) Client client, Serializer serializer) {
+    public KeyValueStoreResource(Client client, Serializer serializer) {
         this.client = client;
         this.serializer = serializer;
     }
