@@ -14,11 +14,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.Client;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.NotAcknowledgeMetadata;
-import io.quarkiverse.reactive.messaging.nats.jetstream.connector.client.ClientRegistry;
+import io.quarkiverse.reactive.messaging.nats.jetstream.connector.JetStreamConnector;
 import io.quarkiverse.reactive.messaging.nats.jetstream.connector.test.MessageConsumer;
 import io.quarkiverse.reactive.messaging.nats.jetstream.connector.test.TestSpanExporter;
 import io.quarkus.test.QuarkusExtensionTest;
+import io.smallrye.common.annotation.Identifier;
 
 @SuppressWarnings("resource")
 public class FetchMessagesTest implements MessageConsumer<Object> {
@@ -32,11 +34,11 @@ public class FetchMessagesTest implements MessageConsumer<Object> {
             .withConfigurationResource("application-fetch.properties");
 
     @Inject
-    ClientRegistry clientRegistry;
+    @Identifier(JetStreamConnector.DEFAULT_DATASOURCE)
+    Client client;
 
     @BeforeEach
     public void setup() {
-        final var client = clientRegistry.lookup(ClientRegistry.DEFAULT_CLIENT_NAME);
         client.streamManagement().purgeAll().collect().asList()
                 .await().atMost(Duration.ofSeconds(30));
     }
@@ -45,8 +47,6 @@ public class FetchMessagesTest implements MessageConsumer<Object> {
     void fetchOneMessage() {
         final var data = new Data("test", "52b13992-749a-4943-ab8f-2403c734c648", "46c818c9-8915-48a6-9378-b8f540b0afe2");
         final var configuration = new ConsumerConfiguration("fetch-data-consumer", "fetch-data");
-
-        final var client = clientRegistry.lookup(ClientRegistry.DEFAULT_CLIENT_NAME);
 
         client.consumerManagement("fetch-test").addIfAbsent(configuration).await().atMost(TIMEOUT);
 
@@ -64,7 +64,6 @@ public class FetchMessagesTest implements MessageConsumer<Object> {
         final var data2 = new Data("test2", "4d76e337-97f8-41b9-9030-b19d4ba824be", "58707f28-74c5-45fd-b59a-be0286bb8490");
 
         final var configuration = new ConsumerConfiguration("fetch-data-consumer", "fetch-data");
-        final var client = clientRegistry.lookup(ClientRegistry.DEFAULT_CLIENT_NAME);
 
         client.consumerManagement("fetch-test").addIfAbsent(configuration).await().atMost(TIMEOUT);
 
@@ -86,7 +85,6 @@ public class FetchMessagesTest implements MessageConsumer<Object> {
         final var data2 = new Data("test2", "4d76e337-97f8-41b9-9030-b19d4ba824be", "58707f28-74c5-45fd-b59a-be0286bb8490");
 
         final var configuration = new ConsumerConfiguration("fetch-data-consumer", "fetch-data");
-        final var client = clientRegistry.lookup(ClientRegistry.DEFAULT_CLIENT_NAME);
 
         client.consumerManagement("fetch-test").addIfAbsent(configuration).await().atMost(TIMEOUT);
 
@@ -109,7 +107,6 @@ public class FetchMessagesTest implements MessageConsumer<Object> {
         final var data1 = new Data("test1", "ea030796-4692-40f1-9ce5-a9cf04b5fe53", "3bd00e71-7bc3-45c3-a1aa-8f8679ff7373");
 
         final var configuration = new ConsumerConfiguration("fetch-data-consumer", "fetch-data");
-        final var client = clientRegistry.lookup(ClientRegistry.DEFAULT_CLIENT_NAME);
 
         client.consumerManagement("fetch-test").addIfAbsent(configuration).await().atMost(TIMEOUT);
 
@@ -147,8 +144,6 @@ public class FetchMessagesTest implements MessageConsumer<Object> {
         final var configuration4 = new ConsumerConfiguration(data4.resourceId(),
                 "resources." + data4.resourceId());
 
-        final var client = clientRegistry.lookup(ClientRegistry.DEFAULT_CLIENT_NAME);
-
         client.consumerManagement("fetch-test").addIfAbsent(configuration1).await().atMost(TIMEOUT);
         client.consumerManagement("fetch-test").addIfAbsent(configuration2).await().atMost(TIMEOUT);
         client.consumerManagement("fetch-test").addIfAbsent(configuration3).await().atMost(TIMEOUT);
@@ -185,8 +180,6 @@ public class FetchMessagesTest implements MessageConsumer<Object> {
         final var data1 = new Data("test1", "64a8903f-983a-4775-8c41-e59c1a40ca08", "5a6af883-2be2-4c73-9d5d-7cdc4157f2fb");
         final var data2 = new Data("test2", "7a229cc2-e8e4-4a59-ba0a-40e878c9b3af", "d38ddb6f-3b9c-4a6c-978e-e97c0b66a2fd");
 
-        final var client = clientRegistry.lookup(ClientRegistry.DEFAULT_CLIENT_NAME);
-
         client.streamManagement().addSubject("fetch-test", data1.resourceId()).await().atMost(TIMEOUT);
         client.streamManagement().addSubject("fetch-test", data2.resourceId()).await().atMost(TIMEOUT);
 
@@ -220,7 +213,6 @@ public class FetchMessagesTest implements MessageConsumer<Object> {
 
         final var consumer = "d28ed8ca-fa92-4b03-9882-713ab696c648";
         final var subject = "37eb6a5b-9b30-4b95-9ef7-fb866d18ef50";
-        final var client = clientRegistry.lookup(ClientRegistry.DEFAULT_CLIENT_NAME);
         client.streamManagement().addSubject("fetch-test", subject).await().atMost(TIMEOUT);
 
         final var configuration = new ConsumerConfiguration(consumer, subject);

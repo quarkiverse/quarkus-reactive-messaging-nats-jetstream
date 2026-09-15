@@ -15,11 +15,13 @@ import jakarta.ws.rs.core.Response;
 
 import org.eclipse.microprofile.reactive.messaging.Channel;
 
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.Client;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.Message;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.PublishHeaders;
-import io.quarkiverse.reactive.messaging.nats.jetstream.connector.client.ClientRegistry;
+import io.quarkiverse.reactive.messaging.nats.jetstream.connector.JetStreamConnector;
 import io.quarkiverse.reactive.messaging.nats.jetstream.connector.reply.RequestReply;
 import io.quarkiverse.reactive.messaging.nats.jetstream.connector.reply.TimeoutException;
+import io.smallrye.common.annotation.Identifier;
 
 @SuppressWarnings("resource")
 @ApplicationScoped
@@ -59,7 +61,8 @@ public class ReplyResource {
     RequestReply<String, String> requestorMissing;
 
     @Inject
-    ClientRegistry clientRegistry;
+    @Identifier(JetStreamConnector.DEFAULT_DATASOURCE)
+    Client client;
 
     @POST
     @Path("/a/{value}")
@@ -118,7 +121,7 @@ public class ReplyResource {
     @POST
     @Path("/add-subject/{subject}")
     public Response addSubject(@PathParam("subject") final String subject) {
-        final var stream = clientRegistry.lookup(ClientRegistry.DEFAULT_CLIENT_NAME).streamManagement()
+        final var stream = client.streamManagement()
                 .addSubject("rr", subject).await()
                 .atMost(BOUND);
         return Response.ok(stream).build();
@@ -128,7 +131,7 @@ public class ReplyResource {
     @Path("/add-stream-missing")
     public Response addStreamMissing() {
         final var configuration = new StreamConfiguration();
-        clientRegistry.lookup(ClientRegistry.DEFAULT_CLIENT_NAME).streamManagement().addIfAbsent(configuration).await()
+        client.streamManagement().addIfAbsent(configuration).await()
                 .atMost(BOUND);
         return Response.ok().build();
     }
@@ -139,7 +142,7 @@ public class ReplyResource {
         final var headers = PublishHeaders.of();
         headers.setCorrelationId(id);
         headers.setPayloadType(String.class);
-        clientRegistry.lookup(ClientRegistry.DEFAULT_CLIENT_NAME)
+        client
                 .publish(Message.of("echo:hello-missing".getBytes(StandardCharsets.UTF_8), headers), "missing",
                         "missing.replies")
                 .await().atMost(BOUND);
@@ -152,7 +155,7 @@ public class ReplyResource {
         final var headers = PublishHeaders.of();
         headers.setCorrelationId(id);
         headers.setPayloadType(String.class);
-        clientRegistry.lookup(ClientRegistry.DEFAULT_CLIENT_NAME)
+        client
                 .publish(Message.of("late-reply".getBytes(StandardCharsets.UTF_8), headers), "rr", "slow.replies")
                 .await().atMost(BOUND);
         return Response.ok().build();

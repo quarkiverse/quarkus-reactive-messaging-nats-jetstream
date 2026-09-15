@@ -5,10 +5,12 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import jakarta.annotation.PreDestroy;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Any;
+import jakarta.enterprise.inject.Instance;
 
 import org.eclipse.microprofile.config.Config;
 
-import io.quarkiverse.reactive.messaging.nats.jetstream.connector.client.ClientRegistry;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.Client;
 import io.quarkiverse.reactive.messaging.nats.jetstream.connector.configuration.PublisherChannelConfigurationFactory;
 import io.smallrye.reactive.messaging.EmitterConfiguration;
 import io.smallrye.reactive.messaging.EmitterFactory;
@@ -23,16 +25,16 @@ import io.smallrye.reactive.messaging.annotations.EmitterFactoryFor;
 @ApplicationScoped
 @EmitterFactoryFor(RequestReply.class)
 public class RequestReplyFactory implements EmitterFactory<RequestReplyImpl<Object, Object>> {
-    private final ClientRegistry clientRegistry;
+    private final Instance<Client> clients;
     private final Config config;
     private final PublisherChannelConfigurationFactory channelConfigurationFactory;
 
     private final Set<RequestReplyImpl<?, ?>> emitters = ConcurrentHashMap.newKeySet();
 
-    public RequestReplyFactory(final ClientRegistry clientRegistry,
+    public RequestReplyFactory(@Any final Instance<Client> clients,
             final Config config,
             final PublisherChannelConfigurationFactory channelConfigurationFactory) {
-        this.clientRegistry = clientRegistry;
+        this.clients = clients;
         this.config = config;
         this.channelConfigurationFactory = channelConfigurationFactory;
     }
@@ -41,7 +43,7 @@ public class RequestReplyFactory implements EmitterFactory<RequestReplyImpl<Obje
     public RequestReplyImpl<Object, Object> createEmitter(EmitterConfiguration configuration, long defaultBufferSize) {
         final var emitter = new RequestReplyImpl<>(
                 configuration,
-                clientRegistry,
+                clients,
                 channelConfigurationFactory.create(configuration.name(), config));
         emitters.add(emitter);
         return emitter;

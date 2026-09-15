@@ -41,6 +41,9 @@ import io.smallrye.reactive.messaging.health.HealthReporter;
 public class JetStreamConnector implements InboundConnector, OutboundConnector, HealthReporter {
     public static final String CONNECTOR_NAME = "quarkus-jetstream";
 
+    /** The datasource name used when a channel or resource does not specify one explicitly. */
+    public static final String DEFAULT_DATASOURCE = "default";
+
     private final List<MessageProcessor> processors;
     private final MessageSubscriberProcessorFactory messageSubscriberProcessorFactory;
     private final MessagePublisherProcessorFactory messagePublisherProcessorFactory;
