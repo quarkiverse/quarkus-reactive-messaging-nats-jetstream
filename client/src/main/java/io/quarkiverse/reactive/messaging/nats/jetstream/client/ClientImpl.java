@@ -240,8 +240,8 @@ class ClientImpl implements Client {
         return connection.getStatus() == io.nats.client.Connection.Status.CLOSED;
     }
 
-    @NonNull
-    NativeConnection connection() {
+    @Override
+    public @NonNull NativeConnection nativeConnection() {
         return connection;
     }
 
@@ -359,7 +359,7 @@ class ClientImpl implements Client {
 
     @SuppressWarnings("resource")
     private @NonNull Uni<NativeJetStream> jetStream() {
-        return Uni.createFrom().item(Unchecked.supplier(connection()::jetStream))
+        return Uni.createFrom().item(Unchecked.supplier(nativeConnection()::jetStream))
                 .map(NativeJetStreamDelegate::new);
     }
 

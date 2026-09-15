@@ -1,5 +1,7 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.connector.reply;
 
+import static io.quarkiverse.reactive.messaging.nats.jetstream.connector.configuration.ConnectorConfiguration.DEFAULT_DATASOURCE;
+
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
@@ -9,6 +11,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 
+import jakarta.enterprise.inject.Instance;
+
 import org.eclipse.microprofile.reactive.messaging.Message;
 
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.Client;
@@ -16,7 +20,6 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.client.PublishException;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer.api.Consumer;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.MessageHeaders;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.PublishHeaders;
-import io.quarkiverse.reactive.messaging.nats.jetstream.connector.client.ClientRegistry;
 import io.quarkiverse.reactive.messaging.nats.jetstream.connector.configuration.PublisherChannelConfiguration;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.subscription.Cancellable;
@@ -24,6 +27,7 @@ import io.smallrye.mutiny.tuples.Tuple2;
 import io.smallrye.mutiny.unchecked.Unchecked;
 import io.smallrye.reactive.messaging.EmitterConfiguration;
 import io.smallrye.reactive.messaging.providers.extension.MutinyEmitterImpl;
+import io.smallrye.reactive.messaging.providers.helpers.CDIUtils;
 import lombok.extern.jbosslog.JBossLog;
 
 /**
@@ -34,7 +38,7 @@ import lombok.extern.jbosslog.JBossLog;
  */
 @JBossLog
 public class RequestReplyImpl<Req, Rep> extends MutinyEmitterImpl<Req> implements RequestReply<Req, Rep> {
-    private final ClientRegistry clientRegistry;
+    private final Instance<Client> clients;
     private final PublisherChannelConfiguration channelConfiguration;
     private final Map<String, PendingReply<Rep>> pendingReplies;
 
@@ -42,10 +46,10 @@ public class RequestReplyImpl<Req, Rep> extends MutinyEmitterImpl<Req> implement
     private final AtomicReference<Cancellable> subscriptionReference = new AtomicReference<>();
 
     public RequestReplyImpl(final EmitterConfiguration config,
-            final ClientRegistry clientRegistry,
+            final Instance<Client> clients,
             final PublisherChannelConfiguration channelConfiguration) {
         super(config, 1024L);
-        this.clientRegistry = clientRegistry;
+        this.clients = clients;
         this.channelConfiguration = channelConfiguration;
         this.pendingReplies = new ConcurrentHashMap<>();
     }
@@ -146,7 +150,8 @@ public class RequestReplyImpl<Req, Rep> extends MutinyEmitterImpl<Req> implement
     }
 
     private Uni<Cancellable> subscribe() {
-        return Uni.createFrom().item(Unchecked.supplier(() -> clientRegistry.lookup(channelConfiguration.datasource())))
+        return Uni.createFrom().item(Unchecked.supplier(
+                () -> CDIUtils.getInstanceById(clients, channelConfiguration.datasource().orElse(DEFAULT_DATASOURCE)).get()))
                 .chain(client -> getConsumer(client).map(consumer -> Tuple2.of(client, consumer)))
                 .chain(tuple -> getSubscription(tuple.getItem1(), tuple.getItem2()))
                 .onFailure().invoke(this::reset);
@@ -184,7 +189,6 @@ public class RequestReplyImpl<Req, Rep> extends MutinyEmitterImpl<Req> implement
         return client.consumerManagement(channelConfiguration.stream()).addIfAbsent(configuration);
     }
 
-    @SuppressWarnings("resource")
     void reset() {
         subscriptionReference.updateAndGet(subscription -> {
             if (subscription != null) {
@@ -198,7 +202,8 @@ public class RequestReplyImpl<Req, Rep> extends MutinyEmitterImpl<Req> implement
         });
         consumerReference.updateAndGet(consumer -> {
             if (consumer != null) {
-                final var client = clientRegistry.lookup(channelConfiguration.datasource());
+                final var client = CDIUtils
+                        .getInstanceById(clients, channelConfiguration.datasource().orElse(DEFAULT_DATASOURCE)).get();
                 client.consumerManagement(channelConfiguration.stream()).delete(consumer.name());
             }
             return null;

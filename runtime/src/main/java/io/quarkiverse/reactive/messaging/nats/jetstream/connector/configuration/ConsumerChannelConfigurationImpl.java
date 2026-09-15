@@ -11,7 +11,7 @@ import lombok.Builder;
 public record ConsumerChannelConfigurationImpl(@NonNull String name,
         @NonNull String stream,
         @NonNull Optional<Duration> retryBackoff,
-        @NonNull String datasource,
+        @NonNull Optional<String> datasource,
         @NonNull Optional<String> consumer,
         @NonNull Optional<Class<?>> payloadType,
         @NonNull Integer batchSize,

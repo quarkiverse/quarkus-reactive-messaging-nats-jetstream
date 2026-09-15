@@ -62,7 +62,7 @@ public class ObjectStoreManagementImpl implements ObjectStoreManagement {
     }
 
     private @NonNull NativeConnection connection() {
-        return client.connection();
+        return client.nativeConnection();
     }
 
     private void runOnContext(@NonNull Runnable action) {

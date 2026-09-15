@@ -42,10 +42,10 @@ public interface ChannelConfiguration {
     /**
      * Retrieves the name of the datasource associated with the channel configuration.
      *
-     * @return the name of the datasource as a non-null String
+     * @return the name of the datasource
      */
     @NonNull
-    String datasource();
+    Optional<String> datasource();
 
     /**
      * Retrieves the retry backoff duration configured for the channel.

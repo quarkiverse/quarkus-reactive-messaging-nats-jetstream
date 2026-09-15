@@ -1,34 +1,75 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.connector.configuration;
 
-import java.util.Collection;
+import static io.quarkiverse.reactive.messaging.nats.jetstream.connector.configuration.ConnectorConfiguration.DEFAULT_DATASOURCE;
 
+import java.util.Collection;
+import java.util.Optional;
+import java.util.concurrent.ExecutorService;
+import java.util.function.Function;
+
+import jakarta.enterprise.inject.Any;
+import jakarta.enterprise.inject.Instance;
 import jakarta.enterprise.inject.spi.CDI;
 
 import org.jspecify.annotations.NonNull;
 
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.Client;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.VertxClientFactory;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer.configuration.ConsumerConfiguration;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.Serializer;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.tracing.TracerFactory;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.store.configuration.KeyValueConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.store.configuration.ObjectStoreConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.stream.configuration.StreamConfiguration;
-import io.quarkiverse.reactive.messaging.nats.jetstream.connector.client.ClientRegistry;
+import io.quarkiverse.reactive.messaging.nats.jetstream.connector.client.ConnectionConfigurationMapper;
+import io.quarkus.arc.SyntheticCreationalContext;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
+import io.smallrye.reactive.messaging.providers.helpers.CDIUtils;
+import io.vertx.mutiny.core.Vertx;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.jbosslog.JBossLog;
 
 /**
- * JetStreamRecorder is responsible for configuring JetStream resources at runtime
- * based on the provided connector configuration. It ensures the necessary resources
- * such as streams, consumers, key-values, and object stores are created or updated.
- * This class interacts with the JetStream management client to provision resources
- * as needed and handles configuration failures by throwing meaningful exceptions.
+ * JetStreamRecorder has two responsibilities:
+ * <ul>
+ * <li>it supplies the bean-creation function used by the deployment processor to register one
+ * {@code @ApplicationScoped}, {@code @Identifier}-qualified {@link Client} CDI bean per configured datasource
+ * ({@link #createClient(String)}); and</li>
+ * <li>once those beans exist, it configures the JetStream resources (streams, consumers, key-values, object
+ * stores) declared for each datasource ({@link #setup()}).</li>
+ * </ul>
  */
 @JBossLog
 @Recorder
 @RequiredArgsConstructor
 public class JetStreamRecorder {
     private final RuntimeValue<ConnectorConfiguration> configuration;
+
+    /**
+     * Returns the synthetic-bean creation function for the {@link Client} of the given datasource. Invoked by
+     * {@code JetStreamProcessor} at build time, once per configured datasource, to back a
+     * {@code SyntheticBeanBuildItem}; the returned function itself only runs at runtime, when CDI actually
+     * instantiates the bean.
+     *
+     * @param datasource the datasource name; either {@link ConnectorConfiguration#DEFAULT_DATASOURCE} or one of the
+     *        keys of {@code quarkus.messaging.nats.data-sources}
+     */
+    public Function<SyntheticCreationalContext<Client>, Client> createClient(String datasource) {
+        return context -> {
+            final var dataSourceConfiguration = dataSourceConfiguration(datasource);
+            final var connectionConfigurationMapper = CDI.current().select(ConnectionConfigurationMapper.class).get();
+            final var serializer = CDI.current().select(Serializer.class).get();
+            final var tracerFactory = CDI.current().select(TracerFactory.class).get();
+            final var vertx = CDI.current().select(Vertx.class).get();
+            final var executorService = CDI.current().select(ExecutorService.class).get();
+            final var clientFactory = new VertxClientFactory(vertx, tracerFactory);
+            return clientFactory.create(
+                    connectionConfigurationMapper.map(dataSourceConfiguration.connection()),
+                    serializer,
+                    executorService);
+        };
+    }
 
     /**
      * Sets up the JetStream resources by configuring the primary datasource and named datasources
@@ -45,7 +86,7 @@ public class JetStreamRecorder {
      * @throws RuntimeException if any failures occur during the configuration of JetStream resources.
      */
     public void setup() {
-        addJetstreamResources(ClientRegistry.DEFAULT_CLIENT_NAME, configuration.getValue());
+        addJetstreamResources(DEFAULT_DATASOURCE, configuration.getValue());
         configuration.getValue().namedDatasource().forEach(this::addJetstreamResources);
     }
 
@@ -116,8 +157,17 @@ public class JetStreamRecorder {
         }
     }
 
+    private @NonNull DataSourceConfiguration dataSourceConfiguration(@NonNull String datasource) {
+        if (DEFAULT_DATASOURCE.equals(datasource)) {
+            return configuration.getValue();
+        }
+        return Optional.ofNullable(configuration.getValue().namedDatasource().get(datasource))
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Connection configuration not configured for datasource: " + datasource));
+    }
+
     private @NonNull Client client(@NonNull String datasource) {
-        final var clientRegistry = CDI.current().select(ClientRegistry.class).get();
-        return clientRegistry.lookup(datasource);
+        final Instance<Client> clients = CDI.current().select(Client.class, Any.Literal.INSTANCE);
+        return CDIUtils.getInstanceById(clients, datasource).get();
     }
 }

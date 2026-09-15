@@ -12,7 +12,6 @@ import org.jspecify.annotations.NonNull;
 
 import io.quarkiverse.reactive.messaging.nats.jetstream.connector.JetStreamConnector;
 import io.quarkiverse.reactive.messaging.nats.jetstream.connector.JetStreamConnectorOutgoingConfiguration;
-import io.quarkiverse.reactive.messaging.nats.jetstream.connector.client.ClientRegistry;
 import io.quarkiverse.reactive.messaging.nats.jetstream.connector.reply.CorrelationIdHandler;
 import io.quarkiverse.reactive.messaging.nats.jetstream.connector.reply.ReplyFailureHandler;
 import io.quarkiverse.reactive.messaging.nats.jetstream.connector.reply.UuidCorrelationIdHandler;
@@ -47,8 +46,7 @@ public class PublisherChannelConfigurationFactoryImpl implements PublisherChanne
                 .name(channel)
                 .stream(channelConfig.getValue("stream", String.class))
                 .retryBackoff(channelConfig.getOptionalValue("retry-backoff", Long.class).map(Duration::ofMillis))
-                .datasource(
-                        channelConfig.getOptionalValue("datasource", String.class).orElse(ClientRegistry.DEFAULT_CLIENT_NAME))
+                .datasource(channelConfig.getOptionalValue("datasource", String.class))
                 .subject(channelConfig.getValue("subject", String.class))
                 .replySubject(nonBlank(channelConfig.getOptionalValue("reply.subject", String.class)))
                 .replyTimeout(channelConfig.getOptionalValue("reply.timeout", Long.class).map(Duration::ofMillis))
@@ -71,7 +69,7 @@ public class PublisherChannelConfigurationFactoryImpl implements PublisherChanne
                 .stream(channelConfig.getStream()
                         .orElseThrow(() -> new IllegalArgumentException(String.format("Missing stream for channel: %s", name))))
                 .retryBackoff(channelConfig.getRetryBackoff().map(Duration::ofMillis))
-                .datasource(channelConfig.getDatasource().orElse(ClientRegistry.DEFAULT_CLIENT_NAME))
+                .datasource(channelConfig.getDatasource())
                 .subject(channelConfig.getSubject().orElseThrow(
                         () -> new IllegalArgumentException(String.format("Missing subject for channel: %s", name))))
                 .replySubject(channelConfig.getReplySubject())

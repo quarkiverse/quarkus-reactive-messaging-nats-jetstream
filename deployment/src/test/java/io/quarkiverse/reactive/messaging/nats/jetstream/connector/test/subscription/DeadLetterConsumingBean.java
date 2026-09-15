@@ -11,7 +11,6 @@ import org.jboss.logging.Logger;
 
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.Client;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.Serializer;
-import io.quarkiverse.reactive.messaging.nats.jetstream.connector.client.ClientRegistry;
 import io.quarkiverse.reactive.messaging.nats.jetstream.connector.test.Advisory;
 import io.smallrye.mutiny.Uni;
 
@@ -23,8 +22,8 @@ public class DeadLetterConsumingBean {
     private final Client client;
     private final Serializer serializer;
 
-    public DeadLetterConsumingBean(ClientRegistry clientRegistry, Serializer serializer) {
-        this.client = clientRegistry.lookup(ClientRegistry.DEFAULT_CLIENT_NAME);
+    public DeadLetterConsumingBean(Client client, Serializer serializer) {
+        this.client = client;
         this.serializer = serializer;
         this.lastData = new AtomicReference<>();
     }
