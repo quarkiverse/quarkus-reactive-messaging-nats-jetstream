@@ -34,6 +34,7 @@ public class MessageHeaders extends HashMap<String, List<String>> implements Hea
         if (message.hasHeaders()) {
             message.getHeaders().entrySet().forEach(entry -> result.put(entry.getKey(), entry.getValue()));
         }
+        result.setSubject(message.getSubject());
         return result;
     }
 
