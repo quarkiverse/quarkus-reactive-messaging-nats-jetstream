@@ -1,8 +1,8 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client;
 
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.connection.NativeConnection;
 import org.jspecify.annotations.NonNull;
 
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.connection.NativeConnection;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer.Consumer;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer.ConsumerManagement;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.store.KeyValue;
