@@ -1,5 +1,6 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client;
 
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.connection.NativeConnection;
 import org.jspecify.annotations.NonNull;
 
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer.Consumer;
@@ -83,6 +84,16 @@ public interface Client extends Publisher, Consumer, AutoCloseable {
      */
     @NonNull
     KeyValue keyValue(@NonNull String bucketName);
+
+    /**
+     * Provides access to the underlying native NATS connection, enabling direct interaction
+     * with the NATS server for advanced or low-level operations.
+     *
+     * @return a non-null instance of {@link NativeConnection}, representing the native
+     *         connection to the NATS server.
+     */
+    @NonNull
+    NativeConnection nativeConnection();
 
     /**
      * Indicates whether the current client instance has been closed.
