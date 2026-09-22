@@ -2,6 +2,9 @@ package io.quarkiverse.reactive.messaging.nats.jetstream.connector.configuration
 
 import static io.quarkiverse.reactive.messaging.nats.jetstream.connector.configuration.ConnectorConfiguration.DEFAULT_DATASOURCE;
 
+import java.util.Iterator;
+
+import io.smallrye.config.ConfigSourceInterceptorContext;
 import io.smallrye.config.FallbackConfigSourceInterceptor;
 
 /**
@@ -25,6 +28,31 @@ public class JetStreamDefaultDatasourceAliasInterceptor extends FallbackConfigSo
 
     public JetStreamDefaultDatasourceAliasInterceptor() {
         super(JetStreamDefaultDatasourceAliasInterceptor::mapName);
+    }
+
+    /**
+     * Enumerates every name in its root-space spelling: a {@code quarkus.messaging.nats.default.<rest>} name is
+     * reported as {@code quarkus.messaging.nats.<rest>}, every other name is reported unchanged, and no
+     * {@code quarkus.messaging.nats.default.*} name is ever reported. Such a name matches no member of
+     * {@link ConnectorConfiguration}, so Quarkus reports each one it sees as an unrecognized configuration key.
+     * Values stay reachable under both spellings through {@link #getValue}.
+     */
+    @Override
+    public Iterator<String> iterateNames(final ConfigSourceInterceptorContext context) {
+        return new Iterator<>() {
+            final Iterator<String> names = context.iterateNames();
+
+            @Override
+            public boolean hasNext() {
+                return names.hasNext();
+            }
+
+            @Override
+            public String next() {
+                final var name = names.next();
+                return name.startsWith(DEFAULT_PREFIX) ? mapName(name) : name;
+            }
+        };
     }
 
     /**
