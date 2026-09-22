@@ -16,6 +16,7 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer.configur
 import io.smallrye.reactive.messaging.providers.MetadataInjectableMessage;
 import io.smallrye.reactive.messaging.providers.locals.ContextAwareMessage;
 import io.smallrye.reactive.messaging.providers.locals.LocalContextMetadata;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Represents a message abstraction that extends capabilities for providing context-aware functionality
@@ -28,22 +29,37 @@ import io.smallrye.reactive.messaging.providers.locals.LocalContextMetadata;
  * Implementations of this interface should ensure proper processing, serialization, and interaction with
  * contextual and metadata-aware aspects.
  */
-public interface Message extends ContextAwareMessage<byte[]>, MetadataInjectableMessage<byte[]> {
+public interface Message<T> extends ContextAwareMessage<T>, MetadataInjectableMessage<T> {
 
     /**
      * Creates a new {@code Message} instance from the specified {@code NativeMessage}, {@code MessageContext},
      * and {@code ConsumerConfiguration}.
      *
-     * @param message the {@code NativeMessage} from which the {@code Message} instance is created; must not be null
-     * @param context the {@code MessageContext} providing execution context for the message; must not be null
+     * @param message               the {@code NativeMessage} from which the {@code Message} instance is created; must not be null
+     * @param context               the {@code MessageContext} providing execution context for the message; must not be null
      * @param consumerConfiguration the {@code ConsumerConfiguration} defining configurations for the message consumer; must not
-     *        be null
+     *                              be null
      * @return a {@code Message} instance that encapsulates the given {@code NativeMessage}, context, and consumer configuration
      */
-    static @NonNull Message of(@NonNull final NativeMessage message,
-            @NonNull final MessageContext context,
-            @NonNull final ConsumerConfiguration consumerConfiguration) {
-        return new MessageImpl(message, context, consumerConfiguration);
+    static @NonNull Message<byte[]> of(@NonNull final NativeMessage message,
+                                       @NonNull final MessageContext context,
+                                       @NonNull final ConsumerConfiguration consumerConfiguration) {
+        return new MessageImpl<>(message, message.getData(), context, consumerConfiguration);
+    }
+
+    /**
+     * Creates a new {@code Message} instance from an existing {@code Message} with a byte array payload
+     * and a new specified payload of a generic type {@code T}. This method ensures that the new message
+     * retains the context and consumer configuration of the original message.
+     *
+     * @param <T>     the type of the new payload for the resulting message
+     * @param message the original {@code Message} instance containing a byte array payload; must not be null
+     * @param payload the new payload of type {@code T} to be associated with the resulting message; must not be null
+     * @return a new {@code Message} instance that encapsulates the original message details and the new payload
+     */
+    static <T> @NonNull Message<T> of(@NonNull final Message<byte[]> message,
+                                      @Nullable final T payload) {
+        return new MessageImpl<>(message.nativeMessage(), payload, message.context(), message.getMetadata());
     }
 
     /**
@@ -52,12 +68,12 @@ public interface Message extends ContextAwareMessage<byte[]>, MetadataInjectable
      * context metadata if present in the original {@code Message}.
      *
      * @param message the reactive messaging {@code Message} instance containing the original payload and metadata; must not be
-     *        null
+     *                null
      * @param headers the {@code Headers} instance to be added to the resulting {@code Message}; must not be null
      * @return a new {@code Message} instance that encapsulates the original payload, metadata, and additional headers
      */
-    static @NonNull Message of(final org.eclipse.microprofile.reactive.messaging.@NonNull Message<byte[]> message,
-            @NonNull final Headers headers) {
+    static @NonNull Message<byte[]> of(final org.eclipse.microprofile.reactive.messaging.@NonNull Message<byte[]> message,
+                                       @NonNull final Headers headers) {
         if (message.getMetadata(LocalContextMetadata.class).isPresent()) {
             return new MessageDelegate(Message.of(message.getPayload(), message.getMetadata().with(headers)));
         } else {
@@ -76,8 +92,8 @@ public interface Message extends ContextAwareMessage<byte[]>, MetadataInjectable
      * @param headers the {@code Headers} instance to be associated with the message; must not be null
      * @return a new {@code Message} instance containing the specified payload and headers
      */
-    static @NonNull Message of(byte @NonNull [] payload,
-            @NonNull final Headers headers) {
+    static @NonNull Message<byte[]> of(byte @NonNull [] payload,
+                                       @NonNull final Headers headers) {
         return of(org.eclipse.microprofile.reactive.messaging.Message.of(payload), headers);
     }
 
@@ -87,11 +103,11 @@ public interface Message extends ContextAwareMessage<byte[]>, MetadataInjectable
      * the provided payload and metadata, delegating the instantiation to a
      * {@code MessageDelegate}.
      *
-     * @param payload the byte array containing the payload for the message; must not be null
+     * @param payload  the byte array containing the payload for the message; must not be null
      * @param metadata the {@code Metadata} instance to be associated with the message; must not be null
      * @return a new {@code Message} instance encapsulating the specified payload and metadata
      */
-    static @NonNull Message of(byte @NonNull [] payload, @NonNull final Metadata metadata) {
+    static @NonNull Message<byte[]> of(byte @NonNull [] payload, @NonNull final Metadata metadata) {
         return new MessageDelegate(org.eclipse.microprofile.reactive.messaging.Message.of(payload, metadata));
     }
 
@@ -99,42 +115,59 @@ public interface Message extends ContextAwareMessage<byte[]>, MetadataInjectable
      * @see org.eclipse.microprofile.reactive.messaging.Message#addMetadata(Object)
      */
     @Override
-    Message addMetadata(Object metadata);
+    Message<T> addMetadata(Object metadata);
 
     /**
      * @see org.eclipse.microprofile.reactive.messaging.Message#withMetadata(Iterable)
      */
     @Override
-    Message withMetadata(Iterable<Object> metadata);
+    Message<T> withMetadata(Iterable<Object> metadata);
 
     /**
      * @see org.eclipse.microprofile.reactive.messaging.Message#withMetadata(Metadata)
      */
-    Message withMetadata(org.eclipse.microprofile.reactive.messaging.Metadata metadata);
+    Message<T> withMetadata(org.eclipse.microprofile.reactive.messaging.Metadata metadata);
 
     /**
      * @see org.eclipse.microprofile.reactive.messaging.Message#withAck(Supplier)
      */
     @Override
-    Message withAck(Supplier<CompletionStage<Void>> supplier);
+    Message<T> withAck(Supplier<CompletionStage<Void>> supplier);
 
     /**
      * @see org.eclipse.microprofile.reactive.messaging.Message#withAckWithMetadata(Function)
      */
     @Override
-    Message withAckWithMetadata(Function<org.eclipse.microprofile.reactive.messaging.Metadata, CompletionStage<Void>> supplier);
+    Message<T> withAckWithMetadata(Function<org.eclipse.microprofile.reactive.messaging.Metadata, CompletionStage<Void>> supplier);
 
     /**
      * @see org.eclipse.microprofile.reactive.messaging.Message#withNack(Function)
      */
     @Override
-    Message withNack(Function<Throwable, CompletionStage<Void>> nack);
+    Message<T> withNack(Function<Throwable, CompletionStage<Void>> nack);
 
     /**
      * @see org.eclipse.microprofile.reactive.messaging.Message#withNackWithMetadata(BiFunction)
      */
     @Override
-    Message withNackWithMetadata(BiFunction<Throwable, Metadata, CompletionStage<Void>> nack);
+    Message<T> withNackWithMetadata(BiFunction<Throwable, Metadata, CompletionStage<Void>> nack);
+
+    /**
+     * Retrieves the {@code MessageContext} associated with this {@code Message}.
+     * The {@code MessageContext} encapsulates the execution context for actions
+     * related to the specific message, ensuring proper isolation and handling.
+     *
+     * @return the {@code MessageContext} associated with this message; never null
+     */
+    @NonNull MessageContext context();
+
+    /**
+     * Retrieves the {@code NativeMessage} associated with this instance. The {@code NativeMessage}
+     * provides low-level details and functionalities specific to the underlying messaging system.
+     *
+     * @return the {@code NativeMessage} associated with this instance; never null
+     */
+    @NonNull NativeMessage nativeMessage();
 
     default List<? extends Headers> getHeaders() {
         final var headers = new ArrayList<Headers>();

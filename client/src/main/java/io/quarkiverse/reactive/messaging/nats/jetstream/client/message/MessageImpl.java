@@ -13,19 +13,43 @@ import org.jspecify.annotations.NonNull;
 
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer.configuration.ConsumerConfiguration;
 import io.smallrye.reactive.messaging.providers.locals.LocalContextMetadata;
+import org.jspecify.annotations.Nullable;
 
-final class MessageImpl implements Message {
+final class MessageImpl<T> implements Message<T> {
     private final NativeMessage message;
     private org.eclipse.microprofile.reactive.messaging.Metadata metadata;
     private final MessageContext context;
+    private final T payload;
 
     MessageImpl(@NonNull NativeMessage message,
-            @NonNull MessageContext context,
-            @NonNull ConsumerConfiguration consumerConfiguration) {
+                @Nullable T payload,
+                @NonNull MessageContext context,
+                @NonNull ConsumerConfiguration consumerConfiguration) {
         this.message = message;
+        this.payload = payload;
         this.metadata = captureContextMetadata(consumerConfiguration, MessageMetadata.of(message.metaData()),
                 MessageHeaders.of(message));
         this.context = context;
+    }
+
+    MessageImpl(@NonNull NativeMessage message,
+                @Nullable T payload,
+                @NonNull MessageContext context,
+                org.eclipse.microprofile.reactive.messaging.@NonNull Metadata metadata) {
+        this.message = message;
+        this.payload = payload;
+        this.metadata = metadata;
+        this.context = context;
+    }
+
+    @Override
+    public @NonNull MessageContext context() {
+        return context;
+    }
+
+    @Override
+    public @NonNull NativeMessage nativeMessage() {
+        return message;
     }
 
     @Override
@@ -39,8 +63,8 @@ final class MessageImpl implements Message {
     }
 
     @Override
-    public byte[] getPayload() {
-        return message.getData();
+    public T getPayload() {
+        return payload;
     }
 
     @Override
@@ -94,41 +118,41 @@ final class MessageImpl implements Message {
     }
 
     @Override
-    public Message addMetadata(Object metadata) {
+    public Message<T> addMetadata(Object metadata) {
         this.metadata = this.metadata.with(metadata);
         return this;
     }
 
     @Override
-    public Message withMetadata(Iterable<Object> metadata) {
+    public Message<T> withMetadata(Iterable<Object> metadata) {
         this.metadata = this.metadata.with(metadata);
         return this;
     }
 
     @Override
-    public Message withMetadata(
+    public Message<T> withMetadata(
             org.eclipse.microprofile.reactive.messaging.Metadata metadata) {
         this.metadata = this.metadata.with(metadata);
         return this;
     }
 
     @Override
-    public Message withAck(Supplier<CompletionStage<Void>> supplier) {
+    public Message<T> withAck(Supplier<CompletionStage<Void>> supplier) {
         throw new UnsupportedOperationException("Not implemented yet");
     }
 
     @Override
-    public Message withAckWithMetadata(Function<Metadata, CompletionStage<Void>> supplier) {
+    public Message<T> withAckWithMetadata(Function<Metadata, CompletionStage<Void>> supplier) {
         throw new UnsupportedOperationException("Not implemented yet");
     }
 
     @Override
-    public Message withNack(Function<Throwable, CompletionStage<Void>> nack) {
+    public Message<T> withNack(Function<Throwable, CompletionStage<Void>> nack) {
         throw new UnsupportedOperationException("Not implemented yet");
     }
 
     @Override
-    public Message withNackWithMetadata(BiFunction<Throwable, Metadata, CompletionStage<Void>> nack) {
+    public Message<T> withNackWithMetadata(BiFunction<Throwable, Metadata, CompletionStage<Void>> nack) {
         throw new UnsupportedOperationException("Not implemented yet");
     }
 

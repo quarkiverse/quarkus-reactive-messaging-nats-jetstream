@@ -12,7 +12,7 @@ import io.smallrye.reactive.messaging.providers.MetadataInjectableMessage;
 import lombok.AllArgsConstructor;
 
 @AllArgsConstructor
-final class MessageDelegate implements Message {
+final class MessageDelegate implements Message<byte[]> {
     private org.eclipse.microprofile.reactive.messaging.Message<byte[]> delegate;
 
     @Override
@@ -35,32 +35,32 @@ final class MessageDelegate implements Message {
     }
 
     @Override
-    public Message withMetadata(Iterable<Object> metadata) {
+    public Message<byte[]> withMetadata(Iterable<Object> metadata) {
         return new MessageDelegate(delegate.withMetadata(metadata));
     }
 
     @Override
-    public Message withMetadata(Metadata metadata) {
+    public Message<byte[]> withMetadata(Metadata metadata) {
         return new MessageDelegate(delegate.withMetadata(metadata));
     }
 
     @Override
-    public Message withAck(Supplier<CompletionStage<Void>> supplier) {
+    public Message<byte[]> withAck(Supplier<CompletionStage<Void>> supplier) {
         return new MessageDelegate(delegate.withAck(supplier));
     }
 
     @Override
-    public Message withAckWithMetadata(Function<Metadata, CompletionStage<Void>> supplier) {
+    public Message<byte[]> withAckWithMetadata(Function<Metadata, CompletionStage<Void>> supplier) {
         return new MessageDelegate(delegate.withAckWithMetadata(supplier));
     }
 
     @Override
-    public Message withNack(Function<Throwable, CompletionStage<Void>> nack) {
+    public Message<byte[]> withNack(Function<Throwable, CompletionStage<Void>> nack) {
         return new MessageDelegate(delegate.withNack(nack));
     }
 
     @Override
-    public Message withNackWithMetadata(BiFunction<Throwable, Metadata, CompletionStage<Void>> nack) {
+    public Message<byte[]> withNackWithMetadata(BiFunction<Throwable, Metadata, CompletionStage<Void>> nack) {
         return new MessageDelegate(delegate.withNackWithMetadata(nack));
     }
 
@@ -120,7 +120,7 @@ final class MessageDelegate implements Message {
     }
 
     @Override
-    public Message addMetadata(Object metadata) {
+    public Message<byte[]> addMetadata(Object metadata) {
         return new MessageDelegate(delegate.addMetadata(metadata));
     }
 
