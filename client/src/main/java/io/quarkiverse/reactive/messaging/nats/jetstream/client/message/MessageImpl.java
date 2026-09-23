@@ -22,17 +22,17 @@ final class MessageImpl<T> implements Message<T> {
     private final BiFunction<Throwable, org.eclipse.microprofile.reactive.messaging.Metadata, CompletionStage<Void>> notAcknowledge;
 
     MessageImpl(final @NonNull NativeMessage message,
-                final @Nullable T payload,
-                final @NonNull Context context,
-                final @NonNull ConsumerConfiguration consumerConfiguration) {
+            final @Nullable T payload,
+            final @NonNull Context context,
+            final @NonNull ConsumerConfiguration consumerConfiguration) {
         this(message, payload, context, captureContextMetadata(consumerConfiguration, MessageMetadata.of(message.metaData()),
                 MessageHeaders.of(message)));
     }
 
     MessageImpl(final @NonNull NativeMessage message,
-                final @Nullable T payload,
-                final @NonNull Context context,
-                final org.eclipse.microprofile.reactive.messaging.@NonNull Metadata metadata) {
+            final @Nullable T payload,
+            final @NonNull Context context,
+            final org.eclipse.microprofile.reactive.messaging.@NonNull Metadata metadata) {
         this.payload = payload;
         this.metadata = metadata;
         this.acknowledge = m -> context.runOnContext(m).apply(() -> {
@@ -84,7 +84,7 @@ final class MessageImpl<T> implements Message<T> {
         return acknowledge;
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "SameParameterValue"})
     private <M> Optional<M> getMetadata(Metadata metadata, Class<M> metadataClass) {
         for (Object item : metadata) {
             if (metadataClass.isInstance(item)) {

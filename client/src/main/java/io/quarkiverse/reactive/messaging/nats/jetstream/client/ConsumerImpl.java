@@ -267,11 +267,10 @@ class ConsumerImpl implements Consumer {
 
     @SuppressWarnings("unchecked")
     private <T> @NonNull Message<T> deserialize(@NonNull final Message<byte[]> message) {
-        final var m = payloadType(message)
+        return payloadType(message)
                 .map(payloadType -> (Class<T>) payloadType)
                 .map(payloadType -> deserialize(message, payloadType))
                 .orElseGet(() -> (Message<T>) message);
-        return m;
     }
 
     private <T> @NonNull Message<T> deserialize(@NonNull final Message<byte[]> message, @NonNull Class<T> payloadType) {

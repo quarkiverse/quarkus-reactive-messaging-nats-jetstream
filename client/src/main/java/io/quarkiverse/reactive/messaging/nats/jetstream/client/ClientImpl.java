@@ -60,7 +60,7 @@ class ClientImpl implements Client {
     @Override
     public @NonNull <T> Uni<org.eclipse.microprofile.reactive.messaging.Message<T>> next(@NonNull String stream,
             @NonNull String consumer, @NonNull Duration timeout, @NonNull Class<T> clazz) {
-        return this.consumer.next(stream, consumer, timeout);
+        return this.consumer.next(stream, consumer, timeout, clazz);
     }
 
     @Override
@@ -73,7 +73,7 @@ class ClientImpl implements Client {
     @Override
     public @NonNull <T> Multi<org.eclipse.microprofile.reactive.messaging.Message<T>> fetch(@NonNull String stream,
             @NonNull String consumer, @NonNull Duration timeout, int batchSize, @NonNull Class<T> clazz) {
-        return this.consumer.fetch(stream, consumer, timeout, batchSize);
+        return this.consumer.fetch(stream, consumer, timeout, batchSize, clazz);
     }
 
     @Override
@@ -87,7 +87,7 @@ class ClientImpl implements Client {
     public @NonNull <T> Multi<org.eclipse.microprofile.reactive.messaging.Message<T>> subscribe(@NonNull String stream,
             @NonNull String consumer, @NonNull Duration timeout, int batchSize,
             @NonNull Class<T> clazz) {
-        return this.consumer.subscribe(stream, consumer, timeout, batchSize);
+        return this.consumer.subscribe(stream, consumer, timeout, batchSize, clazz);
     }
 
     @Override
@@ -99,7 +99,7 @@ class ClientImpl implements Client {
     @Override
     public @NonNull <T> Multi<org.eclipse.microprofile.reactive.messaging.Message<T>> subscribe(@NonNull String stream,
             @NonNull String consumer, @NonNull Class<T> clazz) {
-        return this.consumer.subscribe(stream, consumer);
+        return this.consumer.subscribe(stream, consumer, clazz);
     }
 
     @Override
