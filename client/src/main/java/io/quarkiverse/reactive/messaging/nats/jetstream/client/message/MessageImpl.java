@@ -84,7 +84,7 @@ final class MessageImpl<T> implements Message<T> {
         return acknowledge;
     }
 
-    @SuppressWarnings({"unchecked", "SameParameterValue"})
+    @SuppressWarnings({ "unchecked", "SameParameterValue" })
     private <M> Optional<M> getMetadata(Metadata metadata, Class<M> metadataClass) {
         for (Object item : metadata) {
             if (metadataClass.isInstance(item)) {
