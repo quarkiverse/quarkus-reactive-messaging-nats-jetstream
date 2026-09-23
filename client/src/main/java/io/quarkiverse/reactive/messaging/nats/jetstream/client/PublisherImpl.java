@@ -81,7 +81,7 @@ class PublisherImpl implements Publisher {
             return jetStream.publish(
                     headers.subject().orElseThrow(() -> new IllegalArgumentException("Subject header is required")),
                     headers.to(),
-                    serializer.toBytes(message.getPayload()),
+                    message.getPayload(),
                     PublishOptions.builder()
                             .messageId(headers.messageId()
                                     .orElseThrow(() -> new IllegalArgumentException("MessageId is required")))
