@@ -15,10 +15,12 @@ import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.unchecked.Unchecked;
 import lombok.RequiredArgsConstructor;
 
+@SuppressWarnings("ReactiveStreamsUnusedPublisher")
 @RequiredArgsConstructor
 class ConsumerManagementImpl implements ConsumerManagement {
     private final String stream;
-    private final ClientImpl client;
+    private final NativeConnection connection;
+    private final Context context;
 
     @Override
     public @NonNull Uni<Consumer> addIfAbsent(@NonNull final ConsumerConfiguration configuration) {
@@ -116,15 +118,15 @@ class ConsumerManagementImpl implements ConsumerManagement {
     }
 
     private @NonNull NativeConnection connection() {
-        return client.nativeConnection();
+        return connection;
     }
 
     private void runOnContext(@NonNull Runnable action) {
-        client.clientContext().runOnContext(action);
+        context.runOnContext(action);
     }
 
     private @NonNull ExecutorService executorService() {
-        return client.clientContext().executorService();
+        return context.executorService();
     }
 
 }

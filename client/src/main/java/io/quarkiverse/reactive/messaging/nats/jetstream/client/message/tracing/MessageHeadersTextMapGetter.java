@@ -4,18 +4,18 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 
+import org.eclipse.microprofile.reactive.messaging.Message;
 import org.jspecify.annotations.NonNull;
 
 import io.opentelemetry.context.propagation.TextMapGetter;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.Headers;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.Message;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.MessageHeaders;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.PublishHeaders;
 
-record MessageHeadersTextMapGetter(@NonNull Operation operation) implements TextMapGetter<Message> {
+record MessageHeadersTextMapGetter(@NonNull Operation operation) implements TextMapGetter<Message<byte[]>> {
 
     @Override
-    public Iterable<String> keys(Message message) {
+    public Iterable<String> keys(Message<byte[]> message) {
         if (message != null) {
             return getHeaders(message)
                     .map(Map::keySet).orElseGet(Collections::emptySet);
@@ -24,7 +24,7 @@ record MessageHeadersTextMapGetter(@NonNull Operation operation) implements Text
     }
 
     @Override
-    public String get(Message message, String key) {
+    public String get(Message<byte[]> message, String key) {
         if (message != null) {
             return getHeaders(message)
                     .flatMap(headers -> Optional.ofNullable(headers.get(key)))
@@ -34,7 +34,7 @@ record MessageHeadersTextMapGetter(@NonNull Operation operation) implements Text
         return null;
     }
 
-    private Optional<Headers> getHeaders(Message message) {
+    private Optional<Headers> getHeaders(Message<byte[]> message) {
         return switch (operation) {
             case PUBLISH, PUBLISH_ACKNOWLEDGED -> message.getMetadata(PublishHeaders.class);
             case RECEIVE -> message.getMetadata(MessageHeaders.class);

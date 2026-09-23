@@ -17,15 +17,14 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.client.store.api.ObjectS
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.unchecked.Unchecked;
+import lombok.RequiredArgsConstructor;
 
+@SuppressWarnings("ReactiveStreamsUnusedPublisher")
+@RequiredArgsConstructor
 class ObjectStoreImpl implements ObjectStore {
     private final String bucketName;
-    private final ClientImpl client;
-
-    public ObjectStoreImpl(String bucketName, ClientImpl client) {
-        this.bucketName = bucketName;
-        this.client = client;
-    }
+    private final NativeConnection connection;
+    private final Context context;
 
     @Override
     public @NonNull String bucketName() {
@@ -184,14 +183,14 @@ class ObjectStoreImpl implements ObjectStore {
     }
 
     private @NonNull NativeConnection connection() {
-        return client.nativeConnection();
+        return connection;
     }
 
     private void runOnContext(@NonNull Runnable action) {
-        client.clientContext().runOnContext(action);
+        context.runOnContext(action);
     }
 
     private @NonNull ExecutorService executorService() {
-        return client.clientContext().executorService();
+        return context.executorService();
     }
 }

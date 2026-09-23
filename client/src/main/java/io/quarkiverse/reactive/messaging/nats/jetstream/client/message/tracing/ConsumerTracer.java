@@ -2,6 +2,7 @@ package io.quarkiverse.reactive.messaging.nats.jetstream.client.message.tracing;
 
 import jakarta.enterprise.inject.Instance;
 
+import org.eclipse.microprofile.reactive.messaging.Message;
 import org.jspecify.annotations.NonNull;
 
 import io.opentelemetry.api.GlobalOpenTelemetry;
@@ -10,13 +11,12 @@ import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
 import io.opentelemetry.instrumentation.api.instrumenter.Instrumenter;
 import io.opentelemetry.instrumentation.api.instrumenter.InstrumenterBuilder;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.Message;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.unchecked.Unchecked;
 import io.smallrye.reactive.messaging.TracingMetadata;
 
 final class ConsumerTracer implements Tracer {
-    private final Instrumenter<Message, Void> instrumenter;
+    private final Instrumenter<Message<byte[]>, Void> instrumenter;
     private final TraceSupplier traceSupplier;
 
     ConsumerTracer(Instance<OpenTelemetry> openTelemetryInstance) {
@@ -25,14 +25,14 @@ final class ConsumerTracer implements Tracer {
     }
 
     @Override
-    public @NonNull Uni<Message> withTrace(@NonNull Message message) {
+    public @NonNull Uni<Message<byte[]>> withTrace(@NonNull Message<byte[]> message) {
         return Uni.createFrom().item(Unchecked.supplier(() -> traceIncoming(instrumenter, message)))
                 .chain(traceSupplier::get);
     }
 
-    private Instrumenter<Message, Void> instrumenter(Instance<OpenTelemetry> openTelemetryInstance) {
+    private Instrumenter<Message<byte[]>, Void> instrumenter(Instance<OpenTelemetry> openTelemetryInstance) {
         final var attributesExtractor = new MessageAttributesExtractor(Operation.RECEIVE);
-        InstrumenterBuilder<Message, Void> builder = Instrumenter.builder(
+        InstrumenterBuilder<Message<byte[]>, Void> builder = Instrumenter.builder(
                 getOpenTelemetry(openTelemetryInstance),
                 "io.smallrye.reactive.messaging.jetstream",
                 new MessageSpanNameExtractor(Operation.RECEIVE));
@@ -40,7 +40,7 @@ final class ConsumerTracer implements Tracer {
                 .buildConsumerInstrumenter(new MessageHeadersTextMapGetter(Operation.RECEIVE));
     }
 
-    private Message traceIncoming(Instrumenter<Message, Void> instrumenter, Message message) {
+    private Message<byte[]> traceIncoming(Instrumenter<Message<byte[]>, Void> instrumenter, Message<byte[]> message) {
         TracingMetadata tracingMetadata = TracingMetadata.fromMessage(message).orElse(TracingMetadata.empty());
         Context parentContext = tracingMetadata.getPreviousContext();
         if (parentContext == null) {

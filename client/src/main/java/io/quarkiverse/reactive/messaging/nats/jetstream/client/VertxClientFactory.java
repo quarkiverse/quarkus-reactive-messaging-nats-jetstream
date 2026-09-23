@@ -5,7 +5,6 @@ import java.util.concurrent.ExecutorService;
 import org.jspecify.annotations.NonNull;
 
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.connection.NativeConnection;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.MessageMapper;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.Serializer;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.tracing.TracerFactory;
 import io.vertx.mutiny.core.Vertx;
@@ -22,9 +21,9 @@ public class VertxClientFactory extends AbstractClientFactory {
             @NonNull final ExecutorService executorService) {
         return new ClientImpl(
                 connection,
-                new VertxClientContext(vertx.getOrCreateContext(), executorService),
+                new VertxContext(vertx.getOrCreateContext(), executorService),
                 tracerFactory,
-                MessageMapper.of(serializer));
+                serializer);
     }
 
 }

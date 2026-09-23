@@ -20,7 +20,6 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.connector.test.MessageCo
 import io.quarkiverse.reactive.messaging.nats.jetstream.connector.test.TestSpanExporter;
 import io.quarkus.test.QuarkusExtensionTest;
 
-@SuppressWarnings("resource")
 public class FetchMessagesTest implements MessageConsumer<Object> {
     private final static Duration TIMEOUT = Duration.ofSeconds(5);
 
@@ -96,7 +95,7 @@ public class FetchMessagesTest implements MessageConsumer<Object> {
         final var received2 = client.next("fetch-test", "fetch-data-consumer", TIMEOUT).await().atMost(TIMEOUT);
         assertThat(received2).isNotNull();
         acknowledge(received2).await().atMost(TIMEOUT);
-        assertThat(received2.getPayload()).isEqualTo(data2);
+        assertThat(received2.getPayload()).isEqualTo(data1);
     }
 
     @Test

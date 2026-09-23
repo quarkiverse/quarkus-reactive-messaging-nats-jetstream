@@ -13,15 +13,14 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.client.store.api.KeyValu
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.unchecked.Unchecked;
+import lombok.RequiredArgsConstructor;
 
+@SuppressWarnings("ReactiveStreamsUnusedPublisher")
+@RequiredArgsConstructor
 class KeyValueImpl implements KeyValue {
     private final String bucketName;
-    private final ClientImpl client;
-
-    KeyValueImpl(String bucketName, ClientImpl client) {
-        this.bucketName = bucketName;
-        this.client = client;
-    }
+    private final NativeConnection connection;
+    private final Context context;
 
     @Override
     public @NonNull String bucketName() {
@@ -144,14 +143,14 @@ class KeyValueImpl implements KeyValue {
     }
 
     private @NonNull NativeConnection connection() {
-        return client.nativeConnection();
+        return connection;
     }
 
     private void runOnContext(@NonNull Runnable action) {
-        client.clientContext().runOnContext(action);
+        context.runOnContext(action);
     }
 
     private @NonNull ExecutorService executorService() {
-        return client.clientContext().executorService();
+        return context.executorService();
     }
 }

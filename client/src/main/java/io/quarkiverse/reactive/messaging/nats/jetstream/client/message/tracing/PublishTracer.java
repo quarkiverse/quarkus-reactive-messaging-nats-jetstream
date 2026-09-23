@@ -4,6 +4,7 @@ import java.util.Optional;
 
 import jakarta.enterprise.inject.Instance;
 
+import org.eclipse.microprofile.reactive.messaging.Message;
 import org.jspecify.annotations.NonNull;
 
 import io.opentelemetry.api.GlobalOpenTelemetry;
@@ -12,21 +13,20 @@ import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
 import io.opentelemetry.instrumentation.api.instrumenter.Instrumenter;
 import io.opentelemetry.instrumentation.api.instrumenter.InstrumenterBuilder;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.Message;
 import io.quarkus.opentelemetry.runtime.QuarkusContextStorage;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.unchecked.Unchecked;
 import io.smallrye.reactive.messaging.TracingMetadata;
 
 final class PublishTracer implements Tracer {
-    private final Instrumenter<Message, Void> instrumenter;
+    private final Instrumenter<Message<byte[]>, Void> instrumenter;
 
     PublishTracer(Instance<OpenTelemetry> openTelemetryInstance) {
         this.instrumenter = instrumenter(openTelemetryInstance);
     }
 
     @Override
-    public @NonNull Uni<Message> withTrace(@NonNull Message message) {
+    public @NonNull Uni<Message<byte[]>> withTrace(@NonNull Message<byte[]> message) {
         return addTracingMetadata(message)
                 .chain(msg -> Uni.createFrom().item(Unchecked.supplier(() -> traceOutgoing(instrumenter, msg))));
     }
@@ -37,7 +37,7 @@ final class PublishTracer implements Tracer {
      * Reactive messaging outbound connectors, if tracing is supported, will use that context as parent span to trace outbound
      * message transmission.
      */
-    private Uni<Message> addTracingMetadata(final Message message) {
+    private Uni<Message<byte[]>> addTracingMetadata(final Message<byte[]> message) {
         return Uni.createFrom().item(Unchecked.supplier(() -> {
             if (message.getMetadata(TracingMetadata.class).isEmpty()) {
                 var otelContext = QuarkusContextStorage.INSTANCE.current();
@@ -47,9 +47,9 @@ final class PublishTracer implements Tracer {
         }));
     }
 
-    private Instrumenter<Message, Void> instrumenter(Instance<OpenTelemetry> openTelemetryInstance) {
+    private Instrumenter<Message<byte[]>, Void> instrumenter(Instance<OpenTelemetry> openTelemetryInstance) {
         final var attributesExtractor = new MessageAttributesExtractor(Operation.PUBLISH);
-        InstrumenterBuilder<Message, Void> builder = Instrumenter.builder(
+        InstrumenterBuilder<Message<byte[]>, Void> builder = Instrumenter.builder(
                 getOpenTelemetry(openTelemetryInstance),
                 "io.smallrye.reactive.messaging.jetstream",
                 new MessageSpanNameExtractor(Operation.PUBLISH));
@@ -57,7 +57,7 @@ final class PublishTracer implements Tracer {
                 .buildProducerInstrumenter(new HeadersTextMapSetter());
     }
 
-    private Message traceOutgoing(Instrumenter<Message, Void> instrumenter, Message message) {
+    private Message<byte[]> traceOutgoing(Instrumenter<Message<byte[]>, Void> instrumenter, Message<byte[]> message) {
         Optional<TracingMetadata> tracingMetadata = TracingMetadata.fromMessage(message);
         Context parentContext = tracingMetadata.map(TracingMetadata::getCurrentContext).orElse(Context.current());
         boolean shouldStart = instrumenter.shouldStart(parentContext, message);

@@ -1,9 +1,9 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client.message.tracing;
 
+import org.eclipse.microprofile.reactive.messaging.Message;
 import org.jspecify.annotations.NonNull;
 
 import io.opentelemetry.context.Context;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.Message;
 import io.quarkus.opentelemetry.runtime.QuarkusContextStorage;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.unchecked.Unchecked;
@@ -20,7 +20,7 @@ class AttachContextTraceSupplier implements TraceSupplier {
 
     @SuppressWarnings("resource")
     @Override
-    public @NonNull Uni<Message> get(@NonNull Message message) {
+    public @NonNull Uni<Message<byte[]>> get(@NonNull Message<byte[]> message) {
         return Uni.createFrom().item(Unchecked.supplier(() -> {
             var messageContext = message.getMetadata(LocalContextMetadata.class)
                     .map(LocalContextMetadata::context)

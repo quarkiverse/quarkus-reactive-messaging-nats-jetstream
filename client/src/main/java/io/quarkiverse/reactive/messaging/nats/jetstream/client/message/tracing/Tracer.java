@@ -1,13 +1,13 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client.message.tracing;
 
+import org.eclipse.microprofile.reactive.messaging.Message;
 import org.jspecify.annotations.NonNull;
 
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.Message;
 import io.smallrye.mutiny.Uni;
 
 public interface Tracer {
 
     @NonNull
-    Uni<Message> withTrace(@NonNull Message message);
+    Uni<Message<byte[]>> withTrace(@NonNull Message<byte[]> message);
 
 }
