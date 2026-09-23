@@ -5,6 +5,6 @@ import org.jspecify.annotations.NonNull;
 public interface TracerFactory {
 
     @NonNull
-    Tracer create(Operation operation);
+    Tracer create(@NonNull Operation operation);
 
 }

@@ -2,6 +2,7 @@ package io.quarkiverse.reactive.messaging.nats.jetstream.client.message.tracing;
 
 import jakarta.enterprise.inject.Instance;
 
+import org.eclipse.microprofile.reactive.messaging.Message;
 import org.jspecify.annotations.NonNull;
 
 import io.opentelemetry.api.GlobalOpenTelemetry;
@@ -10,24 +11,23 @@ import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
 import io.opentelemetry.instrumentation.api.instrumenter.Instrumenter;
 import io.opentelemetry.instrumentation.api.instrumenter.InstrumenterBuilder;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.Message;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.unchecked.Unchecked;
 import io.smallrye.reactive.messaging.TracingMetadata;
 
 public class PublishAcknowledgedTracer implements Tracer {
-    private final Instrumenter<Message, Void> instrumenter;
+    private final Instrumenter<Message<byte[]>, Void> instrumenter;
 
     PublishAcknowledgedTracer(Instance<OpenTelemetry> openTelemetryInstance) {
         this.instrumenter = instrumenter(openTelemetryInstance);
     }
 
     @Override
-    public @NonNull Uni<Message> withTrace(@NonNull Message message) {
+    public @NonNull Uni<Message<byte[]>> withTrace(@NonNull Message<byte[]> message) {
         return Uni.createFrom().item(Unchecked.supplier(() -> trace(instrumenter, message)));
     }
 
-    private Message trace(Instrumenter<Message, Void> instrumenter, Message message) {
+    private Message<byte[]> trace(Instrumenter<Message<byte[]>, Void> instrumenter, Message<byte[]> message) {
         return TracingMetadata.fromMessage(message).map(tracingMetadata -> {
             Context parentContext = tracingMetadata.getCurrentContext();
             if (parentContext == null) {
@@ -48,9 +48,9 @@ public class PublishAcknowledgedTracer implements Tracer {
         }).orElse(message);
     }
 
-    private Instrumenter<Message, Void> instrumenter(Instance<OpenTelemetry> openTelemetryInstance) {
+    private Instrumenter<Message<byte[]>, Void> instrumenter(Instance<OpenTelemetry> openTelemetryInstance) {
         final var attributesExtractor = new MessageAttributesExtractor(Operation.PUBLISH_ACKNOWLEDGED);
-        InstrumenterBuilder<Message, Void> builder = Instrumenter.builder(
+        InstrumenterBuilder<Message<byte[]>, Void> builder = Instrumenter.builder(
                 getOpenTelemetry(openTelemetryInstance),
                 "io.smallrye.reactive.messaging.jetstream",
                 new MessageSpanNameExtractor(Operation.PUBLISH_ACKNOWLEDGED));

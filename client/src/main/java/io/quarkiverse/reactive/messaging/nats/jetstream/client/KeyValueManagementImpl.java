@@ -15,7 +15,8 @@ import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
 class KeyValueManagementImpl implements KeyValueManagement {
-    private final ClientImpl client;
+    private final NativeConnection connection;
+    private final Context context;
 
     @Override
     public @NonNull Uni<Void> addIfAbsent(@NonNull final KeyValueConfiguration configuration) {
@@ -63,14 +64,14 @@ class KeyValueManagementImpl implements KeyValueManagement {
     }
 
     private @NonNull NativeConnection connection() {
-        return client.nativeConnection();
+        return connection;
     }
 
     private void runOnContext(@NonNull Runnable action) {
-        client.clientContext().runOnContext(action);
+        context.runOnContext(action);
     }
 
     private @NonNull ExecutorService executorService() {
-        return client.clientContext().executorService();
+        return context.executorService();
     }
 }

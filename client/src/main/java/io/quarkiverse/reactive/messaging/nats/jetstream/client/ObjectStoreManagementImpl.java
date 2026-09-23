@@ -14,8 +14,9 @@ import io.smallrye.mutiny.unchecked.Unchecked;
 import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
-public class ObjectStoreManagementImpl implements ObjectStoreManagement {
-    private final ClientImpl client;
+class ObjectStoreManagementImpl implements ObjectStoreManagement {
+    private final NativeConnection connection;
+    private final Context context;
 
     @Override
     public @NonNull Uni<Void> addIfAbsent(@NonNull ObjectStoreConfiguration configuration) {
@@ -62,14 +63,14 @@ public class ObjectStoreManagementImpl implements ObjectStoreManagement {
     }
 
     private @NonNull NativeConnection connection() {
-        return client.nativeConnection();
+        return connection;
     }
 
     private void runOnContext(@NonNull Runnable action) {
-        client.clientContext().runOnContext(action);
+        context.runOnContext(action);
     }
 
     private @NonNull ExecutorService executorService() {
-        return client.clientContext().executorService();
+        return context.executorService();
     }
 }

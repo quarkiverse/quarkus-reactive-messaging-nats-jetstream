@@ -11,16 +11,7 @@ public interface MessageConsumer<T> {
         return Uni.createFrom().completionStage(message.ack());
     }
 
-    default Uni<Void> acknowledge(io.quarkiverse.reactive.messaging.nats.jetstream.client.message.Message message) {
-        return Uni.createFrom().completionStage(message.ack());
-    }
-
     default Uni<Void> notAcknowledge(Message<T> message, Throwable throwable) {
-        return Uni.createFrom().completionStage(message.nack(throwable));
-    }
-
-    default Uni<Void> notAcknowledge(io.quarkiverse.reactive.messaging.nats.jetstream.client.message.Message message,
-            Throwable throwable) {
         return Uni.createFrom().completionStage(message.nack(throwable));
     }
 

@@ -6,51 +6,36 @@ import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 import java.util.function.BiFunction;
 import java.util.function.Function;
-import java.util.function.Supplier;
 
 import org.eclipse.microprofile.reactive.messaging.Metadata;
 import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.Context;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer.configuration.ConsumerConfiguration;
-import io.smallrye.reactive.messaging.providers.locals.LocalContextMetadata;
 
-final class MessageImpl implements Message {
-    private final NativeMessage message;
+final class MessageImpl<T> implements Message<T> {
     private org.eclipse.microprofile.reactive.messaging.Metadata metadata;
-    private final MessageContext context;
+    private final T payload;
 
-    MessageImpl(@NonNull NativeMessage message,
-            @NonNull MessageContext context,
-            @NonNull ConsumerConfiguration consumerConfiguration) {
-        this.message = message;
-        this.metadata = captureContextMetadata(consumerConfiguration, MessageMetadata.of(message.metaData()),
-                MessageHeaders.of(message));
-        this.context = context;
+    private final Function<Metadata, CompletionStage<Void>> acknowledge;
+    private final BiFunction<Throwable, org.eclipse.microprofile.reactive.messaging.Metadata, CompletionStage<Void>> notAcknowledge;
+
+    MessageImpl(final @NonNull NativeMessage message,
+            final @Nullable T payload,
+            final @NonNull Context context,
+            final @NonNull ConsumerConfiguration consumerConfiguration) {
+        this(message, payload, context, captureContextMetadata(consumerConfiguration, MessageMetadata.of(message.metaData()),
+                MessageHeaders.of(message)));
     }
 
-    @Override
-    public org.eclipse.microprofile.reactive.messaging.Metadata getMetadata() {
-        return metadata;
-    }
-
-    @Override
-    public synchronized void injectMetadata(Object metadataObject) {
-        this.metadata = metadata.with(metadataObject);
-    }
-
-    @Override
-    public byte[] getPayload() {
-        return message.getData();
-    }
-
-    @Override
-    public Supplier<CompletionStage<Void>> getAck() {
-        return this::ack;
-    }
-
-    @Override
-    public CompletionStage<Void> ack() {
-        return context.runOnContext(this, () -> {
+    MessageImpl(final @NonNull NativeMessage message,
+            final @Nullable T payload,
+            final @NonNull Context context,
+            final org.eclipse.microprofile.reactive.messaging.@NonNull Metadata metadata) {
+        this.payload = payload;
+        this.metadata = metadata;
+        this.acknowledge = m -> context.runOnContext(m).apply(() -> {
             try {
                 message.ack();
                 return null;
@@ -58,13 +43,9 @@ final class MessageImpl implements Message {
                 throw new RuntimeException(e);
             }
         });
-    }
-
-    @Override
-    public CompletionStage<Void> nack(Throwable reason, org.eclipse.microprofile.reactive.messaging.Metadata metadata) {
-        return context.runOnContext(this, () -> {
+        this.notAcknowledge = (throwable, m) -> context.runOnContext(m).apply(() -> {
             try {
-                final var withDelay = getMetadata(NotAcknowledgeMetadata.class)
+                final var withDelay = getMetadata(m, NotAcknowledgeMetadata.class)
                         .flatMap(NotAcknowledgeMetadata::withDelay);
                 if (withDelay.isPresent()) {
                     message.nakWithDelay(withDelay.get());
@@ -79,57 +60,37 @@ final class MessageImpl implements Message {
     }
 
     @Override
-    public Function<Throwable, CompletionStage<Void>> getNack() {
-        return this::nack;
+    public org.eclipse.microprofile.reactive.messaging.Metadata getMetadata() {
+        return metadata;
+    }
+
+    @Override
+    public synchronized void injectMetadata(Object metadataObject) {
+        this.metadata = metadata.with(metadataObject);
+    }
+
+    @Override
+    public T getPayload() {
+        return payload;
     }
 
     @Override
     public BiFunction<Throwable, org.eclipse.microprofile.reactive.messaging.Metadata, CompletionStage<Void>> getNackWithMetadata() {
-        return this::nack;
+        return notAcknowledge;
     }
 
     @Override
-    public Optional<LocalContextMetadata> getContextMetadata() {
-        return getMetadata(LocalContextMetadata.class);
+    public Function<Metadata, CompletionStage<Void>> getAckWithMetadata() {
+        return acknowledge;
     }
 
-    @Override
-    public Message addMetadata(Object metadata) {
-        this.metadata = this.metadata.with(metadata);
-        return this;
+    @SuppressWarnings({ "unchecked", "SameParameterValue" })
+    private <M> Optional<M> getMetadata(Metadata metadata, Class<M> metadataClass) {
+        for (Object item : metadata) {
+            if (metadataClass.isInstance(item)) {
+                return Optional.of((M) item);
+            }
+        }
+        return Optional.empty();
     }
-
-    @Override
-    public Message withMetadata(Iterable<Object> metadata) {
-        this.metadata = this.metadata.with(metadata);
-        return this;
-    }
-
-    @Override
-    public Message withMetadata(
-            org.eclipse.microprofile.reactive.messaging.Metadata metadata) {
-        this.metadata = this.metadata.with(metadata);
-        return this;
-    }
-
-    @Override
-    public Message withAck(Supplier<CompletionStage<Void>> supplier) {
-        throw new UnsupportedOperationException("Not implemented yet");
-    }
-
-    @Override
-    public Message withAckWithMetadata(Function<Metadata, CompletionStage<Void>> supplier) {
-        throw new UnsupportedOperationException("Not implemented yet");
-    }
-
-    @Override
-    public Message withNack(Function<Throwable, CompletionStage<Void>> nack) {
-        throw new UnsupportedOperationException("Not implemented yet");
-    }
-
-    @Override
-    public Message withNackWithMetadata(BiFunction<Throwable, Metadata, CompletionStage<Void>> nack) {
-        throw new UnsupportedOperationException("Not implemented yet");
-    }
-
 }
