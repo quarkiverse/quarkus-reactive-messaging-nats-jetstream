@@ -44,7 +44,7 @@ public class MessagePublisherProcessor<T> implements MessageProcessor {
     }
 
     public Multi<Message<T>> publisher() {
-        return subscribe()
+        return Multi.createFrom().deferred(this::subscribe)
                 .onItem().invoke(() -> log.debugf("Received message from channel: %s", channelConfiguration.name()))
                 .onSubscription()
                 .invoke(() -> health
@@ -55,7 +55,7 @@ public class MessagePublisherProcessor<T> implements MessageProcessor {
                     health.set(new Health(false,
                             String.format("Publish processor unhealthy for channel: %s", channelConfiguration.name())));
                 })
-                .onFailure().retry().withBackOff(channelConfiguration.getRetryBackoff()).until(failure -> stopped);
+                .onFailure().retry().withBackOff(channelConfiguration.getRetryBackoff()).until(failure -> !stopped);
 
     }
 
