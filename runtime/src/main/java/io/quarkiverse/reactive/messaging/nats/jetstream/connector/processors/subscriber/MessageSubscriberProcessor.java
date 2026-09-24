@@ -45,7 +45,7 @@ public class MessageSubscriberProcessor<T> implements MessageProcessor {
                 .onFailure().invoke(throwable -> health.set(new Health(false,
                         "Subscriber processor error for channel: " + channelConfiguration.name() + " with message: "
                                 + throwable.getMessage())))
-                .onFailure().retry().withBackOff(channelConfiguration.getRetryBackoff()).until(failure -> stopped);
+                .onFailure().retry().withBackOff(channelConfiguration.getRetryBackoff()).until(failure -> !stopped);
     }
 
     @Override
