@@ -11,7 +11,7 @@ import lombok.extern.jbosslog.JBossLog;
 /**
  * Closes a JetStream {@link Client} synthetic CDI bean when its {@code @ApplicationScoped} context is destroyed,
  * i.e. on application shutdown. One {@link Client} bean is created per configured datasource by
- * {@code JetStreamProcessor} / {@code JetStreamRecorder}.
+ * {@code JetStreamProcessor} and created by {@link ClientBeanCreator}.
  */
 @JBossLog
 public class ClientBeanDestroyer implements BeanDestroyer<Client> {
