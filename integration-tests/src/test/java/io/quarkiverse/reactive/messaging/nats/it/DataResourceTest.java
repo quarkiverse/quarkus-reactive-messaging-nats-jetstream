@@ -6,6 +6,7 @@ import static org.awaitility.Awaitility.await;
 
 import java.util.concurrent.TimeUnit;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.junit.QuarkusTest;
@@ -14,6 +15,12 @@ import io.restassured.filter.log.ResponseLoggingFilter;
 
 @QuarkusTest
 public class DataResourceTest {
+
+    @BeforeEach
+    void awaitReady() {
+        await().atMost(1, TimeUnit.MINUTES).pollInterval(200, TimeUnit.MILLISECONDS)
+                .until(() -> given().when().get("/q/health/ready").statusCode() == 200);
+    }
 
     @Test
     void data() {

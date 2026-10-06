@@ -14,6 +14,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkiverse.reactive.messaging.nats.jetstream.connector.test.Readiness;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.filter.log.RequestLoggingFilter;
 import io.restassured.filter.log.ResponseLoggingFilter;
@@ -24,12 +25,15 @@ class ReplyTest {
     @RegisterExtension
     static final QuarkusExtensionTest config = new QuarkusExtensionTest().setArchiveProducer(
             () -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(ReplierBean.class, FailOnFailHandler.class, FixedCorrelationIdHandler.class,
+                    .addClasses(Readiness.class, ReplierBean.class, FailOnFailHandler.class, FixedCorrelationIdHandler.class,
                             ReplyResource.class, StreamConfiguration.class))
             .withConfigurationResource("application-reply.properties");
 
     @BeforeEach
     void setup() {
+        // requests-bad (subject not on stream) and requests-missing (stream absent) are deliberately never ready
+        Readiness.awaitReady("requests", "requests-2", "requests-slow", "requests-fail", "requests-fh", "replies-in",
+                "replies-out");
         defaultParser = Parser.JSON;
     }
 

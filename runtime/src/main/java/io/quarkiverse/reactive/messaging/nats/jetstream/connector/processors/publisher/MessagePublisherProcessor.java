@@ -6,11 +6,13 @@ import org.eclipse.microprofile.reactive.messaging.Message;
 import org.jspecify.annotations.NonNull;
 
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.Client;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer.api.Consumer;
 import io.quarkiverse.reactive.messaging.nats.jetstream.connector.configuration.ChannelConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.connector.configuration.ConsumerChannelConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.connector.processors.Health;
 import io.quarkiverse.reactive.messaging.nats.jetstream.connector.processors.MessageProcessor;
 import io.smallrye.mutiny.Multi;
+import io.smallrye.mutiny.Uni;
 import lombok.extern.jbosslog.JBossLog;
 
 @JBossLog
@@ -44,12 +46,12 @@ public class MessagePublisherProcessor<T> implements MessageProcessor {
     }
 
     public Multi<Message<T>> publisher() {
-        return Multi.createFrom().deferred(this::subscribe)
+        return Multi.createFrom().deferred(() -> verifyConsumer().onItem().transformToMulti(consumer -> {
+            health.set(new Health(true,
+                    String.format("Publish processor healthy for channel: %s", channelConfiguration.name())));
+            return subscribe();
+        }))
                 .onItem().invoke(() -> log.debugf("Received message from channel: %s", channelConfiguration.name()))
-                .onSubscription()
-                .invoke(() -> health
-                        .set(new Health(true,
-                                String.format("Publish processor healthy for channel: %s", channelConfiguration.name()))))
                 .onFailure().invoke(failure -> {
                     log.errorf(failure, "An error occurred with message: %s", failure.getMessage());
                     health.set(new Health(false,
@@ -57,6 +59,17 @@ public class MessagePublisherProcessor<T> implements MessageProcessor {
                 })
                 .onFailure().retry().withBackOff(channelConfiguration.getRetryBackoff()).until(failure -> !stopped);
 
+    }
+
+    /**
+     * Verifies that the consumer of the channel exists on the stream, so the channel is not reported ready before
+     * it is able to receive messages.
+     */
+    private Uni<Consumer> verifyConsumer() {
+        return client.consumerManagement(channelConfiguration.stream()).consumer(channelConfiguration.getConsumer())
+                .onItem().ifNull().failWith(() -> new IllegalStateException(
+                        String.format("Consumer %s not found on stream %s", channelConfiguration.getConsumer(),
+                                channelConfiguration.stream())));
     }
 
     private Multi<Message<T>> subscribe() {

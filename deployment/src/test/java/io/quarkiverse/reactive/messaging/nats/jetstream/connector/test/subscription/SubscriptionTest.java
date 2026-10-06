@@ -14,6 +14,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkiverse.reactive.messaging.nats.jetstream.connector.test.Advisory;
 import io.quarkiverse.reactive.messaging.nats.jetstream.connector.test.MessageConsumer;
+import io.quarkiverse.reactive.messaging.nats.jetstream.connector.test.Readiness;
 import io.quarkiverse.reactive.messaging.nats.jetstream.connector.test.TestSpanExporter;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.filter.log.RequestLoggingFilter;
@@ -25,7 +26,7 @@ class SubscriptionTest {
     @RegisterExtension
     static final QuarkusExtensionTest config = new QuarkusExtensionTest().setArchiveProducer(
             () -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(ValueConsumingBean.class, ValueProducingBean.class, ValueResource.class,
+                    .addClasses(Readiness.class, ValueConsumingBean.class, ValueProducingBean.class, ValueResource.class,
                             TestSpanExporter.class, Data.class, DataResource.class, DataConsumingBean.class,
                             Advisory.class, DeadLetterResource.class, DeadLetterConsumingBean.class,
                             DurableResource.class, DurableConsumingBean.class, RedeliveryResource.class,
@@ -34,6 +35,7 @@ class SubscriptionTest {
 
     @BeforeEach
     void setup() {
+        Readiness.awaitReady();
         defaultParser = Parser.JSON;
     }
 

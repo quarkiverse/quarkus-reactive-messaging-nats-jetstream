@@ -7,16 +7,21 @@ import java.lang.reflect.Proxy;
 import java.time.Duration;
 import java.util.Optional;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
 import org.eclipse.microprofile.reactive.messaging.Message;
 import org.junit.jupiter.api.Test;
 
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.Client;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer.ConsumerManagement;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer.api.Consumer;
 import io.quarkiverse.reactive.messaging.nats.jetstream.connector.configuration.ConsumerChannelConfigurationImpl;
 import io.smallrye.mutiny.Multi;
+import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.helpers.test.AssertSubscriber;
 import io.smallrye.mutiny.subscription.MultiEmitter;
 
@@ -90,7 +95,43 @@ class MessagePublisherProcessorTest {
         }
     }
 
+    @Test
+    void isNotHealthyUntilConsumerExists() {
+        final var consumerExists = new AtomicBoolean(false);
+        final var subscriptions = new AtomicInteger();
+        final var processor = processor(() -> {
+            subscriptions.incrementAndGet();
+            return Multi.createFrom().<Message<String>> nothing();
+        }, consumerExists::get);
+        final var subscriber = processor.publisher().subscribe().withSubscriber(AssertSubscriber.create(1));
+
+        try {
+            assertThat(processor.health().healthy()).isFalse();
+            assertThat(subscriptions.get()).isZero();
+
+            consumerExists.set(true);
+
+            waitUntil(() -> processor.health().healthy(), Duration.ofSeconds(5));
+            assertThat(subscriptions.get()).isEqualTo(1);
+        } finally {
+            subscriber.cancel();
+        }
+    }
+
     private MessagePublisherProcessor<String> processor(Supplier<Multi<Message<String>>> source) {
+        return processor(source, () -> true);
+    }
+
+    private MessagePublisherProcessor<String> processor(Supplier<Multi<Message<String>>> source,
+            BooleanSupplier consumerExists) {
+        final var consumerManagement = (ConsumerManagement) Proxy.newProxyInstance(
+                ConsumerManagement.class.getClassLoader(), new Class<?>[] { ConsumerManagement.class },
+                (proxy, method, args) -> {
+                    if (method.getName().equals("consumer")) {
+                        return Uni.createFrom().item(() -> consumerExists.getAsBoolean() ? consumer() : null);
+                    }
+                    throw new UnsupportedOperationException(method.getName());
+                });
         final var configuration = new ConsumerChannelConfigurationImpl("test-in", "test",
                 Optional.of(Duration.ofMillis(10)), Optional.empty(), Optional.of("test-consumer"), Optional.empty(),
                 1, Duration.ofSeconds(1));
@@ -99,8 +140,33 @@ class MessagePublisherProcessorTest {
                     if (method.getName().equals("subscribe")) {
                         return source.get();
                     }
+                    if (method.getName().equals("consumerManagement")) {
+                        return consumerManagement;
+                    }
                     throw new UnsupportedOperationException(method.getName());
                 });
         return new MessagePublisherProcessor<>(configuration, client);
+    }
+
+    private static void waitUntil(BooleanSupplier condition, Duration timeout) {
+        final var deadline = System.nanoTime() + timeout.toNanos();
+        while (!condition.getAsBoolean()) {
+            if (System.nanoTime() > deadline) {
+                throw new AssertionError("Condition not met within " + timeout);
+            }
+            try {
+                Thread.sleep(10);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new AssertionError(e);
+            }
+        }
+    }
+
+    private Consumer consumer() {
+        return (Consumer) Proxy.newProxyInstance(Consumer.class.getClassLoader(), new Class<?>[] { Consumer.class },
+                (proxy, method, args) -> {
+                    throw new UnsupportedOperationException(method.getName());
+                });
     }
 }

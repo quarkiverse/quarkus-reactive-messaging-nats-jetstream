@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkiverse.reactive.messaging.nats.jetstream.connector.test.MessageConsumer;
+import io.quarkiverse.reactive.messaging.nats.jetstream.connector.test.Readiness;
 import io.quarkiverse.reactive.messaging.nats.jetstream.connector.test.TestSpanExporter;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.parsing.Parser;
@@ -21,12 +22,14 @@ class MetadataTest {
     @RegisterExtension
     static final QuarkusExtensionTest config = new QuarkusExtensionTest().setArchiveProducer(
             () -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(TestSpanExporter.class, Data.class, DataResource.class, DataConsumingBean.class,
+                    .addClasses(Readiness.class, TestSpanExporter.class, Data.class, DataResource.class,
+                            DataConsumingBean.class,
                             DataCollectorBean.class, MessageConsumer.class))
             .withConfigurationResource("application-metadata.properties");
 
     @BeforeEach
     void setup() {
+        Readiness.awaitReady();
         defaultParser = Parser.JSON;
     }
 
