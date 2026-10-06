@@ -16,6 +16,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.opentelemetry.api.trace.SpanId;
 import io.opentelemetry.sdk.trace.data.SpanData;
 import io.quarkiverse.reactive.messaging.nats.jetstream.connector.test.MessageConsumer;
+import io.quarkiverse.reactive.messaging.nats.jetstream.connector.test.Readiness;
 import io.quarkiverse.reactive.messaging.nats.jetstream.connector.test.TestSpanExporter;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
@@ -26,7 +27,8 @@ class TracingTest {
     @RegisterExtension
     static final QuarkusExtensionTest config = new QuarkusExtensionTest().setArchiveProducer(
             () -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(TestSpanExporter.class, Data.class, DataResource.class, DataConsumingBean.class,
+                    .addClasses(Readiness.class, TestSpanExporter.class, Data.class, DataResource.class,
+                            DataConsumingBean.class,
                             DataCollectorBean.class, MessageConsumer.class))
             .withConfigurationResource("application-tracing.properties");
 
@@ -35,6 +37,7 @@ class TracingTest {
 
     @BeforeEach
     void setup() {
+        Readiness.awaitReady();
         RestAssured.defaultParser = Parser.JSON;
         spanExporter.reset();
     }
