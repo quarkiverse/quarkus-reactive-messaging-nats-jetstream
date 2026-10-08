@@ -68,7 +68,7 @@ public record StreamContextDelegate(io.nats.client.StreamContext delegate) imple
     }
 
     @Override
-    public @NonNull List<String> getConsumerNames() throws IOException, JetStreamApiException {
+    public @NonNull List<String> getConsumerNames() {
         return List.of();
     }
 

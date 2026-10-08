@@ -47,6 +47,7 @@ record NativeMessageDelegate(io.nats.client.Message delegate) implements NativeM
         return delegate.getData();
     }
 
+    @SuppressWarnings("deprecation")
     @Override
     public boolean isUtf8mode() {
         return delegate.isUtf8mode();

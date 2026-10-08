@@ -9,7 +9,7 @@ import java.util.Optional;
  */
 public interface CorrelationIdHandler {
 
-    /** @return a new correlation id that will be placed in the {@link RequestReply#CORRELATION_ID_HEADER} header */
+    /** @return a new correlation id that will be placed in the header */
     String generate();
 
     /**

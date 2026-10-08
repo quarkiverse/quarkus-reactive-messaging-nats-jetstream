@@ -1,11 +1,8 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.connector.client;
 
-import java.util.Map;
-
-import jakarta.enterprise.context.spi.CreationalContext;
-
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.Client;
 import io.quarkus.arc.BeanDestroyer;
+import io.quarkus.arc.SyntheticCreationalContext;
 import lombok.extern.jbosslog.JBossLog;
 
 /**
@@ -17,7 +14,7 @@ import lombok.extern.jbosslog.JBossLog;
 public class ClientBeanDestroyer implements BeanDestroyer<Client> {
 
     @Override
-    public void destroy(Client instance, CreationalContext<Client> creationalContext, Map<String, Object> params) {
+    public void destroy(Client instance, SyntheticCreationalContext<Client> context) {
         try {
             instance.close();
         } catch (Exception e) {

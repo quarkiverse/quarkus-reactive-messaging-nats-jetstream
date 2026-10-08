@@ -13,6 +13,7 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 
 import org.eclipse.microprofile.reactive.messaging.Message;
+import org.jspecify.annotations.NonNull;
 import org.junit.jupiter.api.Test;
 
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.Client;
@@ -25,6 +26,7 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.connector.reply.ReplyFai
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.subscription.MultiEmitter;
+import io.smallrye.mutiny.unchecked.Unchecked;
 
 class MessageSubscriberProcessorTest {
 
@@ -127,14 +129,14 @@ class MessageSubscriberProcessorTest {
                 new Class<?>[] { StreamManagement.class },
                 (proxy, method, args) -> {
                     if (method.getName().equals("stream")) {
-                        return Uni.createFrom().item(() -> {
+                        return Uni.createFrom().item(Unchecked.supplier(() -> {
                             lookups.incrementAndGet();
                             final var current = subjects.get();
                             if (current == null) {
                                 throw new IllegalStateException("stream not found");
                             }
                             return stream(current);
-                        });
+                        }));
                     }
                     throw new UnsupportedOperationException(method.getName());
                 });
@@ -172,52 +174,53 @@ class MessageSubscriberProcessorTest {
     private static PublisherChannelConfiguration configuration() {
         return new PublisherChannelConfiguration() {
             @Override
-            public String name() {
+            public @NonNull String name() {
                 return "test-out";
             }
 
             @Override
-            public String stream() {
+            public @NonNull String stream() {
                 return "test";
             }
 
             @Override
-            public Optional<Duration> retryBackoff() {
+            public @NonNull Optional<Duration> retryBackoff() {
                 return Optional.of(Duration.ofMillis(10));
             }
 
             @Override
-            public Optional<String> datasource() {
+            public @NonNull Optional<String> datasource() {
                 return Optional.empty();
             }
 
             @Override
-            public String subject() {
+            public @NonNull String subject() {
                 return "data.test";
             }
 
             @Override
-            public Optional<String> replySubject() {
+            public @NonNull Optional<String> replySubject() {
                 return Optional.empty();
             }
 
             @Override
-            public Optional<Duration> replyTimeout() {
+            public @NonNull Optional<Duration> replyTimeout() {
                 return Optional.empty();
             }
 
             @Override
-            public Optional<Duration> replyInactiveThreshold() {
+            public @NonNull Optional<Duration> replyInactiveThreshold() {
                 return Optional.empty();
             }
 
+            @SuppressWarnings({ "NullableProblems", "DataFlowIssue" })
             @Override
             public CorrelationIdHandler replyCorrelationIdHandler() {
                 return null;
             }
 
             @Override
-            public Optional<ReplyFailureHandler> replyFailureHandler() {
+            public @NonNull Optional<ReplyFailureHandler> replyFailureHandler() {
                 return Optional.empty();
             }
         };

@@ -6,9 +6,9 @@ import org.eclipse.microprofile.reactive.messaging.Message;
 import org.jspecify.annotations.NonNull;
 
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.connection.NativeConnection;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer.*;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer.Consumer;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.*;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer.ConsumerManagement;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.Serializer;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.tracing.TracerFactory;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.store.KeyValue;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.store.KeyValueManagement;

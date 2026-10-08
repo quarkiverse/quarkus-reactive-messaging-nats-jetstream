@@ -9,11 +9,7 @@ import java.util.function.Supplier;
 import org.eclipse.microprofile.reactive.messaging.Metadata;
 import org.jspecify.annotations.NonNull;
 
-import lombok.RequiredArgsConstructor;
-
-@RequiredArgsConstructor
-public class ExecutorContext implements Context {
-    private final ExecutorService executorService;
+public record ExecutorContext(ExecutorService executorService) implements Context {
 
     @Override
     public @NonNull ExecutorService executorService() {
