@@ -159,7 +159,7 @@ class MessageTracingTest {
 
     private SpanData singleSpan() {
         assertThat(spanExporter.getFinishedSpanItems()).hasSize(1);
-        return spanExporter.getFinishedSpanItems().get(0);
+        return spanExporter.getFinishedSpanItems().getFirst();
     }
 
     private static Message<byte[]> publishMessage() {
