@@ -29,7 +29,7 @@ import io.smallrye.reactive.messaging.health.HealthReporter;
 @ConnectorAttribute(name = "subject", description = "The name of the subject", direction = OUTGOING, type = "String")
 @ConnectorAttribute(name = "consumer", description = "The name of the consumer", direction = INCOMING, type = "String")
 @ConnectorAttribute(name = "payload-type", description = "The payload type", direction = INCOMING, type = "String")
-@ConnectorAttribute(name = "batch-size", description = "The batch size", direction = INCOMING, type = "Integer", defaultValue = "100")
+@ConnectorAttribute(name = "batch-size", description = "The batch size", direction = INCOMING, type = "int", defaultValue = "100")
 @ConnectorAttribute(name = "timeout", description = "The timeout in milliseconds for pulling messages", direction = INCOMING, type = "Long", defaultValue = "1000")
 @ConnectorAttribute(name = "retry-backoff", description = "The retry backoff in milliseconds for retry processing messages", direction = INCOMING_AND_OUTGOING, type = "Long")
 @ConnectorAttribute(name = "datasource", description = "The name of the datasource", direction = INCOMING_AND_OUTGOING, type = "String")

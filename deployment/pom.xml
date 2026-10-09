@@ -105,6 +105,20 @@
                     </annotationProcessorPaths>
                 </configuration>
             </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <!-- Lets Quarkus adjust module configuration and the test framework attach its agent without JVM warnings -->
+                    <argLine>--add-opens=java.base/java.lang.invoke=ALL-UNNAMED -XX:+EnableDynamicAgentLoading</argLine>
+                    <systemPropertyVariables>
+                        <!-- No OTLP collector runs in tests; spans are captured by the CDI TestSpanExporter -->
+                        <quarkus.otel.exporter.otlp.enabled>false</quarkus.otel.exporter.otlp.enabled>
+                        <quarkus.otel.metrics.enabled>false</quarkus.otel.metrics.enabled>
+                        <quarkus.otel.logs.enabled>false</quarkus.otel.logs.enabled>
+                    </systemPropertyVariables>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 </project>
