@@ -31,7 +31,8 @@ class ConsumerImpl implements Consumer {
     private final NativeConnection connection;
     private final Context context;
     private final Serializer serializer;
-    private final Tracer tracer;
+    private final Tracer receiveTracer;
+    private final Tracer processTracer;
 
     ConsumerImpl(@NonNull final NativeConnection connection,
             @NonNull final Context context,
@@ -40,7 +41,8 @@ class ConsumerImpl implements Consumer {
         this.connection = connection;
         this.context = context;
         this.serializer = serializer;
-        this.tracer = tracerFactory.create(Operation.RECEIVE);
+        this.receiveTracer = tracerFactory.create(Operation.RECEIVE);
+        this.processTracer = tracerFactory.create(Operation.PROCESS);
     }
 
     @Override
@@ -49,7 +51,7 @@ class ConsumerImpl implements Consumer {
             @NonNull final Duration timeout) {
         return consumerContext(stream, consumer)
                 .chain(consumerContext -> next(consumerContext, timeout))
-                .onItem().ifNotNull().transformToUni(tracer::withTrace)
+                .onItem().ifNotNull().transformToUni(message -> receiveTracer.withTrace(context.withProcessingContext(message)))
                 .onItem().ifNotNull().<Message<T>> transform(Unchecked.function(message -> deserialize(message)))
                 .onFailure().transform(SubscriptionException::new)
                 .runSubscriptionOn(executorService())
@@ -61,7 +63,7 @@ class ConsumerImpl implements Consumer {
             @NonNull Class<T> clazz) {
         return consumerContext(stream, consumer)
                 .chain(consumerContext -> next(consumerContext, timeout))
-                .onItem().ifNotNull().transformToUni(tracer::withTrace)
+                .onItem().ifNotNull().transformToUni(message -> receiveTracer.withTrace(context.withProcessingContext(message)))
                 .onItem().ifNotNull().transform(Unchecked.function(message -> deserialize(message, clazz)))
                 .onFailure().transform(SubscriptionException::new)
                 .runSubscriptionOn(executorService())
@@ -74,7 +76,8 @@ class ConsumerImpl implements Consumer {
             @NonNull final Duration timeout, final int batchSize) {
         return subscription(stream, consumer)
                 .onItem().transformToMulti(subscription -> fetch(subscription, timeout, batchSize))
-                .onItem().transformToUni(tracer::withTrace).concatenate()
+                .onItem().transformToUni(message -> receiveTracer.withTrace(context.withProcessingContext(message)))
+                .concatenate()
                 .onItem().<Message<T>> transform(Unchecked.function(message -> deserialize(message)))
                 .onFailure().transform(SubscriptionException::new)
                 .runSubscriptionOn(executorService())
@@ -89,7 +92,8 @@ class ConsumerImpl implements Consumer {
             @NonNull Class<T> clazz) {
         return subscription(stream, consumer)
                 .onItem().transformToMulti(subscription -> fetch(subscription, timeout, batchSize))
-                .onItem().transformToUni(tracer::withTrace).concatenate()
+                .onItem().transformToUni(message -> receiveTracer.withTrace(context.withProcessingContext(message)))
+                .concatenate()
                 .onItem().transform(Unchecked.function(message -> deserialize(message, clazz)))
                 .onFailure().transform(SubscriptionException::new)
                 .runSubscriptionOn(executorService())
@@ -108,7 +112,8 @@ class ConsumerImpl implements Consumer {
                         .whilst(v -> true)
                         .onItem().transformToMultiAndConcatenate(v -> fetch(subscription, timeout, batchSize)))
                 .select().where(Objects::nonNull)
-                .onItem().transformToUni(tracer::withTrace).concatenate()
+                .onItem().transformToUni(message -> processTracer.withTrace(context.withProcessingContext(message)))
+                .concatenate()
                 .onItem().<Message<T>> transform(Unchecked.function(message -> deserialize(message)))
                 .onFailure().transform(SubscriptionException::new)
                 .runSubscriptionOn(executorService)
@@ -127,7 +132,8 @@ class ConsumerImpl implements Consumer {
                         .whilst(v -> true)
                         .onItem().transformToMultiAndConcatenate(v -> fetch(subscription, timeout, batchSize)))
                 .select().where(Objects::nonNull)
-                .onItem().transformToUni(tracer::withTrace).concatenate()
+                .onItem().transformToUni(message -> processTracer.withTrace(context.withProcessingContext(message)))
+                .concatenate()
                 .onItem().transform(Unchecked.function(message -> deserialize(message, clazz)))
                 .onFailure().transform(SubscriptionException::new)
                 .runSubscriptionOn(executorService)
@@ -146,7 +152,8 @@ class ConsumerImpl implements Consumer {
                 .transformToMulti(tuple -> subscribe(stream, consumer, tuple.getItem1(), tuple.getItem2(),
                         tuple.getItem3().configuration()))
                 .select().where(Objects::nonNull)
-                .onItem().transformToUni(tracer::withTrace).concatenate()
+                .onItem().transformToUni(message -> processTracer.withTrace(context.withProcessingContext(message)))
+                .concatenate()
                 .onItem().<Message<T>> transform(Unchecked.function(message -> deserialize(message)))
                 .onFailure().transform(SubscriptionException::new)
                 .runSubscriptionOn(executorService)
@@ -167,7 +174,8 @@ class ConsumerImpl implements Consumer {
                 .transformToMulti(tuple -> subscribe(stream, consumer, tuple.getItem1(), tuple.getItem2(),
                         tuple.getItem3().configuration()))
                 .select().where(Objects::nonNull)
-                .onItem().transformToUni(tracer::withTrace).concatenate()
+                .onItem().transformToUni(message -> processTracer.withTrace(context.withProcessingContext(message)))
+                .concatenate()
                 .onItem().transform(Unchecked.function(message -> deserialize(message, clazz)))
                 .onFailure().transform(SubscriptionException::new)
                 .runSubscriptionOn(executorService)
