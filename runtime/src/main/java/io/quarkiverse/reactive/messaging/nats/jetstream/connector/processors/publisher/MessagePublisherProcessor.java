@@ -45,6 +45,7 @@ public class MessagePublisherProcessor<T> implements MessageProcessor {
         this.stopped = true;
     }
 
+    @SuppressWarnings("ReactiveStreamsUnusedPublisher")
     public Multi<Message<T>> publisher() {
         return Multi.createFrom().deferred(() -> verifyConsumer().onItem().transformToMulti(consumer -> {
             health.set(new Health(true,

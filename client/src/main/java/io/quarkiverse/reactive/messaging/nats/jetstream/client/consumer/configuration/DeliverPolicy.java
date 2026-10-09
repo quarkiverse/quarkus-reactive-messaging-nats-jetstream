@@ -6,5 +6,5 @@ public enum DeliverPolicy {
     New,
     ByStartSequence,
     ByStartTime,
-    LastPerSubject;
+    LastPerSubject
 }

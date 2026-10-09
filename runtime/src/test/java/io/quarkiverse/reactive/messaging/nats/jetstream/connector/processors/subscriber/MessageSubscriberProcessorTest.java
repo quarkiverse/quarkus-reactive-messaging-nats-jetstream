@@ -1,6 +1,7 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.connector.processors.subscriber;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 
 import java.lang.reflect.Proxy;
 import java.time.Duration;
@@ -9,7 +10,6 @@ import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 
 import org.eclipse.microprofile.reactive.messaging.Message;
@@ -42,7 +42,7 @@ class MessageSubscriberProcessorTest {
 
             subjects.set(Set.of("data.>"));
 
-            waitUntil(() -> processor.health().healthy(), Duration.ofSeconds(5));
+            await().atMost(Duration.ofSeconds(5)).until(() -> processor.health().healthy());
         } finally {
             processor.stop();
         }
@@ -55,7 +55,7 @@ class MessageSubscriberProcessorTest {
         final var emitter = subscribe(processor);
 
         try {
-            waitUntil(() -> lookups.get() > 1, Duration.ofSeconds(5));
+            await().atMost(Duration.ofSeconds(5)).until(() -> lookups.get() > 1);
             emitter.emit(Message.of("published to a subject that is not on the stream"));
 
             assertThat(processor.health().healthy()).isFalse();
@@ -66,17 +66,18 @@ class MessageSubscriberProcessorTest {
     }
 
     @Test
-    void stopCancelsVerification() throws InterruptedException {
+    void stopCancelsVerification() {
         final var lookups = new AtomicInteger();
         final var processor = processor(new AtomicReference<>(null), lookups);
         subscribe(processor);
 
-        waitUntil(() -> lookups.get() > 1, Duration.ofSeconds(5));
+        await().atMost(Duration.ofSeconds(5)).until(() -> lookups.get() > 1);
         processor.stop();
         final var lookupsAfterStop = lookups.get();
-        Thread.sleep(200);
 
-        assertThat(lookups.get()).isLessThanOrEqualTo(lookupsAfterStop + 1);
+        // at most one in-flight lookup may still complete; no further retries for the whole period
+        await().during(Duration.ofMillis(200)).atMost(Duration.ofSeconds(1))
+                .until(() -> lookups.get() <= lookupsAfterStop + 1);
         assertThat(processor.health().healthy()).isFalse();
     }
 
@@ -99,10 +100,10 @@ class MessageSubscriberProcessorTest {
 
         try {
             emitter.emit(Message.of("fails"));
-            waitUntil(() -> !processor.health().message().contains("ready"), Duration.ofSeconds(5));
+            await().atMost(Duration.ofSeconds(5)).until(() -> !processor.health().message().contains("ready"));
             emitter.emit(Message.of("after failure"));
 
-            waitUntil(() -> published.contains("after failure"), Duration.ofSeconds(5));
+            await().atMost(Duration.ofSeconds(5)).until(() -> published.contains("after failure"));
         } finally {
             processor.stop();
         }
@@ -122,7 +123,7 @@ class MessageSubscriberProcessorTest {
         return processor(subjects, lookups, message -> Uni.createFrom().item(message));
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({ "unchecked", "ReactiveStreamsUnusedPublisher" })
     private MessageSubscriberProcessor<String> processor(AtomicReference<Set<String>> subjects, AtomicInteger lookups,
             Function<Message<String>, Uni<Message<String>>> publish) {
         final var streamManagement = (StreamManagement) Proxy.newProxyInstance(StreamManagement.class.getClassLoader(),
@@ -213,9 +214,9 @@ class MessageSubscriberProcessorTest {
                 return Optional.empty();
             }
 
-            @SuppressWarnings({ "NullableProblems", "DataFlowIssue" })
+            @SuppressWarnings({ "DataFlowIssue" })
             @Override
-            public CorrelationIdHandler replyCorrelationIdHandler() {
+            public @NonNull CorrelationIdHandler replyCorrelationIdHandler() {
                 return null;
             }
 
@@ -226,18 +227,4 @@ class MessageSubscriberProcessorTest {
         };
     }
 
-    private static void waitUntil(BooleanSupplier condition, Duration timeout) {
-        final var deadline = System.nanoTime() + timeout.toNanos();
-        while (!condition.getAsBoolean()) {
-            if (System.nanoTime() > deadline) {
-                throw new AssertionError("Condition not met within " + timeout);
-            }
-            try {
-                Thread.sleep(10);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                throw new AssertionError(e);
-            }
-        }
-    }
 }

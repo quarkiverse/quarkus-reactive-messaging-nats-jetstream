@@ -44,7 +44,6 @@ Let’s imagine you have a NATS JetStream broker running, and accessible using t
 quarkus.messaging.nats.connection.servers=nats://localhost:4242
 quarkus.messaging.nats.connection.username=guest
 quarkus.messaging.nats.connection.password=guest
-quarkus.messaging.nats.connection.ssl-enabled=false
 
 # The stream and its consumer are created if they don't already exist on NATS
 quarkus.messaging.nats.streams.test.name=test
@@ -222,7 +221,6 @@ If you want to use the Key/Value store in NATS, then configure your application 
 quarkus.messaging.nats.connection.servers=nats://localhost:4242
 quarkus.messaging.nats.connection.username=guest
 quarkus.messaging.nats.connection.password=guest
-quarkus.messaging.nats.connection.ssl-enabled=false
 
 # Creates a "test" bucket stored in memory. This part is optional. If you already have created a bucket on NATS
 # then this configuration is redundant.
@@ -272,7 +270,6 @@ If you want to use the Object store in NATS, then configure your application as 
 quarkus.messaging.nats.connection.servers=nats://localhost:4242
 quarkus.messaging.nats.connection.username=guest
 quarkus.messaging.nats.connection.password=guest
-quarkus.messaging.nats.connection.ssl-enabled=false
 
 # Creates a "test" object store. This part is optional. If you already have created the bucket on NATS
 # then this configuration is redundant.
@@ -344,7 +341,6 @@ The stream, consumer, key-value store and object store configurations are all op
 | quarkus.messaging.nats.connection.password | The password to connect to the NATS server | String |
 | quarkus.messaging.nats.connection.token | The token to connect to the NATS server | String |
 | quarkus.messaging.nats.connection.credential-path | The path to the credentials file to connect to the NATS server | String |
-| quarkus.messaging.nats.connection.ssl-enabled | Whether to enable SSL/TLS secure connections to the NATS server | Boolean | false
 | quarkus.messaging.nats.connection.connection-timeout | The connection timeout | Duration |
 | quarkus.messaging.nats.connection.error-listener | The classname for the error listener | String |
 | quarkus.messaging.nats.connection.buffer-size | The size in bytes to make buffers for connections | Integer |

@@ -4,6 +4,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 
 import org.eclipse.microprofile.reactive.messaging.Message;
+import org.jspecify.annotations.NonNull;
 
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.AttributesBuilder;
@@ -37,7 +38,7 @@ class MessageAttributesExtractor implements AttributesExtractor<Message<byte[]>,
     }
 
     @Override
-    public void onStart(AttributesBuilder attributes, Context parentContext, Message<byte[]> message) {
+    public void onStart(AttributesBuilder attributes, @NonNull Context parentContext, @NonNull Message<byte[]> message) {
         attributes.put(MESSAGING_SYSTEM, "jetstream");
         attributes.put(MESSAGING_DESTINATION_NAME, getDestination(message));
         attributes.put(MESSAGING_OPERATION, operation.toString());
@@ -59,8 +60,8 @@ class MessageAttributesExtractor implements AttributesExtractor<Message<byte[]>,
     @Override
     public void onEnd(
             AttributesBuilder attributes,
-            Context context,
-            Message<byte[]> request,
+            @NonNull Context context,
+            @NonNull Message<byte[]> request,
             Void response,
             Throwable error) {
         attributes.put(MESSAGING_MESSAGE_ID, getMessageId(request));

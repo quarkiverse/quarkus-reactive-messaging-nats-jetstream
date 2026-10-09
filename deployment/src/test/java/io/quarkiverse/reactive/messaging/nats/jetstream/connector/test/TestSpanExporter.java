@@ -11,6 +11,8 @@ import java.util.stream.Collectors;
 
 import jakarta.enterprise.context.ApplicationScoped;
 
+import org.jspecify.annotations.NonNull;
+
 import io.opentelemetry.sdk.common.CompletableResultCode;
 import io.opentelemetry.sdk.testing.exporter.InMemorySpanExporter;
 import io.opentelemetry.sdk.trace.data.SpanData;
@@ -47,7 +49,7 @@ public class TestSpanExporter implements SpanExporter {
     }
 
     @Override
-    public CompletableResultCode export(Collection<SpanData> spans) {
+    public CompletableResultCode export(@NonNull Collection<SpanData> spans) {
         return spanExporter.export(spans);
     }
 

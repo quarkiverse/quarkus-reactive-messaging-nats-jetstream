@@ -15,6 +15,7 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.connector.processors.Mes
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.subscription.Cancellable;
+import io.smallrye.mutiny.unchecked.Unchecked;
 import io.smallrye.reactive.messaging.providers.helpers.MultiUtils;
 import lombok.extern.jbosslog.JBossLog;
 
@@ -120,13 +121,13 @@ public class MessageSubscriberProcessor<T> implements MessageProcessor {
         return client.streamManagement().stream(channelConfiguration.stream())
                 .onItem().ifNull().failWith(() -> new IllegalStateException(
                         String.format("Stream %s not found", channelConfiguration.stream())))
-                .onItem().invoke(stream -> {
+                .onItem().invoke(Unchecked.consumer(stream -> {
                     final var subjects = stream.configuration().subjects();
                     if (subjects.stream().noneMatch(pattern -> Subjects.matches(pattern, channelConfiguration.subject()))) {
                         throw new IllegalStateException(String.format("Subject %s not found on stream %s with subjects %s",
                                 channelConfiguration.subject(), channelConfiguration.stream(), subjects));
                     }
-                });
+                }));
     }
 
     private Uni<Message<T>> publish(Message<T> message) {
