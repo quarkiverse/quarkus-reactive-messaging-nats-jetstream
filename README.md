@@ -159,7 +159,7 @@ The connector implements `HealthReporter` and reports both liveness and readines
 ## Technology Stack
 
 - **Quarkus**
-- **Java**: 17 (minimum)
+- **Java**: 21 (minimum)
 - **NATS Java Client**
 - **SmallRye Reactive Messaging**: Provided by Quarkus BOM
 - **OpenTelemetry**: For distributed tracing
