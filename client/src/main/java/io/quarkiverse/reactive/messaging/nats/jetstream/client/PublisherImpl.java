@@ -143,9 +143,12 @@ class PublisherImpl implements Publisher {
     }
 
     private <T> @NonNull Uni<Message<T>> notAcknowledge(@NonNull Message<T> message, @NonNull final Throwable throwable) {
+        // The failure is recovered after the nack, so this is the only trace of it (e.g. a replier publishing to a
+        // reply subject no stream covers)
+        log.warnf(throwable, "Failed to publish message: %s", throwable.getMessage());
         return Uni.createFrom().completionStage(message.nack(new PublishException(throwable)))
                 .map(ignore -> message)
-                .onFailure().invoke(() -> log.warnf(throwable, "Message not acknowledged: %s", throwable.getMessage()));
+                .onFailure().invoke(failure -> log.warnf(failure, "Message not acknowledged: %s", failure.getMessage()));
     }
 
     private @NonNull Uni<NativeJetStream> jetStream() {

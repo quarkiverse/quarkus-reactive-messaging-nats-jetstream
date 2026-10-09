@@ -71,6 +71,7 @@ class ReplyTest {
                 .statusCode(500)
                 .extract();
 
+        @SuppressWarnings("unchecked")
         final Map<String, Object> body = response.as(Map.class);
         assertEquals("TimeoutException", body.get("exception"));
         final var correlationId = (String) body.get("correlationId");
