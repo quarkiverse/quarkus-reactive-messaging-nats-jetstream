@@ -1,6 +1,7 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.connector.processors.publisher;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 
 import java.io.IOException;
 import java.lang.reflect.Proxy;
@@ -111,7 +112,7 @@ class MessagePublisherProcessorTest {
 
             consumerExists.set(true);
 
-            waitUntil(() -> processor.health().healthy(), Duration.ofSeconds(5));
+            await().atMost(Duration.ofSeconds(5)).until(() -> processor.health().healthy());
             assertThat(subscriptions.get()).isEqualTo(1);
         } finally {
             subscriber.cancel();
@@ -147,21 +148,6 @@ class MessagePublisherProcessorTest {
                     throw new UnsupportedOperationException(method.getName());
                 });
         return new MessagePublisherProcessor<>(configuration, client);
-    }
-
-    private static void waitUntil(BooleanSupplier condition, Duration timeout) {
-        final var deadline = System.nanoTime() + timeout.toNanos();
-        while (!condition.getAsBoolean()) {
-            if (System.nanoTime() > deadline) {
-                throw new AssertionError("Condition not met within " + timeout);
-            }
-            try {
-                Thread.sleep(10);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                throw new AssertionError(e);
-            }
-        }
     }
 
     private Consumer consumer() {
