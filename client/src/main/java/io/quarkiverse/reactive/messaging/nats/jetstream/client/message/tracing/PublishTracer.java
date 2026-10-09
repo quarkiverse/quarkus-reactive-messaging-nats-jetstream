@@ -1,18 +1,13 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client.message.tracing;
 
-import java.util.Optional;
-
-import jakarta.enterprise.inject.Instance;
+import java.util.function.Function;
 
 import org.eclipse.microprofile.reactive.messaging.Message;
 import org.jspecify.annotations.NonNull;
 
-import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.context.Context;
-import io.opentelemetry.context.Scope;
 import io.opentelemetry.instrumentation.api.instrumenter.Instrumenter;
-import io.opentelemetry.instrumentation.api.instrumenter.InstrumenterBuilder;
 import io.quarkus.opentelemetry.runtime.QuarkusContextStorage;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.unchecked.Unchecked;
@@ -21,14 +16,33 @@ import io.smallrye.reactive.messaging.TracingMetadata;
 final class PublishTracer implements Tracer {
     private final Instrumenter<Message<byte[]>, Void> instrumenter;
 
-    PublishTracer(Instance<OpenTelemetry> openTelemetryInstance) {
-        this.instrumenter = instrumenter(openTelemetryInstance);
+    PublishTracer(OpenTelemetry openTelemetry, boolean tracePayload) {
+        this.instrumenter = Instrumenters.create(openTelemetry, Operation.PUBLISH, tracePayload);
     }
 
     @Override
     public @NonNull Uni<Message<byte[]>> withTrace(@NonNull Message<byte[]> message) {
-        return addTracingMetadata(message)
-                .chain(msg -> Uni.createFrom().item(Unchecked.supplier(() -> traceOutgoing(instrumenter, msg))));
+        return withTrace(message, msg -> Uni.createFrom().item(msg));
+    }
+
+    /**
+     * The span is started before the operation, so the trace context is injected into the headers it publishes, and
+     * ended when the operation terminates, so it covers the publish and records its failure.
+     */
+    @Override
+    public @NonNull Uni<Message<byte[]>> withTrace(@NonNull Message<byte[]> message,
+            @NonNull Function<Message<byte[]>, Uni<Message<byte[]>>> operation) {
+        return addTracingMetadata(message).chain(msg -> {
+            final var parentContext = TracingMetadata.fromMessage(msg)
+                    .map(TracingMetadata::getCurrentContext)
+                    .orElse(Context.current());
+            if (!instrumenter.shouldStart(parentContext, msg)) {
+                return operation.apply(msg);
+            }
+            final var spanContext = instrumenter.start(parentContext, msg);
+            return Uni.createFrom().deferred(() -> operation.apply(msg))
+                    .onTermination().invoke((result, failure, cancelled) -> instrumenter.end(spanContext, msg, null, failure));
+        });
     }
 
     /**
@@ -45,35 +59,5 @@ final class PublishTracer implements Tracer {
             }
             return message;
         }));
-    }
-
-    private Instrumenter<Message<byte[]>, Void> instrumenter(Instance<OpenTelemetry> openTelemetryInstance) {
-        final var attributesExtractor = new MessageAttributesExtractor(Operation.PUBLISH);
-        InstrumenterBuilder<Message<byte[]>, Void> builder = Instrumenter.builder(
-                getOpenTelemetry(openTelemetryInstance),
-                "io.smallrye.reactive.messaging.jetstream",
-                new MessageSpanNameExtractor(Operation.PUBLISH));
-        return builder.addAttributesExtractor(attributesExtractor)
-                .buildProducerInstrumenter(new HeadersTextMapSetter());
-    }
-
-    private Message<byte[]> traceOutgoing(Instrumenter<Message<byte[]>, Void> instrumenter, Message<byte[]> message) {
-        Optional<TracingMetadata> tracingMetadata = TracingMetadata.fromMessage(message);
-        Context parentContext = tracingMetadata.map(TracingMetadata::getCurrentContext).orElse(Context.current());
-        boolean shouldStart = instrumenter.shouldStart(parentContext, message);
-        if (shouldStart) {
-            Context spanContext = instrumenter.start(parentContext, message);
-            try (Scope ignored = spanContext.makeCurrent()) {
-                instrumenter.end(spanContext, message, null, null);
-            }
-        }
-        return message;
-    }
-
-    private OpenTelemetry getOpenTelemetry(Instance<OpenTelemetry> openTelemetryInstance) {
-        if (openTelemetryInstance.isResolvable()) {
-            return openTelemetryInstance.get();
-        }
-        return GlobalOpenTelemetry.get();
     }
 }

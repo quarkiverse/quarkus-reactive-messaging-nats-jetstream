@@ -31,7 +31,6 @@ class PublisherImpl implements Publisher {
     private final Context context;
     private final Serializer serializer;
     private final Tracer tracer;
-    private final Tracer acknowledgeTracer;
 
     PublisherImpl(@NonNull final NativeConnection connection,
             @NonNull final Context context,
@@ -41,7 +40,6 @@ class PublisherImpl implements Publisher {
         this.context = context;
         this.serializer = serializer;
         this.tracer = tracerFactory.create(Operation.PUBLISH);
-        this.acknowledgeTracer = tracerFactory.create(Operation.PUBLISH_ACKNOWLEDGED);
     }
 
     @Override
@@ -50,9 +48,7 @@ class PublisherImpl implements Publisher {
             @NonNull final String stream,
             @NonNull final String subject) {
         return serializedWithMetadata(message, stream, subject)
-                .chain(tracer::withTrace)
-                .chain(this::publish)
-                .chain(acknowledgeTracer::withTrace)
+                .chain(serialized -> tracer.withTrace(serialized, this::publish))
                 .chain(this::acknowledge)
                 .map(m -> map(message.getPayload(), m))
                 .onFailure().recoverWithUni(failure -> notAcknowledge(message, failure))
