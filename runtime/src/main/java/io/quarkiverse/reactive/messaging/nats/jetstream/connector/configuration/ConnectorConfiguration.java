@@ -5,6 +5,7 @@ import java.util.Map;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.WithDefault;
 import io.smallrye.config.WithName;
 
 /**
@@ -27,5 +28,12 @@ public interface ConnectorConfiguration extends DataSourceConfiguration {
      */
     @WithName("data-sources")
     Map<String, DataSourceConfiguration> namedDatasource();
+
+    /**
+     * Whether the message payload is recorded as the {@code messaging.nats.message.payload} attribute of tracing
+     * spans. Disabled by default, since payloads may contain sensitive data and can be arbitrarily large.
+     */
+    @WithDefault("false")
+    boolean tracePayload();
 
 }

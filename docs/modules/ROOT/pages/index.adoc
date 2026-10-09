@@ -327,7 +327,41 @@ quarkus.messaging.nats.serializer=com.example.MySerializer
 ----
 
 == Open Telemetry Tracing
-To use Open Telemetry tracing, add the `quarkus-opentelemetry` dependency.
+To use Open Telemetry tracing, add the `quarkus-opentelemetry` dependency. Spans follow the
+https://opentelemetry.io/docs/specs/semconv/messaging/messaging-spans/[OpenTelemetry messaging semantic conventions]
+as implemented by the OpenTelemetry instrumentation API bundled with Quarkus, so they look like the spans of the
+other Quarkus messaging extensions.
+
+[cols="2,1,3",options="header"]
+|======
+| Span | Kind | Created when
+| `{subject} publish` | `PRODUCER` | A message is published. The span covers the publish until JetStream acknowledged it, and
+records the failure when publishing fails.
+| `{subject} process` | `CONSUMER` | A message is delivered to an incoming channel (push or pull consumer). The span is
+current while the application processes the message, so spans created meanwhile (for example publishing a reply) are
+its children. It ends when the message is acknowledged, or with the reason as error when it is not acknowledged.
+| `{subject} receive` | `CLIENT` | A message is pulled on demand with `Client.next` or `Client.fetch`. The span ends as
+soon as the message is received.
+|======
+
+The trace context of the publisher is propagated in the message headers. It is the parent of the `process` and
+`receive` spans, and is also added to them as a span link.
+
+Besides the standard `messaging.*` attributes (`messaging.system` is `nats`, `messaging.destination.name` is the
+subject, `messaging.message.id` the message id and `messaging.message.conversation_id` the request/reply correlation
+id), spans carry NATS JetStream specific attributes:
+
+* `messaging.nats.stream.name`
+* `messaging.nats.consumer.name`, `messaging.nats.stream.sequence`, `messaging.nats.consumer.sequence` and
+`messaging.nats.message.delivered_count` on received messages
+
+The message payload is not recorded, since it may contain sensitive data and can be arbitrarily large. It can be
+recorded as the `messaging.nats.message.payload` attribute with:
+
+[source,properties]
+----
+quarkus.messaging.nats.trace-payload=true
+----
 
 == Configuration
 The stream, consumer, key-value store and object store configurations are all optional. Each declared entry is created on NATS if it does not already exist (`addIfAbsent`); if the configuration for a given name is omitted entirely, it is assumed to already exist on NATS.

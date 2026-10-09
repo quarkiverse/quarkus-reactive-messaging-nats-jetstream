@@ -5,6 +5,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import org.eclipse.microprofile.reactive.messaging.Message;
 import org.eclipse.microprofile.reactive.messaging.Metadata;
 import org.jspecify.annotations.NonNull;
 
@@ -46,4 +47,16 @@ public interface Context {
      */
     @NonNull
     Function<Supplier<Void>, CompletionStage<Void>> runOnContext(@NonNull Metadata metadata);
+
+    /**
+     * Gives a received message its own context to be processed on, unless it already has one, so that state
+     * attached to that context while receiving it (such as the tracing span) is visible while processing it.
+     * Contexts that do not support this return the message unchanged.
+     *
+     * @param message the received message; must not be null
+     * @return the message with its own processing context
+     */
+    default <T> @NonNull Message<T> withProcessingContext(@NonNull Message<T> message) {
+        return message;
+    }
 }

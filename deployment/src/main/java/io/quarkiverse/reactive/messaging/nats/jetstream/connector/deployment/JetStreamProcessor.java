@@ -19,7 +19,6 @@ import io.nats.client.Options;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.Client;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.Serializer;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.tracing.DisabledTracerFactory;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.tracing.OpenTelemetryTracerFactory;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.tracing.TracerFactory;
 import io.quarkiverse.reactive.messaging.nats.jetstream.connector.JetStreamConnector;
 import io.quarkiverse.reactive.messaging.nats.jetstream.connector.client.ClientBeanCreator;
@@ -27,6 +26,7 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.connector.client.ClientB
 import io.quarkiverse.reactive.messaging.nats.jetstream.connector.client.ConnectionConfigurationMapper;
 import io.quarkiverse.reactive.messaging.nats.jetstream.connector.client.ConnectionConfigurationMapperImpl;
 import io.quarkiverse.reactive.messaging.nats.jetstream.connector.client.TlsContextFactoryImpl;
+import io.quarkiverse.reactive.messaging.nats.jetstream.connector.client.TracingConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.connector.configuration.ConnectorConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.connector.configuration.ConsumerChannelConfigurationFactoryImpl;
 import io.quarkiverse.reactive.messaging.nats.jetstream.connector.configuration.JetStreamResourceInitializer;
@@ -139,8 +139,7 @@ class JetStreamProcessor {
     void registerTracing(BuildProducer<AdditionalBeanBuildItem> buildProducer, Capabilities capabilities) {
         if (capabilities.isPresent(Capability.OPENTELEMETRY_TRACER)) {
             buildProducer.produce(AdditionalBeanBuildItem.builder()
-                    .addBeanClass(OpenTelemetryTracerFactory.class)
-                    .setDefaultScope(BuiltinScope.APPLICATION.getName())
+                    .addBeanClass(TracingConfiguration.class)
                     .setUnremovable()
                     .build());
         } else {

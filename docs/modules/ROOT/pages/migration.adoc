@@ -185,6 +185,28 @@ io.quarkiverse.reactive.messaging.nats.jetstream.client.mapper.Serializer
 io.quarkiverse.reactive.messaging.nats.jetstream.client.message.Serializer
 ----
 
+== Tracing follows the OpenTelemetry messaging semantic conventions
+
+Tracing spans now follow the
+https://opentelemetry.io/docs/specs/semconv/messaging/messaging-spans/[OpenTelemetry messaging semantic conventions].
+Dashboards, alerts or queries built on the previous spans need to be updated:
+
+* Span names are `{subject} publish`, `{subject} process` and `{subject} receive` instead of
+`{stream}.{subject} PUBLISH` and `{stream}.{subject} RECEIVE`.
+* Messages delivered to incoming channels are traced by a `process` span of kind `CONSUMER`, which ends when the
+message is acknowledged (or with an error when it is not). `Client.next` and `Client.fetch` create a `receive` span of
+kind `CLIENT`.
+* The separate `PUBLISH_ACKNOWLEDGED` span is gone: the `publish` span covers the publish until JetStream acknowledged
+it and records publish failures.
+* `messaging.system` is `nats` instead of `jetstream`, and `messaging.destination.name` is the subject instead of
+`{stream}.{subject}`.
+* NATS specific attributes moved to the `messaging.nats` namespace: `messaging.stream.name` is now
+`messaging.nats.stream.name`, and likewise for the consumer name, stream and consumer sequence and delivered count.
+`messaging.message.type` and `messaging.message.timestamp` were removed.
+* The payload is no longer recorded by default. Set `quarkus.messaging.nats.trace-payload=true` to record it, now as
+`messaging.nats.message.payload`.
+* `Operation.PUBLISH_ACKNOWLEDGED` was removed from the client tracing API and `Operation.PROCESS` added.
+
 == Suggested migration steps
 
 1. Update the dependency version to `{project-version}`.

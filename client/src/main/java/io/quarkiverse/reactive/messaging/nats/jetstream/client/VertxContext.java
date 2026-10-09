@@ -6,6 +6,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import org.eclipse.microprofile.reactive.messaging.Message;
 import org.eclipse.microprofile.reactive.messaging.Metadata;
 import org.jspecify.annotations.NonNull;
 
@@ -39,6 +40,15 @@ class VertxContext implements Context {
                         runOnMessageContext(metadata, () -> f.completeExceptionally(e));
                     }
                 });
+    }
+
+    @Override
+    public <T> @NonNull Message<T> withProcessingContext(@NonNull Message<T> message) {
+        if (message.getMetadata(LocalContextMetadata.class).isPresent()) {
+            return message;
+        }
+        return message.addMetadata(new LocalContextMetadata(
+                io.smallrye.common.vertx.VertxContext.createNewDuplicatedContext(context.getDelegate())));
     }
 
     private void runOnMessageContext(@NonNull Metadata metadata, @NonNull Runnable runnable) {
