@@ -20,8 +20,4 @@ class JetStreamContainer extends io.quarkiverse.reactive.messaging.nats.jetstrea
         return (JetStreamContainer) configureSharedServiceLabel(this, launchMode, DEV_SERVICE_LABEL, serviceName);
     }
 
-    @Override
-    public String getConnectionInfo() {
-        return super.getConnectionInfo();
-    }
 }

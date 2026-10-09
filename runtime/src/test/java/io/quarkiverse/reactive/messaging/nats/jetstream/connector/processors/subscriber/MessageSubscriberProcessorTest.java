@@ -122,7 +122,7 @@ class MessageSubscriberProcessorTest {
         return processor(subjects, lookups, message -> Uni.createFrom().item(message));
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({ "unchecked", "ReactiveStreamsUnusedPublisher" })
     private MessageSubscriberProcessor<String> processor(AtomicReference<Set<String>> subjects, AtomicInteger lookups,
             Function<Message<String>, Uni<Message<String>>> publish) {
         final var streamManagement = (StreamManagement) Proxy.newProxyInstance(StreamManagement.class.getClassLoader(),
@@ -213,9 +213,9 @@ class MessageSubscriberProcessorTest {
                 return Optional.empty();
             }
 
-            @SuppressWarnings({ "NullableProblems", "DataFlowIssue" })
+            @SuppressWarnings({ "DataFlowIssue" })
             @Override
-            public CorrelationIdHandler replyCorrelationIdHandler() {
+            public @NonNull CorrelationIdHandler replyCorrelationIdHandler() {
                 return null;
             }
 
@@ -226,6 +226,7 @@ class MessageSubscriberProcessorTest {
         };
     }
 
+    @SuppressWarnings("BusyWait")
     private static void waitUntil(BooleanSupplier condition, Duration timeout) {
         final var deadline = System.nanoTime() + timeout.toNanos();
         while (!condition.getAsBoolean()) {

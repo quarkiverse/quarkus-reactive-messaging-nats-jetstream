@@ -10,7 +10,7 @@ import javax.net.ssl.SSLContext;
  * required for establishing secure connections. The {@link SSLContext} returned by the
  * {@link #sslContext()} method may be used in constructing secure communication channels.
  */
-interface TlsContext {
+public interface TlsContext {
 
     /**
      * Provides access to the {@link SSLContext} for secure communication using TLS protocols.
