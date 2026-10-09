@@ -10,7 +10,7 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.PublishHe
 record MessageSpanNameExtractor(@NonNull Operation operation) implements SpanNameExtractor<Message<byte[]>> {
 
     @Override
-    public String extract(Message<byte[]> request) {
+    public String extract(@NonNull Message<byte[]> request) {
         String destinationName = getDestination(request);
         return destinationName + " " + operation;
     }

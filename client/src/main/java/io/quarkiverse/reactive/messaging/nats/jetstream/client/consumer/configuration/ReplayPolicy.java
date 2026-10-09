@@ -2,5 +2,5 @@ package io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer.configu
 
 public enum ReplayPolicy {
     Instant,
-    Original;
+    Original
 }

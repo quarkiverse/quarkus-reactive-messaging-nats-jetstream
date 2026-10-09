@@ -189,6 +189,7 @@ public class RequestReplyImpl<Req, Rep> extends MutinyEmitterImpl<Req> implement
         return client.consumerManagement(channelConfiguration.stream()).addIfAbsent(configuration);
     }
 
+    @SuppressWarnings("ReactiveStreamsUnusedPublisher")
     void reset() {
         subscriptionReference.updateAndGet(subscription -> {
             if (subscription != null) {
