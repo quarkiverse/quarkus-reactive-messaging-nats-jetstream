@@ -101,7 +101,7 @@ class MessagePublisherProcessorTest {
         final var subscriptions = new AtomicInteger();
         final var processor = processor(() -> {
             subscriptions.incrementAndGet();
-            return Multi.createFrom().<Message<String>> nothing();
+            return Multi.createFrom().nothing();
         }, consumerExists::get);
         final var subscriber = processor.publisher().subscribe().withSubscriber(AssertSubscriber.create(1));
 
@@ -122,6 +122,7 @@ class MessagePublisherProcessorTest {
         return processor(source, () -> true);
     }
 
+    @SuppressWarnings("ReactiveStreamsUnusedPublisher")
     private MessagePublisherProcessor<String> processor(Supplier<Multi<Message<String>>> source,
             BooleanSupplier consumerExists) {
         final var consumerManagement = (ConsumerManagement) Proxy.newProxyInstance(

@@ -44,6 +44,6 @@ class CodegenRegressionTest {
                 .withMapping(JetStreamBuildTimeConfiguration.class)
                 .build();
         JetStreamBuildTimeConfiguration mapping = config.getConfigMapping(JetStreamBuildTimeConfiguration.class);
-        assertEquals(DEFAULT_SERIALIZER, mapping.serializer().toString());
+        assertEquals(DEFAULT_SERIALIZER, mapping.serializer());
     }
 }

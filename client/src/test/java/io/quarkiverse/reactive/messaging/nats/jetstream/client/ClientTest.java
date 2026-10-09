@@ -37,7 +37,7 @@ public class ClientTest {
     static final Duration TIMEOUT = Duration.ofSeconds(10);
 
     @Container
-    static JetStreamContainer jetStreamContainer = new JetStreamContainer(null, null, false,
+    static final JetStreamContainer jetStreamContainer = new JetStreamContainer(null, null, false,
             JetStreamContainerConfiguration.of("test", "test", false, null, null));
 
     private ExecutorService executorService;
