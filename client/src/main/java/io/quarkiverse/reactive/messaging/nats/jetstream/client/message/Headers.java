@@ -193,6 +193,6 @@ public interface Headers extends Map<String, List<String>>, Metadata {
     }
 
     private Optional<String> getFirst(List<String> values) {
-        return values == null || values.isEmpty() ? Optional.empty() : Optional.of(values.get(0));
+        return values == null || values.isEmpty() ? Optional.empty() : Optional.of(values.getFirst());
     }
 }

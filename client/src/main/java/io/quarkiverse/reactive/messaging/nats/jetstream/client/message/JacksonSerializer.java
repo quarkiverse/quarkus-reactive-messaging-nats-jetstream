@@ -1,9 +1,8 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client.message;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import lombok.RequiredArgsConstructor;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 @RequiredArgsConstructor
 public class JacksonSerializer implements Serializer {
@@ -28,7 +27,7 @@ public class JacksonSerializer implements Serializer {
             } else {
                 return objectMapper.writeValueAsBytes(payload);
             }
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new RuntimeException(e);
         }
     }

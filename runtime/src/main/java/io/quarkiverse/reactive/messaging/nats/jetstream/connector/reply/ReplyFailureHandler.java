@@ -2,6 +2,8 @@ package io.quarkiverse.reactive.messaging.nats.jetstream.connector.reply;
 
 import java.util.Optional;
 
+import io.smallrye.mutiny.Uni;
+
 /**
  * Strategy for deciding whether an incoming reply payload represents a business failure that should fail the caller's
  * {@link Uni}, or a normal response. Provide an implementation as a CDI bean (for example one reading a status field from

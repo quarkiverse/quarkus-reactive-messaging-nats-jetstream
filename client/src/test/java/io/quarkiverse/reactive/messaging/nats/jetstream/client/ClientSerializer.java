@@ -3,9 +3,8 @@ package io.quarkiverse.reactive.messaging.nats.jetstream.client;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.Serializer;
+import tools.jackson.databind.ObjectMapper;
 
 public class ClientSerializer implements Serializer {
 

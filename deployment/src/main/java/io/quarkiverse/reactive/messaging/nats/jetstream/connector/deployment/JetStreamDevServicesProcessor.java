@@ -73,13 +73,12 @@ public class JetStreamDevServicesProcessor {
                                                 // for backwards compatibility we still add the custom label
                                                 .withSharedServiceLabel(launchMode.getLaunchMode(),
                                                         devServicesBuildTimeConfiguration.serviceName()))
-                                .configProvider(Map.of(
-                                        "quarkus.messaging.nats.connection.servers",
-                                        container -> "nats://" + container.getConnectionInfo(),
+                                .configProvider(container -> Map.of(
+                                        "quarkus.messaging.nats.connection.servers", "nats://" + container.getConnectionInfo(),
                                         "quarkus.messaging.nats.connection.username",
-                                        container -> devServicesBuildTimeConfiguration.username(),
+                                        devServicesBuildTimeConfiguration.username(),
                                         "quarkus.messaging.nats.connection.password",
-                                        container -> devServicesBuildTimeConfiguration.password()))
+                                        devServicesBuildTimeConfiguration.password()))
                                 .build()));
     }
 
