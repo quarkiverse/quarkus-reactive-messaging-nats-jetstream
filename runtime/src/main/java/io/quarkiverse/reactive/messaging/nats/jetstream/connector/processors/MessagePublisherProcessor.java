@@ -1,4 +1,4 @@
-package io.quarkiverse.reactive.messaging.nats.jetstream.connector.processors.publisher;
+package io.quarkiverse.reactive.messaging.nats.jetstream.connector.processors;
 
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -9,8 +9,6 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.client.Client;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer.api.Consumer;
 import io.quarkiverse.reactive.messaging.nats.jetstream.connector.configuration.ChannelConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.connector.configuration.ConsumerChannelConfiguration;
-import io.quarkiverse.reactive.messaging.nats.jetstream.connector.processors.Health;
-import io.quarkiverse.reactive.messaging.nats.jetstream.connector.processors.MessageProcessor;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import lombok.extern.jbosslog.JBossLog;
@@ -40,8 +38,7 @@ public class MessagePublisherProcessor<T> implements MessageProcessor {
         return health.get();
     }
 
-    @Override
-    public void stop() {
+    void stop() {
         this.stopped = true;
     }
 

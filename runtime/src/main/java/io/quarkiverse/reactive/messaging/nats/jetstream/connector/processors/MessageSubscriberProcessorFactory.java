@@ -1,4 +1,4 @@
-package io.quarkiverse.reactive.messaging.nats.jetstream.connector.processors.subscriber;
+package io.quarkiverse.reactive.messaging.nats.jetstream.connector.processors;
 
 import static io.quarkiverse.reactive.messaging.nats.jetstream.connector.configuration.ConnectorConfiguration.DEFAULT_DATASOURCE;
 

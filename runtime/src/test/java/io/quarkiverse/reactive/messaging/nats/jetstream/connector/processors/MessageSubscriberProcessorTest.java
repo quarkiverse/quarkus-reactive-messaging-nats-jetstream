@@ -1,4 +1,4 @@
-package io.quarkiverse.reactive.messaging.nats.jetstream.connector.processors.subscriber;
+package io.quarkiverse.reactive.messaging.nats.jetstream.connector.processors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
@@ -45,6 +45,7 @@ class MessageSubscriberProcessorTest {
             await().atMost(Duration.ofSeconds(5)).until(() -> processor.health().healthy());
         } finally {
             processor.stop();
+            ;
         }
     }
 
