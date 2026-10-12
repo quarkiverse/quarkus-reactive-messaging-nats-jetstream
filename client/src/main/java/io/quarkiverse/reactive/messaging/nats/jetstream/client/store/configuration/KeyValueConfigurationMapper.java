@@ -25,7 +25,7 @@ interface KeyValueConfigurationMapper {
     @Mapping(target = "republish", expression = "java(configuration.republish().map(republishMapper::map).orElse(null))")
     @Mapping(target = "mirror", expression = "java(configuration.mirror().map(mirrorMapper::map).orElse(null))")
     @Mapping(target = "sources", ignore = true)
-    @Mapping(target = "limitMarker", ignore = true)
+    @Mapping(target = "limitMarker", expression = "java(configuration.limitMarkerTtl().orElse(null))")
     @Mapping(target = "compression", expression = "java(configuration.compression())")
     @Mapping(target = "placement", expression = "java(configuration.placement().map(placementMapper::map).orElse(null))")
     io.nats.client.api.KeyValueConfiguration map(KeyValueConfiguration configuration);
