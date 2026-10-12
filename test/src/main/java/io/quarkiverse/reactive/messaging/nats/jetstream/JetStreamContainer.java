@@ -29,7 +29,7 @@ public class JetStreamContainer extends GenericContainer<JetStreamContainer> {
 
     public JetStreamContainer(Integer fixedExposedPort, String defaultNetworkId,
             boolean useSharedNetwork, JetStreamContainerConfiguration configuration) {
-        this(DockerImageName.parse("nats:2.14"), fixedExposedPort, defaultNetworkId, useSharedNetwork, configuration);
+        this(DockerImageName.parse("nats:2.15"), fixedExposedPort, defaultNetworkId, useSharedNetwork, configuration);
     }
 
     public JetStreamContainer(DockerImageName imageName, Integer fixedExposedPort, String defaultNetworkId,
