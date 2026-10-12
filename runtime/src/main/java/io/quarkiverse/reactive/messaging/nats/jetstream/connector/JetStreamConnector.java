@@ -2,27 +2,30 @@ package io.quarkiverse.reactive.messaging.nats.jetstream.connector;
 
 import static io.smallrye.reactive.messaging.annotations.ConnectorAttribute.Direction.*;
 
-import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.concurrent.Flow;
 
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.event.Observes;
+import jakarta.enterprise.inject.Any;
+import jakarta.enterprise.inject.Instance;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.reactive.messaging.Message;
 import org.eclipse.microprofile.reactive.messaging.spi.Connector;
+import org.eclipse.microprofile.reactive.messaging.spi.ConnectorFactory;
 
 import io.quarkiverse.reactive.messaging.nats.jetstream.connector.processors.MessageProcessor;
-import io.quarkiverse.reactive.messaging.nats.jetstream.connector.processors.publisher.MessagePublisherProcessorFactory;
-import io.quarkiverse.reactive.messaging.nats.jetstream.connector.processors.subscriber.MessageSubscriberProcessorFactory;
-import io.quarkus.runtime.ShutdownEvent;
+import io.quarkiverse.reactive.messaging.nats.jetstream.connector.processors.MessagePublisherProcessor;
+import io.quarkiverse.reactive.messaging.nats.jetstream.connector.processors.MessageSubscriberProcessor;
 import io.smallrye.reactive.messaging.annotations.ConnectorAttribute;
 import io.smallrye.reactive.messaging.connector.InboundConnector;
 import io.smallrye.reactive.messaging.connector.OutboundConnector;
 import io.smallrye.reactive.messaging.health.HealthReport;
 import io.smallrye.reactive.messaging.health.HealthReporter;
+import io.smallrye.reactive.messaging.providers.helpers.CDIUtils;
 
+@SuppressWarnings({ "rawtypes" })
 @ApplicationScoped
 @Connector(JetStreamConnector.CONNECTOR_NAME)
 @ConnectorAttribute(name = "stream", description = "The name of the stream", direction = INCOMING_AND_OUTGOING, type = "String")
@@ -41,36 +44,36 @@ import io.smallrye.reactive.messaging.health.HealthReporter;
 public class JetStreamConnector implements InboundConnector, OutboundConnector, HealthReporter {
     public static final String CONNECTOR_NAME = "quarkus-jetstream";
 
-    private final List<MessageProcessor> processors;
-    private final MessageSubscriberProcessorFactory messageSubscriberProcessorFactory;
-    private final MessagePublisherProcessorFactory messagePublisherProcessorFactory;
+    private final Instance<MessagePublisherProcessor> publisherProcessors;
+    private final Instance<MessageSubscriberProcessor> subscriberProcessors;
 
-    public JetStreamConnector(MessageSubscriberProcessorFactory messageSubscriberProcessorFactory,
-            MessagePublisherProcessorFactory messagePublisherProcessorFactory) {
-        this.processors = new CopyOnWriteArrayList<>();
-        this.messageSubscriberProcessorFactory = messageSubscriberProcessorFactory;
-        this.messagePublisherProcessorFactory = messagePublisherProcessorFactory;
+    public JetStreamConnector(@Any Instance<MessagePublisherProcessor> publisherProcessors,
+            @Any Instance<MessageSubscriberProcessor> subscriberProcessors) {
+        this.publisherProcessors = publisherProcessors;
+        this.subscriberProcessors = subscriberProcessors;
     }
 
     @SuppressWarnings("ReactiveStreamsUnusedPublisher")
     @Override
     public Flow.Publisher<? extends Message<?>> getPublisher(Config config) {
-        final var processor = messagePublisherProcessorFactory.create(config);
-        processors.add(processor);
+        final var channel = config.getValue(ConnectorFactory.CHANNEL_NAME_ATTRIBUTE, String.class);
+        final var instance = CDIUtils.getInstanceById(publisherProcessors, channel);
+        final MessagePublisherProcessor<?> processor = instance.get();
         return processor.publisher();
     }
 
     @Override
     public Flow.Subscriber<? extends Message<?>> getSubscriber(Config config) {
-        final var processor = messageSubscriberProcessorFactory.create(config);
-        processors.add(processor);
+        final var channel = config.getValue(ConnectorFactory.CHANNEL_NAME_ATTRIBUTE, String.class);
+        final var instance = CDIUtils.getInstanceById(subscriberProcessors, channel);
+        final MessageSubscriberProcessor<?> processor = instance.get();
         return processor.subscriber();
     }
 
     @Override
     public HealthReport getReadiness() {
         final HealthReport.HealthReportBuilder builder = HealthReport.builder();
-        processors.forEach(processor -> builder.add(new HealthReport.ChannelInfo(
+        messageProcessors().forEach(processor -> builder.add(new HealthReport.ChannelInfo(
                 processor.channelConfiguration().name(),
                 processor.health().healthy(),
                 processor.health().message())));
@@ -80,14 +83,17 @@ public class JetStreamConnector implements InboundConnector, OutboundConnector, 
     @Override
     public HealthReport getLiveness() {
         final HealthReport.HealthReportBuilder builder = HealthReport.builder();
-        processors.forEach(processor -> builder.add(new HealthReport.ChannelInfo(
+        messageProcessors().forEach(processor -> builder.add(new HealthReport.ChannelInfo(
                 processor.channelConfiguration().name(),
                 processor.health().healthy(),
                 processor.health().message())));
         return builder.build();
     }
 
-    public void onShutdown(@Observes ShutdownEvent event) {
-        processors.forEach(MessageProcessor::stop);
+    private Collection<MessageProcessor> messageProcessors() {
+        final var processors = new ArrayList<MessageProcessor>();
+        publisherProcessors.forEach(processors::add);
+        subscriberProcessors.forEach(processors::add);
+        return processors;
     }
 }

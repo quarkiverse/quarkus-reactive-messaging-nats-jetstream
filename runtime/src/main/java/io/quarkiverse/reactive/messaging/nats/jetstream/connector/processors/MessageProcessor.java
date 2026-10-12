@@ -31,13 +31,4 @@ public interface MessageProcessor {
      */
     @NonNull
     Health health();
-
-    /**
-     * Stops the message processor.
-     * This method is invoked to signal the processor to cease operations,
-     * typically as part of a shutdown procedure. Implementations should ensure
-     * all resources are released and any ongoing tasks are either completed or safely halted.
-     */
-    void stop();
-
 }

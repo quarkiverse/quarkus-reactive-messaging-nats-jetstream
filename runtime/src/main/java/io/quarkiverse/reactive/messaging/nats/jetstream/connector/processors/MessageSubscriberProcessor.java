@@ -1,4 +1,4 @@
-package io.quarkiverse.reactive.messaging.nats.jetstream.connector.processors.subscriber;
+package io.quarkiverse.reactive.messaging.nats.jetstream.connector.processors;
 
 import java.util.concurrent.Flow;
 import java.util.concurrent.atomic.AtomicReference;
@@ -10,8 +10,6 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.client.Client;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.stream.api.Stream;
 import io.quarkiverse.reactive.messaging.nats.jetstream.connector.configuration.ChannelConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.connector.configuration.PublisherChannelConfiguration;
-import io.quarkiverse.reactive.messaging.nats.jetstream.connector.processors.Health;
-import io.quarkiverse.reactive.messaging.nats.jetstream.connector.processors.MessageProcessor;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.subscription.Cancellable;
@@ -76,8 +74,7 @@ public class MessageSubscriberProcessor<T> implements MessageProcessor {
         return health.get();
     }
 
-    @Override
-    public void stop() {
+    void stop() {
         this.stopped = true;
         cancelVerification();
     }
