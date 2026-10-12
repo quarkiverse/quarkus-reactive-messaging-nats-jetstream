@@ -109,6 +109,37 @@ class MessageSubscriberProcessorTest {
         }
     }
 
+    /**
+     * Once {@code stop()} has been called, a message emitted afterwards must not initiate a new publish. This guards
+     * against the shutdown case where the upstream is still active and delivers a late message after the processor has
+     * been asked to cease operations.
+     */
+    @Test
+    void doesNotPublishMessagesEmittedAfterStop() {
+        final var published = new CopyOnWriteArrayList<String>();
+        final var processor = processor(new AtomicReference<>(Set.of("data.>")), new AtomicInteger(),
+                message -> {
+                    published.add(message.getPayload());
+                    return Uni.createFrom().item(message);
+                });
+        final var source = new AtomicReference<MultiEmitter<? super Message<String>>>();
+
+        Multi.createFrom().<Message<String>> emitter(source::set).subscribe(processor.subscriber());
+        try {
+            source.get().emit(Message.of("before"));
+            await().atMost(Duration.ofSeconds(5)).until(() -> published.contains("before"));
+
+            processor.stop();
+            source.get().emit(Message.of("after"));
+
+            // The guard is evaluated when the message is processed, so a late publish cannot occur.
+            assertThat(published).containsExactly("before");
+        } finally {
+            source.get().complete();
+            processor.stop();
+        }
+    }
+
     private MultiEmitter<? super Message<String>> subscribe(MessageSubscriberProcessor<String> processor) {
         final var emitter = new AtomicReference<MultiEmitter<? super Message<String>>>();
         Multi.createFrom().<Message<String>> emitter(emitter::set).subscribe(processor.subscriber());
