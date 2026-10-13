@@ -46,6 +46,8 @@ public class MessageSubscriberProcessor<T> implements MessageProcessor {
         // Failures are handled per message: a failed publish must not terminate the stream, because the upstream
         // processor cannot be re-subscribed once cancelled and would silently drop every subsequent message.
         return subscription.onSubscription().invoke(this::verify)
+                // Once stopped, a late message must not initiate a new publish; it is dropped instead.
+                .filter(message -> !stopped)
                 .onItem().transformToUniAndMerge(message -> publish(message)
                         .onItem().invoke(() -> {
                             // Until the stream and subject are verified, a successful publish must not report the channel ready
