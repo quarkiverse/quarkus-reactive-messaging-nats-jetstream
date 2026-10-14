@@ -265,19 +265,16 @@ class KeyValueStoreResource {
 
 === Per-entry TTL
 
-Buckets configured with `limit-marker-ttl` accept per-entry TTLs (requires NATS server 2.11+). `put`, `create` and `purge`
-have overloads taking a `io.nats.client.MessageTtl` or a `Duration`:
+Buckets configured with `limit-marker-ttl` accept per-entry TTLs (requires NATS server 2.11+). `create` and `purge`
+have overloads taking a `io.nats.client.MessageTtl`:
 
 [source,java]
 ----
-client.keyValue("cache").put(key, value, Duration.ofMinutes(5));
 client.keyValue("cache").create(key, value, MessageTtl.seconds(300));
-client.keyValue("cache").purge(key, Duration.ofMinutes(1));
+client.keyValue("cache").purge(key, MessageTtl.seconds(60));
 ----
 
-The server only supports whole-second TTLs of at least one second, so `Duration` values are rounded up to the next second.
-A TTL only removes the revision it was written with: if the bucket keeps more than one revision per key, the previous
-revision becomes the current value again on expiry. Use `max-history-per-key=1` to have the key disappear instead.
+The server only supports whole-second TTLs of at least one second.
 
 == Using NATS Object Store
 If you want to use the Object store in NATS, then configure your application as follows:

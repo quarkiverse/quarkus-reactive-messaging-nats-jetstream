@@ -16,16 +16,20 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.client.stream.configurat
 
 public record ClientKeyValueConfiguration(@NonNull String bucketName,
         @NonNull Optional<String> description,
-        @NonNull Optional<Duration> limitMarkerTtl,
-        int maxHistoryPerKey) implements KeyValueConfiguration {
+        @NonNull Optional<Duration> limitMarkerTtl) implements KeyValueConfiguration {
 
     public ClientKeyValueConfiguration(@NonNull String bucketName, @NonNull Optional<String> description) {
-        this(bucketName, description, Optional.empty(), 64);
+        this(bucketName, description, Optional.empty());
     }
 
     @Override
     public @NonNull StorageType storageType() {
         return StorageType.File;
+    }
+
+    @Override
+    public int maxHistoryPerKey() {
+        return 64;
     }
 
     @Override
