@@ -23,7 +23,6 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.shaded.org.awaitility.Awaitility;
 
-import io.nats.client.MessageTtl;
 import io.quarkiverse.reactive.messaging.nats.jetstream.JetStreamContainer;
 import io.quarkiverse.reactive.messaging.nats.jetstream.JetStreamContainerConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer.api.Consumer;
@@ -176,19 +175,19 @@ public class ClientTest {
     void keyValueCreateWithTtl() {
         final var keyValue = client.keyValue("client-ttl");
 
-        var entry = keyValue.create("create-ttl", "value".getBytes(StandardCharsets.UTF_8), MessageTtl.seconds(1)).await()
+        var entry = keyValue.create("create-ttl", "value".getBytes(StandardCharsets.UTF_8), Duration.ofSeconds(1)).await()
                 .atMost(TIMEOUT);
         assertThat(entry.revision()).isGreaterThan(0L);
         assertThat(entry.value().map(String::new)).hasValue("value");
 
         assertThatThrownBy(() -> keyValue.create("create-ttl", "other".getBytes(StandardCharsets.UTF_8),
-                MessageTtl.seconds(1)).await().atMost(TIMEOUT))
+                Duration.ofSeconds(1)).await().atMost(TIMEOUT))
                 .isInstanceOf(KeyValueException.class);
 
         Awaitility.await().atMost(TIMEOUT)
                 .until(() -> keyValue.get("create-ttl").await().atMost(TIMEOUT) == null);
         // once expired, the key can be created again
-        entry = keyValue.create("create-ttl", "again".getBytes(StandardCharsets.UTF_8), MessageTtl.seconds(1)).await()
+        entry = keyValue.create("create-ttl", "again".getBytes(StandardCharsets.UTF_8), Duration.ofSeconds(1)).await()
                 .atMost(TIMEOUT);
         assertThat(entry.value().map(String::new)).hasValue("again");
     }
@@ -198,7 +197,7 @@ public class ClientTest {
         final var keyValue = client.keyValue("client-ttl");
 
         keyValue.put("purge-ttl", "value".getBytes(StandardCharsets.UTF_8)).await().atMost(TIMEOUT);
-        keyValue.purge("purge-ttl", MessageTtl.seconds(1)).await().atMost(TIMEOUT);
+        keyValue.purge("purge-ttl", Duration.ofSeconds(1)).await().atMost(TIMEOUT);
         assertThat(keyValue.get("purge-ttl").await().atMost(TIMEOUT)).isNull();
 
         // the purge marker itself expires, leaving no history for the key

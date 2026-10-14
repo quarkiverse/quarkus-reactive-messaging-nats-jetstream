@@ -1,8 +1,9 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client.store;
 
+import java.time.Duration;
+
 import org.jspecify.annotations.NonNull;
 
-import io.nats.client.MessageTtl;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.store.api.KeyValueEntry;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.store.api.KeyValueEntryImpl;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.store.api.KeyValueStatus;
@@ -60,14 +61,16 @@ public interface KeyValue {
      * purge marker. Fails if the key already holds a value.
      * <p>
      * Requires NATS server 2.11+ and a bucket created with a limit marker TTL ({@code allow_msg_ttl}).
+     * The server only supports whole-second TTLs, so the TTL is rounded up to the next second
+     * (for example 1500 ms becomes 2 s).
      *
      * @param key the key to create; must not be null
      * @param value the value associated with the key
-     * @param ttl the time-to-live of the entry; must not be null
+     * @param ttl the time-to-live of the entry; must be positive
      * @return a {@link Uni} that resolves to a {@link KeyValueEntry} representing the created key-value pair
      */
     @NonNull
-    Uni<KeyValueEntry> create(@NonNull String key, byte[] value, @NonNull MessageTtl ttl);
+    Uni<KeyValueEntry> create(@NonNull String key, byte[] value, @NonNull Duration ttl);
 
     /**
      * Deletes a key-value pair from the key-value store associated with this instance.
@@ -115,13 +118,14 @@ public interface KeyValue {
      * itself is removed by the server once the TTL expires.
      * <p>
      * Requires NATS server 2.11+ and a bucket created with a limit marker TTL ({@code allow_msg_ttl}).
+     * The server only supports whole-second TTLs, so the TTL is rounded up to the next second.
      *
      * @param key the key to purge; must not be null
-     * @param ttl the time-to-live of the purge marker; must not be null
+     * @param ttl the time-to-live of the purge marker; must be positive
      * @return a {@link Uni} that resolves to {@code Void} upon successful purge operation
      */
     @NonNull
-    Uni<Void> purge(@NonNull String key, @NonNull MessageTtl ttl);
+    Uni<Void> purge(@NonNull String key, @NonNull Duration ttl);
 
     /**
      * Retrieves all the keys stored in the key-value bucket associated with this instance.
