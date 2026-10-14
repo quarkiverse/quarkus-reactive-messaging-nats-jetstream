@@ -71,11 +71,7 @@ public class ClientTest {
                 .atMost(TIMEOUT);
         client.keyValueManagement()
                 .addIfAbsent(new ClientKeyValueConfiguration("client-ttl", Optional.of("Client TTL Bucket"),
-                        Optional.of(Duration.ofSeconds(1)), 64))
-                .await().atMost(TIMEOUT);
-        client.keyValueManagement()
-                .addIfAbsent(new ClientKeyValueConfiguration("client-ttl-latest", Optional.of("Client TTL Latest Bucket"),
-                        Optional.of(Duration.ofSeconds(1)), 1))
+                        Optional.of(Duration.ofSeconds(1))))
                 .await().atMost(TIMEOUT);
     }
 
@@ -178,47 +174,6 @@ public class ClientTest {
     }
 
     @Test
-    void keyValuePutWithTtlOverwritesAndExpires() {
-        final var keyValue = client.keyValue("client-ttl-latest");
-
-        var first = keyValue.put("put-ttl", "first".getBytes(StandardCharsets.UTF_8)).await().atMost(TIMEOUT);
-        var second = keyValue.put("put-ttl", "second".getBytes(StandardCharsets.UTF_8), MessageTtl.seconds(1)).await()
-                .atMost(TIMEOUT);
-        assertThat(second.revision()).isGreaterThan(first.revision());
-        assertThat(second.value().map(String::new)).hasValue("second");
-        assertThat(keyValue.get("put-ttl").await().atMost(TIMEOUT).value().map(String::new)).hasValue("second");
-
-        Awaitility.await().atMost(TIMEOUT)
-                .until(() -> keyValue.get("put-ttl").await().atMost(TIMEOUT) == null);
-    }
-
-    @Test
-    void keyValuePutWithTtlExpiresToPreviousRevisionWhenHistoryIsKept() {
-        final var keyValue = client.keyValue("client-ttl");
-
-        keyValue.put("put-ttl-history", "first".getBytes(StandardCharsets.UTF_8)).await().atMost(TIMEOUT);
-        keyValue.put("put-ttl-history", "second".getBytes(StandardCharsets.UTF_8), MessageTtl.seconds(1)).await()
-                .atMost(TIMEOUT);
-
-        // the TTL only removes the revision it was written with
-        Awaitility.await().atMost(TIMEOUT)
-                .until(() -> keyValue.get("put-ttl-history").await().atMost(TIMEOUT).value().map(String::new)
-                        .filter("first"::equals).isPresent());
-    }
-
-    @Test
-    void keyValuePutWithDurationTtlExpires() {
-        final var keyValue = client.keyValue("client-ttl");
-
-        var entry = keyValue.put("put-duration-ttl", "value".getBytes(StandardCharsets.UTF_8), Duration.ofMillis(500))
-                .await().atMost(TIMEOUT);
-        assertThat(entry.revision()).isGreaterThan(0L);
-
-        Awaitility.await().atMost(TIMEOUT)
-                .until(() -> keyValue.get("put-duration-ttl").await().atMost(TIMEOUT) == null);
-    }
-
-    @Test
     void keyValueCreateWithTtl() {
         final var keyValue = client.keyValue("client-ttl");
 
@@ -250,35 +205,6 @@ public class ClientTest {
         // the purge marker itself expires, leaving no history for the key
         final var nativeKeyValue = client.nativeConnection().keyValue("client-ttl");
         Awaitility.await().atMost(TIMEOUT).until(() -> nativeKeyValue.history("purge-ttl").isEmpty());
-    }
-
-    @Test
-    void keyValuePutWithTtlRejectedWithoutMessageTtlSupport() {
-        final var keyValue = client.keyValue("client");
-
-        assertThatThrownBy(() -> keyValue.put("no-ttl", "value".getBytes(StandardCharsets.UTF_8), MessageTtl.seconds(1))
-                .await().atMost(TIMEOUT))
-                .isInstanceOf(KeyValueException.class);
-    }
-
-    @Test
-    void keyValuePutWithTtlOnMirrorWritesToOrigin() throws Exception {
-        final var keyValueManagement = client.nativeConnection().keyValueManagement();
-        keyValueManagement.create(io.nats.client.api.KeyValueConfiguration.builder()
-                .name("client-ttl-mirror")
-                .mirror(io.nats.client.api.Mirror.builder().sourceName("client-ttl").build())
-                .build());
-        try {
-            client.keyValue("client-ttl-mirror")
-                    .put("mirror-ttl", "value".getBytes(StandardCharsets.UTF_8), MessageTtl.seconds(5))
-                    .await().atMost(TIMEOUT);
-
-            var origin = client.keyValue("client-ttl").get("mirror-ttl").await().atMost(TIMEOUT);
-            assertThat(origin).isNotNull();
-            assertThat(origin.value().map(String::new)).hasValue("value");
-        } finally {
-            keyValueManagement.delete("client-ttl-mirror");
-        }
     }
 
     @Test

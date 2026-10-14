@@ -1,7 +1,5 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client.store;
 
-import java.time.Duration;
-
 import org.jspecify.annotations.NonNull;
 
 import io.nats.client.MessageTtl;
@@ -58,44 +56,6 @@ public interface KeyValue {
     Uni<KeyValueEntry> put(@NonNull String key, byte[] value);
 
     /**
-     * Stores a key-value pair with a per-message TTL. If the key already exists, its value will be updated;
-     * otherwise, a new key-value pair will be created. The entry is removed by the server once the TTL expires.
-     * <p>
-     * Requires NATS server 2.11+ and a bucket created with a limit marker TTL ({@code allow_msg_ttl}); otherwise the
-     * server rejects the write. The server only supports TTLs of one second or more, in whole seconds.
-     * <p>
-     * The TTL only applies to the revision written: if the bucket keeps more than one revision per key, the previous
-     * revision becomes the current value again once this one expires. Use a bucket with a history of one to have the
-     * key disappear on expiry.
-     * <p>
-     * The entry is published to the bucket's write subject, so writes to a mirrored bucket reach its origin bucket,
-     * as with {@link #put(String, byte[])}.
-     *
-     * @param key the key to store or update; must not be null
-     * @param value the value associated with the key
-     * @param ttl the time-to-live of the entry; must not be null
-     * @return a {@link Uni} that resolves to a {@link KeyValueEntry} representing the stored key-value pair
-     */
-    @NonNull
-    Uni<KeyValueEntry> put(@NonNull String key, byte[] value, @NonNull MessageTtl ttl);
-
-    /**
-     * Stores a key-value pair with a per-message TTL. See {@link #put(String, byte[], MessageTtl)}.
-     * <p>
-     * The server only supports whole seconds, so the TTL is rounded up to the nearest second
-     * (for example 1500 ms becomes 2 s).
-     *
-     * @param key the key to store or update; must not be null
-     * @param value the value associated with the key
-     * @param ttl the time-to-live of the entry; must be positive
-     * @return a {@link Uni} that resolves to a {@link KeyValueEntry} representing the stored key-value pair
-     */
-    @NonNull
-    default Uni<KeyValueEntry> put(@NonNull String key, byte[] value, @NonNull Duration ttl) {
-        return put(key, value, toMessageTtl(ttl));
-    }
-
-    /**
      * Creates a key-value pair with a per-message TTL, only if the key does not exist or its last entry is a delete or
      * purge marker. Fails if the key already holds a value.
      * <p>
@@ -108,21 +68,6 @@ public interface KeyValue {
      */
     @NonNull
     Uni<KeyValueEntry> create(@NonNull String key, byte[] value, @NonNull MessageTtl ttl);
-
-    /**
-     * Creates a key-value pair with a per-message TTL. See {@link #create(String, byte[], MessageTtl)}.
-     * <p>
-     * The server only supports whole seconds, so the TTL is rounded up to the nearest second.
-     *
-     * @param key the key to create; must not be null
-     * @param value the value associated with the key
-     * @param ttl the time-to-live of the entry; must be positive
-     * @return a {@link Uni} that resolves to a {@link KeyValueEntry} representing the created key-value pair
-     */
-    @NonNull
-    default Uni<KeyValueEntry> create(@NonNull String key, byte[] value, @NonNull Duration ttl) {
-        return create(key, value, toMessageTtl(ttl));
-    }
 
     /**
      * Deletes a key-value pair from the key-value store associated with this instance.
@@ -179,21 +124,6 @@ public interface KeyValue {
     Uni<Void> purge(@NonNull String key, @NonNull MessageTtl ttl);
 
     /**
-     * Permanently removes a key and all associated history, with a TTL on the purge marker.
-     * See {@link #purge(String, MessageTtl)}.
-     * <p>
-     * The server only supports whole seconds, so the TTL is rounded up to the nearest second.
-     *
-     * @param key the key to purge; must not be null
-     * @param ttl the time-to-live of the purge marker; must be positive
-     * @return a {@link Uni} that resolves to {@code Void} upon successful purge operation
-     */
-    @NonNull
-    default Uni<Void> purge(@NonNull String key, @NonNull Duration ttl) {
-        return purge(key, toMessageTtl(ttl));
-    }
-
-    /**
      * Retrieves all the keys stored in the key-value bucket associated with this instance.
      *
      * @return a non-null {@link Multi} emitting strings representing the keys in the key-value store
@@ -210,23 +140,4 @@ public interface KeyValue {
      */
     @NonNull
     Uni<KeyValueStatus> status();
-
-    /**
-     * Converts a {@link Duration} to a {@link MessageTtl}, rounding up to whole seconds since the server
-     * truncates TTLs to seconds.
-     *
-     * @param ttl the duration; must be positive
-     * @return the message TTL
-     * @throws IllegalArgumentException if the duration is zero, negative or too large
-     */
-    static @NonNull MessageTtl toMessageTtl(@NonNull Duration ttl) {
-        if (ttl.isZero() || ttl.isNegative()) {
-            throw new IllegalArgumentException("TTL must be positive: " + ttl);
-        }
-        final long seconds = ttl.getSeconds() + (ttl.getNano() > 0 ? 1 : 0);
-        if (seconds > Integer.MAX_VALUE) {
-            throw new IllegalArgumentException("TTL is too large: " + ttl);
-        }
-        return MessageTtl.seconds((int) seconds);
-    }
 }

@@ -5,10 +5,6 @@ import java.util.concurrent.ExecutorService;
 import org.jspecify.annotations.NonNull;
 
 import io.nats.client.MessageTtl;
-import io.nats.client.PublishOptions;
-import io.nats.client.impl.NatsMessage;
-import io.nats.client.support.NatsKeyValueUtil;
-import io.nats.client.support.Validator;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.connection.NativeConnection;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.store.KeyValue;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.store.KeyValueException;
@@ -56,25 +52,6 @@ class KeyValueImpl implements KeyValue {
     public @NonNull Uni<KeyValueEntry> put(@NonNull String key, byte[] value) {
         return keyValue(bucketName)
                 .chain(keyValue -> Uni.createFrom().item(Unchecked.supplier(() -> keyValue.put(key, value))))
-                .chain(revision -> get(key, revision))
-                .onFailure().transform(KeyValueException::new)
-                .runSubscriptionOn(executorService())
-                .emitOn(this::runOnContext);
-    }
-
-    @Override
-    public @NonNull Uni<KeyValueEntry> put(@NonNull String key, byte[] value, @NonNull MessageTtl ttl) {
-        // JNats has no put with TTL, so publish to the bucket's write subject like NatsKeyValue does
-        return jetStreamManagement()
-                .chain(jetStreamManagement -> Uni.createFrom().item(Unchecked.supplier(() -> {
-                    Validator.validateNonWildcardKvKeyRequired(key);
-                    final var streamInfo = jetStreamManagement.getStreamInfo(NatsKeyValueUtil.toStreamName(bucketName));
-                    final var subject = KeyValueWriteSubject.writeSubject(bucketName, streamInfo.getConfiguration(), key);
-                    final var message = NatsMessage.builder().subject(subject).data(value).build();
-                    return connection().jetStream()
-                            .publish(message, PublishOptions.builder().messageTtl(ttl).build())
-                            .getSeqno();
-                })))
                 .chain(revision -> get(key, revision))
                 .onFailure().transform(KeyValueException::new)
                 .runSubscriptionOn(executorService())
