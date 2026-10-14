@@ -4,6 +4,11 @@ import java.util.concurrent.ExecutorService;
 
 import org.jspecify.annotations.NonNull;
 
+import io.nats.client.MessageTtl;
+import io.nats.client.PublishOptions;
+import io.nats.client.impl.NatsMessage;
+import io.nats.client.support.NatsKeyValueUtil;
+import io.nats.client.support.Validator;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.connection.NativeConnection;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.store.KeyValue;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.store.KeyValueException;
@@ -58,6 +63,35 @@ class KeyValueImpl implements KeyValue {
     }
 
     @Override
+    public @NonNull Uni<KeyValueEntry> put(@NonNull String key, byte[] value, @NonNull MessageTtl ttl) {
+        // JNats has no put with TTL, so publish to the bucket's write subject like NatsKeyValue does
+        return jetStreamManagement()
+                .chain(jetStreamManagement -> Uni.createFrom().item(Unchecked.supplier(() -> {
+                    Validator.validateNonWildcardKvKeyRequired(key);
+                    final var streamInfo = jetStreamManagement.getStreamInfo(NatsKeyValueUtil.toStreamName(bucketName));
+                    final var subject = KeyValueWriteSubject.writeSubject(bucketName, streamInfo.getConfiguration(), key);
+                    final var message = NatsMessage.builder().subject(subject).data(value).build();
+                    return connection().jetStream()
+                            .publish(message, PublishOptions.builder().messageTtl(ttl).build())
+                            .getSeqno();
+                })))
+                .chain(revision -> get(key, revision))
+                .onFailure().transform(KeyValueException::new)
+                .runSubscriptionOn(executorService())
+                .emitOn(this::runOnContext);
+    }
+
+    @Override
+    public @NonNull Uni<KeyValueEntry> create(@NonNull String key, byte[] value, @NonNull MessageTtl ttl) {
+        return keyValue(bucketName)
+                .chain(keyValue -> Uni.createFrom().item(Unchecked.supplier(() -> keyValue.create(key, value, ttl))))
+                .chain(revision -> get(key, revision))
+                .onFailure().transform(KeyValueException::new)
+                .runSubscriptionOn(executorService())
+                .emitOn(this::runOnContext);
+    }
+
+    @Override
     public @NonNull Uni<Void> delete(@NonNull String key) {
         return keyValue(bucketName)
                 .chain(keyValue -> Uni.createFrom().item(Unchecked.supplier(() -> {
@@ -101,6 +135,19 @@ class KeyValueImpl implements KeyValue {
         return keyValue(bucketName)
                 .chain(keyValue -> Uni.createFrom().item(Unchecked.supplier(() -> {
                     keyValue.purge(key, expectedRevision);
+                    return keyValue;
+                })))
+                .chain(keyValue -> Uni.createFrom().voidItem())
+                .onFailure().transform(KeyValueException::new)
+                .runSubscriptionOn(executorService())
+                .emitOn(this::runOnContext);
+    }
+
+    @Override
+    public @NonNull Uni<Void> purge(@NonNull String key, @NonNull MessageTtl ttl) {
+        return keyValue(bucketName)
+                .chain(keyValue -> Uni.createFrom().item(Unchecked.supplier(() -> {
+                    keyValue.purge(key, ttl);
                     return keyValue;
                 })))
                 .chain(keyValue -> Uni.createFrom().voidItem())
