@@ -266,15 +266,15 @@ class KeyValueStoreResource {
 === Per-entry TTL
 
 Buckets configured with `limit-marker-ttl` accept per-entry TTLs (requires NATS server 2.11+). `create` and `purge`
-have overloads taking a `io.nats.client.MessageTtl`:
+have overloads taking a `Duration`:
 
 [source,java]
 ----
-client.keyValue("cache").create(key, value, MessageTtl.seconds(300));
-client.keyValue("cache").purge(key, MessageTtl.seconds(60));
+client.keyValue("cache").create(key, value, Duration.ofMinutes(5));
+client.keyValue("cache").purge(key, Duration.ofMinutes(1));
 ----
 
-The server only supports whole-second TTLs of at least one second.
+The server only supports whole-second TTLs, so the duration is rounded up to the next second.
 
 == Using NATS Object Store
 If you want to use the Object store in NATS, then configure your application as follows:
