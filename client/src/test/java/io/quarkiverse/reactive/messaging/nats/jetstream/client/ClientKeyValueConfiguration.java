@@ -15,11 +15,21 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.client.stream.configurat
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.stream.configuration.Source;
 
 public record ClientKeyValueConfiguration(@NonNull String bucketName,
-        @NonNull Optional<String> description) implements KeyValueConfiguration {
+        @NonNull Optional<String> description,
+        @NonNull Optional<Duration> limitMarkerTtl) implements KeyValueConfiguration {
+
+    public ClientKeyValueConfiguration(@NonNull String bucketName, @NonNull Optional<String> description) {
+        this(bucketName, description, Optional.empty());
+    }
 
     @Override
     public @NonNull StorageType storageType() {
         return StorageType.File;
+    }
+
+    @Override
+    public int maxHistoryPerKey() {
+        return 64;
     }
 
     @Override
@@ -35,11 +45,6 @@ public record ClientKeyValueConfiguration(@NonNull String bucketName,
     @Override
     public @NonNull Optional<Republish> republish() {
         return Optional.empty();
-    }
-
-    @Override
-    public int maxHistoryPerKey() {
-        return 64;
     }
 
     @Override
@@ -75,10 +80,5 @@ public record ClientKeyValueConfiguration(@NonNull String bucketName,
     @Override
     public @NonNull List<Source> sources() {
         return List.of();
-    }
-
-    @Override
-    public @NonNull Optional<Duration> limitMarkerTtl() {
-        return Optional.empty();
     }
 }
