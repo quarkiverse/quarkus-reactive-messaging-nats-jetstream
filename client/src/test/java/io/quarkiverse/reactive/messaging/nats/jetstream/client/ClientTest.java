@@ -23,6 +23,8 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.shaded.org.awaitility.Awaitility;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import io.quarkiverse.reactive.messaging.nats.jetstream.JetStreamContainer;
 import io.quarkiverse.reactive.messaging.nats.jetstream.JetStreamContainerConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer.api.Consumer;
@@ -31,7 +33,6 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.tracing.D
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.store.KeyValueException;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.stream.api.Stream;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.stream.configuration.StreamConfiguration;
-import tools.jackson.databind.ObjectMapper;
 
 @Testcontainers
 public class ClientTest {
@@ -151,7 +152,7 @@ public class ClientTest {
     }
 
     @Test
-    void keyValueCrudTest() {
+    void keyValueCrudTest() throws Exception {
         var data = new Data("c251274f-8528-4539-bc54-1b726cadd74e");
 
         final var keyValue = client.keyValue("client");
