@@ -1,7 +1,9 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -26,6 +28,7 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.JetStreamContainerConfig
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer.api.Consumer;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.AcknowledgeMetadata;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.tracing.DisabledTracerFactory;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.store.KeyValueException;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.stream.api.Stream;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.stream.configuration.StreamConfiguration;
 import tools.jackson.databind.ObjectMapper;
@@ -64,6 +67,10 @@ public class ClientTest {
                 .await().atMost(TIMEOUT);
         client.keyValueManagement().addIfAbsent(new ClientKeyValueConfiguration("client", Optional.of("Client Bucket"))).await()
                 .atMost(TIMEOUT);
+        client.keyValueManagement()
+                .addIfAbsent(new ClientKeyValueConfiguration("client-ttl", Optional.of("Client TTL Bucket"),
+                        Optional.of(Duration.ofSeconds(1))))
+                .await().atMost(TIMEOUT);
     }
 
     @AfterEach
@@ -162,6 +169,40 @@ public class ClientTest {
         keyValue.delete("data").await().atMost(TIMEOUT);
         entry = keyValue.get("data").await().atMost(TIMEOUT);
         assertThat(entry).isNull();
+    }
+
+    @Test
+    void keyValueCreateWithTtl() {
+        final var keyValue = client.keyValue("client-ttl");
+
+        var entry = keyValue.create("create-ttl", "value".getBytes(StandardCharsets.UTF_8), Duration.ofSeconds(1)).await()
+                .atMost(TIMEOUT);
+        assertThat(entry.revision()).isGreaterThan(0L);
+        assertThat(entry.value().map(String::new)).hasValue("value");
+
+        assertThatThrownBy(() -> keyValue.create("create-ttl", "other".getBytes(StandardCharsets.UTF_8),
+                Duration.ofSeconds(1)).await().atMost(TIMEOUT))
+                .isInstanceOf(KeyValueException.class);
+
+        Awaitility.await().atMost(TIMEOUT)
+                .until(() -> keyValue.get("create-ttl").await().atMost(TIMEOUT) == null);
+        // once expired, the key can be created again
+        entry = keyValue.create("create-ttl", "again".getBytes(StandardCharsets.UTF_8), Duration.ofSeconds(1)).await()
+                .atMost(TIMEOUT);
+        assertThat(entry.value().map(String::new)).hasValue("again");
+    }
+
+    @Test
+    void keyValuePurgeWithTtl() throws Exception {
+        final var keyValue = client.keyValue("client-ttl");
+
+        keyValue.put("purge-ttl", "value".getBytes(StandardCharsets.UTF_8)).await().atMost(TIMEOUT);
+        keyValue.purge("purge-ttl", Duration.ofSeconds(1)).await().atMost(TIMEOUT);
+        assertThat(keyValue.get("purge-ttl").await().atMost(TIMEOUT)).isNull();
+
+        // the purge marker itself expires, leaving no history for the key
+        final var nativeKeyValue = client.nativeConnection().keyValue("client-ttl");
+        Awaitility.await().atMost(TIMEOUT).until(() -> nativeKeyValue.history("purge-ttl").isEmpty());
     }
 
     @Test

@@ -1,9 +1,11 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client;
 
+import java.time.Duration;
 import java.util.concurrent.ExecutorService;
 
 import org.jspecify.annotations.NonNull;
 
+import io.nats.client.MessageTtl;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.connection.NativeConnection;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.store.KeyValue;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.store.KeyValueException;
@@ -51,6 +53,17 @@ class KeyValueImpl implements KeyValue {
     public @NonNull Uni<KeyValueEntry> put(@NonNull String key, byte[] value) {
         return keyValue(bucketName)
                 .chain(keyValue -> Uni.createFrom().item(Unchecked.supplier(() -> keyValue.put(key, value))))
+                .chain(revision -> get(key, revision))
+                .onFailure().transform(KeyValueException::new)
+                .runSubscriptionOn(executorService())
+                .emitOn(this::runOnContext);
+    }
+
+    @Override
+    public @NonNull Uni<KeyValueEntry> create(@NonNull String key, byte[] value, @NonNull Duration ttl) {
+        return keyValue(bucketName)
+                .chain(keyValue -> Uni.createFrom()
+                        .item(Unchecked.supplier(() -> keyValue.create(key, value, messageTtl(ttl)))))
                 .chain(revision -> get(key, revision))
                 .onFailure().transform(KeyValueException::new)
                 .runSubscriptionOn(executorService())
@@ -110,6 +123,19 @@ class KeyValueImpl implements KeyValue {
     }
 
     @Override
+    public @NonNull Uni<Void> purge(@NonNull String key, @NonNull Duration ttl) {
+        return keyValue(bucketName)
+                .chain(keyValue -> Uni.createFrom().item(Unchecked.supplier(() -> {
+                    keyValue.purge(key, messageTtl(ttl));
+                    return keyValue;
+                })))
+                .chain(keyValue -> Uni.createFrom().voidItem())
+                .onFailure().transform(KeyValueException::new)
+                .runSubscriptionOn(executorService())
+                .emitOn(this::runOnContext);
+    }
+
+    @Override
     public @NonNull Multi<String> keys() {
         return keyValue(bucketName)
                 .chain(keyValue -> Uni.createFrom().item(Unchecked.supplier(keyValue::keys)))
@@ -127,6 +153,21 @@ class KeyValueImpl implements KeyValue {
                 .onFailure().transform(KeyValueException::new)
                 .runSubscriptionOn(executorService())
                 .emitOn(this::runOnContext);
+    }
+
+    /**
+     * Converts a {@link Duration} to a {@link MessageTtl}, rounding up to whole seconds since the server
+     * truncates TTLs to seconds.
+     */
+    static @NonNull MessageTtl messageTtl(@NonNull Duration ttl) {
+        if (ttl.isZero() || ttl.isNegative()) {
+            throw new IllegalArgumentException("TTL must be positive: " + ttl);
+        }
+        final long seconds = ttl.getSeconds() + (ttl.getNano() > 0 ? 1 : 0);
+        if (seconds > Integer.MAX_VALUE) {
+            throw new IllegalArgumentException("TTL is too large: " + ttl);
+        }
+        return MessageTtl.seconds((int) seconds);
     }
 
     private @NonNull Uni<NativeKeyValue> keyValue(@NonNull final String bucketName) {
