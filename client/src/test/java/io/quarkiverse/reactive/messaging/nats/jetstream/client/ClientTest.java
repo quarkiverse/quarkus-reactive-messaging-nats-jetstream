@@ -172,6 +172,25 @@ public class ClientTest {
     }
 
     @Test
+    void keyValueCreate() {
+        final var keyValue = client.keyValue("client");
+
+        var entry = keyValue.create("create", "value".getBytes(StandardCharsets.UTF_8)).await().atMost(TIMEOUT);
+        assertThat(entry.revision()).isGreaterThan(0L);
+        assertThat(entry.value().map(String::new)).hasValue("value");
+
+        assertThatThrownBy(() -> keyValue.create("create", "other".getBytes(StandardCharsets.UTF_8)).await()
+                .atMost(TIMEOUT))
+                .isInstanceOf(KeyValueException.class);
+
+        // a deleted key can be created again
+        keyValue.delete("create").await().atMost(TIMEOUT);
+        entry = keyValue.create("create", "again".getBytes(StandardCharsets.UTF_8)).await().atMost(TIMEOUT);
+        assertThat(entry.value().map(String::new)).hasValue("again");
+        keyValue.delete("create").await().atMost(TIMEOUT);
+    }
+
+    @Test
     void keyValueCreateWithTtl() {
         final var keyValue = client.keyValue("client-ttl");
 

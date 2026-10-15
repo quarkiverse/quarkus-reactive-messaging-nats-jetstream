@@ -60,6 +60,16 @@ class KeyValueImpl implements KeyValue {
     }
 
     @Override
+    public @NonNull Uni<KeyValueEntry> create(@NonNull String key, byte[] value) {
+        return keyValue(bucketName)
+                .chain(keyValue -> Uni.createFrom().item(Unchecked.supplier(() -> keyValue.create(key, value))))
+                .chain(revision -> get(key, revision))
+                .onFailure().transform(KeyValueException::new)
+                .runSubscriptionOn(executorService())
+                .emitOn(this::runOnContext);
+    }
+
+    @Override
     public @NonNull Uni<KeyValueEntry> create(@NonNull String key, byte[] value, @NonNull Duration ttl) {
         return keyValue(bucketName)
                 .chain(keyValue -> Uni.createFrom()
