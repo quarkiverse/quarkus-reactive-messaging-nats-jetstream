@@ -57,6 +57,17 @@ public interface KeyValue {
     Uni<KeyValueEntry> put(@NonNull String key, byte[] value);
 
     /**
+     * Creates a key-value pair, only if the key does not exist or its last entry is a delete or purge marker.
+     * Fails if the key already holds a value.
+     *
+     * @param key the key to create; must not be null
+     * @param value the value associated with the key
+     * @return a {@link Uni} that resolves to a {@link KeyValueEntry} representing the created key-value pair
+     */
+    @NonNull
+    Uni<KeyValueEntry> create(@NonNull String key, byte[] value);
+
+    /**
      * Creates a key-value pair with a per-message TTL, only if the key does not exist or its last entry is a delete or
      * purge marker. Fails if the key already holds a value.
      * <p>
