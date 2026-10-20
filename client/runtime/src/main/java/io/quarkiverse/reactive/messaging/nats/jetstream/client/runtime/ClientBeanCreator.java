@@ -1,6 +1,6 @@
-package io.quarkiverse.reactive.messaging.nats.jetstream.connector.client;
+package io.quarkiverse.reactive.messaging.nats.jetstream.client.runtime;
 
-import static io.quarkiverse.reactive.messaging.nats.jetstream.connector.configuration.ConnectorConfiguration.DEFAULT_DATASOURCE;
+import static io.quarkiverse.reactive.messaging.nats.jetstream.client.runtime.configuration.ClientConfiguration.DEFAULT_DATASOURCE;
 
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
@@ -11,8 +11,8 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.client.Client;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.VertxClientFactory;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.Serializer;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.tracing.TracerFactory;
-import io.quarkiverse.reactive.messaging.nats.jetstream.connector.configuration.ConnectorConfiguration;
-import io.quarkiverse.reactive.messaging.nats.jetstream.connector.configuration.DataSourceConfiguration;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.runtime.configuration.ClientConfiguration;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.runtime.configuration.DataSourceConfiguration;
 import io.quarkus.arc.BeanCreator;
 import io.quarkus.arc.SyntheticCreationalContext;
 import io.vertx.mutiny.core.Vertx;
@@ -28,7 +28,7 @@ public class ClientBeanCreator implements BeanCreator<Client> {
     @Override
     public Client create(SyntheticCreationalContext<Client> context) {
         final var datasource = (String) context.getParams().get(DATASOURCE_PARAM);
-        final var configuration = dataSourceConfiguration(context.getInjectedReference(ConnectorConfiguration.class),
+        final var configuration = dataSourceConfiguration(context.getInjectedReference(ClientConfiguration.class),
                 datasource);
         final var connectionConfigurationMapper = context.getInjectedReference(ConnectionConfigurationMapper.class);
         final var clientFactory = new VertxClientFactory(context.getInjectedReference(Vertx.class),
@@ -39,7 +39,7 @@ public class ClientBeanCreator implements BeanCreator<Client> {
                 context.getInjectedReference(ExecutorService.class));
     }
 
-    private @NonNull DataSourceConfiguration dataSourceConfiguration(@NonNull ConnectorConfiguration configuration,
+    private @NonNull DataSourceConfiguration dataSourceConfiguration(@NonNull ClientConfiguration configuration,
             @NonNull String datasource) {
         if (DEFAULT_DATASOURCE.equals(datasource)) {
             return configuration;

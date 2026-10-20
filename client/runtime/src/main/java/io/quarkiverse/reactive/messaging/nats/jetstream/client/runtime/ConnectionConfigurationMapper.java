@@ -1,4 +1,4 @@
-package io.quarkiverse.reactive.messaging.nats.jetstream.connector.client;
+package io.quarkiverse.reactive.messaging.nats.jetstream.client.runtime;
 
 import java.util.Optional;
 
@@ -9,7 +9,7 @@ import jakarta.enterprise.inject.spi.CDI;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
-import io.quarkiverse.reactive.messaging.nats.jetstream.connector.configuration.ConnectionConfiguration;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.runtime.configuration.ConnectionConfiguration;
 
 @Mapper(componentModel = "cdi")
 public interface ConnectionConfigurationMapper {

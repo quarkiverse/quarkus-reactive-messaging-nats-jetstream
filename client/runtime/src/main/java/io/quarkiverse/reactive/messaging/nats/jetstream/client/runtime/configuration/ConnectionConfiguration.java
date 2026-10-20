@@ -1,4 +1,4 @@
-package io.quarkiverse.reactive.messaging.nats.jetstream.connector.configuration;
+package io.quarkiverse.reactive.messaging.nats.jetstream.client.runtime.configuration;
 
 import java.time.Duration;
 import java.util.List;

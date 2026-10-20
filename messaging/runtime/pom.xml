@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>io.quarkiverse.reactivemessaging.nats-jetstream</groupId>
-        <artifactId>quarkus-messaging-nats-jetstream-parent</artifactId>
+        <artifactId>quarkus-messaging-nats-jetstream-messaging-parent</artifactId>
         <version>3.41.0-SNAPSHOT</version>
     </parent>
     <artifactId>quarkus-messaging-nats-jetstream</artifactId>
@@ -11,7 +11,7 @@
     <dependencies>
         <dependency>
             <groupId>${project.groupId}</groupId>
-            <artifactId>quarkus-messaging-nats-jetstream-client</artifactId>
+            <artifactId>quarkus-nats-client</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
@@ -23,30 +23,9 @@
             <artifactId>quarkus-messaging</artifactId>
         </dependency>
         <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-tls-registry</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-devservices</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.nats</groupId>
-            <artifactId>jnats</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.graalvm.sdk</groupId>
-            <artifactId>graal-sdk</artifactId>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mapstruct</groupId>
-            <artifactId>mapstruct</artifactId>
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
@@ -94,15 +73,6 @@
                 <version>${compiler-plugin.version}</version>
                 <executions>
                     <execution>
-                        <id>default-compile</id>
-                        <configuration>
-                            <!-- Only main sources contain mappers; on test sources the option is unrecognized -->
-                            <compilerArgs>
-                                <arg>-Amapstruct.unmappedTargetPolicy=ERROR</arg>
-                            </compilerArgs>
-                        </configuration>
-                    </execution>
-                    <execution>
                         <id>default-testCompile</id>
                         <configuration>
                             <!-- Test sources need no annotation processing -->
@@ -116,16 +86,6 @@
                             <groupId>org.projectlombok</groupId>
                             <artifactId>lombok</artifactId>
                             <version>${lombok.version}</version>
-                        </path>
-                        <path>
-                            <groupId>org.projectlombok</groupId>
-                            <artifactId>lombok-mapstruct-binding</artifactId>
-                            <version>0.2.0</version>
-                        </path>
-                        <path>
-                            <groupId>org.mapstruct</groupId>
-                            <artifactId>mapstruct-processor</artifactId>
-                            <version>${org.mapstruct.version}</version>
                         </path>
                         <path>
                             <groupId>io.smallrye.reactive</groupId>

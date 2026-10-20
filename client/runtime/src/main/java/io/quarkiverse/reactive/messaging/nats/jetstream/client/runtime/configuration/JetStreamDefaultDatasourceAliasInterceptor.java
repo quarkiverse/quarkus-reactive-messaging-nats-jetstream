@@ -1,6 +1,6 @@
-package io.quarkiverse.reactive.messaging.nats.jetstream.connector.configuration;
+package io.quarkiverse.reactive.messaging.nats.jetstream.client.runtime.configuration;
 
-import static io.quarkiverse.reactive.messaging.nats.jetstream.connector.configuration.ConnectorConfiguration.DEFAULT_DATASOURCE;
+import static io.quarkiverse.reactive.messaging.nats.jetstream.client.runtime.configuration.ClientConfiguration.DEFAULT_DATASOURCE;
 
 import java.util.Iterator;
 
@@ -10,7 +10,7 @@ import io.smallrye.config.FallbackConfigSourceInterceptor;
 /**
  * Lets the default (unnamed) datasource be configured either at the flat root
  * ({@code quarkus.messaging.nats.connection.*}, {@code quarkus.messaging.nats.streams.*}, etc. - as
- * {@link ConnectorConfiguration}, which extends {@link DataSourceConfiguration}, already binds it) or,
+ * {@link ClientConfiguration}, which extends {@link DataSourceConfiguration}, already binds it) or,
  * symmetrically with named datasources, under {@code quarkus.messaging.nats.default.*}
  * (e.g. {@code quarkus.messaging.nats.default.connection.*}). Both spellings are accepted as aliases for exactly
  * the same underlying properties; whichever one is actually set wins (if both are set, the one from the
@@ -34,7 +34,7 @@ public class JetStreamDefaultDatasourceAliasInterceptor extends FallbackConfigSo
      * Enumerates every name in its root-space spelling: a {@code quarkus.messaging.nats.default.<rest>} name is
      * reported as {@code quarkus.messaging.nats.<rest>}, every other name is reported unchanged, and no
      * {@code quarkus.messaging.nats.default.*} name is ever reported. Such a name matches no member of
-     * {@link ConnectorConfiguration}, so Quarkus reports each one it sees as an unrecognized configuration key.
+     * {@link ClientConfiguration}, so Quarkus reports each one it sees as an unrecognized configuration key.
      * Values stay reachable under both spellings through {@link #getValue}.
      */
     @Override

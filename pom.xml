@@ -12,10 +12,9 @@
     <packaging>pom</packaging>
     <name>Quarkus Messaging Nats Jetstream - Parent</name>
     <modules>
-        <module>deployment</module>
-        <module>runtime</module>
-        <module>client</module>
         <module>test</module>
+        <module>client</module>
+        <module>messaging</module>
     </modules>
     <scm>
         <connection>scm:git:git@github.com:quarkiverse/quarkus-reactive-messaging-nats-jetstream.git</connection>

@@ -9,7 +9,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import io.quarkiverse.reactive.messaging.nats.jetstream.connector.deployment.JetStreamBuildTimeConfiguration;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.deployment.ClientBuildTimeConfiguration;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigBuilder;
 
@@ -41,9 +41,9 @@ class CodegenRegressionTest {
         Thread.currentThread().setContextClassLoader(restrictedCl);
 
         SmallRyeConfig config = new SmallRyeConfigBuilder()
-                .withMapping(JetStreamBuildTimeConfiguration.class)
+                .withMapping(ClientBuildTimeConfiguration.class)
                 .build();
-        JetStreamBuildTimeConfiguration mapping = config.getConfigMapping(JetStreamBuildTimeConfiguration.class);
+        ClientBuildTimeConfiguration mapping = config.getConfigMapping(ClientBuildTimeConfiguration.class);
         assertEquals(DEFAULT_SERIALIZER, mapping.serializer());
     }
 }

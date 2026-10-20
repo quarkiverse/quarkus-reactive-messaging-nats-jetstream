@@ -1,6 +1,6 @@
-package io.quarkiverse.reactive.messaging.nats.jetstream.connector.configuration;
+package io.quarkiverse.reactive.messaging.nats.jetstream.client.runtime;
 
-import static io.quarkiverse.reactive.messaging.nats.jetstream.connector.configuration.ConnectorConfiguration.DEFAULT_DATASOURCE;
+import static io.quarkiverse.reactive.messaging.nats.jetstream.client.runtime.configuration.ClientConfiguration.DEFAULT_DATASOURCE;
 
 import java.util.Collection;
 
@@ -15,6 +15,9 @@ import org.jspecify.annotations.NonNull;
 
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.Client;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer.configuration.ConsumerConfiguration;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.runtime.configuration.ClientConfiguration;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.runtime.configuration.Consumer;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.runtime.configuration.DataSourceConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.store.configuration.KeyValueConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.store.configuration.ObjectStoreConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.stream.configuration.StreamConfiguration;
@@ -33,10 +36,10 @@ import lombok.extern.jbosslog.JBossLog;
 @JBossLog
 @ApplicationScoped
 public class JetStreamResourceInitializer {
-    private final ConnectorConfiguration configuration;
+    private final ClientConfiguration configuration;
     private final Instance<Client> clients;
 
-    public JetStreamResourceInitializer(ConnectorConfiguration configuration, @Any Instance<Client> clients) {
+    public JetStreamResourceInitializer(ClientConfiguration configuration, @Any Instance<Client> clients) {
         this.configuration = configuration;
         this.clients = clients;
     }

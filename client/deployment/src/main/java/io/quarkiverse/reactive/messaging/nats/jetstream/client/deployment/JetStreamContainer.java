@@ -1,6 +1,6 @@
-package io.quarkiverse.reactive.messaging.nats.jetstream.connector.deployment;
+package io.quarkiverse.reactive.messaging.nats.jetstream.client.deployment;
 
-import static io.quarkiverse.reactive.messaging.nats.jetstream.connector.deployment.JetStreamDevServicesProcessor.DEV_SERVICE_LABEL;
+import static io.quarkiverse.reactive.messaging.nats.jetstream.client.deployment.JetStreamDevServicesProcessor.DEV_SERVICE_LABEL;
 import static io.quarkus.devservices.common.ConfigureUtil.configureSharedServiceLabel;
 
 import org.testcontainers.utility.DockerImageName;

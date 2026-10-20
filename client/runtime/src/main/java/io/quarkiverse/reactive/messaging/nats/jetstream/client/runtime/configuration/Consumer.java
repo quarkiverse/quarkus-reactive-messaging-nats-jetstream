@@ -1,4 +1,4 @@
-package io.quarkiverse.reactive.messaging.nats.jetstream.connector.configuration;
+package io.quarkiverse.reactive.messaging.nats.jetstream.client.runtime.configuration;
 
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer.configuration.ConsumerConfiguration;
 

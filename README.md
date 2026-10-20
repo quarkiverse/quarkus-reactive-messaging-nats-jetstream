@@ -40,8 +40,11 @@ Feel free to contribute to this project by submitting issues or pull requests.
 
 ### Run Single Test
 ```bash
-# For deployment module tests
-./mvnw test -pl deployment -Dtest=ClassName
+# For client extension tests
+./mvnw test -pl client/runtime -Dtest=ClassName
+
+# For messaging extension tests
+./mvnw test -pl messaging/deployment -Dtest=ClassName
 
 # For integration tests
 ./mvnw test -pl integration-tests -Dtest=ClassName
@@ -54,10 +57,15 @@ Feel free to contribute to this project by submitting issues or pull requests.
 
 ## Module Structure
 
-This is a multi-module Maven project with a standard Quarkus extension structure:
+This is a multi-module Maven project containing two Quarkus extensions:
 
-- **runtime/**: Contains the runtime implementation of the JetStream connector
-- **deployment/**: Contains build-time configuration and processing for Quarkus
+- **client/**: The NATS client extension (`quarkus-nats-client`)
+  - **client/runtime/**: Reactive NATS/JetStream client, datasource configuration (`quarkus.messaging.nats.*`), `Client` CDI beans, TLS, tracing and resource (stream/consumer/KV/object store) initialization
+  - **client/deployment/**: Build steps registering the `Client` beans, serializer, tracing, native image support and Dev Services
+- **messaging/**: The SmallRye Reactive Messaging connector extension (`quarkus-messaging-nats-jetstream`), built on the client extension
+  - **messaging/runtime/**: The `quarkus-jetstream` connector, message processors, channel configuration and request/reply
+  - **messaging/deployment/**: Build steps registering the connector and per-channel processor beans
+- **test/**: Shared NATS Testcontainers support used by Dev Services and tests
 - **integration-tests/**: End-to-end tests using the extension
 - **docs/**: Documentation in AsciiDoc format
 
@@ -65,7 +73,7 @@ This is a multi-module Maven project with a standard Quarkus extension structure
 
 ### Core Components
 
-**JetStreamConnector** (`runtime/src/main/java/.../JetStreamConnector.java`):
+**JetStreamConnector** (`messaging/runtime/src/main/java/.../JetStreamConnector.java`):
 - Main entry point implementing both `InboundConnector` and `OutboundConnector`
 - Creates publishers for incoming channels and subscribers for outgoing channels
 - Manages health reporting for all message processors
@@ -74,16 +82,16 @@ This is a multi-module Maven project with a standard Quarkus extension structure
 **Message Processors**:
 - **MessagePublisherProcessor**: Handles incoming messages from NATS JetStream (pull or push consumers)
 - **MessageSubscriberProcessor**: Handles outgoing messages to NATS JetStream
-- Located in `runtime/src/main/java/.../processors/`
+- Located in `messaging/runtime/src/main/java/.../processors/`
 - Each processor tracks its own health status
 
-**Request/Reply** (`runtime/src/main/java/.../reply/`):
+**Request/Reply** (`messaging/runtime/src/main/java/.../reply/`):
 - **JetStreamRequestReply**: request/reply emitter injectable via `@Channel`; publishes on the channel subject and awaits a correlation-matched reply on a shared reply subject (non-durable consumer per instance, `deliver_policy=new`)
 - **JetStreamRequestReplyFactory** / **JetStreamRequestReplyProducer**: SmallRye `EmitterFactory` SPI + CDI producer that make the type injectable; emitters are closed on shutdown
 - **CorrelationIdHandler** / **ReplyFailureHandler**: pluggable correlation-id and failure strategies, selected per channel via `reply.correlation-id.handler` / `reply.failure.handler`
 - See the user documentation (Request/Reply section in `docs/modules/ROOT/pages/index.adoc`) for examples and the `reply.*` configuration reference
 
-**Client Layer** (`runtime/src/main/java/.../client/`):
+**Client Layer** (`client/runtime/src/main/java/.../client/`):
 - **connection/**: Manages NATS connections and configuration
 - **context/**: Handles JetStream context creation and management
 - **consumer/**: Consumer implementations (pull and push)
@@ -92,7 +100,7 @@ This is a multi-module Maven project with a standard Quarkus extension structure
 - **store/**: Key/Value store support
 - **tracing/**: OpenTelemetry integration for distributed tracing
 
-**Configuration** (`runtime/src/main/java/.../configuration/`):
+**Configuration** (`client/runtime/src/main/java/.../client/runtime/configuration/` for datasources, `messaging/runtime/src/main/java/.../connector/configuration/` for channels):
 - **mapper/**: Maps between Quarkus configuration and NATS JetStream API objects
 - Handles both stream and consumer configuration (pull and push)
 - Supports Key/Value store configuration
@@ -122,18 +130,19 @@ This is a multi-module Maven project with a standard Quarkus extension structure
 
 ### Testing Strategy
 
-- **deployment/src/test/**: Unit tests that start a Quarkus application with the extension
+- **client/runtime/src/test/**: Client tests against a NATS Testcontainer
+- **messaging/deployment/src/test/**: Unit tests that start a Quarkus application with the extension
 - **integration-tests/src/test/**: Integration tests using the full extension (JVM and Native)
 - Tests use Quarkus Dev Services to automatically start a NATS container via Testcontainers
-- Common test utilities in `deployment/src/test/java/.../test/`
+- Common test utilities in `messaging/deployment/src/test/java/.../test/`
 
 ### Dev Services
 
-The extension provides Dev Services support that automatically starts a NATS server container during development and testing. Configuration in `deployment/src/main/java/.../deployment/JetStreamDevServicesProcessor.java`.
+The extension provides Dev Services support that automatically starts a NATS server container during development and testing. Configuration in `client/deployment/src/main/java/.../client/deployment/JetStreamDevServicesProcessor.java`.
 
 ### GraalVM Native Support
 
-Native image configuration is handled in `runtime/src/main/java/.../graal/` for reflection and resource registration required by the NATS Java client.
+Native image configuration for the NATS Java client (reflection, runtime-initialized classes, SSL) is handled by `NatsClientProcessor` in `client/deployment/`.
 
 ### Annotation Processors
 

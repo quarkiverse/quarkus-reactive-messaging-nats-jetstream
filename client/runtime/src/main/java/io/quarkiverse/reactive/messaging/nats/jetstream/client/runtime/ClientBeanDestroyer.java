@@ -1,4 +1,4 @@
-package io.quarkiverse.reactive.messaging.nats.jetstream.connector.client;
+package io.quarkiverse.reactive.messaging.nats.jetstream.client.runtime;
 
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.Client;
 import io.quarkus.arc.BeanDestroyer;

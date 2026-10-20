@@ -51,7 +51,7 @@ public interface ConsumerConfiguration {
     @NonNull
     String name();
 
-    /*
+    /**
      * If set, clients can have subscriptions bind to the consumer and resume until the consumer is explicitly deleted.
      *
      * @return the durable flag
@@ -59,7 +59,7 @@ public interface ConsumerConfiguration {
     @WithDefault("false")
     boolean durable();
 
-    /*
+    /**
      * A subject that overlaps with the subjects bound to the stream to filter delivery to subscribers.
      * Note: This cannot be used with the filterSubjects field.
      *
@@ -68,7 +68,7 @@ public interface ConsumerConfiguration {
     @NonNull
     Optional<String> filterSubject();
 
-    /*
+    /**
      * A set of subjects that overlap with the subjects bound to the stream to filter delivery to subscribers.
      * Note: This cannot be used with the filterSubject field.
      *
@@ -77,7 +77,7 @@ public interface ConsumerConfiguration {
     @NonNull
     Optional<Set<String>> filterSubjects();
 
-    /*
+    /**
      * The duration that the server will wait for an acknowledge for any individual message once it has been delivered to a
      * consumer.
      * If an ack is not received in time; the message will be re-delivered.
@@ -87,7 +87,7 @@ public interface ConsumerConfiguration {
     @NonNull
     Optional<Duration> acknowledgeWait();
 
-    /*
+    /**
      * The point in the stream to receive messages from; either DeliverAll; DeliverLast; DeliverNew; DeliverByStartSequence;
      * DeliverByStartTime; or DeliverLastPerSubject
      *
@@ -97,7 +97,7 @@ public interface ConsumerConfiguration {
     @NonNull
     DeliverPolicy deliverPolicy();
 
-    /*
+    /**
      * Used with the DeliverByStartSequence deliver policy.
      *
      * @return the start sequence
@@ -105,7 +105,7 @@ public interface ConsumerConfiguration {
     @WithDefault("0")
     long startSequence();
 
-    /*
+    /**
      * Used with the DeliverByStartTime deliver policy.
      *
      * @return the start time
@@ -113,7 +113,7 @@ public interface ConsumerConfiguration {
     @NonNull
     Optional<ZonedDateTime> startTime();
 
-    /*
+    /**
      * A description of the consumer. This can be particularly useful for ephemeral consumers to indicate their
      * purpose since a durable name cannot be provided.
      *
@@ -122,7 +122,7 @@ public interface ConsumerConfiguration {
     @NonNull
     Optional<String> description();
 
-    /*
+    /**
      * Duration that instructs the server to clean up consumers inactive for that long. Prior to 2.9; this only applied
      * to ephemeral consumers.
      *
@@ -131,7 +131,7 @@ public interface ConsumerConfiguration {
     @NonNull
     Optional<Duration> inactiveThreshold();
 
-    /*
+    /**
      * Defines the maximum number of messages; without acknowledgment; that can be outstanding. Once this limit is
      * reached; message delivery will be suspended. This limit applies across all of the consumer's bound subscriptions.
      * A value of -1 means there can be any number of pending acknowledgments (i.e.; no flow control). The default is 1000.
@@ -141,7 +141,7 @@ public interface ConsumerConfiguration {
     @NonNull
     Optional<Long> maxAcknowledgePending();
 
-    /*
+    /**
      * The maximum number of times a specific message delivery will be attempted. Applies to any message that is re-sent
      * due to acknowledgment policy (i.e.; due to a negative acknowledgment or no acknowledgment sent by the client).
      * The default is -1 (redeliver until acknowledged). Messages that have reached the maximum delivery count will
@@ -152,7 +152,7 @@ public interface ConsumerConfiguration {
     @NonNull
     Optional<Long> maxDeliver();
 
-    /*
+    /**
      * A sequence of delays controlling the re-delivery of messages on acknowledgment timeout (but not on nak).
      * The sequence length must be less than or equal to MaxDeliver. If backoff is not set; a timeout will result in
      * immediate re-delivery. E.g.; MaxDeliver=5 backoff=[5s; 30s; 300s; 3600s; 84000s] will re-deliver a message 5
@@ -166,7 +166,7 @@ public interface ConsumerConfiguration {
     @NonNull
     Optional<List<Duration>> backoff();
 
-    /*
+    /**
      * If the policy is ReplayOriginal; the messages in the stream will be pushed to the client at the same rate they
      * were originally received; simulating the original timing. If the policy is ReplayInstant (default);
      * the messages will be pushed to the client as fast as possible while adhering to the acknowledgment policy;
@@ -178,7 +178,7 @@ public interface ConsumerConfiguration {
     @NonNull
     ReplayPolicy replayPolicy();
 
-    /*
+    /**
      * Sets the number of replicas for the consumer's state. By default; when the value is set to Optional.empty(); consumers
      * inherit the number of replicas from the stream.
      *
@@ -187,7 +187,7 @@ public interface ConsumerConfiguration {
     @NonNull
     Optional<Integer> replicas();
 
-    /*
+    /**
      * If set; forces the consumer state to be kept in memory rather than inherit the storage type of the stream
      * (default is file storage). This reduces I/O from acknowledgments; useful for ephemeral consumers.
      *
@@ -196,7 +196,7 @@ public interface ConsumerConfiguration {
     @WithDefault("false")
     boolean memoryStorage();
 
-    /*
+    /**
      * Sets the percentage of acknowledgments that should be sampled for observability; 0-100.
      * This value is a string and allows both 30 and 30% as valid values.
      *
@@ -205,7 +205,7 @@ public interface ConsumerConfiguration {
     @NonNull
     Optional<String> sampleFrequency();
 
-    /*
+    /**
      * A set of application-defined key-value pairs for associating metadata with the consumer.
      *
      * @return the metadata
@@ -213,7 +213,7 @@ public interface ConsumerConfiguration {
     @NonNull
     Map<String, String> metadata();
 
-    /*
+    /**
      * Delivers only the headers of messages in the stream; adding a Nats-Msg-Size header indicating the size
      * of the removed payload.
      *
@@ -222,7 +222,7 @@ public interface ConsumerConfiguration {
     @WithDefault("false")
     boolean headersOnly();
 
-    /*
+    /**
      * The time until the consumer is paused
      *
      * @return the pause until time

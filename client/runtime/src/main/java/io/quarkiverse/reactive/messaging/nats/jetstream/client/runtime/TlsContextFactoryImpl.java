@@ -1,4 +1,4 @@
-package io.quarkiverse.reactive.messaging.nats.jetstream.connector.client;
+package io.quarkiverse.reactive.messaging.nats.jetstream.client.runtime;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -7,15 +7,15 @@ import java.util.Optional;
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
 
-import io.quarkiverse.reactive.messaging.nats.jetstream.connector.configuration.ConnectorConfiguration;
-import io.quarkiverse.reactive.messaging.nats.jetstream.connector.configuration.DataSourceConfiguration;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.runtime.configuration.ClientConfiguration;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.runtime.configuration.DataSourceConfiguration;
 import io.quarkus.tls.TlsConfigurationRegistry;
 import lombok.RequiredArgsConstructor;
 
 @ApplicationScoped
 @RequiredArgsConstructor
 public class TlsContextFactoryImpl implements TlsContextFactory {
-    private final ConnectorConfiguration connectorConfiguration;
+    private final ClientConfiguration connectorConfiguration;
     private final TlsConfigurationRegistry tlsConfigurationRegistry;
     private final Map<String, TlsContext> cached = new HashMap<>();
 

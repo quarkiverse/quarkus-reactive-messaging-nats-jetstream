@@ -1,4 +1,4 @@
-package io.quarkiverse.reactive.messaging.nats.jetstream.connector.deployment;
+package io.quarkiverse.reactive.messaging.nats.jetstream.client.deployment;
 
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
@@ -14,7 +14,7 @@ import io.smallrye.config.WithDefault;
  */
 @ConfigMapping(prefix = "quarkus.messaging.nats")
 @ConfigRoot(phase = ConfigPhase.BUILD_TIME)
-public interface JetStreamBuildTimeConfiguration {
+public interface ClientBuildTimeConfiguration {
 
     /**
      * The fully-qualified class name of the serializer implementation used for message serialization

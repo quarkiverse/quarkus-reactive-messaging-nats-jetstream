@@ -1,6 +1,6 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.connector.processors;
 
-import static io.quarkiverse.reactive.messaging.nats.jetstream.connector.configuration.ConnectorConfiguration.DEFAULT_DATASOURCE;
+import static io.quarkiverse.reactive.messaging.nats.jetstream.client.runtime.configuration.ClientConfiguration.DEFAULT_DATASOURCE;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Any;

@@ -9,7 +9,7 @@ import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkiverse.reactive.messaging.nats.jetstream.connector.configuration.ConnectorConfiguration;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.runtime.configuration.ClientConfiguration;
 import io.quarkus.test.QuarkusExtensionTest;
 
 /**
@@ -27,7 +27,7 @@ public class DefaultDatasourceRootConfigurationTest {
             .assertLogRecords(records -> assertThat(records).isEmpty());
 
     @Inject
-    ConnectorConfiguration configuration;
+    ClientConfiguration configuration;
 
     @Test
     public void configuresTheDefaultDatasource() {

@@ -1,7 +1,7 @@
-package io.quarkiverse.reactive.messaging.nats.jetstream.connector.deployment;
+package io.quarkiverse.reactive.messaging.nats.jetstream.client.deployment;
 
 import static io.quarkiverse.reactive.messaging.nats.jetstream.JetStreamContainer.NATS_PORT;
-import static io.quarkiverse.reactive.messaging.nats.jetstream.connector.deployment.JetStreamProcessor.FEATURE;
+import static io.quarkiverse.reactive.messaging.nats.jetstream.client.deployment.NatsClientProcessor.FEATURE;
 
 import java.util.List;
 import java.util.Map;
@@ -44,7 +44,7 @@ public class JetStreamDevServicesProcessor {
             DockerStatusBuildItem dockerStatusBuildItem,
             DevServicesComposeProjectBuildItem composeProjectBuildItem,
             List<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem,
-            JetStreamBuildTimeConfiguration configuration,
+            ClientBuildTimeConfiguration configuration,
             BuildProducer<DevServicesResultBuildItem> devServicesResult,
             DevServicesConfig devServicesConfig) {
 

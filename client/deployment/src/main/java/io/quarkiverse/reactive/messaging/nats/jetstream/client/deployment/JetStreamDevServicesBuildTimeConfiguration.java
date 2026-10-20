@@ -1,4 +1,4 @@
-package io.quarkiverse.reactive.messaging.nats.jetstream.connector.deployment;
+package io.quarkiverse.reactive.messaging.nats.jetstream.client.deployment;
 
 import java.util.Optional;
 

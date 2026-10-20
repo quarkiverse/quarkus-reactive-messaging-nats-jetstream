@@ -1,4 +1,4 @@
-package io.quarkiverse.reactive.messaging.nats.jetstream.connector.configuration;
+package io.quarkiverse.reactive.messaging.nats.jetstream.client.runtime.configuration;
 
 import java.util.Map;
 
@@ -9,12 +9,12 @@ import io.smallrye.config.WithDefault;
 import io.smallrye.config.WithName;
 
 /**
- * Represents the configuration for the connector that integrates with the messaging system.
- * The configuration is defined under the specified prefix and managed at runtime.
+ * Runtime configuration of the NATS client: the default datasource (at the root) and every named datasource.
+ * Kept under the {@code quarkus.messaging.nats} prefix for compatibility with the messaging connector.
  */
 @ConfigMapping(prefix = "quarkus.messaging.nats")
 @ConfigRoot(phase = ConfigPhase.RUN_TIME)
-public interface ConnectorConfiguration extends DataSourceConfiguration {
+public interface ClientConfiguration extends DataSourceConfiguration {
 
     /** The datasource name used when a channel or resource does not specify one explicitly. */
     String DEFAULT_DATASOURCE = "default";
