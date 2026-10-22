@@ -26,6 +26,17 @@ For instance, with Maven, add the following dependency to your POM file:
 </dependency>
 ----
 
+The connector is built on the `quarkus-nats-jetstream-client` extension, which is pulled in transitively. To use the reactive NATS JetStream `Client` without Reactive Messaging, depend on the client extension alone:
+
+[source,xml,subs=attributes+]
+----
+<dependency>
+    <groupId>io.quarkiverse.reactivemessaging.nats-jetstream</groupId>
+    <artifactId>quarkus-nats-jetstream-client</artifactId>
+    <version>{project-version}</version>
+</dependency>
+----
+
 Then configure your application by adding the NATS JetStream connector type:
 
 ----
@@ -591,6 +602,14 @@ Each entry in the `quarkus.messaging.nats.object-stores` map is created (if abse
 | quarkus.messaging.nats.devservices.tls-configuration.certificate-file | The absolute path to the PEM certificate file | String |
 | quarkus.messaging.nats.devservices.tls-configuration.key-file | The absolute path to the PEM key file | String |
 |======
+
+[[extension-configuration-reference]]
+=== Configuration reference
+
+The complete reference of the client extension's `quarkus.messaging.nats.*` configuration properties, generated from
+the extension sources.
+
+include::includes/quarkus-nats-jetstream-client.adoc[leveloffset=+1, opts=optional]
 
 == NATS JetStream
 This extension uses the NATS JetStream client to connect to a NATS JetStream broker.
