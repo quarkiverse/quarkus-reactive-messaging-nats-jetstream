@@ -26,13 +26,13 @@ For instance, with Maven, add the following dependency to your POM file:
 </dependency>
 ----
 
-The connector is built on the `quarkus-nats-client` extension, which is pulled in transitively. To use the reactive NATS JetStream `Client` without Reactive Messaging, depend on the client extension alone:
+The connector is built on the `quarkus-nats-jetstream-client` extension, which is pulled in transitively. To use the reactive NATS JetStream `Client` without Reactive Messaging, depend on the client extension alone:
 
 [source,xml,subs=attributes+]
 ----
 <dependency>
     <groupId>io.quarkiverse.reactivemessaging.nats-jetstream</groupId>
-    <artifactId>quarkus-nats-client</artifactId>
+    <artifactId>quarkus-nats-jetstream-client</artifactId>
     <version>{project-version}</version>
 </dependency>
 ----

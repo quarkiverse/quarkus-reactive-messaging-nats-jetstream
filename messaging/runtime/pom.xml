@@ -11,7 +11,7 @@
     <dependencies>
         <dependency>
             <groupId>${project.groupId}</groupId>
-            <artifactId>quarkus-nats-client</artifactId>
+            <artifactId>quarkus-nats-jetstream-client</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>

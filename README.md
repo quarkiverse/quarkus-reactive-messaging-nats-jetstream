@@ -48,7 +48,7 @@ Feel free to contribute to this project by submitting issues or pull requests.
 ./mvnw test -pl messaging/deployment -Dtest=ClassName
 
 # For integration tests
-./mvnw test -pl integration-tests -Dtest=ClassName
+./mvnw test -pl messaging/integration-tests -Dtest=ClassName
 ```
 
 ### Build Documentation
@@ -60,13 +60,13 @@ Feel free to contribute to this project by submitting issues or pull requests.
 
 This is a multi-module Maven project containing two Quarkus extensions:
 
-- **client/**: The NATS client extension (`quarkus-nats-client`)
+- **client/**: The NATS client extension (`quarkus-nats-jetstream-client`)
   - **client/runtime/**: Reactive NATS/JetStream client, datasource configuration (`quarkus.messaging.nats.*`), `Client` CDI beans, TLS, tracing and resource (stream/consumer/KV/object store) initialization
   - **client/deployment/**: Build steps registering the `Client` beans, serializer, tracing, native image support and Dev Services
 - **messaging/**: The SmallRye Reactive Messaging connector extension (`quarkus-messaging-nats-jetstream`), built on the client extension
   - **messaging/runtime/**: The `quarkus-jetstream` connector, message processors, channel configuration and request/reply
   - **messaging/deployment/**: Build steps registering the connector and per-channel processor beans
-- **integration-tests/**: End-to-end tests using the extension
+  - **messaging/integration-tests/**: End-to-end tests using the extension
 - **docs/**: Documentation in AsciiDoc format
 
 ## Architecture
@@ -133,7 +133,7 @@ This is a multi-module Maven project containing two Quarkus extensions:
 - **client/runtime/src/test/**: Unit tests of the client (tracing, configuration mapping)
 - **client/deployment/src/test/**: Client tests against a NATS Testcontainer (`ClientTest`), and tests that start a Quarkus application with only the client extension (no Reactive Messaging). The NATS container used by Dev Services and these tests is `JetStreamContainer` in `client/deployment`
 - **messaging/deployment/src/test/**: Unit tests that start a Quarkus application with the extension
-- **integration-tests/src/test/**: Integration tests using the full extension (JVM and Native)
+- **messaging/integration-tests/src/test/**: Integration tests using the full extension (JVM and Native)
 - Tests use Quarkus Dev Services to automatically start a NATS container via Testcontainers
 - Common test utilities in `messaging/deployment/src/test/java/.../test/`
 

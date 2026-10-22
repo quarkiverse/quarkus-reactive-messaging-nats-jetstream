@@ -209,7 +209,7 @@ it and records publish failures.
 
 == Client extension and its own message type
 
-The `Client` and its configuration now live in the `quarkus-nats-client` extension, which
+The `Client` and its configuration now live in the `quarkus-nats-jetstream-client` extension, which
 `quarkus-messaging-nats-jetstream` depends on; the configuration properties are unchanged. The client extension does
 not depend on Reactive Messaging, so the `Client` API now uses its own message type instead of the MicroProfile one:
 `io.quarkiverse.reactive.messaging.nats.jetstream.client.message.Message` and
