@@ -2,12 +2,12 @@ package io.quarkiverse.reactive.messaging.nats.jetstream.client;
 
 import java.time.Duration;
 
-import org.eclipse.microprofile.reactive.messaging.Message;
 import org.jspecify.annotations.NonNull;
 
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.connection.NativeConnection;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer.Consumer;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer.ConsumerManagement;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.Message;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.Serializer;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.tracing.TracerFactory;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.store.KeyValue;
@@ -51,53 +51,53 @@ class ClientImpl implements Client {
     }
 
     @Override
-    public <T> @NonNull Uni<org.eclipse.microprofile.reactive.messaging.Message<T>> next(@NonNull final String stream,
+    public <T> @NonNull Uni<Message<T>> next(@NonNull final String stream,
             @NonNull final String consumer,
             @NonNull final Duration timeout) {
         return this.consumer.next(stream, consumer, timeout);
     }
 
     @Override
-    public @NonNull <T> Uni<org.eclipse.microprofile.reactive.messaging.Message<T>> next(@NonNull String stream,
+    public @NonNull <T> Uni<Message<T>> next(@NonNull String stream,
             @NonNull String consumer, @NonNull Duration timeout, @NonNull Class<T> clazz) {
         return this.consumer.next(stream, consumer, timeout, clazz);
     }
 
     @Override
-    public @NonNull <T> Multi<org.eclipse.microprofile.reactive.messaging.Message<T>> fetch(@NonNull final String stream,
+    public @NonNull <T> Multi<Message<T>> fetch(@NonNull final String stream,
             @NonNull final String consumer,
             @NonNull final Duration timeout, final int batchSize) {
         return this.consumer.fetch(stream, consumer, timeout, batchSize);
     }
 
     @Override
-    public @NonNull <T> Multi<org.eclipse.microprofile.reactive.messaging.Message<T>> fetch(@NonNull String stream,
+    public @NonNull <T> Multi<Message<T>> fetch(@NonNull String stream,
             @NonNull String consumer, @NonNull Duration timeout, int batchSize, @NonNull Class<T> clazz) {
         return this.consumer.fetch(stream, consumer, timeout, batchSize, clazz);
     }
 
     @Override
-    public @NonNull <T> Multi<org.eclipse.microprofile.reactive.messaging.Message<T>> subscribe(final @NonNull String stream,
+    public @NonNull <T> Multi<Message<T>> subscribe(final @NonNull String stream,
             final @NonNull String consumer,
             final @NonNull Duration timeout, final int batchSize) {
         return this.consumer.subscribe(stream, consumer, timeout, batchSize);
     }
 
     @Override
-    public @NonNull <T> Multi<org.eclipse.microprofile.reactive.messaging.Message<T>> subscribe(@NonNull String stream,
+    public @NonNull <T> Multi<Message<T>> subscribe(@NonNull String stream,
             @NonNull String consumer, @NonNull Duration timeout, int batchSize,
             @NonNull Class<T> clazz) {
         return this.consumer.subscribe(stream, consumer, timeout, batchSize, clazz);
     }
 
     @Override
-    public @NonNull <T> Multi<org.eclipse.microprofile.reactive.messaging.Message<T>> subscribe(@NonNull String stream,
+    public @NonNull <T> Multi<Message<T>> subscribe(@NonNull String stream,
             @NonNull String consumer) {
         return this.consumer.subscribe(stream, consumer);
     }
 
     @Override
-    public @NonNull <T> Multi<org.eclipse.microprofile.reactive.messaging.Message<T>> subscribe(@NonNull String stream,
+    public @NonNull <T> Multi<Message<T>> subscribe(@NonNull String stream,
             @NonNull String consumer, @NonNull Class<T> clazz) {
         return this.consumer.subscribe(stream, consumer, clazz);
     }

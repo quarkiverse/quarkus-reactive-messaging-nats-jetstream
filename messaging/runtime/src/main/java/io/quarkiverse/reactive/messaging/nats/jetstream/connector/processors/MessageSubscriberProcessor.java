@@ -10,6 +10,7 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.client.Client;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.stream.api.Stream;
 import io.quarkiverse.reactive.messaging.nats.jetstream.connector.configuration.ChannelConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.connector.configuration.PublisherChannelConfiguration;
+import io.quarkiverse.reactive.messaging.nats.jetstream.connector.message.Messages;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.subscription.Cancellable;
@@ -130,6 +131,7 @@ public class MessageSubscriberProcessor<T> implements MessageProcessor {
     }
 
     private Uni<Message<T>> publish(Message<T> message) {
-        return client.publish(message, channelConfiguration.stream(), channelConfiguration.subject());
+        return client.publish(Messages.outgoing(message), channelConfiguration.stream(), channelConfiguration.subject())
+                .replaceWith(message);
     }
 }

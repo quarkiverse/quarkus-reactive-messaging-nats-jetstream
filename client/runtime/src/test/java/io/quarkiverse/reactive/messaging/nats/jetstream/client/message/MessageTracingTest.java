@@ -9,8 +9,6 @@ import java.time.ZonedDateTime;
 
 import jakarta.enterprise.inject.Instance;
 
-import org.eclipse.microprofile.reactive.messaging.Message;
-import org.eclipse.microprofile.reactive.messaging.Metadata;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 

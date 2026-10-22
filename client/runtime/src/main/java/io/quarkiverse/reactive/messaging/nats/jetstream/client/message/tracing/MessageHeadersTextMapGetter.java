@@ -4,11 +4,11 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 
-import org.eclipse.microprofile.reactive.messaging.Message;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 
 import io.opentelemetry.context.propagation.TextMapGetter;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.Message;
 
 record MessageHeadersTextMapGetter(@NonNull Operation operation) implements TextMapGetter<Message<byte[]>> {
 

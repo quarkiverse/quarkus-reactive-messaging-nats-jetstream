@@ -1,14 +1,13 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client.message.tracing;
 
-import org.eclipse.microprofile.reactive.messaging.Message;
 import org.jspecify.annotations.NonNull;
 
 import io.opentelemetry.context.Context;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.ContextMetadata;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.Message;
 import io.quarkus.opentelemetry.runtime.QuarkusContextStorage;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.unchecked.Unchecked;
-import io.smallrye.reactive.messaging.TracingMetadata;
-import io.smallrye.reactive.messaging.providers.locals.LocalContextMetadata;
 
 /**
  * For incoming messages, it fetches OpenTelemetry context from the message and attaches to the duplicated context of the
@@ -22,11 +21,11 @@ class AttachContextTraceSupplier implements TraceSupplier {
     @Override
     public @NonNull Uni<Message<byte[]>> get(@NonNull Message<byte[]> message) {
         return Uni.createFrom().item(Unchecked.supplier(() -> {
-            var messageContext = message.getMetadata(LocalContextMetadata.class)
-                    .map(LocalContextMetadata::context)
+            var messageContext = message.getMetadata(ContextMetadata.class)
+                    .map(ContextMetadata::context)
                     .orElse(null);
-            var otelContext = TracingMetadata.fromMessage(message)
-                    .map(TracingMetadata::getCurrentContext)
+            var otelContext = message.getMetadata(TraceContextMetadata.class)
+                    .map(TraceContextMetadata::current)
                     .orElse(Context.current());
             if (messageContext != null && otelContext != null) {
                 QuarkusContextStorage.INSTANCE.attach(messageContext, otelContext);

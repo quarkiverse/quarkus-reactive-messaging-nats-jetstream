@@ -1,6 +1,6 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.connector.reply;
 
-import static io.quarkiverse.reactive.messaging.nats.jetstream.client.runtime.configuration.ClientConfiguration.DEFAULT_DATASOURCE;
+import static io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ClientConfiguration.DEFAULT_DATASOURCE;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -21,6 +21,7 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer.api.Cons
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.MessageHeaders;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.PublishHeaders;
 import io.quarkiverse.reactive.messaging.nats.jetstream.connector.configuration.PublisherChannelConfiguration;
+import io.quarkiverse.reactive.messaging.nats.jetstream.connector.message.Messages;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.subscription.Cancellable;
 import io.smallrye.mutiny.tuples.Tuple2;
@@ -169,6 +170,7 @@ public class RequestReplyImpl<Req, Rep> extends MutinyEmitterImpl<Req> implement
     private Uni<Cancellable> startSubscription(Client client, Consumer consumer) {
         return Uni.createFrom()
                 .item(Unchecked.supplier(() -> client.<Rep> subscribe(channelConfiguration.stream(), consumer.name())
+                        .map(Messages::incoming)
                         .subscribe().with(this::onReply, this::onSubscriptionFailure)));
     }
 

@@ -157,7 +157,7 @@ class MessageSubscriberProcessorTest {
 
     @SuppressWarnings({ "unchecked", "ReactiveStreamsUnusedPublisher" })
     private MessageSubscriberProcessor<String> processor(AtomicReference<Set<String>> subjects, AtomicInteger lookups,
-            Function<Message<String>, Uni<Message<String>>> publish) {
+            Function<io.quarkiverse.reactive.messaging.nats.jetstream.client.message.Message<String>, Uni<io.quarkiverse.reactive.messaging.nats.jetstream.client.message.Message<String>>> publish) {
         final var streamManagement = (StreamManagement) Proxy.newProxyInstance(StreamManagement.class.getClassLoader(),
                 new Class<?>[] { StreamManagement.class },
                 (proxy, method, args) -> {
@@ -179,7 +179,8 @@ class MessageSubscriberProcessorTest {
                         return streamManagement;
                     }
                     if (method.getName().equals("publish")) {
-                        return publish.apply((Message<String>) args[0]);
+                        return publish.apply(
+                                (io.quarkiverse.reactive.messaging.nats.jetstream.client.message.Message<String>) args[0]);
                     }
                     throw new UnsupportedOperationException(method.getName());
                 });

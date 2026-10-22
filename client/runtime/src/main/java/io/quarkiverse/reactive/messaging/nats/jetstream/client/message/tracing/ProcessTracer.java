@@ -5,16 +5,15 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
-import org.eclipse.microprofile.reactive.messaging.Message;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.instrumentation.api.instrumenter.Instrumenter;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.Message;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.unchecked.Unchecked;
-import io.smallrye.reactive.messaging.TracingMetadata;
 
 /**
  * Traces the processing of a message delivered by a subscription. The span is current while the application processes
@@ -50,7 +49,7 @@ final class ProcessTracer implements Tracer {
                 instrumenter.end(spanContext, message, null, error);
             }
         };
-        return message.addMetadata(TracingMetadata.with(spanContext, parentContext))
+        return message.addMetadata(new TraceContextMetadata(spanContext, parentContext))
                 .withAckWithMetadata(metadata -> endWhenDone(message.ack(metadata), end, null))
                 .withNackWithMetadata((reason, metadata) -> endWhenDone(message.nack(reason, metadata), end, reason));
     }

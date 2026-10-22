@@ -42,6 +42,7 @@ Feel free to contribute to this project by submitting issues or pull requests.
 ```bash
 # For client extension tests
 ./mvnw test -pl client/runtime -Dtest=ClassName
+./mvnw test -pl client/deployment -Dtest=ClassName
 
 # For messaging extension tests
 ./mvnw test -pl messaging/deployment -Dtest=ClassName
@@ -65,7 +66,6 @@ This is a multi-module Maven project containing two Quarkus extensions:
 - **messaging/**: The SmallRye Reactive Messaging connector extension (`quarkus-messaging-nats-jetstream`), built on the client extension
   - **messaging/runtime/**: The `quarkus-jetstream` connector, message processors, channel configuration and request/reply
   - **messaging/deployment/**: Build steps registering the connector and per-channel processor beans
-- **test/**: Shared NATS Testcontainers support used by Dev Services and tests
 - **integration-tests/**: End-to-end tests using the extension
 - **docs/**: Documentation in AsciiDoc format
 
@@ -130,7 +130,8 @@ This is a multi-module Maven project containing two Quarkus extensions:
 
 ### Testing Strategy
 
-- **client/runtime/src/test/**: Client tests against a NATS Testcontainer
+- **client/runtime/src/test/**: Unit tests of the client (tracing, configuration mapping)
+- **client/deployment/src/test/**: Client tests against a NATS Testcontainer (`ClientTest`), and tests that start a Quarkus application with only the client extension (no Reactive Messaging). The NATS container used by Dev Services and these tests is `JetStreamContainer` in `client/deployment`
 - **messaging/deployment/src/test/**: Unit tests that start a Quarkus application with the extension
 - **integration-tests/src/test/**: Integration tests using the full extension (JVM and Native)
 - Tests use Quarkus Dev Services to automatically start a NATS container via Testcontainers

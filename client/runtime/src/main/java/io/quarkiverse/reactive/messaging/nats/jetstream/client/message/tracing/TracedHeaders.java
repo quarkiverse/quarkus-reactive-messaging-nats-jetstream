@@ -2,13 +2,9 @@ package io.quarkiverse.reactive.messaging.nats.jetstream.client.message.tracing;
 
 import java.util.Optional;
 
-import org.eclipse.microprofile.reactive.messaging.Message;
 import org.jspecify.annotations.NonNull;
 
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.Headers;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.MessageHeaders;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.MessageMetadata;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.PublishHeaders;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.*;
 
 final class TracedHeaders {
 

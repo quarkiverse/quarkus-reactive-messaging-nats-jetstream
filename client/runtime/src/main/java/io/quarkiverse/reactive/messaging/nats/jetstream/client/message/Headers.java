@@ -6,7 +6,7 @@ import java.util.Optional;
 
 import org.jspecify.annotations.NonNull;
 
-public interface Headers extends Map<String, List<String>>, Metadata {
+public interface Headers extends Map<String, List<String>> {
     String MESSAGE_TYPE_HEADER = "message.type";
     String MESSAGE_SUBJECT_HEADER = "message.subject";
     String MESSAGE_STREAM_HEADER = "message.stream";

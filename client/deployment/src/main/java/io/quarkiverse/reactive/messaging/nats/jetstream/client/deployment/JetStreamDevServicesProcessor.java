@@ -1,7 +1,8 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client.deployment;
 
-import static io.quarkiverse.reactive.messaging.nats.jetstream.JetStreamContainer.NATS_PORT;
 import static io.quarkiverse.reactive.messaging.nats.jetstream.client.deployment.NatsClientProcessor.FEATURE;
+import static io.quarkiverse.reactive.messaging.nats.jetstream.client.deployment.container.JetStreamContainer.DEV_SERVICE_LABEL;
+import static io.quarkiverse.reactive.messaging.nats.jetstream.client.deployment.container.JetStreamContainer.NATS_PORT;
 
 import java.util.List;
 import java.util.Map;
@@ -10,7 +11,8 @@ import java.util.Optional;
 import org.jboss.logging.Logger;
 import org.testcontainers.utility.DockerImageName;
 
-import io.quarkiverse.reactive.messaging.nats.jetstream.JetStreamContainerConfiguration;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.deployment.container.JetStreamContainer;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.deployment.container.JetStreamContainerConfiguration;
 import io.quarkus.deployment.IsDevServicesSupportedByLaunchMode;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -29,12 +31,6 @@ import io.quarkus.runtime.configuration.ConfigUtils;
 @BuildSteps(onlyIf = { IsDevServicesSupportedByLaunchMode.class, DevServicesConfig.Enabled.class })
 public class JetStreamDevServicesProcessor {
     private static final Logger log = Logger.getLogger(JetStreamDevServicesProcessor.class);
-
-    /**
-     * Label to add to shared Dev Service for pulsar running in containers.
-     * This allows other applications to discover the running service and use it instead of starting a new instance.
-     */
-    static final String DEV_SERVICE_LABEL = "quarkus-dev-service-jetstream";
 
     private static final ContainerLocator jetStreamContainerLocator = new ContainerLocator(DEV_SERVICE_LABEL, NATS_PORT);
 

@@ -1,11 +1,8 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client;
 
-import static io.smallrye.reactive.messaging.providers.locals.ContextAwareMessage.captureContextMetadata;
-
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 
-import org.eclipse.microprofile.reactive.messaging.Message;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 
@@ -13,16 +10,12 @@ import io.nats.client.JetStream;
 import io.nats.client.PublishOptions;
 import io.nats.client.api.PublishAck;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.connection.NativeConnection;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.AcknowledgeMetadata;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.MessageHeaders;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.PublishHeaders;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.Serializer;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.*;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.tracing.Operation;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.tracing.Tracer;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.tracing.TracerFactory;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.unchecked.Unchecked;
-import io.smallrye.reactive.messaging.providers.locals.LocalContextMetadata;
 import lombok.extern.jbosslog.JBossLog;
 
 @JBossLog
@@ -106,9 +99,9 @@ class PublisherImpl implements Publisher {
                 headers.setPayloadType(message.getPayload().getClass());
             }
 
-            final var metadata = message.getMetadata(LocalContextMetadata.class)
-                    .map(localContextMetadata -> message.getMetadata().with(headers))
-                    .orElseGet(() -> message.getMetadata().with(headers).with(captureContextMetadata(message.getMetadata())));
+            final var metadata = message.getMetadata(ContextMetadata.class)
+                    .map(contextMetadata -> message.getMetadata().with(headers))
+                    .orElseGet(() -> ContextMetadata.capture(message.getMetadata().with(headers)));
 
             return Message.of(serializer.toBytes(message.getPayload()),
                     metadata,

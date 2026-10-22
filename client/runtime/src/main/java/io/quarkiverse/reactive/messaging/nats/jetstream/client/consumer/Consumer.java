@@ -2,9 +2,9 @@ package io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer;
 
 import java.time.Duration;
 
-import org.eclipse.microprofile.reactive.messaging.Message;
 import org.jspecify.annotations.NonNull;
 
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.Message;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 

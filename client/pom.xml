@@ -6,9 +6,9 @@
         <artifactId>quarkus-messaging-nats-jetstream-parent</artifactId>
         <version>3.41.0-SNAPSHOT</version>
     </parent>
-    <artifactId>quarkus-nats-client-parent</artifactId>
+    <artifactId>quarkus-nats-jetstream-client-parent</artifactId>
     <packaging>pom</packaging>
-    <name>Quarkus Nats Client - Parent</name>
+    <name>Quarkus Nats JetStream Client - Parent</name>
     <modules>
         <module>runtime</module>
         <module>deployment</module>

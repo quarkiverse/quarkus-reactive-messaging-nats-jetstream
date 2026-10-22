@@ -2,16 +2,15 @@ package io.quarkiverse.reactive.messaging.nats.jetstream.client.message.tracing;
 
 import java.util.function.Function;
 
-import org.eclipse.microprofile.reactive.messaging.Message;
 import org.jspecify.annotations.NonNull;
 
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.instrumentation.api.instrumenter.Instrumenter;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.Message;
 import io.quarkus.opentelemetry.runtime.QuarkusContextStorage;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.unchecked.Unchecked;
-import io.smallrye.reactive.messaging.TracingMetadata;
 
 final class PublishTracer implements Tracer {
     private final Instrumenter<Message<byte[]>, Void> instrumenter;
@@ -33,8 +32,8 @@ final class PublishTracer implements Tracer {
     public @NonNull Uni<Message<byte[]>> withTrace(@NonNull Message<byte[]> message,
             @NonNull Function<Message<byte[]>, Uni<Message<byte[]>>> operation) {
         return addTracingMetadata(message).chain(msg -> {
-            final var parentContext = TracingMetadata.fromMessage(msg)
-                    .map(TracingMetadata::getCurrentContext)
+            final var parentContext = msg.getMetadata(TraceContextMetadata.class)
+                    .map(TraceContextMetadata::current)
                     .orElse(Context.current());
             if (!instrumenter.shouldStart(parentContext, msg)) {
                 return operation.apply(msg);
@@ -46,16 +45,14 @@ final class PublishTracer implements Tracer {
     }
 
     /**
-     * For outgoing messages, if the message doesn't already contain a tracing metadata, it attaches one with the current
-     * OpenTelemetry context.
-     * Reactive messaging outbound connectors, if tracing is supported, will use that context as parent span to trace outbound
-     * message transmission.
+     * For outgoing messages, if the message doesn't already contain a {@link TraceContextMetadata}, it attaches one with
+     * the current OpenTelemetry context, which is the parent of the publish span.
      */
     private Uni<Message<byte[]>> addTracingMetadata(final Message<byte[]> message) {
         return Uni.createFrom().item(Unchecked.supplier(() -> {
-            if (message.getMetadata(TracingMetadata.class).isEmpty()) {
+            if (message.getMetadata(TraceContextMetadata.class).isEmpty()) {
                 var otelContext = QuarkusContextStorage.INSTANCE.current();
-                return message.addMetadata(TracingMetadata.withCurrent(otelContext));
+                return message.addMetadata(TraceContextMetadata.of(otelContext));
             }
             return message;
         }));

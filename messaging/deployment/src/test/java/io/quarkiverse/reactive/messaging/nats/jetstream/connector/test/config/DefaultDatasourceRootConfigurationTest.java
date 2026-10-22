@@ -9,7 +9,7 @@ import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.runtime.configuration.ClientConfiguration;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ClientConfiguration;
 import io.quarkus.test.QuarkusExtensionTest;
 
 /**

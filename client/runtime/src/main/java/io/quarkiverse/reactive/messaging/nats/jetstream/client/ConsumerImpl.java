@@ -6,7 +6,6 @@ import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import org.eclipse.microprofile.reactive.messaging.Message;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 
@@ -15,10 +14,8 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.client.connection.Native
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer.*;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer.Consumer;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer.configuration.ConsumerConfiguration;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.Headers;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.MessageHeaders;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.NativeMessage;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.Serializer;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.*;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.Message;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.tracing.Operation;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.tracing.Tracer;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.tracing.TracerFactory;

@@ -12,7 +12,6 @@
     <packaging>pom</packaging>
     <name>Quarkus Messaging Nats Jetstream - Parent</name>
     <modules>
-        <module>test</module>
         <module>client</module>
         <module>messaging</module>
     </modules>

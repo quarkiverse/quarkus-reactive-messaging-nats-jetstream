@@ -5,9 +5,10 @@ import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import org.eclipse.microprofile.reactive.messaging.Message;
-import org.eclipse.microprofile.reactive.messaging.Metadata;
 import org.jspecify.annotations.NonNull;
+
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.Message;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.Metadata;
 
 /**
  * Represents an execution context that facilitates task execution through an

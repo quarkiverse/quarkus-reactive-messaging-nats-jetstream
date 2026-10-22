@@ -6,7 +6,7 @@ import org.jspecify.annotations.NonNull;
 
 import io.nats.client.api.PublishAck;
 
-public interface AcknowledgeMetadata extends Metadata {
+public interface AcknowledgeMetadata {
 
     /*
      * The stream sequence number for the corresponding published message.

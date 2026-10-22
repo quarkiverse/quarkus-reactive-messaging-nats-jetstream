@@ -207,6 +207,31 @@ it and records publish failures.
 `messaging.nats.message.payload`.
 * `Operation.PUBLISH_ACKNOWLEDGED` was removed from the client tracing API and `Operation.PROCESS` added.
 
+== Client extension and its own message type
+
+The `Client` and its configuration now live in the `quarkus-nats-client` extension, which
+`quarkus-messaging-nats-jetstream` depends on; the configuration properties are unchanged. The client extension does
+not depend on Reactive Messaging, so the `Client` API now uses its own message type instead of the MicroProfile one:
+`io.quarkiverse.reactive.messaging.nats.jetstream.client.message.Message` and
+`io.quarkiverse.reactive.messaging.nats.jetstream.client.message.Metadata`. Their methods (`getPayload`,
+`getMetadata`, `ack`, `nack`, `withPayload`, ...) mirror the MicroProfile ones, so usually only the imports change:
+
+[source,java]
+----
+// Before
+import org.eclipse.microprofile.reactive.messaging.Message;
+import org.eclipse.microprofile.reactive.messaging.Metadata;
+
+// After
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.Message;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.Metadata;
+
+client.publish(Message.of(data, Metadata.of(PublishHeaders.of(id))), "stream", "subject");
+----
+
+Channels are unaffected: `@Incoming`/`@Outgoing` methods and emitters keep using the MicroProfile `Message`, and the
+`PublishHeaders`, `MessageHeaders`, `MessageMetadata` and `NotAcknowledgeMetadata` metadata work as before.
+
 == Suggested migration steps
 
 1. Update the dependency version to `{project-version}`.

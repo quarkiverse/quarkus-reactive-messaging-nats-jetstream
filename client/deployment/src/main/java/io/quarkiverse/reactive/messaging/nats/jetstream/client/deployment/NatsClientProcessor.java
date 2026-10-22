@@ -1,6 +1,6 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client.deployment;
 
-import static io.quarkiverse.reactive.messaging.nats.jetstream.client.runtime.configuration.ClientConfiguration.DEFAULT_DATASOURCE;
+import static io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ClientConfiguration.DEFAULT_DATASOURCE;
 
 import java.util.LinkedHashSet;
 import java.util.Set;
@@ -17,17 +17,17 @@ import org.jboss.jandex.DotName;
 
 import io.nats.client.Options;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.Client;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.ClientBeanCreator;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.ClientBeanDestroyer;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.JetStreamResourceInitializer;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ClientConfiguration;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ConnectionConfigurationMapper;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ConnectionConfigurationMapperImpl;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.TlsContextFactoryImpl;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.TracingConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.Serializer;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.tracing.DisabledTracerFactory;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.tracing.TracerFactory;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.runtime.ClientBeanCreator;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.runtime.ClientBeanDestroyer;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.runtime.ConnectionConfigurationMapper;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.runtime.ConnectionConfigurationMapperImpl;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.runtime.JetStreamResourceInitializer;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.runtime.TlsContextFactoryImpl;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.runtime.TracingConfiguration;
-import io.quarkiverse.reactive.messaging.nats.jetstream.client.runtime.configuration.ClientConfiguration;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.ExcludedTypeBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
@@ -147,9 +147,8 @@ class NatsClientProcessor {
      * Registers one {@code @ApplicationScoped} {@link Client} CDI bean per configured datasource (the default
      * datasource plus every key under {@code quarkus.messaging.nats.data-sources}). Every one of them is qualified
      * with {@code @Identifier(datasource-name)}, so any of them can be looked up dynamically via
-     * {@code @Any Instance<Client>} plus
-     * {@code io.smallrye.reactive.messaging.providers.helpers.CDIUtils.getInstanceById(...)} (used where the
-     * datasource is resolved at runtime, e.g. from a channel's {@code datasource} attribute). The default
+     * {@code @Any Instance<Client>} selected with that qualifier (used where the datasource is resolved at runtime,
+     * e.g. from a channel's {@code datasource} attribute). The default
      * datasource's {@link Client} additionally carries the CDI {@code @Default} qualifier, so it can also be
      * injected with a plain, unqualified {@code @Inject Client client}. The actual {@link Client} instance is
      * created by {@link ClientBeanCreator} and closed by {@link ClientBeanDestroyer} on

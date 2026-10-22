@@ -9,6 +9,7 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.client.Client;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer.api.Consumer;
 import io.quarkiverse.reactive.messaging.nats.jetstream.connector.configuration.ChannelConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.connector.configuration.ConsumerChannelConfiguration;
+import io.quarkiverse.reactive.messaging.nats.jetstream.connector.message.Messages;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import lombok.extern.jbosslog.JBossLog;
@@ -74,7 +75,8 @@ public class MessagePublisherProcessor<T> implements MessageProcessor {
         return channelConfiguration.<T> payloadType()
                 .map(payloadType -> client.subscribe(channelConfiguration.stream(), channelConfiguration.getConsumer(),
                         channelConfiguration.timeout(), channelConfiguration.batchSize(), payloadType))
-                .orElseGet(() -> client.subscribe(channelConfiguration.stream(), channelConfiguration.getConsumer(),
-                        channelConfiguration.timeout(), channelConfiguration.batchSize()));
+                .orElseGet(() -> client.<T> subscribe(channelConfiguration.stream(), channelConfiguration.getConsumer(),
+                        channelConfiguration.timeout(), channelConfiguration.batchSize()))
+                .map(Messages::incoming);
     }
 }

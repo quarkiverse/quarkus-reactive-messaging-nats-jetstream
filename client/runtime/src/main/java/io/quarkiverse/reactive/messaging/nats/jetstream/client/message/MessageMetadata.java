@@ -11,7 +11,7 @@ import io.nats.client.impl.NatsJetStreamMetaData;
  * This metadata is related to the delivery, stream, consumer, sequence numbers,
  * and timestamp of the message.
  */
-public interface MessageMetadata extends Metadata {
+public interface MessageMetadata {
 
     /**
      * The number of times this message has been delivered

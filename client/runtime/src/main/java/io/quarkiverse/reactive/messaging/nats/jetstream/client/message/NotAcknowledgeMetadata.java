@@ -10,7 +10,7 @@ import org.jspecify.annotations.NonNull;
  * This interface extends {@code Metadata} and provides additional behavior specific to NAK messages.
  * A NAK message indicates that the message was received but requires re-delivery for further processing.
  */
-public interface NotAcknowledgeMetadata extends Metadata {
+public interface NotAcknowledgeMetadata {
 
     static @NonNull NotAcknowledgeMetadata of(@NonNull Duration delay) {
         return new NotAcknowledgeMetadataImpl(Optional.of(delay));

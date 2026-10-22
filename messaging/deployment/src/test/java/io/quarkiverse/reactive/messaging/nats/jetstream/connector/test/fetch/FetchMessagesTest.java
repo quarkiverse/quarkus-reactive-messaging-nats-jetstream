@@ -6,8 +6,6 @@ import java.time.Duration;
 
 import jakarta.inject.Inject;
 
-import org.eclipse.microprofile.reactive.messaging.Message;
-import org.eclipse.microprofile.reactive.messaging.Metadata;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.BeforeEach;
@@ -15,19 +13,21 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.Client;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.Message;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.Metadata;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.NotAcknowledgeMetadata;
-import io.quarkiverse.reactive.messaging.nats.jetstream.connector.test.MessageConsumer;
 import io.quarkiverse.reactive.messaging.nats.jetstream.connector.test.TestSpanExporter;
 import io.quarkus.test.QuarkusExtensionTest;
+import io.smallrye.mutiny.Uni;
 
-public class FetchMessagesTest implements MessageConsumer<Object> {
+public class FetchMessagesTest {
     private final static Duration TIMEOUT = Duration.ofSeconds(5);
 
     @RegisterExtension
     static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .setArchiveProducer(
                     () -> ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(TestSpanExporter.class, Data.class, ConsumerConfiguration.class, MessageConsumer.class))
+                            .addClasses(TestSpanExporter.class, Data.class, ConsumerConfiguration.class))
             .withConfigurationResource("application-fetch.properties");
 
     @Inject
@@ -225,5 +225,17 @@ public class FetchMessagesTest implements MessageConsumer<Object> {
                 .await().atMost(TIMEOUT);
 
         assertThat(received).containsExactly(data1, data2);
+    }
+
+    private static Uni<Void> acknowledge(Message<?> message) {
+        return Uni.createFrom().completionStage(message.ack());
+    }
+
+    private static Uni<Void> notAcknowledge(Message<?> message, Throwable throwable) {
+        return Uni.createFrom().completionStage(message.nack(throwable));
+    }
+
+    private static Uni<Void> notAcknowledge(Message<?> message, Throwable throwable, Metadata metadata) {
+        return Uni.createFrom().completionStage(message.nack(throwable, metadata));
     }
 }

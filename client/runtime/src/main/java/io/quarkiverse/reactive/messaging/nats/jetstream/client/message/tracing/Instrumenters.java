@@ -1,6 +1,5 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client.message.tracing;
 
-import org.eclipse.microprofile.reactive.messaging.Message;
 import org.jspecify.annotations.NonNull;
 
 import io.opentelemetry.api.OpenTelemetry;
@@ -12,6 +11,7 @@ import io.opentelemetry.instrumentation.api.incubator.semconv.messaging.Messagin
 import io.opentelemetry.instrumentation.api.instrumenter.Instrumenter;
 import io.opentelemetry.instrumentation.api.instrumenter.SpanKindExtractor;
 import io.opentelemetry.instrumentation.api.instrumenter.SpanLinksExtractor;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.Message;
 
 final class Instrumenters {
     static final String INSTRUMENTATION_NAME = "io.smallrye.reactive.messaging.jetstream";

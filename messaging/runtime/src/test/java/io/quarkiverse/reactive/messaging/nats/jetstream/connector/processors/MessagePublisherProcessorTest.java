@@ -14,12 +14,12 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
-import org.eclipse.microprofile.reactive.messaging.Message;
 import org.junit.jupiter.api.Test;
 
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.Client;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer.ConsumerManagement;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer.api.Consumer;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.Message;
 import io.quarkiverse.reactive.messaging.nats.jetstream.connector.configuration.ConsumerChannelConfigurationImpl;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
@@ -42,7 +42,10 @@ class MessagePublisherProcessorTest {
         final var subscriber = processor.publisher().subscribe().withSubscriber(AssertSubscriber.create(1));
 
         try {
-            subscriber.awaitCompletion(Duration.ofSeconds(5)).assertCompleted().assertItems(message);
+            subscriber.awaitCompletion(Duration.ofSeconds(5)).assertCompleted();
+            // the client message is delivered to the channel as a Reactive Messaging message
+            assertThat(subscriber.getItems()).singleElement()
+                    .satisfies(item -> assertThat(item.getPayload()).isEqualTo(message.getPayload()));
             assertThat(attempts.get()).isEqualTo(3);
             assertThat(processor.health().healthy()).isTrue();
         } finally {
@@ -64,7 +67,10 @@ class MessagePublisherProcessorTest {
         final var subscriber = processor.publisher().subscribe().withSubscriber(AssertSubscriber.create(1));
 
         try {
-            subscriber.awaitCompletion(Duration.ofSeconds(5)).assertCompleted().assertItems(message);
+            subscriber.awaitCompletion(Duration.ofSeconds(5)).assertCompleted();
+            // the client message is delivered to the channel as a Reactive Messaging message
+            assertThat(subscriber.getItems()).singleElement()
+                    .satisfies(item -> assertThat(item.getPayload()).isEqualTo(message.getPayload()));
             assertThat(attempts.get()).isEqualTo(2);
             assertThat(processor.health().healthy()).isTrue();
         } finally {

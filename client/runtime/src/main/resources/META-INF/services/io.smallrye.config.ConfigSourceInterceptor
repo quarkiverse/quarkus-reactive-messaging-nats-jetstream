@@ -1,1 +1,1 @@
-io.quarkiverse.reactive.messaging.nats.jetstream.client.runtime.configuration.JetStreamDefaultDatasourceAliasInterceptor
+io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.JetStreamDefaultDatasourceAliasInterceptor

@@ -13,10 +13,10 @@ import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.core.Response;
 
 import org.eclipse.microprofile.reactive.messaging.Channel;
-import org.eclipse.microprofile.reactive.messaging.Message;
-import org.eclipse.microprofile.reactive.messaging.Metadata;
 
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.Client;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.Message;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.Metadata;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.PublishHeaders;
 import io.quarkiverse.reactive.messaging.nats.jetstream.connector.reply.RequestReply;
 import io.quarkiverse.reactive.messaging.nats.jetstream.connector.reply.TimeoutException;
@@ -139,7 +139,8 @@ public class ReplyResource {
         headers.setCorrelationId(id);
         headers.setPayloadType(String.class);
         client
-                .publish(Message.of("echo:hello-missing", Metadata.of(headers)), "missing",
+                .publish(Message.of("echo:hello-missing",
+                        Metadata.of(headers)), "missing",
                         "missing.replies")
                 .await().atMost(BOUND);
         return Response.ok().build();
@@ -152,7 +153,8 @@ public class ReplyResource {
         headers.setCorrelationId(id);
         headers.setPayloadType(String.class);
         client
-                .publish(Message.of("late-reply", Metadata.of(headers)), "rr", "slow.replies")
+                .publish(Message.of("late-reply",
+                        Metadata.of(headers)), "rr", "slow.replies")
                 .await().atMost(BOUND);
         return Response.ok().build();
     }
