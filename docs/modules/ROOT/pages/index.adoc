@@ -603,6 +603,14 @@ Each entry in the `quarkus.messaging.nats.object-stores` map is created (if abse
 | quarkus.messaging.nats.devservices.tls-configuration.key-file | The absolute path to the PEM key file | String |
 |======
 
+[[extension-configuration-reference]]
+=== Configuration reference
+
+The complete reference of the client extension's `quarkus.messaging.nats.*` configuration properties, generated from
+the extension sources.
+
+include::includes/quarkus-nats-jetstream-client.adoc[leveloffset=+1, opts=optional]
+
 == NATS JetStream
 This extension uses the NATS JetStream client to connect to a NATS JetStream broker.
 
