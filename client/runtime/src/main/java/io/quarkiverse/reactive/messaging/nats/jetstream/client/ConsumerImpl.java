@@ -104,8 +104,9 @@ class ConsumerImpl implements Consumer {
             final int batchSize) {
         final var executorService = Executors.newSingleThreadExecutor(ConsumerWorkerThread::new);
         return subscription(stream, consumer)
+                .runSubscriptionOn(executorService)
                 .onItem().transformToMulti(subscription -> Multi.createBy().repeating()
-                        .uni(() -> Uni.createFrom().item(42))
+                        .uni(() -> Uni.createFrom().item(42).runSubscriptionOn(executorService))
                         .whilst(v -> true)
                         .onItem().transformToMultiAndConcatenate(v -> fetch(subscription, timeout, batchSize)))
                 .select().where(Objects::nonNull)
@@ -113,7 +114,6 @@ class ConsumerImpl implements Consumer {
                 .concatenate()
                 .onItem().<Message<T>> transform(Unchecked.function(message -> deserialize(message)))
                 .onFailure().transform(SubscriptionException::new)
-                .runSubscriptionOn(executorService)
                 .emitOn(this::runOnContext)
                 .onTermination().invoke(executorService::shutdown);
     }
@@ -124,8 +124,9 @@ class ConsumerImpl implements Consumer {
             @NonNull Class<T> clazz) {
         final var executorService = Executors.newSingleThreadExecutor(ConsumerWorkerThread::new);
         return subscription(stream, consumer)
+                .runSubscriptionOn(executorService)
                 .onItem().transformToMulti(subscription -> Multi.createBy().repeating()
-                        .uni(() -> Uni.createFrom().item(42))
+                        .uni(() -> Uni.createFrom().item(42).runSubscriptionOn(executorService))
                         .whilst(v -> true)
                         .onItem().transformToMultiAndConcatenate(v -> fetch(subscription, timeout, batchSize)))
                 .select().where(Objects::nonNull)
@@ -133,7 +134,6 @@ class ConsumerImpl implements Consumer {
                 .concatenate()
                 .onItem().transform(Unchecked.function(message -> deserialize(message, clazz)))
                 .onFailure().transform(SubscriptionException::new)
-                .runSubscriptionOn(executorService)
                 .emitOn(this::runOnContext)
                 .onTermination().invoke(executorService::shutdown);
     }
