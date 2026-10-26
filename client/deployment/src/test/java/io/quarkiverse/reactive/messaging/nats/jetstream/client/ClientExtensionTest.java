@@ -10,6 +10,8 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 
 import jakarta.inject.Inject;
@@ -28,6 +30,8 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer.api.Cons
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.AcknowledgeMetadata;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.Message;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.MessageMetadata;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.Metadata;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.PublishHeaders;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.store.KeyValueException;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.stream.api.Stream;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.stream.configuration.StreamConfiguration;
@@ -83,6 +87,52 @@ public class ClientExtensionTest {
         assertThat(received.getMetadata(MessageMetadata.class).orElseThrow().streamSequence())
                 .isEqualTo(acknowledgement.sequenceNumber());
         Uni.createFrom().completionStage(received.ack()).await().atMost(TIMEOUT);
+    }
+
+    @Test
+    void publishToDynamicSubjectMatchingWildcardSubject() {
+        final var message = messageTo("account.42.orders.created");
+        final var published = client.publish(message, "client-orders", "account.*.orders.>").await().atMost(TIMEOUT);
+
+        assertThat(published.getMetadata(AcknowledgeMetadata.class).orElseThrow().stream()).isEqualTo("client-orders");
+
+        final var other = messageTo("account.43.orders.created");
+        assertThat(client.publish(other, "client-orders", "account.*.orders.>").await().atMost(TIMEOUT)
+                .getMetadata(AcknowledgeMetadata.class)).isPresent();
+    }
+
+    @Test
+    void publishToSubjectNotMatchingWildcardSubjectIsNotAcknowledged() {
+        final var reason = publishRejection("account.42.billing.created", "account.*.orders.>");
+
+        assertThat(reason).hasCauseInstanceOf(IllegalArgumentException.class);
+        assertThat(reason.getCause()).hasMessageContaining("account.42.billing.created")
+                .hasMessageContaining("account.*.orders.>");
+    }
+
+    @Test
+    void publishSubjectIsMatchedTokenAware() {
+        final var reason = publishRejection("accounting.x", "account.>");
+
+        assertThat(reason).hasCauseInstanceOf(IllegalArgumentException.class);
+    }
+
+    /** Publishes to the subject through a channel configured with the pattern and returns the nack reason. */
+    private Throwable publishRejection(String subject, String pattern) {
+        final var nack = new AtomicReference<Throwable>();
+        final var headers = PublishHeaders.of();
+        headers.setSubject(subject);
+        final var message = Message.of("created", Metadata.of(headers),
+                metadata -> CompletableFuture.completedFuture(null),
+                (reason, metadata) -> {
+                    nack.set(reason);
+                    return CompletableFuture.completedFuture(null);
+                });
+
+        client.publish(message, "client-orders", pattern).await().atMost(TIMEOUT);
+
+        assertThat(nack.get()).isNotNull();
+        return nack.get();
     }
 
     @Test
@@ -264,6 +314,12 @@ public class ClientExtensionTest {
         consumers = client.consumerManagement("client-test").consumers().map(Consumer::name).collect().asList().await()
                 .atMost(TIMEOUT);
         assertThat(consumers).contains("client-pull-subscription");
+    }
+
+    private static Message<String> messageTo(String subject) {
+        final var headers = PublishHeaders.of();
+        headers.setSubject(subject);
+        return Message.of("created", Metadata.of(headers));
     }
 
     private <T> byte[] toBytes(T payload) {
