@@ -63,10 +63,10 @@ public final class Messages {
             io.quarkiverse.reactive.messaging.nats.jetstream.client.message.@NonNull Metadata metadata) {
         final var items = new ArrayList<>();
         for (Object item : metadata) {
-            if (item instanceof ContextMetadata(io.vertx.core.Context context)) {
-                items.add(new LocalContextMetadata(context));
-            } else if (item instanceof TraceContextMetadata(io.opentelemetry.context.Context current, io.opentelemetry.context.Context previous)) {
-                items.add(TracingMetadata.with(current, previous));
+            if (item instanceof ContextMetadata contextMetadata) {
+                items.add(new LocalContextMetadata(contextMetadata.context()));
+            } else if (item instanceof TraceContextMetadata traceContext) {
+                items.add(TracingMetadata.with(traceContext.current(), traceContext.previous()));
             } else {
                 items.add(item);
             }
