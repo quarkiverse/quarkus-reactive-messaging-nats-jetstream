@@ -37,7 +37,7 @@ public class DataConsumingBean implements MessageConsumer<String> {
         try {
             return Uni.createFrom()
                     .item(() -> message.getMetadata(Headers.class)
-                            .map(headers -> Tuple2.of(headers.get("RESOURCE_ID").getFirst(),
+                            .map(headers -> Tuple2.of(headers.get("RESOURCE_ID").get(0),
                                     headers.messageId().orElseThrow(() -> new RuntimeException("Headers missing message ID"))))
                             .orElseThrow(() -> new RuntimeException("Headers is missing")))
                     .onItem()

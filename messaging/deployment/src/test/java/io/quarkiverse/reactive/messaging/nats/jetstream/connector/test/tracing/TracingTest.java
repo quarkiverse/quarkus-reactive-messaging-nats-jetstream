@@ -62,7 +62,7 @@ class TracingTest {
         RestAssured.given().pathParam("id", messageId).pathParam("data", data).post("/data/{id}/{data}").then().statusCode(204);
 
         final var spans = spanExporter.getFinishedSpanItems(5);
-        assertThat(spans).extracting(SpanData::getTraceId).containsOnly(spans.getFirst().getTraceId());
+        assertThat(spans).extracting(SpanData::getTraceId).containsOnly(spans.get(0).getTraceId());
 
         final var request = single(spans, SpanKind.SERVER, null);
         final var publishData = single(spans, SpanKind.PRODUCER, "data-tracing");

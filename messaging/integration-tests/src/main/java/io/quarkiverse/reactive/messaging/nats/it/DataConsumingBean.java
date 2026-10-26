@@ -32,7 +32,7 @@ public class DataConsumingBean {
         logger.infof("Received message: %s", message);
         message.getMetadata(Headers.class)
                 .ifPresent(headers -> lastData = Optional.of(
-                        new Data(message.getPayload().getData(), headers.get("RESOURCE_ID").getFirst(),
+                        new Data(message.getPayload().getData(), headers.get("RESOURCE_ID").get(0),
                                 headers.messageId().orElse(null), message.getPayload().getCreationTime())));
         message.ack();
     }
