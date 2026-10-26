@@ -5,6 +5,7 @@ import static org.awaitility.Awaitility.await;
 
 import java.lang.reflect.Proxy;
 import java.time.Duration;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -45,7 +46,6 @@ class MessageSubscriberProcessorTest {
             await().atMost(Duration.ofSeconds(5)).until(() -> processor.health().healthy());
         } finally {
             processor.stop();
-            ;
         }
     }
 
@@ -61,6 +61,37 @@ class MessageSubscriberProcessorTest {
 
             assertThat(processor.health().healthy()).isFalse();
             assertThat(processor.health().message()).contains("Subject data.test not found on stream test");
+        } finally {
+            processor.stop();
+        }
+    }
+
+    @Test
+    void isHealthyWhenWildcardSubjectIsCoveredByStreamSubject() {
+        final var processor = processor(new AtomicReference<>(Set.of("account.*.orders.>")), new AtomicInteger(),
+                "account.*.orders.>");
+        subscribe(processor);
+
+        try {
+            await().atMost(Duration.ofSeconds(5)).until(() -> processor.health().healthy());
+        } finally {
+            processor.stop();
+        }
+    }
+
+    @Test
+    void isNotHealthyWhenWildcardSubjectIsWiderThanStreamSubjects() {
+        final var lookups = new AtomicInteger();
+        final var processor = processor(new AtomicReference<>(Set.of("account.*.orders.>")), lookups, "account.>");
+        final var emitter = subscribe(processor);
+
+        try {
+            await().atMost(Duration.ofSeconds(5)).until(() -> lookups.get() > 1);
+            emitter.emit(Message.of("published to subjects the stream does not store"));
+
+            assertThat(processor.health().healthy()).isFalse();
+            assertThat(processor.health().message())
+                    .contains("Subject account.> not found on stream test");
         } finally {
             processor.stop();
         }
@@ -91,7 +122,7 @@ class MessageSubscriberProcessorTest {
         final var published = new CopyOnWriteArrayList<String>();
         final var processor = processor(new AtomicReference<>(Set.of("data.>")), new AtomicInteger(),
                 message -> {
-                    if (message.getPayload().equals("fails")) {
+                    if (Objects.equals(message.getPayload(), "fails")) {
                         return Uni.createFrom().failure(new IllegalStateException("publish failed"));
                     }
                     published.add(message.getPayload());
@@ -155,8 +186,19 @@ class MessageSubscriberProcessorTest {
         return processor(subjects, lookups, message -> Uni.createFrom().item(message));
     }
 
+    private MessageSubscriberProcessor<String> processor(AtomicReference<Set<String>> subjects, AtomicInteger lookups,
+            String subject) {
+        return processor(subjects, lookups, subject, message -> Uni.createFrom().item(message));
+    }
+
+    private MessageSubscriberProcessor<String> processor(AtomicReference<Set<String>> subjects, AtomicInteger lookups,
+            Function<io.quarkiverse.reactive.messaging.nats.jetstream.client.message.Message<String>, Uni<io.quarkiverse.reactive.messaging.nats.jetstream.client.message.Message<String>>> publish) {
+        return processor(subjects, lookups, "data.test", publish);
+    }
+
     @SuppressWarnings({ "unchecked", "ReactiveStreamsUnusedPublisher" })
     private MessageSubscriberProcessor<String> processor(AtomicReference<Set<String>> subjects, AtomicInteger lookups,
+            String subject,
             Function<io.quarkiverse.reactive.messaging.nats.jetstream.client.message.Message<String>, Uni<io.quarkiverse.reactive.messaging.nats.jetstream.client.message.Message<String>>> publish) {
         final var streamManagement = (StreamManagement) Proxy.newProxyInstance(StreamManagement.class.getClassLoader(),
                 new Class<?>[] { StreamManagement.class },
@@ -184,7 +226,7 @@ class MessageSubscriberProcessorTest {
                     }
                     throw new UnsupportedOperationException(method.getName());
                 });
-        return new MessageSubscriberProcessor<>(configuration(), client);
+        return new MessageSubscriberProcessor<>(configuration(subject), client);
     }
 
     private static Stream stream(Set<String> subjects) {
@@ -205,7 +247,7 @@ class MessageSubscriberProcessorTest {
                 });
     }
 
-    private static PublisherChannelConfiguration configuration() {
+    private static PublisherChannelConfiguration configuration(String channelSubject) {
         return new PublisherChannelConfiguration() {
             @Override
             public @NonNull String name() {
@@ -229,7 +271,7 @@ class MessageSubscriberProcessorTest {
 
             @Override
             public @NonNull String subject() {
-                return "data.test";
+                return channelSubject;
             }
 
             @Override

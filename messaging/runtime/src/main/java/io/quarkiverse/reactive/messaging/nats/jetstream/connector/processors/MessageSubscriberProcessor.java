@@ -7,6 +7,7 @@ import org.eclipse.microprofile.reactive.messaging.Message;
 import org.jspecify.annotations.NonNull;
 
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.Client;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.Subjects;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.stream.api.Stream;
 import io.quarkiverse.reactive.messaging.nats.jetstream.connector.configuration.ChannelConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.connector.configuration.PublisherChannelConfiguration;
@@ -123,7 +124,7 @@ public class MessageSubscriberProcessor<T> implements MessageProcessor {
                         String.format("Stream %s not found", channelConfiguration.stream())))
                 .onItem().invoke(Unchecked.consumer(stream -> {
                     final var subjects = stream.configuration().subjects();
-                    if (subjects.stream().noneMatch(pattern -> Subjects.matches(pattern, channelConfiguration.subject()))) {
+                    if (subjects.stream().noneMatch(pattern -> Subjects.covers(pattern, channelConfiguration.subject()))) {
                         throw new IllegalStateException(String.format("Subject %s not found on stream %s with subjects %s",
                                 channelConfiguration.subject(), channelConfiguration.stream(), subjects));
                     }
