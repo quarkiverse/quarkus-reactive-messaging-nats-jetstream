@@ -3,19 +3,19 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>io.quarkiverse.reactivemessaging.nats-jetstream</groupId>
-        <artifactId>quarkus-messaging-nats-jetstream-parent</artifactId>
+        <artifactId>quarkus-nats-jetstream-client-parent</artifactId>
         <version>4.0.0-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
-    <artifactId>quarkus-reactive-messaging-nats-jetstream-docs</artifactId>
-    <name>Quarkus Messaging Nats Jetstream - Documentation</name>
+    <artifactId>quarkus-nats-jetstream-client-docs</artifactId>
+    <name>Quarkus Nats JetStream Client - Documentation</name>
 
     <dependencies>
         <!-- Make sure the doc is built after the other artifacts -->
         <dependency>
             <groupId>io.quarkiverse.reactivemessaging.nats-jetstream</groupId>
-            <artifactId>quarkus-messaging-nats-jetstream-deployment</artifactId>
+            <artifactId>quarkus-nats-jetstream-client-deployment</artifactId>
             <version>${project.version}</version>
         </dependency>
     </dependencies>
@@ -34,7 +34,7 @@
                         </goals>
                         <configuration>
                             <files>
-                                <file>${project.basedir}/../.github/project.yml</file>
+                                <file>${project.basedir}/../../.github/project.yml</file>
                             </files>
                         </configuration>
                     </execution>
