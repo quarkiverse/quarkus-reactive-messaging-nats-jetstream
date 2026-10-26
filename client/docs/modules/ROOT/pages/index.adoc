@@ -1,0 +1,419 @@
+= Quarkus NATS Jetstream Client
+
+include::./includes/attributes.adoc[]
+
+This extension provides a reactive client for https://docs.nats.io/nats-concepts/jetstream[NATS JetStream] inside a Quarkus App, in JVM and Native mode. It does not depend on Reactive Messaging.
+
+NOTE: The client and configuration were significantly reworked after version `3.38.0`. If you are using `3.38.0`
+or earlier, see the
+https://github.com/quarkiverse/quarkus-reactive-messaging-nats-jetstream/blob/3.38.0/docs/modules/ROOT/pages/index.adoc[3.38.0 documentation]
+instead of this page.
+
+== Installation
+
+Add the `io.quarkiverse.reactivemessaging.nats-jetstream:quarkus-nats-jetstream-client` extension to your build file.
+
+For instance, with Maven, add the following dependency to your POM file:
+
+[source,xml,subs=attributes+]
+----
+<dependency>
+    <groupId>io.quarkiverse.reactivemessaging.nats-jetstream</groupId>
+    <artifactId>quarkus-nats-jetstream-client</artifactId>
+    <version>{project-version}</version>
+</dependency>
+----
+
+To consume and publish through SmallRye Reactive Messaging channels, use the `quarkus-messaging-nats-jetstream` extension instead, which builds on this one.
+
+== Injecting the JetStream `Client`
+
+Each configured datasource (see the "Datasources" section below) is exposed as an `@ApplicationScoped` CDI bean of
+type `io.quarkiverse.reactive.messaging.nats.jetstream.client.Client`. The extension creates and registers these
+beans itself - there is nothing to produce or configure - and closes them automatically on application shutdown.
+You can inject a `Client` wherever you need direct access to the NATS JetStream API, for example to reach the
+Key/Value or Object store (see below) or to publish/subscribe.
+
+For the *default* (unnamed) datasource, inject it directly with a plain, unqualified `Client`:
+
+----
+@Inject
+Client client;
+----
+
+For an additional, *named* datasource configured under `quarkus.messaging.nats.data-sources.[datasource-name]`,
+qualify the injection point with `@Identifier("[datasource-name]")`:
+
+----
+import io.smallrye.common.annotation.Identifier;
+
+@Inject
+@Identifier("orders-db")
+Client client;
+----
+
+If the datasource to use is only known at runtime, inject `@Any Instance<Client> clients` and resolve it by name
+yourself, for instance with SmallRye's `CDIUtils.getInstanceById(clients, datasourceName)`.
+
+== Using NATS Key/Value store
+If you want to use the Key/Value store in NATS, then configure your application as follows:
+
+----
+quarkus.messaging.nats.connection.servers=nats://localhost:4242
+quarkus.messaging.nats.connection.username=guest
+quarkus.messaging.nats.connection.password=guest
+
+# Creates a "test" bucket stored in memory. This part is optional. If you already have created a bucket on NATS
+# then this configuration is redundant.
+quarkus.messaging.nats.key-values.test.bucket-name=test
+quarkus.messaging.nats.key-values.test.storage-type=Memory
+quarkus.messaging.nats.key-values.test.description=Test bucket
+----
+
+Then your application can use the Key/Value store like this, through `Client.keyValue(bucketName)`:
+
+----
+@Path("/key-value")
+@RequestScoped
+class KeyValueStoreResource {
+    private final Client client;
+
+    @Inject
+    public KeyValueStoreResource(Client client) {
+        this.client = client;
+    }
+
+    @GET
+    @Path("{key}")
+    public Uni<byte[]> getValue(@PathParam("key") String key) {
+        return client.keyValue("test").get(key).onItem().transform(entry -> entry.value().orElse(null));
+    }
+
+    @PUT
+    @Path("{key}")
+    @Consumes("application/octet-stream")
+    public Uni<Void> putValue(@PathParam("key") String key, byte[] value) {
+        return client.keyValue("test").put(key, value).replaceWithVoid();
+    }
+
+    @DELETE
+    @Path("{key}")
+    public Uni<Void> deleteValue(@PathParam("key") String key) {
+        return client.keyValue("test").delete(key);
+    }
+}
+----
+
+=== Per-entry TTL
+
+Buckets configured with `limit-marker-ttl` accept per-entry TTLs (requires NATS server 2.11+). `create` and `purge`
+have overloads taking a `Duration`:
+
+[source,java]
+----
+client.keyValue("cache").create(key, value, Duration.ofMinutes(5));
+client.keyValue("cache").purge(key, Duration.ofMinutes(1));
+----
+
+The server only supports whole-second TTLs, so the duration is rounded up to the next second.
+
+== Using NATS Object Store
+If you want to use the Object store in NATS, then configure your application as follows:
+
+----
+quarkus.messaging.nats.connection.servers=nats://localhost:4242
+quarkus.messaging.nats.connection.username=guest
+quarkus.messaging.nats.connection.password=guest
+
+# Creates a "test" object store. This part is optional. If you already have created the bucket on NATS
+# then this configuration is redundant.
+quarkus.messaging.nats.object-stores.test.bucket-name=test
+quarkus.messaging.nats.object-stores.test.description=Test object store
+----
+
+Then your application can use the Object store like this, through `Client.objectStore(bucketName)`:
+
+----
+@Path("/object-store")
+@RequestScoped
+class ObjectStoreResource {
+    private final Client client;
+
+    @Inject
+    public ObjectStoreResource(Client client) {
+        this.client = client;
+    }
+
+    @GET
+    @Path("{name}")
+    public Uni<byte[]> getObject(@PathParam("name") String name) {
+        return client.objectStore("test").get(name).onItem().transform(ObjectEntry::data);
+    }
+
+    @PUT
+    @Path("{name}")
+    @Consumes("application/octet-stream")
+    public Uni<Void> putObject(@PathParam("name") String name, byte[] data) {
+        return client.objectStore("test").put(name, data).replaceWithVoid();
+    }
+
+    @DELETE
+    @Path("{name}")
+    public Uni<Void> deleteObject(@PathParam("name") String name) {
+        return client.objectStore("test").delete(name).replaceWithVoid();
+    }
+}
+----
+
+== Serializing Java Objects
+
+By default, Java objects are serialized using `java.io.*` streams. If either the `quarkus-jackson` or
+`quarkus-jsonb` dependency is present, objects are serialized as JSON instead.
+
+To use a custom serializer, set the build-time property `quarkus.messaging.nats.serializer` to the
+fully-qualified class name of a class that implements
+`io.quarkiverse.reactive.messaging.nats.jetstream.client.message.Serializer`. The default value is
+`io.quarkiverse.reactive.messaging.nats.jetstream.client.message.JacksonSerializer`.
+
+[source,properties]
+----
+quarkus.messaging.nats.serializer=com.example.MySerializer
+----
+
+== Open Telemetry Tracing
+To use Open Telemetry tracing, add the `quarkus-opentelemetry` dependency. Spans follow the
+https://opentelemetry.io/docs/specs/semconv/messaging/messaging-spans/[OpenTelemetry messaging semantic conventions]
+as implemented by the OpenTelemetry instrumentation API bundled with Quarkus, so they look like the spans of the
+other Quarkus messaging extensions.
+
+[cols="2,1,3",options="header"]
+|======
+| Span | Kind | Created when
+| `{subject} publish` | `PRODUCER` | A message is published. The span covers the publish until JetStream acknowledged it, and
+records the failure when publishing fails.
+| `{subject} receive` | `CLIENT` | A message is pulled on demand with `Client.next` or `Client.fetch`. The span ends as
+soon as the message is received.
+|======
+
+The trace context of the publisher is propagated in the message headers. It is the parent of the `receive`
+spans, and is also added to them as a span link.
+
+Besides the standard `messaging.*` attributes (`messaging.system` is `nats`, `messaging.destination.name` is the
+subject, `messaging.message.id` the message id and `messaging.message.conversation_id` the request/reply correlation
+id), spans carry NATS JetStream specific attributes:
+
+* `messaging.nats.stream.name`
+* `messaging.nats.consumer.name`, `messaging.nats.stream.sequence`, `messaging.nats.consumer.sequence` and
+`messaging.nats.message.delivered_count` on received messages
+
+The message payload is not recorded, since it may contain sensitive data and can be arbitrarily large. It can be
+recorded as the `messaging.nats.message.payload` attribute with:
+
+[source,properties]
+----
+quarkus.messaging.nats.trace-payload=true
+----
+
+== Configuration
+The stream, consumer, key-value store and object store configurations are all optional. Each declared entry is created on NATS if it does not already exist (`addIfAbsent`); if the configuration for a given name is omitted entirely, it is assumed to already exist on NATS.
+
+.NATS connection configuration
+[cols="4",options="header"]
+|======
+| Property Name | Description | Type | Default Value
+| quarkus.messaging.nats.connection.servers | A comma-separated list of URI's nats://\{host\}:\{port\} to use for establishing the initial connection to the NATS cluster. | String | nats://localhost:4222
+| quarkus.messaging.nats.connection.username | The username to connect to the NATS server | String |
+| quarkus.messaging.nats.connection.password | The password to connect to the NATS server | String |
+| quarkus.messaging.nats.connection.token | The token to connect to the NATS server | String |
+| quarkus.messaging.nats.connection.credential-path | The path to the credentials file to connect to the NATS server | String |
+| quarkus.messaging.nats.connection.connection-timeout | The connection timeout | Duration |
+| quarkus.messaging.nats.connection.error-listener | The classname for the error listener | String |
+| quarkus.messaging.nats.connection.buffer-size | The size in bytes to make buffers for connections | Integer |
+| quarkus.messaging.nats.connection.tls-algorithm | The TLS algorithm | String |
+| quarkus.messaging.nats.connection.connection-attempts | The maximum number of attempts to attempt to re-connect to NATS | Integer | -1 (unlimited)
+| quarkus.messaging.nats.connection.connection-backoff | Back-off delay between to attempt to re-connect to NATS | Duration | 1s
+| quarkus.messaging.nats.connection.tls-configuration-name | The name of the TLS configuration (bucket) used for client authentication in the TLS registry | String |
+| quarkus.messaging.nats.connection.inbox-prefix | Retrieves the optional inbox prefix used for communication. The inbox prefix allows customization of the subscriber's inbox name. | String |
+|======
+
+=== Datasources
+
+The connection, streams, consumers, key-value stores and object stores configured directly under
+`quarkus.messaging.nats.*` (as shown in the table above, and in the tables below) belong to the *default*
+datasource. For symmetry with named datasources, the same properties can also be set under
+`quarkus.messaging.nats.default.*` (for example `quarkus.messaging.nats.default.connection.servers`) - both
+spellings are aliases for exactly the same configuration, so use whichever reads better in your application.
+
+Additional, named datasources - each with their own connection, streams, consumers, key-value stores and object
+stores - are configured under `quarkus.messaging.nats.data-sources.[datasource-name]`, using the same property
+shape as the default datasource:
+
+----
+quarkus.messaging.nats.data-sources.orders-db.connection.servers=nats://orders-nats:4222
+quarkus.messaging.nats.data-sources.orders-db.streams.orders.name=orders
+quarkus.messaging.nats.data-sources.orders-db.streams.orders.subjects=orders.*
+----
+
+Every configured datasource - default and named - gets its own `Client` CDI bean; see "Injecting the JetStream
+`Client`" above.
+
+Each entry in the `quarkus.messaging.nats.streams` map is created (if absent) with `[stream-name]` as its map key; `name` must be set explicitly and is conventionally the same value as `[stream-name]`.
+
+.NATS JetStream Stream configuration
+[cols="4",options="header"]
+|======
+| Property Name | Description | Type | Default Value
+| quarkus.messaging.nats.streams.[stream-name].name | The name of the stream | String |
+| quarkus.messaging.nats.streams.[stream-name].retention-policy | Declares the retention policy for the stream | Limits, Interest or WorkQueue | Interest
+| quarkus.messaging.nats.streams.[stream-name].compression | The compression used for stream data | None or S2 | None
+| quarkus.messaging.nats.streams.[stream-name].storage-type | The storage type for stream data | File or Memory | File
+| quarkus.messaging.nats.streams.[stream-name].discard-policy | The discard policy for this stream | New or Old | Old
+| quarkus.messaging.nats.streams.[stream-name].description | Description of the stream | String |
+| quarkus.messaging.nats.streams.[stream-name].max-consumers | The maximum number of consumers for this stream | Long |
+| quarkus.messaging.nats.streams.[stream-name].max-messages | The maximum number of messages for this stream | Long |
+| quarkus.messaging.nats.streams.[stream-name].max-messages-per-subject | The maximum number of messages per subject for this stream | Long |
+| quarkus.messaging.nats.streams.[stream-name].max-bytes | The maximum number of bytes for this stream | Long |
+| quarkus.messaging.nats.streams.[stream-name].max-age | The maximum message age for this stream | Duration |
+| quarkus.messaging.nats.streams.[stream-name].maximum-message-size | The maximum message size for this stream | Integer |
+| quarkus.messaging.nats.streams.[stream-name].replicas | The number of replicas a message must be stored on | Integer | 1
+| quarkus.messaging.nats.streams.[stream-name].no-ack | Whether acknowledgements are disabled for this stream | Boolean | true
+| quarkus.messaging.nats.streams.[stream-name].template-owner | The template json for this stream | String |
+| quarkus.messaging.nats.streams.[stream-name].duplicate-window | The duplicate checking window for the stream. `PT0S` (zero) means duplicate checking is not enabled | Duration |
+| quarkus.messaging.nats.streams.[stream-name].subjects | A comma separated list of the subject names bound to the stream | String |
+| quarkus.messaging.nats.streams.[stream-name].placement | Placement directives to consider when placing replicas of this stream, as a nested group (`.cluster`, `.tags`); random placement when unset | Group |
+| quarkus.messaging.nats.streams.[stream-name].republish | Republish configuration, as a nested group (`.source`, `.destination`, `.headers-only`) | Group |
+| quarkus.messaging.nats.streams.[stream-name].subject-transform | Subject transform applied to the stream, as a nested group (`.source`, `.destination`) | Group |
+| quarkus.messaging.nats.streams.[stream-name].consumer-limits | Default limits applied to consumers of this stream, as a nested group (`.max-ack-pending`, `.inactive-threshold`) | Group |
+| quarkus.messaging.nats.streams.[stream-name].mirror | Configures this stream to mirror another stream, as a nested group (`.source-name`, `.name`, `.start-sequence`, `.start-time`, `.filter-subject`, `.external.*`, `.subject-transforms`, `.consumer-source.*`) | Group |
+| quarkus.messaging.nats.streams.[stream-name].sources.[n] | Sources this stream from one or more other streams; each entry has the same shape as `mirror` | List of Group |
+| quarkus.messaging.nats.streams.[stream-name].sealed | Whether the stream is sealed (no further changes to messages allowed) | Boolean | false
+| quarkus.messaging.nats.streams.[stream-name].allow-rollup | Whether the stream allows rollup | Boolean | false
+| quarkus.messaging.nats.streams.[stream-name].allow-direct | Whether the stream allows direct message access | Boolean | false
+| quarkus.messaging.nats.streams.[stream-name].mirror-direct | Whether the stream allows higher performance and unified direct access for mirrors as well | Boolean | false
+| quarkus.messaging.nats.streams.[stream-name].deny-delete | Whether message delete is denied for the stream | Boolean | false
+| quarkus.messaging.nats.streams.[stream-name].deny-purge | Whether purge is denied for the stream | Boolean | false
+| quarkus.messaging.nats.streams.[stream-name].discard-new-per-subject | Whether the discard-new policy with max messages per subject is applied per subject | Boolean | false
+| quarkus.messaging.nats.streams.[stream-name].first-sequence | The first sequence used in the stream | Long | 1
+| quarkus.messaging.nats.streams.[stream-name].subject-delete-marker-ttl | The subject delete marker TTL | Duration |
+| quarkus.messaging.nats.streams.[stream-name].allow-message-ttl | Whether per-message TTL is allowed | Boolean | false
+| quarkus.messaging.nats.streams.[stream-name].allow-message-schedules | Whether message schedules are allowed | Boolean | false
+| quarkus.messaging.nats.streams.[stream-name].allow-message-counter | Whether the stream is a counter stream | Boolean | false
+| quarkus.messaging.nats.streams.[stream-name].allow-atomic-publish | Whether atomic (batch) publish is allowed | Boolean | false
+| quarkus.messaging.nats.streams.[stream-name].allow-batched | Whether batched publish is allowed | Boolean | false
+| quarkus.messaging.nats.streams.[stream-name].persist-mode | The persist mode used by the server when storing messages | Default or Async | Default
+| quarkus.messaging.nats.streams.[stream-name].metadata.[key] | Application-defined metadata for the stream | Map<String, String> |
+|======
+
+=== Consumer configuration
+
+Unlike streams, consumers are configured as a single, flat map under `quarkus.messaging.nats.consumers`, each entry naming the `stream` it is bound to. Consumers are pull-based when only `pull-options` (or nothing) is set; `push-options` creates a push consumer.
+
+.NATS JetStream Consumer configuration
+[cols="4",options="header"]
+|======
+| Property Name | Description | Type | Default Value
+| quarkus.messaging.nats.consumers.[consumer-name].stream | The name of the stream this consumer is bound to | String |
+| quarkus.messaging.nats.consumers.[consumer-name].name | The name of the consumer | String |
+| quarkus.messaging.nats.consumers.[consumer-name].durable | Set to true if the consumer should be durable | Boolean | false
+| quarkus.messaging.nats.consumers.[consumer-name].description | Description of the consumer | String |
+| quarkus.messaging.nats.consumers.[consumer-name].filter-subject | A subject that overlaps with the subjects bound to the stream to filter delivery to subscribers. Cannot be used together with `filter-subjects` | String |
+| quarkus.messaging.nats.consumers.[consumer-name].filter-subjects | A comma separated list of subjects that overlap with the subjects bound to the stream to filter delivery to subscribers. Cannot be used together with `filter-subject` | String |
+| quarkus.messaging.nats.consumers.[consumer-name].deliver-policy | The point in the stream to receive messages from | All, Last, New, ByStartSequence, ByStartTime or LastPerSubject | All
+| quarkus.messaging.nats.consumers.[consumer-name].start-sequence | Used with the `ByStartSequence` deliver policy | Long | 0
+| quarkus.messaging.nats.consumers.[consumer-name].start-time | Used with the `ByStartTime` deliver policy | ZonedDateTime |
+| quarkus.messaging.nats.consumers.[consumer-name].acknowledge-wait | The duration the server will wait for an ack for any individual message once it has been delivered to a consumer. If an ack is not received in time, the message will be redelivered | Duration |
+| quarkus.messaging.nats.consumers.[consumer-name].inactive-threshold | Duration that instructs the server to clean up the consumer once inactive for that long | Duration |
+| quarkus.messaging.nats.consumers.[consumer-name].max-acknowledge-pending | The maximum number of messages, without an acknowledgement, that can be outstanding | Long |
+| quarkus.messaging.nats.consumers.[consumer-name].max-deliver | The maximum number of times a specific message delivery will be attempted | Long |
+| quarkus.messaging.nats.consumers.[consumer-name].backoff | A comma separated list of durations controlling the re-delivery of messages on acknowledgement timeout | List of Duration |
+| quarkus.messaging.nats.consumers.[consumer-name].replay-policy | Whether messages are replayed at the original publish rate (`Original`) or as fast as possible (`Instant`) | Instant or Original | Instant
+| quarkus.messaging.nats.consumers.[consumer-name].replicas | The number of replicas for the consumer's state. Defaults to inheriting the number of replicas from the stream | Integer |
+| quarkus.messaging.nats.consumers.[consumer-name].memory-storage | If set, forces the consumer state to be kept in memory rather than inherit the storage type of the stream | Boolean | false
+| quarkus.messaging.nats.consumers.[consumer-name].sample-frequency | The percentage of acknowledgements to sample for observability, e.g. `30` or `30%` | String |
+| quarkus.messaging.nats.consumers.[consumer-name].headers-only | Delivers only the headers of messages, not the bodies | Boolean | false
+| quarkus.messaging.nats.consumers.[consumer-name].pause-until | The time until the consumer is paused | ZonedDateTime |
+| quarkus.messaging.nats.consumers.[consumer-name].metadata.[key] | Application-defined metadata for the consumer | Map<String, String> |
+| quarkus.messaging.nats.consumers.[consumer-name].pull-options.max-waiting | The number of pulls that can be outstanding on this pull consumer | Long |
+| quarkus.messaging.nats.consumers.[consumer-name].pull-options.max-expires | The max expire time the server allows on pull requests | Duration |
+| quarkus.messaging.nats.consumers.[consumer-name].pull-options.max-batch | The maximum batch size a single pull request can make | Long |
+| quarkus.messaging.nats.consumers.[consumer-name].pull-options.max-bytes | The maximum total bytes that can be requested in a given batch | Long |
+| quarkus.messaging.nats.consumers.[consumer-name].push-options.deliver-subject | The subject messages are pushed to | String |
+| quarkus.messaging.nats.consumers.[consumer-name].push-options.deliver-group | The optional deliver (queue) group to join | String |
+| quarkus.messaging.nats.consumers.[consumer-name].push-options.flow-control | Enables per-subscription flow control using a sliding-window protocol | Boolean | false
+| quarkus.messaging.nats.consumers.[consumer-name].push-options.idle-heartbeat | If set, the server regularly sends a status message while there are no new messages to send, so the client knows the service is still up | Duration |
+| quarkus.messaging.nats.consumers.[consumer-name].push-options.rate-limit | Used to throttle the delivery of messages to the consumer, in bits per second | Long |
+|======
+
+
+=== Key/Value Store configuration
+
+Each entry in the `quarkus.messaging.nats.key-values` map is created (if absent) with `[bucket-name]` as its map key; `bucket-name` must be set explicitly and is conventionally the same value as `[bucket-name]`.
+
+.NATS Key/Value Store configuration
+[cols="4",options="header"]
+|======
+| Property Name | Description | Type | Default Value
+| quarkus.messaging.nats.key-values.[bucket-name].bucket-name | The name of the bucket | String |
+| quarkus.messaging.nats.key-values.[bucket-name].description | Description of the Key/Value store | String |
+| quarkus.messaging.nats.key-values.[bucket-name].storage-type | The storage type | File or Memory | File
+| quarkus.messaging.nats.key-values.[bucket-name].max-bucket-size | The maximum number of bytes for this bucket | Long |
+| quarkus.messaging.nats.key-values.[bucket-name].maximum-value-size | The maximum size for an individual value in the bucket | Integer |
+| quarkus.messaging.nats.key-values.[bucket-name].max-history-per-key | The maximum amount of history for any one key, from 1 to 64 inclusive. Includes the current value | Integer | 64
+| quarkus.messaging.nats.key-values.[bucket-name].ttl | The maximum age for a value in this bucket | Duration |
+| quarkus.messaging.nats.key-values.[bucket-name].limit-marker-ttl | The limit marker TTL | Duration |
+| quarkus.messaging.nats.key-values.[bucket-name].replicas | The number of replicas for this bucket | Integer | 1
+| quarkus.messaging.nats.key-values.[bucket-name].compression | Whether to use compression | Boolean | false
+| quarkus.messaging.nats.key-values.[bucket-name].republish | Republish configuration, as a nested group (`.source`, `.destination`, `.headers-only`) | Group |
+| quarkus.messaging.nats.key-values.[bucket-name].placement | Placement directives to consider when placing replicas of this bucket, as a nested group (`.cluster`, `.tags`); random placement when unset | Group |
+| quarkus.messaging.nats.key-values.[bucket-name].mirror | Configures this bucket to mirror another bucket/stream; same shape as the stream's `mirror` | Group |
+| quarkus.messaging.nats.key-values.[bucket-name].sources.[n] | Sources this bucket from one or more other buckets/streams; same shape as the stream's `sources` | List of Group |
+| quarkus.messaging.nats.key-values.[bucket-name].metadata.[key] | Application-defined metadata for the bucket | Map<String, String> |
+|======
+
+=== Object Store configuration
+
+Each entry in the `quarkus.messaging.nats.object-stores` map is created (if absent) with `[bucket-name]` as its map key; `bucket-name` must be set explicitly and is conventionally the same value as `[bucket-name]`.
+
+.NATS Object Store configuration
+[cols="4",options="header"]
+|======
+| Property Name | Description | Type | Default Value
+| quarkus.messaging.nats.object-stores.[bucket-name].bucket-name | The name of the bucket | String |
+| quarkus.messaging.nats.object-stores.[bucket-name].description | Description of the object store | String |
+| quarkus.messaging.nats.object-stores.[bucket-name].storage-type | The storage type | File or Memory | File
+| quarkus.messaging.nats.object-stores.[bucket-name].max-bucket-size | The maximum number of bytes for this bucket | Long |
+| quarkus.messaging.nats.object-stores.[bucket-name].ttl | The maximum age for a value in this bucket | Duration |
+| quarkus.messaging.nats.object-stores.[bucket-name].replicas | The number of replicas for this bucket | Integer | 1
+| quarkus.messaging.nats.object-stores.[bucket-name].compression | Whether to use compression | Boolean | false
+| quarkus.messaging.nats.object-stores.[bucket-name].placement | Placement directives to consider when placing replicas of this bucket, as a nested group (`.cluster`, `.tags`); random placement when unset | Group |
+| quarkus.messaging.nats.object-stores.[bucket-name].metadata.[key] | Application-defined metadata for the bucket | Map<String, String> |
+|======
+
+=== Dev service configuration
+
+[cols="4",options="header"]
+|======
+| Property Name | Description | Type | Default Value
+| quarkus.messaging.nats.devservices.port | Fixed port the dev service will listen to | Integer |
+| quarkus.messaging.nats.devservices.image-name | The image to use | String | nats:2.11
+| quarkus.messaging.nats.devservices.shared | Indicates if the NATS JetStream broker managed by Quarkus Dev Services is shared | Boolean | true
+| quarkus.messaging.nats.devservices.service-name | This property is used when you need multiple shared NATS JetStream brokers. | String | nats
+| quarkus.messaging.nats.devservices.enabled | If Dev Services for NATS JetStream has been explicitly enabled or disabled | Boolean | true
+| quarkus.messaging.nats.devservices.tls-configuration.certificate-file | The absolute path to the PEM certificate file | String |
+| quarkus.messaging.nats.devservices.tls-configuration.key-file | The absolute path to the PEM key file | String |
+|======
+
+[[extension-configuration-reference]]
+=== Configuration reference
+
+The complete reference of the extension's `quarkus.messaging.nats.*` configuration properties, generated from
+the extension sources.
+
+include::includes/quarkus-nats-jetstream-client.adoc[leveloffset=+1, opts=optional]
+
+== NATS JetStream
+This extension uses the NATS JetStream client to connect to a NATS JetStream broker.
+
+.Further documentation can be found at:
+* https://nats.io[NATS]
+* https://github.com/nats-io/nats.java[NATS Java Client]
