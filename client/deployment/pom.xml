@@ -4,7 +4,7 @@
     <parent>
         <groupId>io.quarkiverse.reactivemessaging.nats-jetstream</groupId>
         <artifactId>quarkus-nats-jetstream-client-parent</artifactId>
-        <version>4.0.0-SNAPSHOT</version>
+        <version>3.40.9</version>
     </parent>
     <artifactId>quarkus-nats-jetstream-client-deployment</artifactId>
     <name>Quarkus Nats JetStream Client - Deployment</name>
