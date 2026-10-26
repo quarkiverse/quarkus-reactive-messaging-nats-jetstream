@@ -1,0 +1,11 @@
+name: Nats Client
+description: Connect to nats.io and use JetStream streams, consumers, key/value and object stores.
+metadata:
+  keywords:
+    - nats
+    - nats-client
+    - jetstream
+  guide: https://docs.quarkiverse.io/quarkus-reactive-messaging-nats-jetstream/dev/
+  categories:
+    - "messaging"
+  status: "preview"
