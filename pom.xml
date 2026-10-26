@@ -4,7 +4,7 @@
     <parent>
         <groupId>io.quarkiverse</groupId>
         <artifactId>quarkiverse-parent</artifactId>
-        <version>25</version>
+        <version>26</version>
     </parent>
     <groupId>io.quarkiverse.reactivemessaging.nats-jetstream</groupId>
     <artifactId>quarkus-messaging-nats-jetstream-parent</artifactId>
@@ -12,10 +12,8 @@
     <packaging>pom</packaging>
     <name>Quarkus Messaging Nats Jetstream - Parent</name>
     <modules>
-        <module>deployment</module>
-        <module>runtime</module>
         <module>client</module>
-        <module>test</module>
+        <module>messaging</module>
     </modules>
     <scm>
         <connection>scm:git:git@github.com:quarkiverse/quarkus-reactive-messaging-nats-jetstream.git</connection>
@@ -32,7 +30,7 @@
         <quarkus.version>3.40.1.1</quarkus.version>
 
         <jnats.version>2.26.4</jnats.version>
-        <smallrye-connector-attribute-processor.version>4.37.0</smallrye-connector-attribute-processor.version>
+        <smallrye-connector-attribute-processor.version>4.37.1</smallrye-connector-attribute-processor.version>
         <assertj-core.version>3.27.7</assertj-core.version>
         <lombok.version>1.18.48</lombok.version>
         <org.mapstruct.version>1.6.3</org.mapstruct.version>
@@ -91,30 +89,4 @@
             </plugins>
         </pluginManagement>
     </build>
-    <profiles>
-        <profile>
-            <id>docs</id>
-            <activation>
-                <property>
-                    <name>performRelease</name>
-                    <value>!true</value>
-                </property>
-            </activation>
-            <modules>
-                <module>docs</module>
-            </modules>
-        </profile>
-        <profile>
-            <id>it</id>
-            <activation>
-                <property>
-                    <name>performRelease</name>
-                    <value>!true</value>
-                </property>
-            </activation>
-            <modules>
-                <module>integration-tests</module>
-            </modules>
-        </profile>
-    </profiles>
 </project>

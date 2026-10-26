@@ -1,0 +1,3 @@
+:project-version: 3.40.9
+
+:examples-dir: ./../examples/
