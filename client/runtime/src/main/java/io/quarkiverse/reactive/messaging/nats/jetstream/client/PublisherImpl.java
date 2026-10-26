@@ -120,8 +120,9 @@ class PublisherImpl implements Publisher {
         final var result = message.getMetadata(PublishHeaders.class)
                 .flatMap(PublishHeaders::subject)
                 .orElse(subject);
-        if (!result.startsWith(subject)) {
-            throw new IllegalArgumentException("Subject must start with " + subject);
+        if (!Subjects.matches(subject, result)) {
+            throw new IllegalArgumentException(
+                    String.format("Subject %s does not match the subject pattern %s", result, subject));
         }
         return result;
     }
