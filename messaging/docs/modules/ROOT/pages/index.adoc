@@ -527,7 +527,7 @@ At the channel level, `mp.messaging.incoming.[channel-name]` always binds to the
 |======
 | Property Name | Description | Type | Default Value
 | mp.messaging.outgoing.[channel-name].stream | The stream to publish messages to | String |
-| mp.messaging.outgoing.[channel-name].subject | The subject to publish messages to | String |
+| mp.messaging.outgoing.[channel-name].subject | The subject, or NATS subject pattern (`*` and `>` wildcards), to publish messages to. A subject set per message through `PublishHeaders` must match the pattern, and the pattern must be covered by a subject of the stream | String |
 | mp.messaging.outgoing.[channel-name].retry-backoff | The retry backoff in milliseconds for retrying failed publishes | Long | 10000
 | mp.messaging.outgoing.[channel-name].datasource | The name of the datasource (as configured under `quarkus.messaging.nats.data-sources`) to use | String | default
 |======
