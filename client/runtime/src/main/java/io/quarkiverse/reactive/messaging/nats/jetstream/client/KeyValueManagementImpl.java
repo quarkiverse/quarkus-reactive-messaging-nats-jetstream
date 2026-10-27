@@ -29,7 +29,7 @@ class KeyValueManagementImpl implements KeyValueManagement {
                     }
                 })
                 .onFailure().transform(KeyValueManagementException::new)
-                .runSubscriptionOn(executorService())
+                .runSubscriptionOn(threadPool())
                 .emitOn(this::runOnContext);
     }
 
@@ -38,7 +38,7 @@ class KeyValueManagementImpl implements KeyValueManagement {
         return keyValueManagement()
                 .chain(keyValueManagement -> Uni.createFrom().item(Unchecked.supplier(keyValueManagement::getBucketNames)))
                 .onFailure().transform(KeyValueManagementException::new)
-                .runSubscriptionOn(executorService())
+                .runSubscriptionOn(threadPool())
                 .emitOn(this::runOnContext);
     }
 
@@ -71,7 +71,7 @@ class KeyValueManagementImpl implements KeyValueManagement {
         context.runOnContext(action);
     }
 
-    private @NonNull ExecutorService executorService() {
-        return context.executorService();
+    private @NonNull ExecutorService threadPool() {
+        return context.threadPool();
     }
 }

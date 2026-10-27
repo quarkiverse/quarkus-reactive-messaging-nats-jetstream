@@ -24,6 +24,7 @@ import lombok.extern.jbosslog.JBossLog;
 class ClientImpl implements Client {
     private final NativeConnection connection;
     private final Context context;
+    private final ClientThreadPool threadPool;
     private final Publisher publisher;
     private final Consumer consumer;
     private final StreamManagement streamManagement;
@@ -32,10 +33,12 @@ class ClientImpl implements Client {
 
     ClientImpl(@NonNull NativeConnection connection,
             @NonNull Context context,
+            @NonNull ClientThreadPool threadPool,
             @NonNull TracerFactory tracerFactory,
             @NonNull Serializer serializer) {
         this.connection = connection;
         this.context = context;
+        this.threadPool = threadPool;
         this.publisher = new PublisherImpl(connection, context, serializer, tracerFactory);
         this.consumer = new ConsumerImpl(connection, context, serializer, tracerFactory);
         this.streamManagement = new StreamManagementImpl(connection, context);
@@ -144,8 +147,12 @@ class ClientImpl implements Client {
 
     @Override
     public void close() throws Exception {
-        if (connection.getStatus() != io.nats.client.Connection.Status.CLOSED) {
-            connection.close();
+        try {
+            if (connection.getStatus() != io.nats.client.Connection.Status.CLOSED) {
+                connection.close();
+            }
+        } finally {
+            threadPool.close();
         }
     }
 }

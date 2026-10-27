@@ -25,6 +25,11 @@ public interface DataSourceConfiguration {
     ConnectionConfiguration connection();
 
     /**
+     * The configuration of the thread pool owned by the client of the datasource, used for publishing messages.
+     */
+    ThreadPoolConfiguration threadPool();
+
+    /**
      * The stream configurations. The map key is the name of the stream.
      */
     Map<String, StreamConfiguration> streams();

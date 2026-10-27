@@ -236,6 +236,27 @@ The stream, consumer, key-value store and object store configurations are all op
 | quarkus.messaging.nats.connection.inbox-prefix | Retrieves the optional inbox prefix used for communication. The inbox prefix allows customization of the subscriber's inbox name. | String |
 |======
 
+.Thread pool configuration
+Every datasource's `Client` owns a thread pool, shut down when the client is closed. The blocking calls of the client
+run on this pool: publishing a message (sending it and waiting for the JetStream acknowledgement), `next` and `fetch`,
+and managing streams, consumers, key-value stores and object stores. They therefore do not take the threads of the
+Quarkus worker pool. Threads are started on demand up to the maximum size before tasks are queued.
+
+Alternatively, with `quarkus.messaging.nats.thread-pool.virtual-threads=true`, every blocking call runs on a new
+virtual thread. The pool then has no size limit and no queue, so the size, queue and keep alive properties are
+ignored.
+
+[cols="4",options="header"]
+|======
+| Property Name | Description | Type | Default Value
+| quarkus.messaging.nats.thread-pool.virtual-threads | Whether every blocking call runs on a new virtual thread instead of a pooled platform thread | Boolean | false
+| quarkus.messaging.nats.thread-pool.core-size | The number of threads kept in the pool, even when they are idle | Integer | 1
+| quarkus.messaging.nats.thread-pool.max-size | The maximum number of threads in the pool | Integer | 8 x available processors
+| quarkus.messaging.nats.thread-pool.queue-size | The maximum number of tasks waiting for a thread when all threads are busy. A publish submitted when the queue is full is rejected, and the message is not acknowledged. | Integer | unbounded
+| quarkus.messaging.nats.thread-pool.keep-alive | How long a thread above the core size may stay idle before it is stopped | Duration | 30s
+| quarkus.messaging.nats.thread-pool.shutdown-timeout | How long closing the client waits for running tasks to complete before interrupting them | Duration | 10s
+|======
+
 === Datasources
 
 The connection, streams, consumers, key-value stores and object stores configured directly under

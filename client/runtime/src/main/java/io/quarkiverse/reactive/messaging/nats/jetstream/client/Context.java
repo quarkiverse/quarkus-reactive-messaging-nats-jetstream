@@ -11,22 +11,22 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.Message;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.Metadata;
 
 /**
- * Represents an execution context that facilitates task execution through an
- * {@link ExecutorService} or other execution mechanisms. Implementations of this
+ * Represents an execution context that facilitates task execution through the client's thread pool
+ * or other execution mechanisms. Implementations of this
  * interface define how tasks are scheduled and run, enabling integration with
  * various concurrency and reactive programming models.
  */
 public interface Context {
 
     /**
-     * Provides an instance of {@link ExecutorService} to execute tasks asynchronously.
-     * The returned {@link ExecutorService} facilitates task submission and
-     * execution in a concurrent and non-blocking manner.
+     * Provides the thread pool owned by the client, configured with {@code quarkus.messaging.nats.thread-pool.*}.
+     * The blocking calls of the client (publishing, fetching and managing streams, consumers, key-value and object
+     * stores) run on it.
      *
-     * @return a non-null instance of {@link ExecutorService} for managing task execution
+     * @return a non-null instance of {@link ExecutorService} backed by the client's thread pool
      */
     @NonNull
-    ExecutorService executorService();
+    ExecutorService threadPool();
 
     /**
      * Schedules the provided action to be executed on the current context. This method ensures
