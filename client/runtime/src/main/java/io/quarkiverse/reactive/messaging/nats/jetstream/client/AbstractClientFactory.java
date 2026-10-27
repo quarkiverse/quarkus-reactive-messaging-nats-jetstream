@@ -6,6 +6,7 @@ import org.jspecify.annotations.NonNull;
 
 import io.nats.client.Nats;
 import io.nats.client.Options;
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ThreadPoolConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.connection.ConnectionConfiguration;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.connection.ConnectionListener;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.connection.ErrorListener;
@@ -16,19 +17,26 @@ abstract class AbstractClientFactory implements ClientFactory {
 
     @Override
     public @NonNull Client create(@NonNull final ConnectionConfiguration configuration,
+            @NonNull final ThreadPoolConfiguration threadPoolConfiguration,
             @NonNull Serializer serializer,
             @NonNull final ExecutorService executorService) throws ClientException {
+        ClientThreadPool threadPool = null;
         try {
-            return create(NativeConnection.of(Nats.connect(createConnectionOptions(configuration, executorService))),
-                    serializer,
-                    executorService);
+            threadPool = ClientThreadPool.of(threadPoolConfiguration);
+            final var connection = NativeConnection
+                    .of(Nats.connect(createConnectionOptions(configuration, executorService)));
+            return create(connection, threadPool, serializer);
         } catch (Exception e) {
+            if (threadPool != null) {
+                threadPool.close();
+            }
             throw new ClientException(e);
         }
     }
 
-    abstract @NonNull Client create(@NonNull final NativeConnection connection, @NonNull Serializer serializer,
-            @NonNull final ExecutorService executorService);
+    abstract @NonNull Client create(@NonNull final NativeConnection connection,
+            @NonNull final ClientThreadPool threadPool,
+            @NonNull Serializer serializer);
 
     private Options createConnectionOptions(ConnectionConfiguration configuration, ExecutorService executorService)
             throws Exception {

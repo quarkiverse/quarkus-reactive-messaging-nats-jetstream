@@ -35,7 +35,7 @@ class KeyValueImpl implements KeyValue {
                 .chain(keyValue -> Uni.createFrom().item(Unchecked.supplier(() -> keyValue.get(key))))
                 .map(KeyValueEntry::of)
                 .onFailure().transform(KeyValueException::new)
-                .runSubscriptionOn(executorService())
+                .runSubscriptionOn(threadPool())
                 .emitOn(this::runOnContext);
     }
 
@@ -45,7 +45,7 @@ class KeyValueImpl implements KeyValue {
                 .chain(keyValue -> Uni.createFrom().item(Unchecked.supplier(() -> keyValue.get(key, revision))))
                 .map(KeyValueEntry::of)
                 .onFailure().transform(KeyValueException::new)
-                .runSubscriptionOn(executorService())
+                .runSubscriptionOn(threadPool())
                 .emitOn(this::runOnContext);
     }
 
@@ -55,7 +55,7 @@ class KeyValueImpl implements KeyValue {
                 .chain(keyValue -> Uni.createFrom().item(Unchecked.supplier(() -> keyValue.put(key, value))))
                 .chain(revision -> get(key, revision))
                 .onFailure().transform(KeyValueException::new)
-                .runSubscriptionOn(executorService())
+                .runSubscriptionOn(threadPool())
                 .emitOn(this::runOnContext);
     }
 
@@ -65,7 +65,7 @@ class KeyValueImpl implements KeyValue {
                 .chain(keyValue -> Uni.createFrom().item(Unchecked.supplier(() -> keyValue.create(key, value))))
                 .chain(revision -> get(key, revision))
                 .onFailure().transform(KeyValueException::new)
-                .runSubscriptionOn(executorService())
+                .runSubscriptionOn(threadPool())
                 .emitOn(this::runOnContext);
     }
 
@@ -76,7 +76,7 @@ class KeyValueImpl implements KeyValue {
                         .item(Unchecked.supplier(() -> keyValue.create(key, value, messageTtl(ttl)))))
                 .chain(revision -> get(key, revision))
                 .onFailure().transform(KeyValueException::new)
-                .runSubscriptionOn(executorService())
+                .runSubscriptionOn(threadPool())
                 .emitOn(this::runOnContext);
     }
 
@@ -89,7 +89,7 @@ class KeyValueImpl implements KeyValue {
                 })))
                 .chain(keyValue -> Uni.createFrom().voidItem())
                 .onFailure().transform(KeyValueException::new)
-                .runSubscriptionOn(executorService())
+                .runSubscriptionOn(threadPool())
                 .emitOn(this::runOnContext);
     }
 
@@ -102,7 +102,7 @@ class KeyValueImpl implements KeyValue {
                 })))
                 .chain(keyValue -> Uni.createFrom().voidItem())
                 .onFailure().transform(KeyValueException::new)
-                .runSubscriptionOn(executorService())
+                .runSubscriptionOn(threadPool())
                 .emitOn(this::runOnContext);
     }
 
@@ -115,7 +115,7 @@ class KeyValueImpl implements KeyValue {
                 })))
                 .chain(keyValue -> Uni.createFrom().voidItem())
                 .onFailure().transform(KeyValueException::new)
-                .runSubscriptionOn(executorService())
+                .runSubscriptionOn(threadPool())
                 .emitOn(this::runOnContext);
     }
 
@@ -128,7 +128,7 @@ class KeyValueImpl implements KeyValue {
                 })))
                 .chain(keyValue -> Uni.createFrom().voidItem())
                 .onFailure().transform(KeyValueException::new)
-                .runSubscriptionOn(executorService())
+                .runSubscriptionOn(threadPool())
                 .emitOn(this::runOnContext);
     }
 
@@ -141,7 +141,7 @@ class KeyValueImpl implements KeyValue {
                 })))
                 .chain(keyValue -> Uni.createFrom().voidItem())
                 .onFailure().transform(KeyValueException::new)
-                .runSubscriptionOn(executorService())
+                .runSubscriptionOn(threadPool())
                 .emitOn(this::runOnContext);
     }
 
@@ -151,7 +151,7 @@ class KeyValueImpl implements KeyValue {
                 .chain(keyValue -> Uni.createFrom().item(Unchecked.supplier(keyValue::keys)))
                 .onItem().transformToMulti(keys -> Multi.createFrom().iterable(keys))
                 .onFailure().transform(KeyValueException::new)
-                .runSubscriptionOn(executorService())
+                .runSubscriptionOn(threadPool())
                 .emitOn(this::runOnContext);
     }
 
@@ -161,7 +161,7 @@ class KeyValueImpl implements KeyValue {
                 .chain(keyValue -> Uni.createFrom().item(Unchecked.supplier(keyValue::getStatus)))
                 .map(KeyValueStatus::of)
                 .onFailure().transform(KeyValueException::new)
-                .runSubscriptionOn(executorService())
+                .runSubscriptionOn(threadPool())
                 .emitOn(this::runOnContext);
     }
 
@@ -201,7 +201,7 @@ class KeyValueImpl implements KeyValue {
         context.runOnContext(action);
     }
 
-    private @NonNull ExecutorService executorService() {
-        return context.executorService();
+    private @NonNull ExecutorService threadPool() {
+        return context.threadPool();
     }
 }

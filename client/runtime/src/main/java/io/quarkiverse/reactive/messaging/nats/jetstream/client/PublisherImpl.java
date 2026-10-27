@@ -44,8 +44,9 @@ class PublisherImpl implements Publisher {
                 .chain(serialized -> tracer.withTrace(serialized, this::publish))
                 .chain(this::acknowledge)
                 .map(m -> map(message.getPayload(), m))
+                .runSubscriptionOn(threadPool())
+                // After runSubscriptionOn, so that a publish rejected by a full thread pool is not acknowledged too
                 .onFailure().recoverWithUni(failure -> notAcknowledge(message, failure))
-                .runSubscriptionOn(executorService())
                 .emitOn(this::runOnContext);
     }
 
@@ -150,7 +151,7 @@ class PublisherImpl implements Publisher {
         context.runOnContext(action);
     }
 
-    private @NonNull ExecutorService executorService() {
-        return context.executorService();
+    private @NonNull ExecutorService threadPool() {
+        return context.threadPool();
     }
 }

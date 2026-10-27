@@ -39,7 +39,7 @@ class ConsumerManagementImpl implements ConsumerManagement {
                                 .failure(() -> new RuntimeException(
                                         String.format("Consumer %s in stream %s not deleted", consumer, stream))))
                 .onFailure().transform(ConsumerManagementException::new)
-                .runSubscriptionOn(executorService())
+                .runSubscriptionOn(threadPool())
                 .emitOn(this::runOnContext);
     }
 
@@ -53,7 +53,7 @@ class ConsumerManagementImpl implements ConsumerManagement {
                                 .failure(() -> new RuntimeException(
                                         String.format("Consumer %s in stream %s not paused", consumer, stream))))
                 .onFailure().transform(ConsumerManagementException::new)
-                .runSubscriptionOn(executorService())
+                .runSubscriptionOn(threadPool())
                 .emitOn(this::runOnContext);
     }
 
@@ -67,7 +67,7 @@ class ConsumerManagementImpl implements ConsumerManagement {
                                 .failure(() -> new RuntimeException(
                                         String.format("Consumer %s in stream %s not resumed", consumer, stream))))
                 .onFailure().transform(ConsumerManagementException::new)
-                .runSubscriptionOn(executorService())
+                .runSubscriptionOn(threadPool())
                 .emitOn(this::runOnContext);
     }
 
@@ -86,7 +86,7 @@ class ConsumerManagementImpl implements ConsumerManagement {
                         }))
                 .onItem().ifNotNull().transform(Consumer::of)
                 .onFailure().transform(ConsumerManagementException::new)
-                .runSubscriptionOn(executorService())
+                .runSubscriptionOn(threadPool())
                 .emitOn(this::runOnContext);
     }
 
@@ -97,7 +97,7 @@ class ConsumerManagementImpl implements ConsumerManagement {
                 .onItem().transformToMulti(consumers -> Multi.createFrom().items(consumers.stream()))
                 .onItem().transformToUniAndMerge(this::consumer)
                 .onFailure().transform(ConsumerManagementException::new)
-                .runSubscriptionOn(executorService())
+                .runSubscriptionOn(threadPool())
                 .emitOn(this::runOnContext);
     }
 
@@ -113,7 +113,7 @@ class ConsumerManagementImpl implements ConsumerManagement {
                         .item(Unchecked.supplier(
                                 () -> jetStreamManagement.createConsumer(stream, ConsumerConfiguration.of(configuration)))))
                 .map(Consumer::of)
-                .runSubscriptionOn(executorService())
+                .runSubscriptionOn(threadPool())
                 .emitOn(this::runOnContext);
     }
 
@@ -125,8 +125,8 @@ class ConsumerManagementImpl implements ConsumerManagement {
         context.runOnContext(action);
     }
 
-    private @NonNull ExecutorService executorService() {
-        return context.executorService();
+    private @NonNull ExecutorService threadPool() {
+        return context.threadPool();
     }
 
 }
