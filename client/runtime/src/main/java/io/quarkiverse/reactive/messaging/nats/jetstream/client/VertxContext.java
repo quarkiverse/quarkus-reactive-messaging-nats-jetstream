@@ -18,11 +18,11 @@ import lombok.RequiredArgsConstructor;
 class VertxContext implements Context {
     private final io.vertx.mutiny.core.@NonNull Context context;
     @NonNull
-    private final ExecutorService executorService;
+    private final ExecutorService threadPool;
 
     @Override
-    public @NonNull ExecutorService executorService() {
-        return executorService;
+    public @NonNull ExecutorService threadPool() {
+        return threadPool;
     }
 
     @Override

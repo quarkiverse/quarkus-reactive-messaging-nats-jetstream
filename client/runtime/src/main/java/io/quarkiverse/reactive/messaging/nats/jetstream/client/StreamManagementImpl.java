@@ -33,7 +33,7 @@ class StreamManagementImpl implements StreamManagement {
                         .item(Unchecked.supplier(() -> jetStreamManagement.purgeStream(stream))))
                 .onItem().transform(response -> PurgeResult.of(stream, response))
                 .onFailure().transform(StreamManagementException::new)
-                .runSubscriptionOn(executorService())
+                .runSubscriptionOn(threadPool())
                 .emitOn(this::runOnContext);
     }
 
@@ -47,7 +47,7 @@ class StreamManagementImpl implements StreamManagement {
                                 .failure(() -> new RuntimeException(
                                         String.format("Message with sequence %s not deleted in stream %s", sequence, stream))))
                 .onFailure().transform(StreamManagementException::new)
-                .runSubscriptionOn(executorService())
+                .runSubscriptionOn(threadPool())
                 .emitOn(this::runOnContext);
     }
 
@@ -57,7 +57,7 @@ class StreamManagementImpl implements StreamManagement {
                 .onItem().transformToMulti(streams -> Multi.createFrom().iterable(streams))
                 .onItem().transformToUniAndMerge(this::purge)
                 .onFailure().transform(StreamManagementException::new)
-                .runSubscriptionOn(executorService())
+                .runSubscriptionOn(threadPool())
                 .emitOn(this::runOnContext);
     }
 
@@ -66,7 +66,7 @@ class StreamManagementImpl implements StreamManagement {
         return stream(stream)
                 .chain(streamInfo -> addSubject(streamInfo, subject))
                 .onFailure().transform(StreamManagementException::new)
-                .runSubscriptionOn(executorService())
+                .runSubscriptionOn(threadPool())
                 .emitOn(this::runOnContext);
     }
 
@@ -75,7 +75,7 @@ class StreamManagementImpl implements StreamManagement {
         return stream(stream)
                 .chain(streamInfo -> removeSubject(streamInfo, subject))
                 .onFailure().transform(StreamManagementException::new)
-                .runSubscriptionOn(executorService())
+                .runSubscriptionOn(threadPool())
                 .emitOn(this::runOnContext);
     }
 
@@ -89,7 +89,7 @@ class StreamManagementImpl implements StreamManagement {
             }
         })
                 .onFailure().transform(StreamManagementException::new)
-                .runSubscriptionOn(executorService())
+                .runSubscriptionOn(threadPool())
                 .emitOn(this::runOnContext);
     }
 
@@ -99,7 +99,7 @@ class StreamManagementImpl implements StreamManagement {
                 .chain(streamContext -> Uni.createFrom().item(Unchecked.supplier(() -> streamContext.getMessage(sequence))))
                 .map(Message::of)
                 .onFailure().transform(StreamManagementException::new)
-                .runSubscriptionOn(executorService())
+                .runSubscriptionOn(threadPool())
                 .emitOn(this::runOnContext);
     }
 
@@ -110,7 +110,7 @@ class StreamManagementImpl implements StreamManagement {
                         .item(Unchecked.supplier(() -> jetStreamManagement.getStreamInfo(stream))))
                 .onItem().ifNotNull().transform(Stream::of)
                 .onFailure().transform(StreamManagementException::new)
-                .runSubscriptionOn(executorService())
+                .runSubscriptionOn(threadPool())
                 .emitOn(this::runOnContext);
     }
 
@@ -122,7 +122,7 @@ class StreamManagementImpl implements StreamManagement {
                 .onItem().transformToMulti(streams -> Multi.createFrom().iterable(streams))
                 .onItem().transform(Stream::of)
                 .onFailure().transform(StreamManagementException::new)
-                .runSubscriptionOn(executorService())
+                .runSubscriptionOn(threadPool())
                 .emitOn(this::runOnContext);
     }
 
@@ -190,7 +190,7 @@ class StreamManagementImpl implements StreamManagement {
         context.runOnContext(action);
     }
 
-    private @NonNull ExecutorService executorService() {
-        return context.executorService();
+    private @NonNull ExecutorService threadPool() {
+        return context.threadPool();
     }
 }

@@ -41,7 +41,7 @@ class ObjectStoreImpl implements ObjectStore {
                 })))
                 .map(ObjectInfo::of)
                 .onFailure().transform(ObjectStoreException::new)
-                .runSubscriptionOn(executorService())
+                .runSubscriptionOn(threadPool())
                 .emitOn(this::runOnContext);
     }
 
@@ -51,7 +51,7 @@ class ObjectStoreImpl implements ObjectStore {
                 .chain(objectStore -> Uni.createFrom().item(Unchecked.supplier(() -> objectStore.put(objectName, data))))
                 .map(ObjectInfo::of)
                 .onFailure().transform(ObjectStoreException::new)
-                .runSubscriptionOn(executorService())
+                .runSubscriptionOn(threadPool())
                 .emitOn(this::runOnContext);
     }
 
@@ -65,7 +65,7 @@ class ObjectStoreImpl implements ObjectStore {
                     }
                 })))
                 .onFailure().transform(ObjectStoreException::new)
-                .runSubscriptionOn(executorService())
+                .runSubscriptionOn(threadPool())
                 .emitOn(this::runOnContext);
     }
 
@@ -75,7 +75,7 @@ class ObjectStoreImpl implements ObjectStore {
                 .chain(objectStore -> Uni.createFrom().item(Unchecked.supplier(() -> objectStore.getInfo(objectName))))
                 .map(ObjectInfo::of)
                 .onFailure().transform(ObjectStoreException::new)
-                .runSubscriptionOn(executorService())
+                .runSubscriptionOn(threadPool())
                 .emitOn(this::runOnContext);
     }
 
@@ -86,7 +86,7 @@ class ObjectStoreImpl implements ObjectStore {
                         .item(Unchecked.supplier(() -> objectStore.getInfo(objectName, includingDeleted))))
                 .map(ObjectInfo::of)
                 .onFailure().transform(ObjectStoreException::new)
-                .runSubscriptionOn(executorService())
+                .runSubscriptionOn(threadPool())
                 .emitOn(this::runOnContext);
     }
 
@@ -97,7 +97,7 @@ class ObjectStoreImpl implements ObjectStore {
                         .item(Unchecked.supplier(() -> objectStore.updateMeta(objectName, ObjectMetadata.of(metadata)))))
                 .map(ObjectInfo::of)
                 .onFailure().transform(ObjectStoreException::new)
-                .runSubscriptionOn(executorService())
+                .runSubscriptionOn(threadPool())
                 .emitOn(this::runOnContext);
     }
 
@@ -107,7 +107,7 @@ class ObjectStoreImpl implements ObjectStore {
                 .chain(objectStore -> Uni.createFrom().item(Unchecked.supplier(() -> objectStore.delete(objectName))))
                 .map(ObjectInfo::of)
                 .onFailure().transform(ObjectStoreException::new)
-                .runSubscriptionOn(executorService())
+                .runSubscriptionOn(threadPool())
                 .emitOn(this::runOnContext);
     }
 
@@ -118,7 +118,7 @@ class ObjectStoreImpl implements ObjectStore {
                         .item(Unchecked.supplier(() -> objectStore.addLink(objectName, ObjectInfo.of(toInfo)))))
                 .map(ObjectInfo::of)
                 .onFailure().transform(ObjectStoreException::new)
-                .runSubscriptionOn(executorService())
+                .runSubscriptionOn(threadPool())
                 .emitOn(this::runOnContext);
     }
 
@@ -129,7 +129,7 @@ class ObjectStoreImpl implements ObjectStore {
                         .item(Unchecked.supplier(() -> objectStore.addBucketLink(objectName, nativeObjectStore)))))
                 .map(ObjectInfo::of)
                 .onFailure().transform(ObjectStoreException::new)
-                .runSubscriptionOn(executorService())
+                .runSubscriptionOn(threadPool())
                 .emitOn(this::runOnContext);
     }
 
@@ -139,7 +139,7 @@ class ObjectStoreImpl implements ObjectStore {
                 .chain(objectStore -> Uni.createFrom().item(Unchecked.supplier(objectStore::seal)))
                 .map(ObjectStoreStatus::of)
                 .onFailure().transform(ObjectStoreException::new)
-                .runSubscriptionOn(executorService())
+                .runSubscriptionOn(threadPool())
                 .emitOn(this::runOnContext);
     }
 
@@ -149,7 +149,7 @@ class ObjectStoreImpl implements ObjectStore {
                 .chain(objectStore -> Uni.createFrom().item(Unchecked.supplier(objectStore::getStatus)))
                 .map(ObjectStoreStatus::of)
                 .onFailure().transform(ObjectStoreException::new)
-                .runSubscriptionOn(executorService())
+                .runSubscriptionOn(threadPool())
                 .emitOn(this::runOnContext);
     }
 
@@ -160,7 +160,7 @@ class ObjectStoreImpl implements ObjectStore {
                 .onItem().transformToMulti(list -> Multi.createFrom().iterable(list))
                 .onItem().transform(ObjectInfo::of)
                 .onFailure().transform(ObjectStoreException::new)
-                .runSubscriptionOn(executorService())
+                .runSubscriptionOn(threadPool())
                 .emitOn(this::runOnContext);
     }
 
@@ -190,7 +190,7 @@ class ObjectStoreImpl implements ObjectStore {
         context.runOnContext(action);
     }
 
-    private @NonNull ExecutorService executorService() {
-        return context.executorService();
+    private @NonNull ExecutorService threadPool() {
+        return context.threadPool();
     }
 }

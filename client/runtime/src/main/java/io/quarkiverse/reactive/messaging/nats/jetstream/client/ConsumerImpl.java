@@ -51,7 +51,7 @@ class ConsumerImpl implements Consumer {
                 .onItem().ifNotNull().transformToUni(message -> receiveTracer.withTrace(context.withProcessingContext(message)))
                 .onItem().ifNotNull().<Message<T>> transform(Unchecked.function(message -> deserialize(message)))
                 .onFailure().transform(SubscriptionException::new)
-                .runSubscriptionOn(executorService())
+                .runSubscriptionOn(threadPool())
                 .emitOn(this::runOnContext);
     }
 
@@ -63,7 +63,7 @@ class ConsumerImpl implements Consumer {
                 .onItem().ifNotNull().transformToUni(message -> receiveTracer.withTrace(context.withProcessingContext(message)))
                 .onItem().ifNotNull().transform(Unchecked.function(message -> deserialize(message, clazz)))
                 .onFailure().transform(SubscriptionException::new)
-                .runSubscriptionOn(executorService())
+                .runSubscriptionOn(threadPool())
                 .emitOn(this::runOnContext);
     }
 
@@ -77,7 +77,7 @@ class ConsumerImpl implements Consumer {
                 .concatenate()
                 .onItem().<Message<T>> transform(Unchecked.function(message -> deserialize(message)))
                 .onFailure().transform(SubscriptionException::new)
-                .runSubscriptionOn(executorService())
+                .runSubscriptionOn(threadPool())
                 .emitOn(this::runOnContext);
     }
 
@@ -93,7 +93,7 @@ class ConsumerImpl implements Consumer {
                 .concatenate()
                 .onItem().transform(Unchecked.function(message -> deserialize(message, clazz)))
                 .onFailure().transform(SubscriptionException::new)
-                .runSubscriptionOn(executorService())
+                .runSubscriptionOn(threadPool())
                 .emitOn(this::runOnContext);
     }
 
@@ -309,7 +309,7 @@ class ConsumerImpl implements Consumer {
         context.runOnContext(action);
     }
 
-    private @NonNull ExecutorService executorService() {
-        return context.executorService();
+    private @NonNull ExecutorService threadPool() {
+        return context.threadPool();
     }
 }

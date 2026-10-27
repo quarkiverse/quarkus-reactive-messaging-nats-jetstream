@@ -29,7 +29,7 @@ class ObjectStoreManagementImpl implements ObjectStoreManagement {
                     }
                 })
                 .onFailure().transform(ObjectStoreManagementException::new)
-                .runSubscriptionOn(executorService())
+                .runSubscriptionOn(threadPool())
                 .emitOn(this::runOnContext);
     }
 
@@ -38,7 +38,7 @@ class ObjectStoreManagementImpl implements ObjectStoreManagement {
                 .chain(objectStoreManagement -> Uni.createFrom()
                         .item(Unchecked.supplier(objectStoreManagement::getBucketNames)))
                 .onFailure().transform(ObjectStoreManagementException::new)
-                .runSubscriptionOn(executorService())
+                .runSubscriptionOn(threadPool())
                 .emitOn(this::runOnContext);
     }
 
@@ -70,7 +70,7 @@ class ObjectStoreManagementImpl implements ObjectStoreManagement {
         context.runOnContext(action);
     }
 
-    private @NonNull ExecutorService executorService() {
-        return context.executorService();
+    private @NonNull ExecutorService threadPool() {
+        return context.threadPool();
     }
 }

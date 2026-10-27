@@ -34,6 +34,7 @@ public class ClientBeanCreator implements BeanCreator<Client> {
                 context.getInjectedReference(TracerFactory.class));
         return clientFactory.create(
                 connectionConfigurationMapper.map(configuration.connection()),
+                configuration.threadPool(),
                 context.getInjectedReference(Serializer.class),
                 context.getInjectedReference(ExecutorService.class));
     }
