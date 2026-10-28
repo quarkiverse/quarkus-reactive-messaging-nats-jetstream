@@ -15,7 +15,8 @@ public interface ThreadPoolConfiguration {
 
     /**
      * Whether every task runs on a new virtual thread instead of a pooled platform thread. When enabled, the core
-     * size, max size, queue size and keep alive are ignored.
+     * size, max size, queue size and keep alive are ignored. Requires Java 21 or later; on older Java versions a
+     * warning is logged and the pooled platform threads are used.
      */
     @WithDefault("false")
     boolean virtualThreads();

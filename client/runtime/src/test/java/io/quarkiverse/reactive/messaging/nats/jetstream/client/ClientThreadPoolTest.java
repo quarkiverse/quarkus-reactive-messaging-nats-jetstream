@@ -13,6 +13,8 @@ import java.util.concurrent.TimeUnit;
 
 import org.jspecify.annotations.NonNull;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledForJreRange;
+import org.junit.jupiter.api.condition.JRE;
 
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.configuration.ThreadPoolConfiguration;
 
@@ -53,12 +55,23 @@ class ClientThreadPoolTest {
     }
 
     @Test
+    @EnabledForJreRange(min = JRE.JAVA_21)
     void runsTasksOnVirtualThreads() throws Exception {
         try (final var threadPool = ClientThreadPool.of(configuration(true, 1, 1, null))) {
             final var thread = threadPool.executorService().submit(Thread::currentThread).get(5, TimeUnit.SECONDS);
 
-            assertThat(thread.isVirtual()).isTrue();
+            assertThat(Thread.class.getMethod("isVirtual").invoke(thread)).isEqualTo(true);
             assertThat(thread.getName()).matches("nats-client-\\d+-virtual-thread-\\d+");
+        }
+    }
+
+    @Test
+    @EnabledForJreRange(max = JRE.JAVA_20)
+    void fallsBackToPlatformThreadsWithoutVirtualThreadSupport() throws Exception {
+        try (final var threadPool = ClientThreadPool.of(configuration(true, 1, 1, null))) {
+            final var thread = threadPool.executorService().submit(Thread::currentThread).get(5, TimeUnit.SECONDS);
+
+            assertThat(thread.getName()).matches("nats-client-\\d+-thread-\\d+");
         }
     }
 
