@@ -1,5 +1,5 @@
-name: quarkus-reactive-messaging-nats-jetstream
-title: Reactive messaging Nats Jetstream
+name: quarkus-nats-jetstream-client
+title: NATS JetStream Client
 version: dev
 nav:
   - modules/ROOT/nav.adoc

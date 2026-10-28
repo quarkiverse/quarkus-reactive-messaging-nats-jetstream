@@ -5,6 +5,8 @@ import static io.quarkiverse.reactive.messaging.nats.jetstream.client.configurat
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Default;
@@ -40,6 +42,7 @@ import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.smallrye.common.annotation.Identifier;
 import io.vertx.mutiny.core.Vertx;
@@ -56,6 +59,19 @@ class NatsClientProcessor {
     @BuildStep
     void registerReflectiveClasses(BuildProducer<ReflectiveClassBuildItem> producer) {
         producer.produce(ReflectiveClassBuildItem.builder(Options.DEFAULT_DATA_PORT_TYPE).build());
+    }
+
+    /**
+     * The client thread pool looks up the virtual thread API by reflection, so the extension still runs on Java 17.
+     * Register those methods, so virtual threads also work in a native image built with Java 21 or later.
+     */
+    @BuildStep
+    void registerVirtualThreadMethodsForReflection(BuildProducer<ReflectiveMethodBuildItem> producer) {
+        producer.produce(new ReflectiveMethodBuildItem(Thread.class.getName(), "ofVirtual", new Class<?>[0]));
+        producer.produce(new ReflectiveMethodBuildItem("java.lang.Thread$Builder", "name", String.class, long.class));
+        producer.produce(new ReflectiveMethodBuildItem("java.lang.Thread$Builder", "factory", new Class<?>[0]));
+        producer.produce(new ReflectiveMethodBuildItem(Executors.class.getName(), "newThreadPerTaskExecutor",
+                ThreadFactory.class));
     }
 
     /**

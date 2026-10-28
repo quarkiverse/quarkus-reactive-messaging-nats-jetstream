@@ -1,7 +1,5 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client;
 
-import java.util.concurrent.ExecutorService;
-
 import org.jspecify.annotations.NonNull;
 
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.connection.NativeConnection;
@@ -17,11 +15,13 @@ public class VertxClientFactory extends AbstractClientFactory {
 
     @Override
     @NonNull
-    Client create(@NonNull final NativeConnection connection, @NonNull Serializer serializer,
-            @NonNull final ExecutorService executorService) {
+    Client create(@NonNull final NativeConnection connection,
+            @NonNull final ClientThreadPool threadPool,
+            @NonNull Serializer serializer) {
         return new ClientImpl(
                 connection,
-                new VertxContext(vertx.getOrCreateContext(), executorService),
+                new VertxContext(vertx.getOrCreateContext(), threadPool.executorService()),
+                threadPool,
                 tracerFactory,
                 serializer);
     }

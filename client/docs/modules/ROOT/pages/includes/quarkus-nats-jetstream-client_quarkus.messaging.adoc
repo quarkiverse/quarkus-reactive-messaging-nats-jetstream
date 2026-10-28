@@ -456,6 +456,132 @@ endif::add-copy-button-to-env-var[]
 |string
 |
 
+a| [[quarkus-nats-jetstream-client_quarkus-messaging-nats-thread-pool-virtual-threads]] [.property-path]##link:#quarkus-nats-jetstream-client_quarkus-messaging-nats-thread-pool-virtual-threads[`+++quarkus.messaging.nats.thread-pool.virtual-threads+++`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.messaging.nats.thread-pool.virtual-threads+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Whether every task runs on a new virtual thread instead of a pooled platform thread. When enabled, the core size, max size, queue size and keep alive are ignored. Requires Java 21 or later; on older Java versions a warning is logged and the pooled platform threads are used.
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_MESSAGING_NATS_THREAD_POOL_VIRTUAL_THREADS+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_MESSAGING_NATS_THREAD_POOL_VIRTUAL_THREADS+++`
+endif::add-copy-button-to-env-var[]
+--
+|boolean
+|`+++false+++`
+
+a| [[quarkus-nats-jetstream-client_quarkus-messaging-nats-thread-pool-core-size]] [.property-path]##link:#quarkus-nats-jetstream-client_quarkus-messaging-nats-thread-pool-core-size[`+++quarkus.messaging.nats.thread-pool.core-size+++`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.messaging.nats.thread-pool.core-size+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+The number of threads kept in the pool, even when they are idle.
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_MESSAGING_NATS_THREAD_POOL_CORE_SIZE+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_MESSAGING_NATS_THREAD_POOL_CORE_SIZE+++`
+endif::add-copy-button-to-env-var[]
+--
+|int
+|`+++1+++`
+
+a| [[quarkus-nats-jetstream-client_quarkus-messaging-nats-thread-pool-max-size]] [.property-path]##link:#quarkus-nats-jetstream-client_quarkus-messaging-nats-thread-pool-max-size[`+++quarkus.messaging.nats.thread-pool.max-size+++`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.messaging.nats.thread-pool.max-size+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+The maximum number of threads in the pool. Defaults to 8 times the number of available processors.
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_MESSAGING_NATS_THREAD_POOL_MAX_SIZE+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_MESSAGING_NATS_THREAD_POOL_MAX_SIZE+++`
+endif::add-copy-button-to-env-var[]
+--
+|int
+|
+
+a| [[quarkus-nats-jetstream-client_quarkus-messaging-nats-thread-pool-queue-size]] [.property-path]##link:#quarkus-nats-jetstream-client_quarkus-messaging-nats-thread-pool-queue-size[`+++quarkus.messaging.nats.thread-pool.queue-size+++`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.messaging.nats.thread-pool.queue-size+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+The maximum number of tasks waiting for a thread when all threads are busy. Unbounded when not set. A publish submitted when the queue is full is rejected, and the message is not acknowledged.
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_MESSAGING_NATS_THREAD_POOL_QUEUE_SIZE+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_MESSAGING_NATS_THREAD_POOL_QUEUE_SIZE+++`
+endif::add-copy-button-to-env-var[]
+--
+|int
+|
+
+a| [[quarkus-nats-jetstream-client_quarkus-messaging-nats-thread-pool-keep-alive]] [.property-path]##link:#quarkus-nats-jetstream-client_quarkus-messaging-nats-thread-pool-keep-alive[`+++quarkus.messaging.nats.thread-pool.keep-alive+++`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.messaging.nats.thread-pool.keep-alive+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+How long a thread above the core size may stay idle before it is stopped.
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_MESSAGING_NATS_THREAD_POOL_KEEP_ALIVE+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_MESSAGING_NATS_THREAD_POOL_KEEP_ALIVE+++`
+endif::add-copy-button-to-env-var[]
+--
+|link:https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html[Duration] link:#duration-note-anchor-quarkus-nats-jetstream-client_quarkus-messaging[icon:question-circle[title=More information about the Duration format]]
+|`+++30S+++`
+
+a| [[quarkus-nats-jetstream-client_quarkus-messaging-nats-thread-pool-shutdown-timeout]] [.property-path]##link:#quarkus-nats-jetstream-client_quarkus-messaging-nats-thread-pool-shutdown-timeout[`+++quarkus.messaging.nats.thread-pool.shutdown-timeout+++`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.messaging.nats.thread-pool.shutdown-timeout+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+How long closing the client waits for running tasks to complete before interrupting them.
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_MESSAGING_NATS_THREAD_POOL_SHUTDOWN_TIMEOUT+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_MESSAGING_NATS_THREAD_POOL_SHUTDOWN_TIMEOUT+++`
+endif::add-copy-button-to-env-var[]
+--
+|link:https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html[Duration] link:#duration-note-anchor-quarkus-nats-jetstream-client_quarkus-messaging[icon:question-circle[title=More information about the Duration format]]
+|`+++10S+++`
+
 a| [[quarkus-nats-jetstream-client_quarkus-messaging-nats-trace-payload]] [.property-path]##link:#quarkus-nats-jetstream-client_quarkus-messaging-nats-trace-payload[`+++quarkus.messaging.nats.trace-payload+++`]##
 ifdef::add-copy-button-to-config-props[]
 config_property_copy_button:+++quarkus.messaging.nats.trace-payload+++[]
@@ -3689,6 +3815,132 @@ endif::add-copy-button-to-env-var[]
 --
 |string
 |
+
+a| [[quarkus-nats-jetstream-client_quarkus-messaging-nats-data-sources-named-datasource-thread-pool-virtual-threads]] [.property-path]##link:#quarkus-nats-jetstream-client_quarkus-messaging-nats-data-sources-named-datasource-thread-pool-virtual-threads[`+++quarkus.messaging.nats.data-sources."named-datasource".thread-pool.virtual-threads+++`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.messaging.nats.data-sources."named-datasource".thread-pool.virtual-threads+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+Whether every task runs on a new virtual thread instead of a pooled platform thread. When enabled, the core size, max size, queue size and keep alive are ignored. Requires Java 21 or later; on older Java versions a warning is logged and the pooled platform threads are used.
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_MESSAGING_NATS_DATA_SOURCES__NAMED_DATASOURCE__THREAD_POOL_VIRTUAL_THREADS+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_MESSAGING_NATS_DATA_SOURCES__NAMED_DATASOURCE__THREAD_POOL_VIRTUAL_THREADS+++`
+endif::add-copy-button-to-env-var[]
+--
+|boolean
+|`+++false+++`
+
+a| [[quarkus-nats-jetstream-client_quarkus-messaging-nats-data-sources-named-datasource-thread-pool-core-size]] [.property-path]##link:#quarkus-nats-jetstream-client_quarkus-messaging-nats-data-sources-named-datasource-thread-pool-core-size[`+++quarkus.messaging.nats.data-sources."named-datasource".thread-pool.core-size+++`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.messaging.nats.data-sources."named-datasource".thread-pool.core-size+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+The number of threads kept in the pool, even when they are idle.
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_MESSAGING_NATS_DATA_SOURCES__NAMED_DATASOURCE__THREAD_POOL_CORE_SIZE+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_MESSAGING_NATS_DATA_SOURCES__NAMED_DATASOURCE__THREAD_POOL_CORE_SIZE+++`
+endif::add-copy-button-to-env-var[]
+--
+|int
+|`+++1+++`
+
+a| [[quarkus-nats-jetstream-client_quarkus-messaging-nats-data-sources-named-datasource-thread-pool-max-size]] [.property-path]##link:#quarkus-nats-jetstream-client_quarkus-messaging-nats-data-sources-named-datasource-thread-pool-max-size[`+++quarkus.messaging.nats.data-sources."named-datasource".thread-pool.max-size+++`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.messaging.nats.data-sources."named-datasource".thread-pool.max-size+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+The maximum number of threads in the pool. Defaults to 8 times the number of available processors.
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_MESSAGING_NATS_DATA_SOURCES__NAMED_DATASOURCE__THREAD_POOL_MAX_SIZE+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_MESSAGING_NATS_DATA_SOURCES__NAMED_DATASOURCE__THREAD_POOL_MAX_SIZE+++`
+endif::add-copy-button-to-env-var[]
+--
+|int
+|
+
+a| [[quarkus-nats-jetstream-client_quarkus-messaging-nats-data-sources-named-datasource-thread-pool-queue-size]] [.property-path]##link:#quarkus-nats-jetstream-client_quarkus-messaging-nats-data-sources-named-datasource-thread-pool-queue-size[`+++quarkus.messaging.nats.data-sources."named-datasource".thread-pool.queue-size+++`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.messaging.nats.data-sources."named-datasource".thread-pool.queue-size+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+The maximum number of tasks waiting for a thread when all threads are busy. Unbounded when not set. A publish submitted when the queue is full is rejected, and the message is not acknowledged.
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_MESSAGING_NATS_DATA_SOURCES__NAMED_DATASOURCE__THREAD_POOL_QUEUE_SIZE+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_MESSAGING_NATS_DATA_SOURCES__NAMED_DATASOURCE__THREAD_POOL_QUEUE_SIZE+++`
+endif::add-copy-button-to-env-var[]
+--
+|int
+|
+
+a| [[quarkus-nats-jetstream-client_quarkus-messaging-nats-data-sources-named-datasource-thread-pool-keep-alive]] [.property-path]##link:#quarkus-nats-jetstream-client_quarkus-messaging-nats-data-sources-named-datasource-thread-pool-keep-alive[`+++quarkus.messaging.nats.data-sources."named-datasource".thread-pool.keep-alive+++`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.messaging.nats.data-sources."named-datasource".thread-pool.keep-alive+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+How long a thread above the core size may stay idle before it is stopped.
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_MESSAGING_NATS_DATA_SOURCES__NAMED_DATASOURCE__THREAD_POOL_KEEP_ALIVE+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_MESSAGING_NATS_DATA_SOURCES__NAMED_DATASOURCE__THREAD_POOL_KEEP_ALIVE+++`
+endif::add-copy-button-to-env-var[]
+--
+|link:https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html[Duration] link:#duration-note-anchor-quarkus-nats-jetstream-client_quarkus-messaging[icon:question-circle[title=More information about the Duration format]]
+|`+++30S+++`
+
+a| [[quarkus-nats-jetstream-client_quarkus-messaging-nats-data-sources-named-datasource-thread-pool-shutdown-timeout]] [.property-path]##link:#quarkus-nats-jetstream-client_quarkus-messaging-nats-data-sources-named-datasource-thread-pool-shutdown-timeout[`+++quarkus.messaging.nats.data-sources."named-datasource".thread-pool.shutdown-timeout+++`]##
+ifdef::add-copy-button-to-config-props[]
+config_property_copy_button:+++quarkus.messaging.nats.data-sources."named-datasource".thread-pool.shutdown-timeout+++[]
+endif::add-copy-button-to-config-props[]
+
+
+[.description]
+--
+How long closing the client waits for running tasks to complete before interrupting them.
+
+
+ifdef::add-copy-button-to-env-var[]
+Environment variable: env_var_with_copy_button:+++QUARKUS_MESSAGING_NATS_DATA_SOURCES__NAMED_DATASOURCE__THREAD_POOL_SHUTDOWN_TIMEOUT+++[]
+endif::add-copy-button-to-env-var[]
+ifndef::add-copy-button-to-env-var[]
+Environment variable: `+++QUARKUS_MESSAGING_NATS_DATA_SOURCES__NAMED_DATASOURCE__THREAD_POOL_SHUTDOWN_TIMEOUT+++`
+endif::add-copy-button-to-env-var[]
+--
+|link:https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/time/Duration.html[Duration] link:#duration-note-anchor-quarkus-nats-jetstream-client_quarkus-messaging[icon:question-circle[title=More information about the Duration format]]
+|`+++10S+++`
 
 a| [[quarkus-nats-jetstream-client_quarkus-messaging-nats-data-sources-named-datasource-streams-streams-name]] [.property-path]##link:#quarkus-nats-jetstream-client_quarkus-messaging-nats-data-sources-named-datasource-streams-streams-name[`+++quarkus.messaging.nats.data-sources."named-datasource".streams."streams".name+++`]##
 ifdef::add-copy-button-to-config-props[]
