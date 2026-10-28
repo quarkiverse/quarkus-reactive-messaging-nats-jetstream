@@ -1,5 +1,5 @@
 name: quarkus-nats-jetstream-client
-title: Quarkus NATS JetStream Client
+title: NATS JetStream Client
 version: dev
 nav:
   - modules/ROOT/nav.adoc
