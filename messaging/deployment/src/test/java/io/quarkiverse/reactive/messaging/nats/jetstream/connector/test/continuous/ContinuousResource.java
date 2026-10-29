@@ -26,13 +26,13 @@ public class ContinuousResource {
     @POST
     @Path("/values/{value}")
     public Uni<Void> produce(@PathParam("value") Integer value) {
-        return Uni.createFrom().item(() -> producer.send(value)).onItem().ignore().andContinueWithNull();
+        return Uni.createFrom().completionStage(() -> producer.send(value));
     }
 
     @POST
     @Path("/typed-values/{value}")
     public Uni<Void> produceTyped(@PathParam("value") Integer value) {
-        return Uni.createFrom().item(() -> typedProducer.send(value)).onItem().ignore().andContinueWithNull();
+        return Uni.createFrom().completionStage(() -> typedProducer.send(value));
     }
 
     @GET
