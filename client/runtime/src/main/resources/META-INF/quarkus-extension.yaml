@@ -5,7 +5,7 @@ metadata:
     - nats
     - nats-client
     - jetstream
-  guide: https://docs.quarkiverse.io/quarkus-reactive-messaging-nats-jetstream/dev/
+  guide: https://docs.quarkiverse.io/quarkus-nats-jetstream-client/dev/
   categories:
     - "messaging"
   status: "preview"
