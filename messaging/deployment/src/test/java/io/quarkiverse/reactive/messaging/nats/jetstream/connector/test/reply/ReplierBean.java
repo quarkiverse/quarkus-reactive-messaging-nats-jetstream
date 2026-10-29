@@ -5,7 +5,9 @@ import jakarta.enterprise.context.ApplicationScoped;
 import org.eclipse.microprofile.reactive.messaging.Incoming;
 import org.eclipse.microprofile.reactive.messaging.Message;
 import org.eclipse.microprofile.reactive.messaging.Outgoing;
+import org.jboss.logging.Logger;
 
+import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.MessageHeaders;
 import io.smallrye.mutiny.Uni;
 
 /**
@@ -14,10 +16,13 @@ import io.smallrye.mutiny.Uni;
  */
 @ApplicationScoped
 public class ReplierBean {
+    private static final Logger logger = Logger.getLogger(ReplierBean.class);
 
     @Incoming("replies-in")
     @Outgoing("replies-out")
     public Uni<Message<String>> reply(Message<String> msg) {
+        logger.infof("Replying to request '%s' with correlation id '%s'", msg.getPayload(),
+                msg.getMetadata(MessageHeaders.class).flatMap(MessageHeaders::correlationId).orElse("?"));
         return Uni.createFrom().completionStage(msg.ack())
                 .chain(() -> Uni.createFrom().item(
                         Message.of("echo:" + msg.getPayload()).withMetadata(msg.getMetadata())));
