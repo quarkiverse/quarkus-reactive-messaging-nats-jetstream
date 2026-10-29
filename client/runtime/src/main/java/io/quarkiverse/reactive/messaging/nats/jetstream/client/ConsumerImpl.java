@@ -22,8 +22,9 @@ import io.quarkiverse.reactive.messaging.nats.jetstream.client.message.tracing.T
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.unchecked.Unchecked;
+import lombok.extern.jbosslog.JBossLog;
 
-@SuppressWarnings("ReactiveStreamsUnusedPublisher")
+@JBossLog
 class ConsumerImpl implements Consumer {
     private final NativeConnection connection;
     private final Context context;
@@ -143,11 +144,10 @@ class ConsumerImpl implements Consumer {
             @NonNull String consumer) {
         final var executorService = Executors.newSingleThreadExecutor(ConsumerWorkerThread::new);
         final var consumerManagement = new ConsumerManagementImpl(stream, connection, context);
-        return Uni.combine().all().unis(jetStream(), dispatcher(), consumerManagement.consumer(consumer))
+        return Uni.combine().all().unis(jetStream(), consumerManagement.consumer(consumer))
                 .asTuple()
                 .onItem()
-                .transformToMulti(tuple -> subscribe(stream, consumer, tuple.getItem1(), tuple.getItem2(),
-                        tuple.getItem3().configuration()))
+                .transformToMulti(tuple -> subscribe(stream, consumer, tuple.getItem1(), tuple.getItem2().configuration()))
                 .select().where(Objects::nonNull)
                 .onItem().transformToUni(message -> processTracer.withTrace(context.withProcessingContext(message)))
                 .concatenate()
@@ -165,11 +165,10 @@ class ConsumerImpl implements Consumer {
 
         final var executorService = Executors.newSingleThreadExecutor(ConsumerWorkerThread::new);
         final var consumerManagement = new ConsumerManagementImpl(stream, connection, context);
-        return Uni.combine().all().unis(jetStream(), dispatcher(), consumerManagement.consumer(consumer))
+        return Uni.combine().all().unis(jetStream(), consumerManagement.consumer(consumer))
                 .asTuple()
                 .onItem()
-                .transformToMulti(tuple -> subscribe(stream, consumer, tuple.getItem1(), tuple.getItem2(),
-                        tuple.getItem3().configuration()))
+                .transformToMulti(tuple -> subscribe(stream, consumer, tuple.getItem1(), tuple.getItem2().configuration()))
                 .select().where(Objects::nonNull)
                 .onItem().transformToUni(message -> processTracer.withTrace(context.withProcessingContext(message)))
                 .concatenate()
@@ -242,32 +241,44 @@ class ConsumerImpl implements Consumer {
     }
 
     @SuppressWarnings("resource")
-    private Uni<Dispatcher> dispatcher() {
-        return Uni.createFrom().item(Unchecked.supplier(connection()::createDispatcher));
-    }
-
     private @NonNull Multi<Message<byte[]>> subscribe(
             @NonNull String stream,
             @NonNull String consumer,
             @NonNull NativeJetStream jetStream,
-            @NonNull Dispatcher dispatcher,
             @NonNull ConsumerConfiguration configuration) {
         return Multi.createFrom().emitter(emitter -> {
+            final MessageHandler handler = msg -> {
+                if (!msg.isStatusMessage()) {
+                    emitter.emit(io.quarkiverse.reactive.messaging.nats.jetstream.client.message.Message.of(
+                            NativeMessage.of(msg),
+                            context,
+                            configuration));
+                }
+            };
+            // The NATS client registers the handler of a subscription only after subscribing, so a message the server
+            // delivers in between (one already waiting for the consumer) goes to the default handler of the dispatcher,
+            // and would be dropped without one. The dispatcher only serves this subscription, so it is the same handler.
+            // The dispatcher keeps a thread of the connection executor until it is closed, so it is closed (which also
+            // unsubscribes the subscription) when the subscription terminates
+            final var dispatcher = connection().createDispatcher(handler);
+            emitter.onTermination(() -> closeDispatcher(dispatcher));
             try {
-                jetStream.subscribe(
-                        null,
-                        dispatcher,
-                        (MessageHandler) msg -> emitter
-                                .emit(io.quarkiverse.reactive.messaging.nats.jetstream.client.message.Message.of(
-                                        NativeMessage.of(msg),
-                                        context,
-                                        configuration)),
-                        false,
-                        PushSubscribeOptions.bind(stream, consumer));
+                jetStream.subscribe(null, dispatcher, handler, false, PushSubscribeOptions.bind(stream, consumer));
+                log.debugf("Subscribed to push consumer '%s' on stream '%s'", consumer, stream);
             } catch (Exception e) {
                 emitter.fail(e);
             }
         });
+    }
+
+    @SuppressWarnings("resource")
+    private void closeDispatcher(@NonNull Dispatcher dispatcher) {
+        try {
+            connection().closeDispatcher(dispatcher);
+        } catch (RuntimeException e) {
+            // the connection may already be closed, which closes the dispatcher too
+            log.debugf(e, "Failed to close dispatcher: %s", e.getMessage());
+        }
     }
 
     @SuppressWarnings("unchecked")

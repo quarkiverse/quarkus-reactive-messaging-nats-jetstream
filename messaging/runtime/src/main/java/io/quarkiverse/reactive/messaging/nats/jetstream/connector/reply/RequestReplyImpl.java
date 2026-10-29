@@ -76,6 +76,8 @@ public class RequestReplyImpl<Req, Rep> extends MutinyEmitterImpl<Req> implement
         return subscribe()
                 .chain(subscription -> {
                     final var publish = sendMessage(withCorrelationId(message, pendingReply.correlationId()))
+                            .onItem().invoke(() -> log.debugf("Published request with correlation id '%s' on channel '%s'",
+                                    pendingReply.correlationId(), channelConfiguration.name()))
                             .onFailure()
                             .transform(failure -> new PublishException(
                                     String.format("Failed to publish request on channel '%s'", channelConfiguration.name()),
@@ -127,10 +129,13 @@ public class RequestReplyImpl<Req, Rep> extends MutinyEmitterImpl<Req> implement
                     .flatMap(MessageHeaders::correlationId)
                     .flatMap(id -> channelConfiguration.replyCorrelationIdHandler().parse(id));
             if (correlationId.isEmpty() || !pendingReplies.containsKey(correlationId.get())) {
-                log.debugf("Dropping unmatched reply with subject '%s'",
-                        message.getMetadata(MessageHeaders.class).flatMap(MessageHeaders::subject).orElse("?"));
+                log.debugf("Dropping unmatched reply with subject '%s' and correlation id '%s' on channel '%s'",
+                        message.getMetadata(MessageHeaders.class).flatMap(MessageHeaders::subject).orElse("?"),
+                        correlationId.orElse("?"), channelConfiguration.name());
                 return;
             }
+            log.debugf("Received reply with correlation id '%s' on channel '%s'", correlationId.get(),
+                    channelConfiguration.name());
             Optional.ofNullable(pendingReplies.get(correlationId.get())).filter(pending -> !pending.done())
                     .ifPresent(pending -> {
                         final Rep payload = message.getPayload();
@@ -168,6 +173,8 @@ public class RequestReplyImpl<Req, Rep> extends MutinyEmitterImpl<Req> implement
     }
 
     private Uni<Cancellable> startSubscription(Client client, Consumer consumer) {
+        log.debugf("Starting reply subscription of consumer '%s' for channel '%s'", consumer.name(),
+                channelConfiguration.name());
         return Uni.createFrom()
                 .item(Unchecked.supplier(() -> client.<Rep> subscribe(channelConfiguration.stream(), consumer.name())
                         .map(Messages::incoming)
@@ -188,7 +195,9 @@ public class RequestReplyImpl<Req, Rep> extends MutinyEmitterImpl<Req> implement
         final var deliverSubject = "_js_reply." + consumerName;
         final var configuration = new ConsumerConfiguration(consumerName, replySubject(), deliverSubject,
                 Optional.of(inactiveThreshold()));
-        return client.consumerManagement(channelConfiguration.stream()).addIfAbsent(configuration);
+        return client.consumerManagement(channelConfiguration.stream()).addIfAbsent(configuration)
+                .onItem().invoke(consumer -> log.debugf("Created reply consumer '%s' for channel '%s'", consumer.name(),
+                        channelConfiguration.name()));
     }
 
     @SuppressWarnings("ReactiveStreamsUnusedPublisher")
