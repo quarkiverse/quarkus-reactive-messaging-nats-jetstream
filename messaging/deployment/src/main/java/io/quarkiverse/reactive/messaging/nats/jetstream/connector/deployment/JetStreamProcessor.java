@@ -5,7 +5,6 @@ import static io.quarkiverse.reactive.messaging.nats.jetstream.connector.JetStre
 import java.util.LinkedHashSet;
 import java.util.Set;
 
-import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Singleton;
 
 import org.eclipse.microprofile.config.Config;
@@ -37,6 +36,8 @@ class JetStreamProcessor {
     private static final String INCOMING_PREFIX = "mp.messaging.incoming.";
     private static final String OUTGOING_PREFIX = "mp.messaging.outgoing.";
     private static final String CONNECTOR_SUFFIX = ".connector";
+    private static final String CONCURRENCY_SUFFIX = ".concurrency";
+    private static final String CONCURRENCY_SEPARATOR = "$";
 
     @BuildStep
     FeatureBuildItem feature() {
@@ -66,17 +67,15 @@ class JetStreamProcessor {
     @BuildStep
     void createProcessors(BuildProducer<SyntheticBeanBuildItem> syntheticBeans) {
         for (String channel : channelNames(INCOMING_PREFIX)) {
-            syntheticBeans.produce(SyntheticBeanBuildItem.configure(MessagePublisherProcessor.class)
-                    .types(MessagePublisherProcessor.class)
-                    .scope(Singleton.class)
-                    .addQualifier().annotation(Identifier.class).addValue("value", channel).done()
-                    .unremovable()
-                    .addInjectionPoint(ClassType.create(Config.class))
-                    .addInjectionPoint(ClassType.create(MessagePublisherProcessorFactory.class))
-                    .param(MessagePublisherProcessorBeanCreator.CHANNEL_PARAM, channel)
-                    .creator(MessagePublisherProcessorBeanCreator.class)
-                    .destroyer(MessageProcessorBeanDestroyer.class)
-                    .done());
+            final var concurrency = concurrency(channel);
+            if (concurrency <= 1) {
+                syntheticBeans.produce(publisherProcessor(channel, channel, null));
+            } else {
+                for (int index = 1; index <= concurrency; index++) {
+                    syntheticBeans.produce(publisherProcessor(
+                            channel + CONCURRENCY_SEPARATOR + index, channel, index));
+                }
+            }
         }
         for (String channel : channelNames(OUTGOING_PREFIX)) {
             syntheticBeans.produce(SyntheticBeanBuildItem.configure(MessageSubscriberProcessor.class)
@@ -91,6 +90,39 @@ class JetStreamProcessor {
                     .destroyer(MessageProcessorBeanDestroyer.class)
                     .done());
         }
+    }
+
+    /**
+     * Configures the synthetic {@link MessagePublisherProcessor} bean of an incoming channel. {@code identifier} is the
+     * channel name SmallRye asks the connector for, which for a channel using the {@code concurrency} attribute is the
+     * {@code channel$index} name of one of its concurrent copies.
+     */
+    private SyntheticBeanBuildItem publisherProcessor(String identifier, String channel, Integer index) {
+        final var configurator = SyntheticBeanBuildItem.configure(MessagePublisherProcessor.class)
+                .types(MessagePublisherProcessor.class)
+                .scope(Singleton.class)
+                .addQualifier().annotation(Identifier.class).addValue("value", identifier).done()
+                .unremovable()
+                .addInjectionPoint(ClassType.create(Config.class))
+                .addInjectionPoint(ClassType.create(MessagePublisherProcessorFactory.class))
+                .param(MessagePublisherProcessorBeanCreator.CHANNEL_PARAM, channel)
+                .creator(MessagePublisherProcessorBeanCreator.class)
+                .destroyer(MessageProcessorBeanDestroyer.class);
+        if (index != null) {
+            configurator.param(MessagePublisherProcessorBeanCreator.INDEX_PARAM, index);
+        }
+        return configurator.done();
+    }
+
+    /**
+     * The number of concurrent copies SmallRye creates for an incoming channel, as configured through the standard
+     * {@code concurrency} attribute. Defaults to one, i.e. no concurrency.
+     */
+    private int concurrency(String channel) {
+        final var config = ConfigProvider.getConfig();
+        final var propertyName = INCOMING_PREFIX
+                + (channel.contains(".") ? "\"" + channel + "\"" : channel) + CONCURRENCY_SUFFIX;
+        return config.getOptionalValue(propertyName, Integer.class).orElse(1);
     }
 
     /**
