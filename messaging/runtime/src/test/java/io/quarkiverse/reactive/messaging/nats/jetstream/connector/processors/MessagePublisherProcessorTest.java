@@ -16,6 +16,7 @@ import java.util.function.Supplier;
 
 import org.junit.jupiter.api.Test;
 
+import io.nats.client.Connection;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.Client;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer.ConsumerManagement;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.consumer.api.Consumer;
@@ -27,6 +28,7 @@ import io.smallrye.mutiny.helpers.test.AssertSubscriber;
 import io.smallrye.mutiny.subscription.MultiEmitter;
 
 class MessagePublisherProcessorTest {
+    private final AtomicReference<Connection.Status> status = new AtomicReference<>(Connection.Status.CONNECTED);
 
     @Test
     void retriesSubscriptionFailuresWhileRunning() {
@@ -125,6 +127,32 @@ class MessagePublisherProcessorTest {
         }
     }
 
+    @Test
+    void isNotReadyButAliveWhileReconnecting() {
+        final var processor = processor(() -> Multi.createFrom().nothing());
+        final var subscriber = processor.publisher().subscribe().withSubscriber(AssertSubscriber.create(1));
+
+        try {
+            await().atMost(Duration.ofSeconds(5)).until(() -> processor.readiness().healthy());
+
+            status.set(Connection.Status.RECONNECTING);
+            assertThat(processor.readiness().healthy()).isFalse();
+            assertThat(processor.liveness().healthy()).isTrue();
+
+            status.set(Connection.Status.CONNECTED);
+            assertThat(processor.readiness().healthy()).isTrue();
+
+            status.set(Connection.Status.CLOSED);
+            assertThat(processor.readiness().healthy()).isFalse();
+            assertThat(processor.liveness().healthy()).isFalse();
+
+            processor.stop();
+            assertThat(processor.liveness().healthy()).isTrue();
+        } finally {
+            subscriber.cancel();
+        }
+    }
+
     private MessagePublisherProcessor<String> processor(Supplier<Multi<Message<String>>> source) {
         return processor(source, () -> true);
     }
@@ -150,6 +178,9 @@ class MessagePublisherProcessorTest {
                     }
                     if (method.getName().equals("consumerManagement")) {
                         return consumerManagement;
+                    }
+                    if (method.getName().equals("connectionStatus")) {
+                        return status.get();
                     }
                     throw new UnsupportedOperationException(method.getName());
                 });

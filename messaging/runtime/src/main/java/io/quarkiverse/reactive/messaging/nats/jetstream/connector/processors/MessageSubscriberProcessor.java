@@ -63,6 +63,10 @@ public class MessageSubscriberProcessor<T> implements MessageProcessor {
                             health.set(new Health(false,
                                     "Subscriber processor error for channel: " + channelConfiguration.name()
                                             + " with message: " + throwable.getMessage()));
+                            // Without traffic no further publish would restore the health, so verify the channel again
+                            if (!stopped) {
+                                verify();
+                            }
                         })
                         .onFailure().recoverWithNull())
                 .onTermination().invoke(this::cancelVerification);
@@ -76,6 +80,16 @@ public class MessageSubscriberProcessor<T> implements MessageProcessor {
     @Override
     public @NonNull Health health() {
         return health.get();
+    }
+
+    @Override
+    public @NonNull Health readiness() {
+        return Health.readiness(channelConfiguration.name(), client.connectionStatus(), health());
+    }
+
+    @Override
+    public @NonNull Health liveness() {
+        return Health.liveness(channelConfiguration.name(), client.connectionStatus(), stopped);
     }
 
     void stop() {

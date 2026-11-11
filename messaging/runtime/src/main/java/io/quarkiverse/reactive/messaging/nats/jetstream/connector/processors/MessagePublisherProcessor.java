@@ -39,6 +39,16 @@ public class MessagePublisherProcessor<T> implements MessageProcessor {
         return health.get();
     }
 
+    @Override
+    public @NonNull Health readiness() {
+        return Health.readiness(channelConfiguration.name(), client.connectionStatus(), health());
+    }
+
+    @Override
+    public @NonNull Health liveness() {
+        return Health.liveness(channelConfiguration.name(), client.connectionStatus(), stopped);
+    }
+
     void stop() {
         this.stopped = true;
     }

@@ -73,20 +73,22 @@ public class JetStreamConnector implements InboundConnector, OutboundConnector, 
     @Override
     public HealthReport getReadiness() {
         final HealthReport.HealthReportBuilder builder = HealthReport.builder();
-        messageProcessors().forEach(processor -> builder.add(new HealthReport.ChannelInfo(
-                processor.channelConfiguration().name(),
-                processor.health().healthy(),
-                processor.health().message())));
+        messageProcessors().forEach(processor -> {
+            final var readiness = processor.readiness();
+            builder.add(new HealthReport.ChannelInfo(processor.channelConfiguration().name(), readiness.healthy(),
+                    readiness.message()));
+        });
         return builder.build();
     }
 
     @Override
     public HealthReport getLiveness() {
         final HealthReport.HealthReportBuilder builder = HealthReport.builder();
-        messageProcessors().forEach(processor -> builder.add(new HealthReport.ChannelInfo(
-                processor.channelConfiguration().name(),
-                processor.health().healthy(),
-                processor.health().message())));
+        messageProcessors().forEach(processor -> {
+            final var liveness = processor.liveness();
+            builder.add(new HealthReport.ChannelInfo(processor.channelConfiguration().name(), liveness.healthy(),
+                    liveness.message()));
+        });
         return builder.build();
     }
 
