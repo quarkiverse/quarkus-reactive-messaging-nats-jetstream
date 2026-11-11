@@ -31,4 +31,22 @@ public interface MessageProcessor {
      */
     @NonNull
     Health health();
+
+    /**
+     * Whether the channel should receive traffic. A channel is not ready while the NATS connection is not
+     * established (for example while it is reconnecting) or while {@link #health()} is not healthy.
+     *
+     * @return a non-null {@code Health} object describing the readiness of the channel.
+     */
+    @NonNull
+    Health readiness();
+
+    /**
+     * Whether the channel is able to recover by itself. A temporary failure, such as a NATS restart while the client
+     * is reconnecting, does not affect liveness; only a connection that is closed and will never reconnect does.
+     *
+     * @return a non-null {@code Health} object describing the liveness of the channel.
+     */
+    @NonNull
+    Health liveness();
 }

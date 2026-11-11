@@ -141,6 +141,11 @@ class ClientImpl implements Client {
     }
 
     @Override
+    public io.nats.client.Connection.@NonNull Status connectionStatus() {
+        return connection.getStatus();
+    }
+
+    @Override
     public @NonNull NativeConnection nativeConnection() {
         return connection;
     }
