@@ -167,7 +167,16 @@ The build uses several annotation processors:
 
 ### Health Checks
 
-The connector implements `HealthReporter` and reports both liveness and readiness based on the health status of all active message processors (connection state, consumer state, etc.).
+The connector implements `HealthReporter` and reports readiness and liveness per channel, based on the NATS connection status and the health of the message processor:
+
+| NATS connection | Readiness | Liveness |
+|---|---|---|
+| `CONNECTED`, channel verified (stream/subject/consumer) | UP | UP |
+| `CONNECTED`, channel not verified or failing | DOWN | UP |
+| `CONNECTING`, `RECONNECTING`, `DISCONNECTED` | DOWN | UP |
+| `CLOSED` (the client gave up reconnecting) | DOWN | DOWN |
+
+A NATS restart therefore stops traffic to the application without restarting it. With the default `quarkus.messaging.nats.connection.maximum-reconnects=-1` the client reconnects forever, so liveness only fails when reconnects are limited and exhausted. Readiness recovers without traffic: an outgoing channel re-verifies its stream and subject after a failed publish.
 
 ## Technology Stack
 

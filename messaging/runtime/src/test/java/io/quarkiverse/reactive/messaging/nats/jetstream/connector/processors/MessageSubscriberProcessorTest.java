@@ -17,6 +17,7 @@ import org.eclipse.microprofile.reactive.messaging.Message;
 import org.jspecify.annotations.NonNull;
 import org.junit.jupiter.api.Test;
 
+import io.nats.client.Connection;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.Client;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.stream.StreamManagement;
 import io.quarkiverse.reactive.messaging.nats.jetstream.client.stream.api.Stream;
@@ -30,6 +31,7 @@ import io.smallrye.mutiny.subscription.MultiEmitter;
 import io.smallrye.mutiny.unchecked.Unchecked;
 
 class MessageSubscriberProcessorTest {
+    private final AtomicReference<Connection.Status> status = new AtomicReference<>(Connection.Status.CONNECTED);
 
     @Test
     void isNotHealthyUntilStreamExists() {
@@ -120,9 +122,11 @@ class MessageSubscriberProcessorTest {
     @Test
     void publishesMessagesAfterPublishFailure() {
         final var published = new CopyOnWriteArrayList<String>();
+        final var failures = new AtomicInteger();
         final var processor = processor(new AtomicReference<>(Set.of("data.>")), new AtomicInteger(),
                 message -> {
                     if (Objects.equals(message.getPayload(), "fails")) {
+                        failures.incrementAndGet();
                         return Uni.createFrom().failure(new IllegalStateException("publish failed"));
                     }
                     published.add(message.getPayload());
@@ -132,13 +136,87 @@ class MessageSubscriberProcessorTest {
 
         try {
             emitter.emit(Message.of("fails"));
-            await().atMost(Duration.ofSeconds(5)).until(() -> !processor.health().message().contains("ready"));
+            await().atMost(Duration.ofSeconds(5)).until(() -> failures.get() == 1);
             emitter.emit(Message.of("after failure"));
 
             await().atMost(Duration.ofSeconds(5)).until(() -> published.contains("after failure"));
         } finally {
             processor.stop();
         }
+    }
+
+    /**
+     * After a failed publish the channel must become ready again without further traffic, because a channel that is
+     * not ready receives no traffic and would otherwise never recover.
+     */
+    @Test
+    void recoversReadinessAfterPublishFailureWithoutTraffic() {
+        final var subjects = new AtomicReference<Set<String>>(Set.of("data.>"));
+        final var processor = processor(subjects, new AtomicInteger(),
+                message -> Uni.createFrom().failure(new IllegalStateException("publish failed")));
+        final var emitter = subscribe(processor);
+
+        try {
+            await().atMost(Duration.ofSeconds(5)).until(() -> processor.readiness().healthy());
+            subjects.set(null);
+            emitter.emit(Message.of("fails"));
+            await().atMost(Duration.ofSeconds(5)).until(() -> !processor.readiness().healthy());
+
+            subjects.set(Set.of("data.>"));
+
+            await().atMost(Duration.ofSeconds(5)).until(() -> processor.readiness().healthy());
+        } finally {
+            processor.stop();
+        }
+    }
+
+    @Test
+    void isNotReadyButAliveWhileReconnecting() {
+        final var processor = processor(new AtomicReference<>(Set.of("data.>")), new AtomicInteger());
+        subscribe(processor);
+
+        try {
+            await().atMost(Duration.ofSeconds(5)).until(() -> processor.readiness().healthy());
+
+            for (final var reconnecting : new Connection.Status[] { Connection.Status.DISCONNECTED,
+                    Connection.Status.RECONNECTING, Connection.Status.CONNECTING }) {
+                status.set(reconnecting);
+                assertThat(processor.readiness().healthy()).isFalse();
+                assertThat(processor.readiness().message()).contains(reconnecting.name());
+                assertThat(processor.liveness().healthy()).isTrue();
+            }
+
+            status.set(Connection.Status.CONNECTED);
+            assertThat(processor.readiness().healthy()).isTrue();
+        } finally {
+            processor.stop();
+        }
+    }
+
+    @Test
+    void isNotAliveWhenConnectionIsClosed() {
+        final var processor = processor(new AtomicReference<>(Set.of("data.>")), new AtomicInteger());
+        subscribe(processor);
+
+        try {
+            status.set(Connection.Status.CLOSED);
+
+            assertThat(processor.readiness().healthy()).isFalse();
+            assertThat(processor.liveness().healthy()).isFalse();
+        } finally {
+            processor.stop();
+        }
+    }
+
+    @Test
+    void isAliveWhenConnectionIsClosedAfterStop() {
+        final var processor = processor(new AtomicReference<>(Set.of("data.>")), new AtomicInteger());
+        subscribe(processor);
+
+        processor.stop();
+        status.set(Connection.Status.CLOSED);
+
+        assertThat(processor.liveness().healthy()).isTrue();
     }
 
     /**
@@ -219,6 +297,9 @@ class MessageSubscriberProcessorTest {
                 (proxy, method, args) -> {
                     if (method.getName().equals("streamManagement")) {
                         return streamManagement;
+                    }
+                    if (method.getName().equals("connectionStatus")) {
+                        return status.get();
                     }
                     if (method.getName().equals("publish")) {
                         return publish.apply(

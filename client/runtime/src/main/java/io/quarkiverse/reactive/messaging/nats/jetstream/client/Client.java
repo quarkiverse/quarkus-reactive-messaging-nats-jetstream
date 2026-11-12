@@ -104,4 +104,13 @@ public interface Client extends Publisher, Consumer, AutoCloseable {
      */
     boolean closed();
 
+    /**
+     * Returns the current status of the underlying NATS connection. While the client is recovering from a lost
+     * connection the status is {@code RECONNECTING} or {@code DISCONNECTED}; {@code CLOSED} means that the
+     * connection will not recover.
+     *
+     * @return the non-null status of the connection
+     */
+    io.nats.client.Connection.@NonNull Status connectionStatus();
+
 }
