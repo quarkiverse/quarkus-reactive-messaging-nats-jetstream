@@ -1,4 +1,4 @@
 release:
-  current-version: "4.0.0.Beta3"
-  next-version: "4.0.0-SNAPSHOT"
+  current-version: "4.0.0.CR1"
+  next-version: "4.1.0-SNAPSHOT"
 
