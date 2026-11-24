@@ -93,6 +93,14 @@ public interface ConnectionConfiguration {
     Optional<SSLContext> sslContext();
 
     /**
+     * Whether the client verifies that the server certificate is issued for the host it connects to.
+     * Only applies when {@link #sslContext()} is present.
+     *
+     * @return {@code true} if the server hostname is verified
+     */
+    boolean tlsVerifyHostname();
+
+    /**
      * The path to the credentials file for creating an AuthHandler
      *
      * @return the path to the credentials file for creating an AuthHandler

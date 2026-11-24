@@ -35,7 +35,11 @@ public class TlsContextFactoryImpl implements TlsContextFactory {
                 final var tlsConfiguration = tlsConfigurationRegistry.get(tlsConfigurationName)
                         .orElseThrow(() -> new IllegalArgumentException(
                                 "No TLS configuration found for name: " + tlsConfigurationName));
-                cached.put(tlsConfigurationName, new TlsContextRecord(tlsConfiguration.createSSLContext()));
+                final var verifyHostname = tlsConfiguration.getHostnameVerificationAlgorithm()
+                        .map(algorithm -> !"NONE".equalsIgnoreCase(algorithm))
+                        .orElse(true);
+                cached.put(tlsConfigurationName,
+                        new TlsContextRecord(tlsConfiguration.createSSLContext(), verifyHostname));
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }

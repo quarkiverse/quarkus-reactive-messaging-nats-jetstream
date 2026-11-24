@@ -51,8 +51,8 @@ abstract class AbstractClientFactory implements ClientFactory {
         configuration.bufferSize().ifPresent(optionsBuilder::bufferSize);
         configuration.timeout().ifPresent(optionsBuilder::connectionTimeout);
         if (configuration.sslContext().isPresent()) {
-            optionsBuilder.opentls();
             optionsBuilder.sslContext(configuration.sslContext().get());
+            optionsBuilder.tlsVerifyHostname(configuration.tlsVerifyHostname());
         }
         configuration.tlsAlgorithm().ifPresent(optionsBuilder::tlsAlgorithm);
         optionsBuilder.executor(executorService);

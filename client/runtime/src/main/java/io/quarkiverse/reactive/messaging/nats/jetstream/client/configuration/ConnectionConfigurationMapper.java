@@ -23,6 +23,7 @@ public interface ConnectionConfigurationMapper {
     @Mapping(target = "tlsAlgorithm", expression = "java(configuration.tlsAlgorithm())")
     @Mapping(target = "credentialPath", expression = "java(configuration.credentialPath())")
     @Mapping(target = "sslContext", expression = "java(sslContext(configuration))")
+    @Mapping(target = "tlsVerifyHostname", expression = "java(tlsVerifyHostname(configuration))")
     @Mapping(target = "inboxPrefix", expression = "java(configuration.inboxPrefix())")
     ConnectionConfigurationRecord map(ConnectionConfiguration configuration);
 
@@ -31,6 +32,14 @@ public interface ConnectionConfigurationMapper {
         return configuration.tlsConfigurationName()
                 .map(factory::create)
                 .map(TlsContext::sslContext);
+    }
+
+    default boolean tlsVerifyHostname(final ConnectionConfiguration configuration) {
+        final var factory = CDI.current().select(TlsContextFactory.class).get();
+        return configuration.tlsConfigurationName()
+                .map(factory::create)
+                .map(TlsContext::verifyHostname)
+                .orElse(true);
     }
 
 }

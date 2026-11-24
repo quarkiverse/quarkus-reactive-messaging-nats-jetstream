@@ -166,7 +166,7 @@ The connector implements `HealthReporter` and reports both liveness and readines
 
 - **Quarkus**: 4.0.0.Beta1
 - **Java**: 21 (minimum, `maven.compiler.release`)
-- **NATS Java Client**: 2.26.4
+- **NATS Java Client**: 2.27.0
 - **SmallRye Reactive Messaging**: Provided by Quarkus BOM
 - **OpenTelemetry**: For distributed tracing
 - **Lombok**: For reducing boilerplate
