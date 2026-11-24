@@ -17,7 +17,7 @@ class KeyValueConfigurationMapperTest {
 
         assertThat(configuration.getLimitMarkerTtl()).isEqualTo(Duration.ofSeconds(5));
         assertThat(configuration.getBackingConfig().getSubjectDeleteMarkerTtl()).isEqualTo(Duration.ofSeconds(5));
-        assertThat(configuration.getBackingConfig().isAllowMessageTtl()).isTrue();
+        assertThat(configuration.getBackingConfig().getAllowMessageTtl()).isTrue();
     }
 
     @Test
@@ -25,7 +25,7 @@ class KeyValueConfigurationMapperTest {
         final var configuration = KeyValueConfiguration.of(configuration(Optional.empty()));
 
         assertThat(configuration.getLimitMarkerTtl()).isNull();
-        assertThat(configuration.getBackingConfig().isAllowMessageTtl()).isFalse();
+        assertThat(configuration.getBackingConfig().getAllowMessageTtl()).isFalse();
     }
 
     @Test

@@ -1,12 +1,14 @@
 package io.quarkiverse.reactive.messaging.nats.jetstream.client.message.tracing;
 
+import java.util.Locale;
+
 import org.jspecify.annotations.NonNull;
 
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.context.Context;
-import io.opentelemetry.instrumentation.api.incubator.semconv.messaging.MessageOperation;
 import io.opentelemetry.instrumentation.api.incubator.semconv.messaging.MessagingAttributesExtractor;
+import io.opentelemetry.instrumentation.api.incubator.semconv.messaging.MessagingOperationType;
 import io.opentelemetry.instrumentation.api.incubator.semconv.messaging.MessagingSpanNameExtractor;
 import io.opentelemetry.instrumentation.api.instrumenter.Instrumenter;
 import io.opentelemetry.instrumentation.api.instrumenter.SpanKindExtractor;
@@ -28,14 +30,15 @@ final class Instrumenters {
             @NonNull Operation operation,
             boolean tracePayload) {
         final var getter = new MessagingAttributesGetterImpl(operation);
-        final var messageOperation = switch (operation) {
-            case PUBLISH -> MessageOperation.PUBLISH;
-            case RECEIVE -> MessageOperation.RECEIVE;
-            case PROCESS -> MessageOperation.PROCESS;
+        final var operationType = switch (operation) {
+            case PUBLISH -> MessagingOperationType.SEND;
+            case RECEIVE -> MessagingOperationType.RECEIVE;
+            case PROCESS -> MessagingOperationType.PROCESS;
         };
+        final var operationName = operation.name().toLowerCase(Locale.ROOT);
         final var builder = Instrumenter.<Message<byte[]>, Void> builder(openTelemetry, INSTRUMENTATION_NAME,
-                MessagingSpanNameExtractor.create(getter, messageOperation))
-                .addAttributesExtractor(MessagingAttributesExtractor.create(getter, messageOperation))
+                MessagingSpanNameExtractor.create(getter, operationType, operationName))
+                .addAttributesExtractor(MessagingAttributesExtractor.create(getter, operationType, operationName))
                 .addAttributesExtractor(new NatsAttributesExtractor(operation, tracePayload));
         return switch (operation) {
             case PUBLISH -> builder.buildProducerInstrumenter(new HeadersTextMapSetter());
