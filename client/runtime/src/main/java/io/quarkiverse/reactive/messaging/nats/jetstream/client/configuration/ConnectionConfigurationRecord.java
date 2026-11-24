@@ -22,6 +22,7 @@ public record ConnectionConfigurationRecord(@NonNull List<String> servers,
         @NonNull Optional<Integer> bufferSize,
         @NonNull Optional<String> tlsAlgorithm,
         @NonNull Optional<SSLContext> sslContext,
+        boolean tlsVerifyHostname,
         @NonNull Optional<String> credentialPath,
         @NonNull Optional<String> inboxPrefix)
         implements

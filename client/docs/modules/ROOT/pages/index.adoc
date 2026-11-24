@@ -232,7 +232,7 @@ The stream, consumer, key-value store and object store configurations are all op
 | quarkus.messaging.nats.connection.tls-algorithm | The TLS algorithm | String |
 | quarkus.messaging.nats.connection.connection-attempts | The maximum number of attempts to attempt to re-connect to NATS | Integer | -1 (unlimited)
 | quarkus.messaging.nats.connection.connection-backoff | Back-off delay between to attempt to re-connect to NATS | Duration | 1s
-| quarkus.messaging.nats.connection.tls-configuration-name | The name of the TLS configuration (bucket) used for client authentication in the TLS registry | String |
+| quarkus.messaging.nats.connection.tls-configuration-name | The name of the TLS configuration (bucket) used for client authentication in the TLS registry. The server hostname is verified against its certificate unless the TLS configuration sets `hostname-verification-algorithm=NONE` | String |
 | quarkus.messaging.nats.connection.inbox-prefix | Retrieves the optional inbox prefix used for communication. The inbox prefix allows customization of the subscriber's inbox name. | String |
 |======
 
