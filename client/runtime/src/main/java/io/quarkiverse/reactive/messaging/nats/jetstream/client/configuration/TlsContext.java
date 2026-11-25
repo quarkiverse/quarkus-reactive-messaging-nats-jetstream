@@ -19,4 +19,12 @@ public interface TlsContext {
      * @return an instance of {@link SSLContext} representing the configuration for secure TLS communication
      */
     SSLContext sslContext();
+
+    /**
+     * Whether the client verifies that the server certificate is issued for the host it connects to.
+     * Disabled when the TLS configuration sets {@code hostname-verification-algorithm} to {@code NONE}.
+     *
+     * @return {@code true} if the server hostname is verified
+     */
+    boolean verifyHostname();
 }
